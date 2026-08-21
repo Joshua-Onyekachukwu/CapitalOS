@@ -20,20 +20,28 @@ export default function Home() {
 
       <HeroBanner />
 
+      <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <About />
 
+      <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <Features />
 
+      <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <WhyCapitalOS />
 
+      <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <WorkingProcess />
 
+      <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <Benefits />
 
+      <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <Testimonials />
 
+      <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <Pricing />
 
+      <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <FAQ />
 
       <Footer />

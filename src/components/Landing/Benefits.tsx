@@ -13,7 +13,8 @@ const benefits = [
     bgColor: "bg-[#06201b]",
     numberBg: "bg-lime-500",
     numberColor: "text-black",
-    textColor: "text-[#9E948E]",
+    textColor: "text-white",
+    bottomPadding: true,
   },
   {
     number: "2",
@@ -41,7 +42,7 @@ const benefits = [
 
 const Benefits: React.FC = () => {
   return (
-    <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
+    <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px] pb-[60px] md:pb-[80px] lg:pb-[100px] xl:pb-[120px]">
       <div className="text-center mx-auto xl:max-w-[920px] mb-[30px] md:mb-[40px] lg:mb-[50px]">
         <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
           Benefits
