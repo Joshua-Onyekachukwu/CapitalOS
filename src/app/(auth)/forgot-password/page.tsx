@@ -57,8 +57,8 @@ export default function ForgotPasswordPage() {
     return (
       <Card variant="elevated">
         <CardBody className="p-[25px] md:p-[35px] text-center">
-          <div className="w-[60px] h-[60px] rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center mx-auto mb-[20px]">
-            <i className="ri-mail-send-line text-primary-600 text-[28px]"></i>
+          <div className="w-[60px] h-[60px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center mx-auto mb-[20px]">
+            <i className="ri-mail-send-line text-lime-600 text-[28px]"></i>
           </div>
           <h1 className="!text-xl md:!text-2xl !font-semibold !mb-[8px]">
             Check your email
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
           </p>
           <Link
             href="/login"
-            className="text-[14px] text-primary-600 hover:text-primary-700 font-medium"
+            className="text-[14px] text-lime-600 hover:text-lime-700 font-medium"
           >
             Back to login
           </Link>
@@ -121,7 +121,7 @@ export default function ForgotPasswordPage() {
             Remember your password?{" "}
             <Link
               href="/login"
-              className="text-primary-600 hover:text-primary-700 font-medium"
+              className="text-lime-600 hover:text-lime-700 font-medium"
             >
               Log in
             </Link>

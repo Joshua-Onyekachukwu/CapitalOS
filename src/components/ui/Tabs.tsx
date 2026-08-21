@@ -35,7 +35,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onChange, className }) => 
             className={cn(
               "flex items-center gap-[8px] px-[14px] md:px-[18px] py-[12px] md:py-[14px] text-[14px] md:text-[15px] font-medium whitespace-nowrap transition-all relative",
               active === tab.id
-                ? "text-[#0f172a] dark:text-white"
+                ? "text-[#06201b] dark:text-white"
                 : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             )}
           >
@@ -46,7 +46,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onChange, className }) => 
                 className={cn(
                   "text-[11px] md:text-[12px] px-[6px] py-[1px] rounded-full font-medium",
                   active === tab.id
-                    ? "bg-primary-500 text-black"
+                    ? "bg-lime-500 text-black"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-500"
                 )}
               >
@@ -54,7 +54,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onChange, className }) => 
               </span>
             )}
             {active === tab.id && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0f172a] dark:bg-white rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#06201b] dark:bg-white rounded-full" />
             )}
           </button>
         ))}

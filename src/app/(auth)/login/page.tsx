@@ -140,7 +140,7 @@ function LoginForm() {
             </label>
             <Link
               href="/forgot-password"
-              className="text-[14px] text-primary-600 hover:text-primary-700 font-medium"
+              className="text-[14px] text-lime-600 hover:text-lime-700 font-medium"
             >
               Forgot password?
             </Link>
@@ -156,7 +156,7 @@ function LoginForm() {
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
-              className="text-primary-600 hover:text-primary-700 font-medium"
+              className="text-lime-600 hover:text-lime-700 font-medium"
             >
               Sign up free
             </Link>

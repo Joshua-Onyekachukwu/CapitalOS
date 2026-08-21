@@ -15,88 +15,88 @@
   --text-4xl: 36px;
   --text-5xl: 40px;
   --color-white: #ffffff;
-  --color-black: #1e293b;
+  --color-black: #23272e;
   --color-dark: #000000;
-  --color-primary-50: #eef2ff;
-  --color-primary-100: #dde5ff;
-  --color-primary-200: #c2ccff;
-  --color-primary-300: #98a8ff;
-  --color-primary-400: #6b7dff;
-  --color-primary-500: #4f63e8;
-  --color-primary-600: #3d50d0;
-  --color-primary-700: #3341b0;
-  --color-primary-800: #2d3590;
-  --color-primary-900: #282e72;
-  --color-secondary-50: #f0f4ff;
-  --color-secondary-100: #dfe7ff;
-  --color-secondary-200: #c5d3ff;
-  --color-secondary-300: #9db5ff;
-  --color-secondary-400: #6e8eff;
-  --color-secondary-500: #4a6bff;
-  --color-secondary-600: #3149f5;
-  --color-secondary-700: #2535e1;
-  --color-secondary-800: #222cb6;
-  --color-secondary-900: #212a8f;
-  --color-success-50: #f0fdf4;
-  --color-success-100: #dcfce7;
-  --color-success-200: #bbf7d0;
-  --color-success-300: #86efac;
-  --color-success-400: #4ade80;
-  --color-success-500: #22c55e;
-  --color-success-600: #16a34a;
-  --color-success-700: #15803d;
-  --color-success-800: #166534;
-  --color-success-900: #14532d;
-  --color-lime-50: #eef2ff;
-  --color-lime-100: #dde5ff;
-  --color-lime-200: #c2ccff;
-  --color-lime-300: #98a8ff;
-  --color-lime-400: #6b7dff;
-  --color-lime-500: #4f63e8;
-  --color-lime-600: #3d50d0;
-  --color-lime-700: #3341b0;
-  --color-lime-800: #2d3590;
-  --color-lime-900: #282e72;
-  --color-danger-50: #fef2f2;
-  --color-danger-100: #fee2e2;
-  --color-danger-200: #fecaca;
-  --color-danger-300: #fca5a5;
-  --color-danger-400: #f87171;
-  --color-danger-500: #ef4444;
-  --color-danger-600: #dc2626;
-  --color-danger-700: #b91c1c;
-  --color-danger-800: #991b1b;
-  --color-danger-900: #7f1d1d;
-  --color-gray-50: #f8fafc;
-  --color-gray-100: #f1f5f9;
-  --color-gray-200: #e2e8f0;
-  --color-gray-300: #cbd5e1;
-  --color-gray-400: #94a3b8;
+  --color-primary-50: #ecf0ff;
+  --color-primary-100: #dde4ff;
+  --color-primary-200: #c2cdff;
+  --color-primary-300: #9caaff;
+  --color-primary-400: #757dff;
+  --color-primary-500: #605dff;
+  --color-primary-600: #4936f5;
+  --color-primary-700: #3e2ad8;
+  --color-primary-800: #3225ae;
+  --color-primary-900: #2d2689;
+  --color-secondary-50: #eef6ff;
+  --color-secondary-100: #daebff;
+  --color-secondary-200: #bddcff;
+  --color-secondary-300: #90c7ff;
+  --color-secondary-400: #5da8ff;
+  --color-secondary-500: #3584fc;
+  --color-secondary-600: #1f64f1;
+  --color-secondary-700: #174ede;
+  --color-secondary-800: #1940b4;
+  --color-secondary-900: #1a3a8e;
+  --color-success-50: #eeffe5;
+  --color-success-100: #d8ffc8;
+  --color-success-200: #b2ff97;
+  --color-success-300: #82fc5a;
+  --color-success-400: #58f229;
+  --color-success-500: #37d80a;
+  --color-success-600: #25b003;
+  --color-success-700: #1e8308;
+  --color-success-800: #1d670d;
+  --color-success-900: #1a5710;
+  --color-lime-50: #f5ffed;
+  --color-lime-100: #e6ffd3;
+  --color-lime-200: #d4ffb4;
+  --color-lime-300: #c3ff9a;
+  --color-lime-400: #b8ff8c;
+  --color-lime-500: #b1ff84;
+  --color-lime-600: #8bd466;
+  --color-lime-700: #6fa350;
+  --color-lime-800: #547b3d;
+  --color-lime-900: #3c562b;
+  --color-danger-50: #fff2f0;
+  --color-danger-100: #ffe1dd;
+  --color-danger-200: #ffc8c0;
+  --color-danger-300: #ffa294;
+  --color-danger-400: #ff6d57;
+  --color-danger-500: #ff4023;
+  --color-danger-600: #ec1f00;
+  --color-danger-700: #d71c00;
+  --color-danger-800: #b11a03;
+  --color-danger-900: #921c0a;
+  --color-gray-50: #f6f7f9;
+  --color-gray-100: #eceef2;
+  --color-gray-200: #d5d9e2;
+  --color-gray-300: #b1bbc8;
+  --color-gray-400: #8695aa;
   --color-gray-500: #64748b;
-  --color-gray-600: #475569;
-  --color-gray-700: #334155;
-  --color-gray-800: #1e293b;
-  --color-gray-900: #0f172a;
-  --color-warning-50: #fffbeb;
-  --color-warning-100: #fef3c7;
-  --color-warning-200: #fde68a;
-  --color-warning-300: #fcd34d;
-  --color-warning-400: #fbbf24;
-  --color-warning-500: #f59e0b;
-  --color-warning-600: #d97706;
-  --color-warning-700: #b45309;
-  --color-warning-800: #92400e;
-  --color-warning-900: #78350f;
-  --color-info-50: #eff6ff;
-  --color-info-100: #dbeafe;
-  --color-info-200: #bfdbfe;
-  --color-info-300: #93c5fd;
-  --color-info-400: #60a5fa;
-  --color-info-500: #3b82f6;
-  --color-info-600: #2563eb;
-  --color-info-700: #1d4ed8;
-  --color-info-800: #1e40af;
-  --color-info-900: #1e3a8a;
+  --color-gray-600: #526077;
+  --color-gray-700: #434e61;
+  --color-gray-800: #3a4252;
+  --color-gray-900: #23272e;
+  --color-warning-50: #fff8e1;
+  --color-warning-100: #ffecb3;
+  --color-warning-200: #ffe082;
+  --color-warning-300: #ffd54f;
+  --color-warning-400: #ffca28;
+  --color-warning-500: #ffc107;
+  --color-warning-600: #ffb300;
+  --color-warning-700: #ffa000;
+  --color-warning-800: #ff8f00;
+  --color-warning-900: #ff6f00;
+  --color-info-50: #e1f7fe;
+  --color-info-100: #b3ecfc;
+  --color-info-200: #80e0fa;
+  --color-info-300: #48d3f5;
+  --color-info-400: #0dcaf0;
+  --color-info-500: #00c1eb;
+  --color-info-600: #00b1d7;
+  --color-info-700: #009cbb;
+  --color-info-800: #0088a2;
+  --color-info-900: #006574;
   --shadow-3xl: rgba(149, 157, 165, 0.2) 0px 8px 24px;
   --shadow-custom: 21px 85px 24px 0px rgba(176, 176, 176, 0),
     13px 54px 22px 0px rgba(176, 176, 176, 0.02),
@@ -107,7 +107,7 @@
 
 /** Body */
 body {
-  @apply font-body text-sm md:text-base text-gray-500 bg-gray-50 leading-normal dark:bg-[#0f1629] dark:text-gray-400;
+  @apply font-body text-sm md:text-base text-gray-500 bg-gray-50 leading-normal dark:bg-[#0a0e19] dark:text-gray-400;
 }
 
 /** Paragraph */
@@ -138,7 +138,7 @@ h1,
 .display-3,
 .display-2,
 .display-1 {
-  @apply text-gray-800 font-bold leading-tight mb-[10px] dark:text-white;
+  @apply text-black font-bold leading-tight mb-[10px] dark:text-white;
 }
 .h6,
 h6,
@@ -182,7 +182,7 @@ button {
     @apply z-[999] bg-white dark:bg-dark;
 
     &.sales-navbar {
-      @apply py-[15px] md:py-[20px] shadow-sm dark:bg-[#0f172a];
+      @apply py-[15px] md:py-[20px] shadow-sm dark:bg-[#06201b];
     }
   }
   #navbar-burger-menu {

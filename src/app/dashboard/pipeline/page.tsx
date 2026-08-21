@@ -9,7 +9,7 @@ const columns = [
   { title: "Qualified", count: 0, color: "bg-blue-500" },
   { title: "Outreach", count: 0, color: "bg-purple-500" },
   { title: "Interested", count: 0, color: "bg-amber-500" },
-  { title: "Meeting", count: 0, color: "bg-primary-500" },
+  { title: "Meeting", count: 0, color: "bg-lime-500" },
   { title: "Closed", count: 0, color: "bg-green-500" },
 ];
 
@@ -29,7 +29,7 @@ export default function PipelinePage() {
               {/* Column Header */}
               <div className="flex items-center gap-[8px] mb-[12px] px-[4px]">
                 <div className={`w-[8px] h-[8px] rounded-full ${col.color}`}></div>
-                <h3 className="text-[13px] font-semibold text-[#0f172a] dark:text-white !mb-0">
+                <h3 className="text-[13px] font-semibold text-[#06201b] dark:text-white !mb-0">
                   {col.title}
                 </h3>
                 <span className="text-[12px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-[6px] py-[1px] rounded-full">

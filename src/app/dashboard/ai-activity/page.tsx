@@ -24,13 +24,13 @@ export default function AiActivityPage() {
         ].map((agent) => (
           <div
             key={agent.name}
-            className="flex items-center gap-[14px] p-[16px] rounded-[12px] border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1629]"
+            className="flex items-center gap-[14px] p-[16px] rounded-[12px] border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0a0e19]"
           >
             <div className="w-[40px] h-[40px] rounded-[10px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 text-[20px] flex-none">
               <i className={agent.icon}></i>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-medium text-[#0f172a] dark:text-white !mb-[2px]">{agent.name}</p>
+              <p className="text-[14px] font-medium text-[#06201b] dark:text-white !mb-[2px]">{agent.name}</p>
               <p className="text-[12px] text-gray-400 !mb-0">{agent.status}</p>
             </div>
             <div className="w-[8px] h-[8px] rounded-full bg-gray-300 dark:bg-gray-600 flex-none"></div>

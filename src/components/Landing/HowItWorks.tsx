@@ -34,17 +34,17 @@ const HowItWorks: React.FC = () => {
   return (
     <div className="py-[70px] md:py-[90px] lg:py-[100px] xl:py-[120px] 2xl:py-[140px]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="bg-[#0f172a] rounded-[20px] md:rounded-[35px] py-[60px] px-[20px] md:py-[80px] md:px-[50px] lg:py-[90px] xl:py-[100px] xl:px-[110px] overflow-hidden">
+        <div className="bg-[#06201b] rounded-[20px] md:rounded-[35px] py-[60px] px-[20px] md:py-[80px] md:px-[50px] lg:py-[90px] xl:py-[100px] xl:px-[110px] overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[40px] items-center">
             {/* Steps */}
             <div>
-              <span className="inline-block font-medium text-primary-500 rounded-[30px] border border-primary-500 py-[5.5px] px-[18px] mb-[12px] md:mb-[15px]">
+              <span className="inline-block font-medium text-lime-500 rounded-[30px] border border-lime-500 py-[5.5px] px-[18px] mb-[12px] md:mb-[15px]">
                 How It Works
               </span>
-              <h2 className="!text-[#f1f5f9] md:-tracking-[1px] !font-medium !text-2xl md:!text-3xl lg:!text-4xl !leading-[1.2] !mb-[12px] md:!mb-[15px]">
+              <h2 className="!text-[#ebebe0] md:-tracking-[1px] !font-medium !text-2xl md:!text-3xl lg:!text-4xl !leading-[1.2] !mb-[12px] md:!mb-[15px]">
                 From Pitch Deck to Funded
               </h2>
-              <p className="md:text-[15px] lg:text-md text-[#f1f5f9]/70 mb-[30px] lg:mb-[40px]">
+              <p className="md:text-[15px] lg:text-md text-[#ebebe0]/70 mb-[30px] lg:mb-[40px]">
                 Four steps between where you are and where you want to be.
               </p>
 
@@ -54,14 +54,14 @@ const HowItWorks: React.FC = () => {
                     key={step.id}
                     className="flex gap-[16px] items-start"
                   >
-                    <div className="w-[42px] h-[42px] rounded-full bg-primary-500 text-black flex items-center justify-center flex-none font-bold text-[16px]">
+                    <div className="w-[42px] h-[42px] rounded-full bg-lime-500 text-black flex items-center justify-center flex-none font-bold text-[16px]">
                       {step.id}
                     </div>
                     <div>
-                      <h3 className="!text-[#f1f5f9] !font-semibold !text-[15px] md:!text-[16px] !mb-[4px]">
+                      <h3 className="!text-[#ebebe0] !font-semibold !text-[15px] md:!text-[16px] !mb-[4px]">
                         {step.title}
                       </h3>
-                      <p className="text-[#f1f5f9]/60 text-[13px] md:text-[14px] !mb-0">
+                      <p className="text-[#ebebe0]/60 text-[13px] md:text-[14px] !mb-0">
                         {step.description}
                       </p>
                     </div>
@@ -80,7 +80,7 @@ const HowItWorks: React.FC = () => {
                   className="object-cover"
                   sizes="420px"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/30 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#06201b]/30 to-transparent"></div>
               </div>
             </div>
           </div>

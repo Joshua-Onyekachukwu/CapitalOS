@@ -40,8 +40,8 @@ export default function StartupPage() {
         <CardBody>
           <div className="flex items-center justify-between flex-wrap gap-[15px]">
             <div className="flex items-center gap-[15px]">
-              <div className="w-[48px] h-[48px] rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <i className="ri-rocket-2-line text-primary-600 text-[24px]"></i>
+              <div className="w-[48px] h-[48px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center">
+                <i className="ri-rocket-2-line text-lime-600 text-[24px]"></i>
               </div>
               <div>
                 <h3 className="!text-[16px] !font-semibold !mb-[2px]">
@@ -64,7 +64,7 @@ export default function StartupPage() {
           <div className="mt-[18px]">
             <div className="w-full h-[6px] bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                className="h-full bg-lime-500 rounded-full transition-all duration-500"
                 style={{ width: `${completionPercent}%` }}
               />
             </div>
@@ -81,18 +81,18 @@ export default function StartupPage() {
                 <div className="flex items-start gap-[14px]">
                   <div className={`w-[40px] h-[40px] rounded-[10px] flex items-center justify-center flex-none text-[20px] ${
                     section.done
-                      ? "bg-primary-100 dark:bg-primary-900/20 text-primary-600"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:text-primary-600 group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20"
+                      ? "bg-lime-100 dark:bg-lime-900/20 text-lime-600"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:text-lime-600 group-hover:bg-lime-50 dark:group-hover:bg-lime-900/20"
                   } transition-colors`}>
                     <i className={section.icon}></i>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-[8px] mb-[4px]">
-                      <h4 className="!text-[14px] !font-semibold !mb-0 text-[#0f172a] dark:text-white">
+                      <h4 className="!text-[14px] !font-semibold !mb-0 text-[#06201b] dark:text-white">
                         {section.label}
                       </h4>
                       {section.done && (
-                        <i className="ri-check-line text-[14px] text-primary-600"></i>
+                        <i className="ri-check-line text-[14px] text-lime-600"></i>
                       )}
                     </div>
                     <p className="text-[13px] text-gray-400 !mb-0">

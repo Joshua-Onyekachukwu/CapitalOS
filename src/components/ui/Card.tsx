@@ -9,8 +9,8 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = "default", children, ...props }, ref) => {
     const variantStyles = {
       default: "bg-white dark:bg-dark border border-gray-200 dark:border-gray-800",
-      bordered: "bg-white dark:bg-dark border-2 border-[#f1f5f9] dark:border-gray-700",
-      elevated: "bg-white dark:bg-[#1a2332] shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)]",
+      bordered: "bg-white dark:bg-dark border-2 border-[#ebebe0] dark:border-gray-700",
+      elevated: "bg-white dark:bg-dark shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)]",
     };
 
     return (

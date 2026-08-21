@@ -41,7 +41,7 @@ function getColorFromName(name?: string): string {
     "bg-success-500",
     "bg-warning-500",
     "bg-danger-500",
-    "bg-primary-600",
+    "bg-lime-600",
     "bg-info-500",
   ];
   const index = name.charCodeAt(0) % colors.length;

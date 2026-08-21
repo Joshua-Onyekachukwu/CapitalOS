@@ -59,7 +59,7 @@ const Modal: React.FC<ModalProps> = ({
       {/* Modal */}
       <div
         className={cn(
-          "relative w-full bg-white dark:bg-[#0f1629] rounded-[15px] md:rounded-[20px] shadow-xl",
+          "relative w-full bg-white dark:bg-[#0a0e19] rounded-[15px] md:rounded-[20px] shadow-xl",
           sizeStyles[size],
           className
         )}

@@ -36,14 +36,14 @@ export default function DocumentsPage() {
             onDrop={handleDrag}
             className={`border-2 border-dashed rounded-[12px] p-[40px] text-center transition-colors ${
               dragActive
-                ? "border-primary-500 bg-primary-50/50 dark:bg-primary-900/10"
+                ? "border-lime-500 bg-lime-50/50 dark:bg-lime-900/10"
                 : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
             }`}
           >
             <div className="w-[56px] h-[56px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[16px] text-gray-400 text-[26px]">
               <i className="ri-upload-cloud-2-line"></i>
             </div>
-            <h3 className="!text-[16px] !font-semibold !mb-[6px] text-[#0f172a] dark:text-white">
+            <h3 className="!text-[16px] !font-semibold !mb-[6px] text-[#06201b] dark:text-white">
               Drop your files here
             </h3>
             <p className="text-[14px] text-gray-400 !mb-[16px]">

@@ -97,7 +97,7 @@ export default function SignupPage() {
           </p>
           <Link
             href="/login"
-            className="text-[14px] text-primary-600 hover:text-primary-700 font-medium"
+            className="text-[14px] text-lime-600 hover:text-lime-700 font-medium"
           >
             Back to login
           </Link>
@@ -194,7 +194,7 @@ export default function SignupPage() {
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-primary-600 hover:text-primary-700 font-medium"
+              className="text-lime-600 hover:text-lime-700 font-medium"
             >
               Log in
             </Link>

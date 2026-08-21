@@ -24,7 +24,7 @@ export default function CampaignsPage() {
       {/* Campaign Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-[15px] md:gap-[20px] mb-[25px]">
         {[
-          { label: "Active Campaigns", value: "0", icon: "ri-megaphone-line", color: "bg-primary-100 dark:bg-primary-900/20 text-primary-600" },
+          { label: "Active Campaigns", value: "0", icon: "ri-megaphone-line", color: "bg-lime-100 dark:bg-lime-900/20 text-lime-600" },
           { label: "Total Investors", value: "0", icon: "ri-team-line", color: "bg-blue-50 dark:bg-blue-900/20 text-blue-600" },
           { label: "Emails Generated", value: "0", icon: "ri-mail-line", color: "bg-purple-50 dark:bg-purple-900/20 text-purple-600" },
         ].map((stat) => (
@@ -35,7 +35,7 @@ export default function CampaignsPage() {
               </div>
               <div>
                 <p className="text-[12px] text-gray-400 !mb-[2px]">{stat.label}</p>
-                <p className="text-[20px] font-bold text-[#0f172a] dark:text-white !mb-0">{stat.value}</p>
+                <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
               </div>
             </CardBody>
           </Card>

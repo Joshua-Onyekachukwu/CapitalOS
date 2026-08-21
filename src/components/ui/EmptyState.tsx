@@ -32,7 +32,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
           {icon}
         </div>
       )}
-      <h3 className="!text-lg md:!text-xl !font-semibold !mb-[8px] text-[#0f172a] dark:text-white">
+      <h3 className="!text-lg md:!text-xl !font-semibold !mb-[8px] text-[#06201b] dark:text-white">
         {title}
       </h3>
       {description && (
