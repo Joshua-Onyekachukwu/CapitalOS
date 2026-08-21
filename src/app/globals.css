@@ -184,6 +184,9 @@ button {
     &.sales-navbar {
       @apply py-[15px] md:py-[20px] shadow-sm dark:bg-[#06201b];
     }
+    &.real-estate-agent-navbar {
+      @apply py-0 bg-transparent;
+    }
   }
   #navbar-burger-menu {
     &.active {
