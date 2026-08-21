@@ -1,26 +1,28 @@
-"use client";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/actions/user";
+import { DashboardShell } from "@/components/Dashboard/DashboardShell";
 
-import React, { useState } from "react";
-import { Sidebar } from "@/components/Dashboard/Sidebar";
-import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
-
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const user = await getCurrentUser();
+
+  // Middleware should catch this, but double-check
+  if (!user) {
+    redirect("/login");
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0e19]">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      {/* Main content area */}
-      <div className="lg:ml-[280px]">
-        <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
-
-        <main className="p-[20px] md:p-[30px]">{children}</main>
-      </div>
-    </div>
+    <DashboardShell
+      user={{
+        name: user.full_name || user.email.split("@")[0],
+        email: user.email,
+        avatar: user.avatar_url ?? undefined,
+      }}
+    >
+      {children}
+    </DashboardShell>
   );
 }
