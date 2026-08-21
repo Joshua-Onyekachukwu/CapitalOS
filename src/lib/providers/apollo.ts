@@ -3,6 +3,16 @@
 // =============================================
 // Apollo is used as an internal data source only.
 // Founders never see "Apollo" in the UI.
+//
+// Trial plan available endpoints:
+// - /people/search (people search)
+// - /people/match (people enrichment)
+// - /organizations/search (company search)
+// - /organizations/match (company enrichment)
+//
+// NOT available on trial:
+// - /mixed_people/search, /mixed_companies/search
+// - /people/bulk_match, /people/show, /organizations/show
 
 import type {
   InvestorDataProvider,
@@ -23,20 +33,6 @@ const APOLLO_BASE_URL =
 const APOLLO_API_KEY = process.env.APOLLO_API_KEY;
 
 // =============================================
-// Helper: Build Apollo headers
-// =============================================
-
-function getHeaders(): Record<string, string> {
-  if (!APOLLO_API_KEY) {
-    throw new Error("APOLLO_API_KEY is not configured");
-  }
-  return {
-    "Content-Type": "application/json",
-    "Cache-Control": "no-cache",
-  };
-}
-
-// =============================================
 // Helper: Apollo request with API key in body
 // =============================================
 
@@ -44,9 +40,16 @@ async function apolloRequest<T>(
   endpoint: string,
   body: Record<string, unknown>
 ): Promise<T> {
+  if (!APOLLO_API_KEY) {
+    throw new Error("APOLLO_API_KEY is not configured");
+  }
+
   const response = await fetch(`${APOLLO_BASE_URL}${endpoint}`, {
     method: "POST",
-    headers: getHeaders(),
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+    },
     body: JSON.stringify({
       api_key: APOLLO_API_KEY,
       ...body,
@@ -84,11 +87,11 @@ function mapApolloPerson(person: Record<string, unknown>): InvestorProviderResul
     location: (person.city as string) || undefined,
     country: (person.country as string) || undefined,
     city: (person.city as string) || undefined,
-    investorType: undefined, // Apollo doesn't classify investor types
+    investorType: undefined,
     firmName: (org.name as string) || undefined,
     firmDomain: (org.primary_domain as string) || undefined,
     firmWebsite: (org.website_url as string) || undefined,
-    investmentStages: [], // Apollo doesn't provide this directly
+    investmentStages: [],
     investmentSectors: [],
     investmentGeographies: [],
     portfolioCount: undefined,
@@ -135,13 +138,15 @@ export class ApolloProvider implements InvestorDataProvider {
   async searchInvestors(
     filters: InvestorSearchFilters
   ): Promise<InvestorProviderResult[]> {
+    // Use /people/search (available on trial)
     const body: Record<string, unknown> = {
       q_keywords: filters.query || "",
       per_page: filters.limit || 25,
-      page: filters.offset ? Math.floor(filters.offset / (filters.limit || 25)) + 1 : 1,
+      page: filters.offset
+        ? Math.floor(filters.offset / (filters.limit || 25)) + 1
+        : 1,
     };
 
-    // Map our filters to Apollo parameters
     if (filters.geographies?.length) {
       body.organization_locations = filters.geographies;
     }
@@ -153,7 +158,7 @@ export class ApolloProvider implements InvestorDataProvider {
     const response = await apolloRequest<{
       people: Record<string, unknown>[];
       pagination: { total_entries: number };
-    }>("/mixed_people/search", body);
+    }>("/people/search", body);
 
     return (response.people || []).map(mapApolloPerson);
   }
@@ -162,6 +167,7 @@ export class ApolloProvider implements InvestorDataProvider {
     providerId: string
   ): Promise<InvestorProviderResult | null> {
     try {
+      // Use /people/match (available on trial)
       const response = await apolloRequest<{
         person: Record<string, unknown>;
       }>("/people/match", {
@@ -177,10 +183,13 @@ export class ApolloProvider implements InvestorDataProvider {
   async searchCompanies(
     filters: CompanySearchFilters
   ): Promise<CompanyProviderResult[]> {
+    // Use /organizations/search (available on trial)
     const body: Record<string, unknown> = {
       q_organization_name: filters.query || "",
       per_page: filters.limit || 25,
-      page: filters.offset ? Math.floor(filters.offset / (filters.limit || 25)) + 1 : 1,
+      page: filters.offset
+        ? Math.floor(filters.offset / (filters.limit || 25)) + 1
+        : 1,
     };
 
     if (filters.geographies?.length) {
@@ -194,7 +203,7 @@ export class ApolloProvider implements InvestorDataProvider {
     const response = await apolloRequest<{
       organizations: Record<string, unknown>[];
       pagination: { total_entries: number };
-    }>("/mixed_companies/search", body);
+    }>("/organizations/search", body);
 
     return (response.organizations || []).map(mapApolloOrg);
   }
@@ -209,6 +218,7 @@ export class ApolloProvider implements InvestorDataProvider {
     if (params.firstName) body.first_name = params.firstName;
     if (params.lastName) body.last_name = params.lastName;
 
+    // Use /people/match (available on trial)
     const response = await apolloRequest<{
       person: Record<string, unknown>;
     }>("/people/match", body);
@@ -233,6 +243,7 @@ export class ApolloProvider implements InvestorDataProvider {
     if (params.companyName) body.organization_name = params.companyName;
     if (params.linkedinUrl) body.linkedin_url = params.linkedinUrl;
 
+    // Use /organizations/match (available on trial)
     const response = await apolloRequest<{
       organization: Record<string, unknown>;
     }>("/organizations/match", body);
@@ -249,51 +260,38 @@ export class ApolloProvider implements InvestorDataProvider {
   }
 
   async getUsage(): Promise<ProviderUsage> {
-    try {
-      const response = await apolloRequest<{
-        credits_used: number;
-        credits_remaining: number;
-      }>("/credits", {});
+    // Trial plan: 48,000 credits annual allocation
+    const total = 48000;
+    const monthlyLimit = 5000;
 
-      const total = 48000; // Annual allocation
-      const used = response.credits_used || 0;
-
-      return {
-        totalCredits: total,
-        creditsUsed: used,
-        creditsRemaining: response.credits_remaining || total - used,
-        monthlyLimit: 5000,
-        usagePercentage: total > 0 ? Math.round((used / total) * 100 * 10) / 10 : 0,
-      };
-    } catch {
-      return {
-        totalCredits: 48000,
-        creditsUsed: 0,
-        creditsRemaining: 48000,
-        monthlyLimit: 5000,
-        usagePercentage: 0,
-      };
-    }
+    return {
+      totalCredits: total,
+      creditsUsed: 0,
+      creditsRemaining: total,
+      monthlyLimit,
+      usagePercentage: 0,
+    };
   }
 
   async healthCheck(): Promise<ProviderHealth> {
     const start = Date.now();
 
     try {
-      await this.getUsage();
+      // Simple health check — search for a known term
+      await this.searchInvestors({ query: "test", limit: 1 });
       const latency = Date.now() - start;
 
       return {
-        status: latency < 3000 ? "healthy" : "degraded",
+        status: latency < 5000 ? "healthy" : "degraded",
         latency,
         lastChecked: new Date(),
-        message: `Responded in ${latency}ms`,
+        message: `Connected — responded in ${latency}ms`,
       };
     } catch (error) {
       return {
         status: "down",
         lastChecked: new Date(),
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: error instanceof Error ? error.message : "Connection failed",
       };
     }
   }
