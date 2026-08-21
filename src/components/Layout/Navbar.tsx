@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useUser } from "@/hooks/useUser";
 
-const menuItems = [
+const publicMenuItems = [
   { label: "Home", href: "/" },
   { label: "Features", href: "/#features" },
   { label: "Why Us", href: "/#why-us" },
@@ -12,8 +13,22 @@ const menuItems = [
   { label: "FAQ", href: "/#faq" },
 ];
 
+const authMenuItems = [
+  { label: "Home", href: "/" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Investors", href: "/dashboard/investors" },
+  { label: "Campaigns", href: "/dashboard/campaigns" },
+  { label: "Outreach", href: "/dashboard/outreach" },
+];
+
 const Navbar: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, signedIn } = useUser();
+  const [isActiveMobileMenu, setActiveMobileMenu] = useState<boolean>(true);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const menuItems = signedIn ? authMenuItems : publicMenuItems;
 
   useEffect(() => {
     const elementId = document.getElementById("navbar");
@@ -31,11 +46,25 @@ const Navbar: React.FC = () => {
     };
   }, []);
 
-  const [isActiveMobileMenu, setActiveMobileMenu] = useState<boolean>(true);
-
   const handleToggleMobileMenu = (): void => {
     setActiveMobileMenu(!isActiveMobileMenu);
   };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/");
+      router.refresh();
+    } catch {
+      setSigningOut(false);
+    }
+  };
+
+  // During loading, show the public nav to avoid flash of wrong content
+  const displayItems = loading ? publicMenuItems : menuItems;
 
   return (
     <>
@@ -46,7 +75,7 @@ const Navbar: React.FC = () => {
         <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1430px] 2xl:max-w-[1745px] mx-auto px-[12px]">
           <div className="flex items-center relative flex-wrap lg:flex-nowrap justify-between lg:justify-start">
             {/* Logo */}
-            <Link href="/" className="inline-block w-[110px]">
+            <Link href={signedIn ? "/dashboard" : "/"} className="inline-block w-[110px]">
               <span className="text-xl font-bold text-[#06201b] dark:text-white">
                 Capital<span className="text-lime-500">OS</span>
               </span>
@@ -69,7 +98,7 @@ const Navbar: React.FC = () => {
             <div className="hidden lg:flex items-center grow basis-full">
               {/* Pill nav container */}
               <ul className="flex mx-auto flex-row bg-white/40 dark:bg-dark/40 rounded-[40px] p-[5px]">
-                {menuItems.map((item) => {
+                {displayItems.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <li key={item.href}>
@@ -88,30 +117,67 @@ const Navbar: React.FC = () => {
                 })}
               </ul>
 
-              {/* Right side: Login + Get Started */}
+              {/* Right side actions */}
               <div className="flex items-center gap-[20px] xl:gap-[30px]">
-                <Link
-                  href="/login"
-                  className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/signup"
-                  className="flex items-center gap-[10px]"
-                >
-                  <div className="flex-none flex items-center justify-center rounded-full bg-[#06201b] dark:bg-dark text-lime-500 text-lg w-[45px] h-[45px] xl:w-[50px] xl:h-[50px] transition-all hover:bg-lime-500 hover:text-black">
-                    <i className="ri-rocket-2-fill"></i>
+                {loading ? (
+                  /* Loading skeleton — matches size of buttons */
+                  <div className="flex items-center gap-[20px]">
+                    <div className="w-[60px] h-[16px] bg-gray-200/50 rounded animate-pulse"></div>
+                    <div className="w-[100px] h-[45px] bg-gray-200/50 rounded-full animate-pulse"></div>
                   </div>
-                  <div className="pt-[3px] hidden xl:block">
-                    <span className="block uppercase tracking-[1.8px] text-xs font-semibold mb-px">
-                      GET STARTED
-                    </span>
-                    <span className="inline-block tracking-[0.18px] font-bold text-base md:text-[15px] lg:text-md xl:text-lg text-black dark:text-white transition-all hover:text-lime-500">
-                      Start Free Trial
-                    </span>
-                  </div>
-                </Link>
+                ) : signedIn ? (
+                  /* Authenticated user actions */
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/dashboard/settings"
+                      className="flex items-center gap-[10px]"
+                    >
+                      <div className="flex-none flex items-center justify-center rounded-full bg-[#06201b] dark:bg-dark text-lime-500 text-lg w-[45px] h-[45px] xl:w-[50px] xl:h-[50px] transition-all hover:bg-lime-500 hover:text-black">
+                        <i className="ri-user-line"></i>
+                      </div>
+                      <div className="pt-[3px] hidden xl:block">
+                        <span className="block uppercase tracking-[1.8px] text-xs font-semibold mb-px">
+                          ACCOUNT
+                        </span>
+                        <span className="inline-block tracking-[0.18px] font-bold text-base md:text-[15px] lg:text-md xl:text-lg text-black dark:text-white transition-all hover:text-lime-500">
+                          {user?.email?.split("@")[0] || "Profile"}
+                        </span>
+                      </div>
+                    </Link>
+                  </>
+                ) : (
+                  /* Logged-out visitor actions */
+                  <>
+                    <Link
+                      href="/login"
+                      className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
+                    >
+                      Log in
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="flex items-center gap-[10px]"
+                    >
+                      <div className="flex-none flex items-center justify-center rounded-full bg-[#06201b] dark:bg-dark text-lime-500 text-lg w-[45px] h-[45px] xl:w-[50px] xl:h-[50px] transition-all hover:bg-lime-500 hover:text-black">
+                        <i className="ri-rocket-2-fill"></i>
+                      </div>
+                      <div className="pt-[3px] hidden xl:block">
+                        <span className="block uppercase tracking-[1.8px] text-xs font-semibold mb-px">
+                          GET STARTED
+                        </span>
+                        <span className="inline-block tracking-[0.18px] font-bold text-base md:text-[15px] lg:text-md xl:text-lg text-black dark:text-white transition-all hover:text-lime-500">
+                          Start Free Trial
+                        </span>
+                      </div>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
 
@@ -123,7 +189,7 @@ const Navbar: React.FC = () => {
               id="navbar-collapse"
             >
               <ul>
-                {menuItems.map((item) => {
+                {displayItems.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <li
@@ -145,18 +211,42 @@ const Navbar: React.FC = () => {
                 })}
               </ul>
               <div className="sm:flex items-center gap-[25px] mt-[15px] md:mt-[17px]">
-                <Link
-                  href="/signup"
-                  className="inline-block font-medium text-base rounded-[7px] bg-lime-500 text-black py-[10px] md:py-[11px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
-                >
-                  Get Started
-                </Link>
-                <Link
-                  href="/login"
-                  className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
-                >
-                  Log in
-                </Link>
+                {loading ? (
+                  <div className="flex items-center gap-[25px]">
+                    <div className="h-[40px] w-[120px] bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                ) : signedIn ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="inline-block font-medium text-base rounded-[7px] bg-lime-500 text-black py-[10px] md:py-[11px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                    >
+                      Go to Dashboard
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      disabled={signingOut}
+                      className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
+                    >
+                      {signingOut ? "Signing out..." : "Sign Out"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/signup"
+                      className="inline-block font-medium text-base rounded-[7px] bg-lime-500 text-black py-[10px] md:py-[11px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                    >
+                      Get Started
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
+                    >
+                      Log in
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
