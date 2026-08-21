@@ -2,15 +2,14 @@ import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
 import GoTop from "@/components/Layout/GoTop";
 import HeroBanner from "@/components/Landing/HeroBanner";
-import ProblemStatement from "@/components/Landing/ProblemStatement";
-import HowItWorks from "@/components/Landing/HowItWorks";
-import KeyFeatures from "@/components/Landing/KeyFeatures";
-import Metrics from "@/components/Landing/Metrics";
-import TargetUsers from "@/components/Landing/TargetUsers";
-import Faq from "@/components/Landing/Faq";
-import CtaSection from "@/components/Landing/CtaSection";
 import About from "@/components/Landing/About";
 import Features from "@/components/Landing/Features";
+import WhyCapitalOS from "@/components/Landing/WhyCapitalOS";
+import WorkingProcess from "@/components/Landing/WorkingProcess";
+import Benefits from "@/components/Landing/Benefits";
+import Testimonials from "@/components/Landing/Testimonials";
+import Pricing from "@/components/Landing/Pricing";
+import FAQ from "@/components/Landing/FAQ";
 
 export default function Home() {
   return (
@@ -25,31 +24,17 @@ export default function Home() {
 
       <Features />
 
-      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
-        <ProblemStatement />
-      </div>
+      <WhyCapitalOS />
 
-      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
-        <Metrics />
-      </div>
+      <WorkingProcess />
 
-      <div id="features" className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
-        <KeyFeatures />
-      </div>
+      <Benefits />
 
-      <div id="how-it-works">
-        <HowItWorks />
-      </div>
+      <Testimonials />
 
-      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
-        <TargetUsers />
-      </div>
+      <Pricing />
 
-      <Faq />
-
-      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
-        <CtaSection />
-      </div>
+      <FAQ />
 
       <Footer />
       <GoTop />
