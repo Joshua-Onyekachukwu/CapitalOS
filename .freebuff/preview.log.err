@@ -1,0 +1,1935 @@
+⚠ Warning: Next.js ignored package-lock.json in C:\Users\engrf because it is outside the current Git repository (C:\Users\engrf\Joshua Dev\Capital OS).
+ To use this directory, set `turbopack.root` in your Next.js config.
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+
+  To migrate automatically, run:
+  npx @next/codemod@canary middleware-to-proxy .
+
+  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/banner.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about4.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about3.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/home.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/banner.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about4.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about3.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/home.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/banner.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about4.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about3.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/home.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/hero-main.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+⚠ Fast Refresh had to perform a full reload when ./src/components/Landing/Faq.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/components/Landing/Faq.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/components/Landing/Faq.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/components/Landing/Faq.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  [90m10 |[0m [36mimport[0m [33mTestimonials[0m [36mfrom[0m [32m"@/components/Landing/Testimonials"[0m;
+  [90m11 |[0m [36mimport[0m [33mPricing[0m [36mfrom[0m [32m"@/components/Landing/Pricing"[0m;
+[31m[1m>[0m [90m12 |[0m [36mimport[0m [33mFAQ[0m [36mfrom[0m [32m"@/components/Landing/FAQ"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m
+  [90m14 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mHome[0m() {
+  [90m15 |[0m   [36mreturn[0m (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/page.tsx:12:1
+Error: Module not found: Can't resolve '@/components/Landing/FAQ'
+  10 | import Testimonials from "@/components/Landing/Testimonials";
+  11 | import Pricing from "@/components/Landing/Pricing";
+> 12 | import FAQ from "@/components/Landing/FAQ";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  13 |
+  14 | export default function Home() {
+  15 |   return (
+
+Import map: aliased to relative './src/components/Landing/FAQ' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] Image with src "/images/real-estate-agent/building2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/building.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/faq.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/union2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/faq2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/union1.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about4.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about3.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/home.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about4.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about3.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/home.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about4.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about3.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/home.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/why-trezo.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/cube.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/working-process.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/benefits/benefit1.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/benefits/benefit2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/benefits/benefit3.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about4.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about3.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/home.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/why-trezo.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/cube.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/working-process.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/benefits/benefit1.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/benefits/benefit2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/benefits/benefit3.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/building2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/building.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/union2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/union1.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about4.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about3.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/home.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about4.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about3.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/home.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-right.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-down-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/icons/arrow-up-left.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/why-trezo.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/cube.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/working-process.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/benefits/benefit1.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/benefits/benefit2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/benefits/benefit3.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/building2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/building.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/union2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/union1.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/building2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/building.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/faq.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/faq2.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/union2.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/images/real-estate-agent/union1.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.

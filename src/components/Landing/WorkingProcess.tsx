@@ -6,23 +6,18 @@ import Image from "next/image";
 const steps = [
   {
     number: "1",
-    title: "Upload Your Deck",
-    description: "Drop your pitch deck or describe your startup.",
+    title: "Discover Investors",
+    description: "AI finds and scores investors that match your stage, sector, and geography.",
   },
   {
     number: "2",
-    title: "Discover Investors",
-    description: "AI finds and scores investors that match your profile.",
+    title: "Review & Personalize",
+    description: "AI drafts personalized emails. You review, edit, and approve before sending.",
   },
   {
     number: "3",
-    title: "Review & Approve",
-    description: "AI drafts personalized emails. You approve before sending.",
-  },
-  {
-    number: "4",
-    title: "Close Deals",
-    description: "Track every conversation from first contact to funded.",
+    title: "Track & Close",
+    description: "Monitor every conversation from first contact to signed term sheet.",
   },
 ];
 
@@ -56,7 +51,7 @@ const WorkingProcess: React.FC = () => {
               Capital OS is built to streamline the way you fundraise — from
               the first investor discovery to the final signed term sheet.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px] mt-[25px] md:mt-[30px] lg:mt-[30px] xl:mt-[75px] ltr:xl:-ml-[267px] rtl:xl:-mr-[267px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[25px] mt-[25px] md:mt-[30px] lg:mt-[30px] xl:mt-[75px]">
               {steps.map((step, index) => (
                 <div
                   key={index}

@@ -27,7 +27,7 @@ const About: React.FC = () => {
               />
             </div>
             <div className="md:col-span-3 ltr:xl:-ml-[45px] rtl:xl:-mr-[45px]">
-              <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#06201b] mb-[10px]">
+              <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
                 About
               </span>
               <h2 className="!mb-0 !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px] xl:max-w-[821px]">
