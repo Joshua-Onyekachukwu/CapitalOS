@@ -2,48 +2,40 @@ import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
 import GoTop from "@/components/Layout/GoTop";
 import HeroBanner from "@/components/Landing/HeroBanner";
-import ProblemStatement from "@/components/Landing/ProblemStatement";
-import HowItWorks from "@/components/Landing/HowItWorks";
-import KeyFeatures from "@/components/Landing/KeyFeatures";
-import Metrics from "@/components/Landing/Metrics";
-import TargetUsers from "@/components/Landing/TargetUsers";
-import Faq from "@/components/Landing/Faq";
+import WhoItsFor from "@/components/Landing/WhoItsFor";
+import Features from "@/components/Landing/Features";
+import FunFacts from "@/components/Landing/FunFacts";
+import AboutUs from "@/components/Landing/AboutUs";
+import Platform from "@/components/Landing/Platform";
+import Feedbacks from "@/components/Landing/Feedbacks";
+import Faqs from "@/components/Landing/Faqs";
 import CtaSection from "@/components/Landing/CtaSection";
 
 export default function Home() {
   return (
     <>
       <Navbar />
-      {/* Spacer for fixed navbar */}
-      <div className="h-[69px] md:h-[89px] lg:h-[114px]"></div>
 
       <HeroBanner />
 
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
-        <ProblemStatement />
+      <WhoItsFor />
+
+      <div id="features">
+        <Features />
       </div>
 
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
-        <Metrics />
-      </div>
+      <FunFacts />
 
-      <div id="features" className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
-        <KeyFeatures />
-      </div>
+      <AboutUs />
 
-      <div id="how-it-works">
-        <HowItWorks />
-      </div>
+      <Platform />
 
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
-        <TargetUsers />
-      </div>
+      <Feedbacks />
 
-      <Faq />
+      <Faqs />
 
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
-        <CtaSection />
-      </div>
+      <CtaSection />
+
       <Footer />
       <GoTop />
     </>

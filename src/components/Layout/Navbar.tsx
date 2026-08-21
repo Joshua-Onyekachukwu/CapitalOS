@@ -8,6 +8,7 @@ const menuItems = [
   { label: "Home", href: "/" },
   { label: "Features", href: "/#features" },
   { label: "How It Works", href: "/#how-it-works" },
+  { label: "FAQ", href: "/#faq" },
 ];
 
 const Navbar: React.FC = () => {
@@ -16,7 +17,7 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     const elementId = document.getElementById("navbar");
     const handleScroll = () => {
-      if (window.scrollY > 100) {
+      if (window.scrollY > 80) {
         elementId?.classList.add("is-sticky");
       } else {
         elementId?.classList.remove("is-sticky");
@@ -38,14 +39,17 @@ const Navbar: React.FC = () => {
   return (
     <>
       <div
-        className="sales-navbar bg-white dark:bg-dark fixed top-0 right-0 left-0 transition-all h-auto z-[5] py-[20px] md:py-[30px] lg:py-[35px]"
+        className="capital-navbar fixed top-0 right-0 left-0 transition-all h-auto z-[5] py-[15px] md:py-[25px] lg:py-[30px]"
         id="navbar"
       >
-        <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-          <div className="flex items-center relative flex-wrap lg:flex-nowrap justify-between lg:justify-start">
-            <Link href="/" className="inline-block w-[150px] ltr:mr-[15px] rtl:ml-[15px]">
+        <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1450px] 2xl:max-w-[1645px] mx-auto px-[12px]">
+          <div className="bg-white dark:bg-black border border-[#EBEBEB] dark:border-gray-800 p-[15px] md:p-[20px] lg:px-[12px] lg:py-[18px] rounded-[100px] flex items-center relative flex-wrap lg:flex-nowrap justify-between lg:justify-start">
+            <Link
+              href="/"
+              className="inline-block w-[145px] ltr:lg:ml-[12px] rtl:lg:mr-[12px]"
+            >
               <span className="text-xl font-bold text-[#06201b] dark:text-white">
-                Capital<span className="text-lime-500">OS</span>
+                Capital<span className="text-orange-500">OS</span>
               </span>
             </Link>
 
@@ -62,13 +66,15 @@ const Navbar: React.FC = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center grow basis-full">
-              <ul className="flex mx-auto flex-row gap-[30px] xl:gap-[40px]">
+              <ul className="navbar-nav flex mx-auto flex-row gap-[25px] xl:gap-[50px]">
                 {menuItems.map((item) => (
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`font-medium transition-all hover:text-[#06201b] ${
-                        pathname === item.href ? "text-[#06201b]" : ""
+                      className={`lg:text-[15px] xl:text-md transition-all hover:text-orange-500 ${
+                        pathname === item.href
+                          ? "text-orange-500"
+                          : "text-black dark:text-white"
                       }`}
                     >
                       {item.label}
@@ -77,25 +83,28 @@ const Navbar: React.FC = () => {
                 ))}
               </ul>
 
-              <div className="flex items-center gap-[12px]">
+              <div className="flex items-center gap-[30px]">
                 <Link
                   href="/login"
-                  className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white"
+                  className="inline-block text-black dark:text-white lg:text-[15px] xl:text-md transition-all hover:text-primary-500"
                 >
-                  Log In
+                  Login
                 </Link>
                 <Link
                   href="/signup"
-                  className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600"
+                  className="inline-block text-center bg-primary-500 border border-primary-500 rounded-[50px] text-white font-medium md:text-[15px] lg:text-md xl:text-[17px] py-[8.5px] px-[19px] transition-all hover:bg-orange-500 hover:border-orange-500"
                 >
-                  Get Started
+                  <span className="inline-block relative ltr:pr-[27px] rtl:pl-[27px]">
+                    Get Started{" "}
+                    <i className="ri-arrow-right-long-line text-[20px] absolute top-1/2 -translate-y-1/2 ltr:-right-[2px] rtl:-left-[2px]"></i>
+                  </span>
                 </Link>
               </div>
             </div>
 
             {/* Mobile Navigation */}
             <div
-              className={`bg-white dark:bg-[#0a0e19] rounded-[15px] border border-gray-200 dark:border-[#202c4b] mt-[20px] p-[20px] md:p-[30px] w-full hidden lg:!hidden ${
+              className={`bg-white dark:bg-[#0a0e19] rounded-[15px] border border-gray-100 dark:border-gray-800 p-[20px] md:p-[30px] w-full hidden lg:!hidden absolute top-[100%] left-0 right-0 ${
                 isActiveMobileMenu ? "" : "active"
               }`}
               id="navbar-collapse"
@@ -108,8 +117,10 @@ const Navbar: React.FC = () => {
                   >
                     <Link
                       href={item.href}
-                      className={`font-medium transition-all hover:text-[#06201b] ${
-                        pathname === item.href ? "text-[#06201b]" : ""
+                      className={`lg:text-[15px] xl:text-md transition-all hover:text-orange-500 ${
+                        pathname === item.href
+                          ? "text-orange-500"
+                          : "text-black dark:text-white"
                       }`}
                     >
                       {item.label}
@@ -118,18 +129,21 @@ const Navbar: React.FC = () => {
                 ))}
               </ul>
 
-              <div className="flex flex-col gap-[10px] mt-[20px]">
+              <div className="flex items-center gap-[15px] md:gap-[30px] mt-[15px]">
                 <Link
                   href="/login"
-                  className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
+                  className="inline-block text-black dark:text-white lg:text-[15px] xl:text-md transition-all hover:text-primary-500"
                 >
-                  Log In
+                  Login
                 </Link>
                 <Link
                   href="/signup"
-                  className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                  className="inline-block text-center bg-primary-500 border border-primary-500 rounded-[50px] text-white font-medium md:text-[15px] lg:text-md xl:text-[17px] py-[8.5px] px-[19px] transition-all hover:bg-orange-500 hover:border-orange-500"
                 >
-                  Get Started
+                  <span className="inline-block relative ltr:pr-[27px] rtl:pl-[27px]">
+                    Get Started{" "}
+                    <i className="ri-arrow-right-long-line text-[20px] absolute top-1/2 -translate-y-1/2 ltr:-right-[2px] rtl:-left-[2px]"></i>
+                  </span>
                 </Link>
               </div>
             </div>

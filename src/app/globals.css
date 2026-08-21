@@ -97,6 +97,16 @@
   --color-info-700: #009cbb;
   --color-info-800: #0088a2;
   --color-info-900: #006574;
+  --color-orange-50: #fff5ed;
+  --color-orange-100: #ffe8d4;
+  --color-orange-200: #ffcea9;
+  --color-orange-300: #ffaa72;
+  --color-orange-400: #fe7a36;
+  --color-orange-500: #fd5812;
+  --color-orange-600: #ee3e08;
+  --color-orange-700: #c52b09;
+  --color-orange-800: #9c2410;
+  --color-orange-900: #7e2010;
   --shadow-3xl: rgba(149, 157, 165, 0.2) 0px 8px 24px;
   --shadow-custom: 21px 85px 24px 0px rgba(176, 176, 176, 0),
     13px 54px 22px 0px rgba(176, 176, 176, 0.02),
@@ -112,7 +122,7 @@ body {
 
 /** Paragraph */
 p {
-  @apply mb-[15px] leading-[1.8];
+  @apply mb-[15px] leading-[1.6];
 
   &:last-child {
     @apply mb-0;
@@ -184,6 +194,9 @@ button {
     &.sales-navbar {
       @apply py-[15px] md:py-[20px] shadow-sm dark:bg-[#06201b];
     }
+    &.capital-navbar {
+      @apply py-0 bg-transparent;
+    }
   }
   #navbar-burger-menu {
     &.active {
@@ -206,5 +219,22 @@ button {
     &.active {
       @apply block;
     }
+  }
+}
+
+/** Swiper Feedback Slides */
+.feedback-slides {
+  .swiper-button-prev, .swiper-button-next {
+    @apply !top-auto !bottom-[45px] !w-[40px] !h-[40px] md:!w-[50px] md:!h-[50px] !rounded-full !mt-0 bg-white dark:bg-dark border border-primary-500 !text-[20px] !text-black dark:!text-white transition-all hover:!bg-primary-500 hover:!text-white;
+
+    &::after {
+      @apply !text-md md:!text-lg;
+    }
+  }
+  .swiper-button-prev {
+    @apply !left-0;
+  }
+  .swiper-button-next {
+    @apply !right-0;
   }
 }

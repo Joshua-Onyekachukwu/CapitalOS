@@ -6,123 +6,132 @@ import Link from "next/link";
 const Footer: React.FC = () => {
   return (
     <>
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[90px] 2xl:py-[100px]">
+      <footer className="bg-[#0D1427] pt-[60px] md:pt-[80px] lg:pt-[100px] xl:pt-[120px]">
         <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[25px]">
-            {/* Brand */}
-            <div className="sm:col-span-2 lg:col-span-1">
-              <Link href="/" className="inline-block mb-[15px] md:mb-[18px]">
-                <span className="text-xl font-bold text-[#06201b] dark:text-white">
-                  Capital<span className="text-lime-500">OS</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[25px]">
+            <div className="lg:max-w-[380px] xl:max-w-[425px]">
+              <Link href="/" className="inline-block">
+                <span className="text-xl font-bold text-white">
+                  Capital<span className="text-orange-500">OS</span>
                 </span>
               </Link>
-              <p className="text-[14px] text-gray-500 !leading-[1.6] max-w-[280px]">
-                AI-powered fundraising operating system that helps founders
-                discover investors, manage outreach, and close deals — all from
-                one platform.
-              </p>
+
+              <form className="mt-[15px] md:mt-[20px] lg:mt-[35px] relative">
+                <label className="text-white block lg:text-[15px] xl:text-md mb-[10px]">
+                  Sign up to our news letter
+                </label>
+                <input
+                  type="text"
+                  className="block w-full outline-0 border border-[#64748B] bg-[#171E31] rounded-[5px] h-[50px] px-[15px] md:px-[20px] text-sm md:text-base lg:text-[15px] xl:text-md text-white placeholder:text-[#64748B] transition-all focus:border-primary-500"
+                  placeholder="Your email"
+                />
+                <button
+                  type="submit"
+                  className="absolute ltr:right-[15px] rtl:left-[15px] ltr:md:right-[20px] rtl:md:left-[20px] text-xl top-[38px] md:top-[43px] text-white transition-all hover:text-primary-500"
+                >
+                  <i className="ri-arrow-right-long-line"></i>
+                </button>
+              </form>
             </div>
 
-            {/* Product */}
             <div>
-              <h3 className="!text-[14px] md:!text-[15px] !mb-[15px] !font-semibold !text-[#06201b] dark:!text-white uppercase tracking-wider">
-                Product
-              </h3>
-              <ul className="space-y-[10px]">
-                <li>
-                  <Link href="/#features" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/#how-it-works" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    How It Works
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/signup" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    Get Started
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    Log In
-                  </Link>
-                </li>
-              </ul>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-[25px] xl:max-w-[520px] ltr:ml-auto rtl:mr-auto">
+                <div>
+                  <h3 className="!mb-[20px] lg:!mb-[25px] !text-white !text-md md:!text-lg">
+                    Quick Links
+                  </h3>
+                  <ul className="lg:text-[15px] xl:text-md">
+                    <li className="mb-[12px] last:mb-0">
+                      <Link
+                        href="/"
+                        className="inline-block text-white transition-all hover:text-primary-500"
+                      >
+                        Home
+                      </Link>
+                    </li>
+                    <li className="mb-[12px] last:mb-0">
+                      <Link
+                        href="/#features"
+                        className="inline-block text-white transition-all hover:text-primary-500"
+                      >
+                        Features
+                      </Link>
+                    </li>
+                    <li className="mb-[12px] last:mb-0">
+                      <Link
+                        href="/#faq"
+                        className="inline-block text-white transition-all hover:text-primary-500"
+                      >
+                        FAQ
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
 
-            {/* Resources */}
-            <div>
-              <h3 className="!text-[14px] md:!text-[15px] !mb-[15px] !font-semibold !text-[#06201b] dark:!text-white uppercase tracking-wider">
-                Resources
-              </h3>
-              <ul className="space-y-[10px]">
-                <li>
-                  <Link href="/dashboard/copilot" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    AI Copilot
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/investors/discover" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    Discover Investors
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/pipeline" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    Pipeline
-                  </Link>
-                </li>
-                <li>
-                  <a href="https://github.com/Joshua-Onyekachukwu/CapitalOS" target="_blank" rel="noopener noreferrer" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    GitHub
-                  </a>
-                </li>
-              </ul>
+                <div>
+                  <h3 className="!mb-[20px] lg:!mb-[25px] !text-white !text-md md:!text-lg">
+                    Get in Touch
+                  </h3>
+                  <ul className="lg:text-[15px] xl:text-md text-white">
+                    <li className="mb-[12px] last:mb-0">
+                      Email:{" "}
+                      <span className="text-primary-500">
+                        hello@capitalos.io
+                      </span>
+                    </li>
+                    <li className="mb-[12px] last:mb-0">
+                      <Link
+                        href="https://github.com/Joshua-Onyekachukwu/CapitalOS"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white transition-all hover:text-primary-500"
+                      >
+                        GitHub
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
+          </div>
 
-            {/* Company */}
-            <div>
-              <h3 className="!text-[14px] md:!text-[15px] !mb-[15px] !font-semibold !text-[#06201b] dark:!text-white uppercase tracking-wider">
-                Company
-              </h3>
-              <ul className="space-y-[10px]">
-                <li>
-                  <a href="#" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-[14px] text-gray-500 transition-all hover:text-lime-600">
-                    Terms of Service
-                  </a>
-                </li>
-              </ul>
+          <div className="pt-[60px] md:pt-[80px] lg:pt-[100px] xl:pt-[120px]"></div>
+
+          <div className="border-t border-[#28384F] py-[20px] md:py-[30px] lg:py-[40px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-[25px]">
+              <div className="text-center ltr:lg:text-left rtl:lg:text-right">
+                <p className="text-white lg:text-[15px] xl:text-md">
+                  &copy; {new Date().getFullYear()}{" "}
+                  <span className="text-primary-500">Capital OS</span>. All
+                  rights reserved.
+                </p>
+              </div>
+              <div className="text-center lg:flex items-center justify-end gap-[15px] md:gap-[20px] lg:text-[15px] xl:text-md">
+                <Link
+                  href="#"
+                  className="transition-all hover:text-primary-500 text-[#64748B] inline-block mt-[10px] lg:mt-0 mx-[7px] lg:mx-0"
+                >
+                  Terms of Service
+                </Link>
+                <div className="w-[1px] h-[15px] bg-[#28384F] hidden lg:block"></div>
+                <Link
+                  href="#"
+                  className="transition-all hover:text-primary-500 text-[#64748B] inline-block mt-[10px] lg:mt-0 mx-[7px] lg:mx-0"
+                >
+                  Privacy Policy
+                </Link>
+                <div className="w-[1px] h-[15px] bg-[#28384F] hidden lg:block"></div>
+                <Link
+                  href="#"
+                  className="transition-all hover:text-primary-500 text-[#64748B] inline-block mt-[10px] lg:mt-0 mx-[7px] lg:mx-0"
+                >
+                  Cookie Policy
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Bottom Bar */}
-      <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="py-[20px] md:py-[25px] border-t border-[#ebebe0] dark:border-gray-900">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-[10px]">
-            <p className="text-[13px] text-gray-400 !mb-0">
-              &copy; {new Date().getFullYear()}{" "}
-              <span className="text-[#06201b] dark:text-white font-medium">Capital OS</span>. All rights
-              reserved.
-            </p>
-            <p className="text-[13px] text-gray-300 dark:text-gray-600 !mb-0">
-              Built with AI. Controlled by founders.
-            </p>
-          </div>
-        </div>
-      </div>
+      </footer>
     </>
   );
 };
