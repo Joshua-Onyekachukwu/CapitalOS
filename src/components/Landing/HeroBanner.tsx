@@ -2,12 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const HeroBanner: React.FC = () => {
   return (
     <>
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] py-[60px] px-[20px] md:py-[80px] md:px-[40px] lg:py-[90px] lg:px-[50px] xl:py-[75px] xl:px-[110px]">
+        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] py-[60px] px-[20px] md:py-[80px] md:px-[40px] lg:py-[90px] lg:px-[50px] xl:py-[75px] xl:px-[110px] overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] items-center">
             <div>
               <h1 className="!font-medium !text-[#ebebe0] !text-4xl md:!text-[46px] lg:!text-[52px] xl:!text-[58px] !leading-[1.15] md:-tracking-[1.5px] !mb-[15px] lg:!mb-[20px]">
@@ -53,52 +54,19 @@ const HeroBanner: React.FC = () => {
               </div>
             </div>
 
-            {/* Dashboard Preview */}
+            {/* Real Photography */}
             <div className="text-center ltr:lg:-ml-[50px] rtl:lg:-mr-[50px] ltr:xl:-ml-[100px] rtl:xl:-mr-[100px]">
-              <div className="inline-block w-full max-w-[400px] lg:max-w-none">
-                {/* Mini dashboard card */}
-                <div className="bg-[#0a3d2e] rounded-[20px] p-[20px] md:p-[25px]">
-                  {/* Header bar */}
-                  <div className="flex items-center justify-between mb-[16px]">
-                    <div className="flex items-center gap-[8px]">
-                      <div className="w-[8px] h-[8px] rounded-full bg-red-400"></div>
-                      <div className="w-[8px] h-[8px] rounded-full bg-yellow-400"></div>
-                      <div className="w-[8px] h-[8px] rounded-full bg-green-400"></div>
-                    </div>
-                    <div className="text-[#ebebe0]/20 text-[11px]">CapitalOS Dashboard</div>
-                  </div>
-
-                  {/* Stats row */}
-                  <div className="grid grid-cols-3 gap-[10px] mb-[16px]">
-                    {[
-                      { label: "Investors", value: "127", color: "bg-lime-500/20" },
-                      { label: "Sent", value: "34", color: "bg-blue-500/20" },
-                      { label: "Replies", value: "12", color: "bg-purple-500/20" },
-                    ].map((stat) => (
-                      <div key={stat.label} className={`${stat.color} rounded-[10px] p-[12px] text-center`}>
-                        <div className="text-[#ebebe0]/60 text-[10px] mb-[4px]">{stat.label}</div>
-                        <div className="text-[#ebebe0] font-bold text-[18px]">{stat.value}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Mini pipeline */}
-                  <div className="bg-[#06201b] rounded-[10px] p-[14px]">
-                    <div className="text-[#ebebe0]/40 text-[10px] mb-[10px] uppercase tracking-wider font-medium">
-                      Pipeline
-                    </div>
-                    <div className="flex gap-[6px]">
-                      {["Discovered", "Qualified", "Contacted", "Replied", "Meeting"].map((stage, i) => (
-                        <div key={stage} className="flex-1 text-center">
-                          <div className={`h-[3px] rounded-full mb-[6px] ${
-                            i < 3 ? "bg-lime-500" : i === 3 ? "bg-lime-500/50" : "bg-[#ebebe0]/10"
-                          }`}></div>
-                          <div className="text-[#ebebe0]/30 text-[8px] md:text-[9px]">{stage}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              <div className="relative inline-block w-full max-w-[420px] lg:max-w-none aspect-[4/3] rounded-[20px] overflow-hidden">
+                <Image
+                  src="/images/landing/hero-founder.jpg"
+                  alt="Startup founder working on laptop with team, planning fundraising strategy"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 420px, 500px"
+                  priority
+                />
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#06201b]/40 to-transparent"></div>
               </div>
             </div>
           </div>

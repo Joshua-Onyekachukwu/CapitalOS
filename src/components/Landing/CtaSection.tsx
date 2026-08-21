@@ -2,13 +2,28 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const CtaSection: React.FC = () => {
   return (
     <>
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] py-[50px] px-[20px] md:py-[70px] md:px-[50px] lg:py-[80px] lg:px-[80px] xl:py-[90px] xl:px-[100px] relative z-[1]">
-          <div className="md:max-w-[480px]">
+        <div className="relative rounded-[20px] md:rounded-[30px] py-[50px] px-[20px] md:py-[70px] md:px-[50px] lg:py-[80px] lg:px-[80px] xl:py-[90px] xl:px-[100px] overflow-hidden">
+          {/* Background Photo */}
+          <div className="absolute inset-0">
+            <Image
+              src="/images/landing/pitch-deck.jpg"
+              alt=""
+              fill
+              className="object-cover"
+              sizes="100vw"
+            />
+            {/* Dark overlay */}
+            <div className="absolute inset-0 bg-[#06201b]/90"></div>
+          </div>
+
+          {/* Content */}
+          <div className="relative z-[1] md:max-w-[480px]">
             <h2 className="!text-[#ebebe0] !font-medium !text-2xl md:!text-3xl lg:!text-4xl !leading-[1.2] md:-tracking-[1px] !mb-[12px] md:!mb-[15px]">
               Ready to <span className="text-lime-500">Fundraise</span>{" "}
               Smarter?

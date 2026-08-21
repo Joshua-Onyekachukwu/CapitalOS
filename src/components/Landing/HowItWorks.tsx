@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 
 const steps = [
   {
@@ -33,7 +34,7 @@ const HowItWorks: React.FC = () => {
   return (
     <div className="py-[70px] md:py-[90px] lg:py-[100px] xl:py-[120px] 2xl:py-[140px]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="bg-[#06201b] rounded-[20px] md:rounded-[35px] py-[60px] px-[20px] md:py-[80px] md:px-[50px] lg:py-[90px] xl:py-[100px] xl:px-[110px]">
+        <div className="bg-[#06201b] rounded-[20px] md:rounded-[35px] py-[60px] px-[20px] md:py-[80px] md:px-[50px] lg:py-[90px] xl:py-[100px] xl:px-[110px] overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[40px] items-center">
             {/* Steps */}
             <div>
@@ -69,22 +70,17 @@ const HowItWorks: React.FC = () => {
               </div>
             </div>
 
-            {/* Visual */}
+            {/* Real Photography */}
             <div className="text-center hidden lg:block">
-              <div className="inline-block w-full max-w-[380px] aspect-square rounded-[20px] bg-[#0a3d2e] flex items-center justify-center">
-                <div className="grid grid-cols-2 gap-[12px] p-[30px]">
-                  {steps.map((step) => (
-                    <div
-                      key={step.id}
-                      className="bg-[#06201b] rounded-[12px] p-[16px] text-center"
-                    >
-                      <i className={`${step.icon} text-lime-500/50 text-[24px] block mb-[8px]`}></i>
-                      <span className="text-[#ebebe0]/40 text-[11px] block">
-                        {step.title}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              <div className="relative w-full max-w-[420px] aspect-square rounded-[20px] overflow-hidden mx-auto">
+                <Image
+                  src="/images/landing/collaboration.jpg"
+                  alt="Team collaborating on startup fundraising strategy around a shared workspace"
+                  fill
+                  className="object-cover"
+                  sizes="420px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#06201b]/30 to-transparent"></div>
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 
 const idealUsersData = [
   {
@@ -9,6 +10,8 @@ const idealUsersData = [
     title: "Solo Founders",
     description:
       "Raising pre-seed, seed, or Series A without a dedicated fundraising team. You need an AI partner that does the research, drafting, and tracking while you stay in control.",
+    image: "/images/landing/founder-working.jpg",
+    imageAlt: "Solo founder working on laptop, analyzing investor data",
   },
   {
     id: 2,
@@ -16,6 +19,8 @@ const idealUsersData = [
     title: "Small Startup Teams",
     description:
       "2–20 person teams where fundraising is shared across founders. Capital OS gives everyone a single source of truth for investor relationships.",
+    image: "/images/landing/startup-team.jpg",
+    imageAlt: "Small startup team collaborating around a conference table",
   },
   {
     id: 3,
@@ -23,6 +28,8 @@ const idealUsersData = [
     title: "Accelerators & Advisors",
     description:
       "Help your portfolio companies fundraise smarter. Future support for accelerator programs and advisory workflows.",
+    image: "/images/landing/team-meeting.jpg",
+    imageAlt: "Advisory team meeting with startup founders in modern office",
   },
 ];
 
@@ -43,21 +50,38 @@ const TargetUsers: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[25px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[20px]">
           {idealUsersData.map((user) => (
             <div
               key={user.id}
-              className="rounded-[15px] md:rounded-[20px] bg-[#ebebe0] dark:bg-[#0a0e19] p-[25px] md:p-[30px] text-center hover:shadow-md transition-shadow"
+              className="rounded-[15px] md:rounded-[20px] bg-white dark:bg-[#0a0e19] border border-[#ebebe0] dark:border-gray-800 overflow-hidden hover:shadow-lg transition-shadow group"
             >
-              <div className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-[#06201b] text-lime-500 text-[22px] mx-auto mb-[18px]">
-                <i className={user.icon}></i>
+              {/* Photo */}
+              <div className="relative h-[180px] md:h-[200px] overflow-hidden">
+                <Image
+                  src={user.image}
+                  alt={user.imageAlt}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
               </div>
-              <h3 className="!font-semibold !text-[16px] md:!text-lg !text-[#06201B] dark:!text-white !mb-[10px]">
-                {user.title}
-              </h3>
-              <p className="text-[#7a857d] text-[14px] md:text-[15px] !mb-0 leading-relaxed">
-                {user.description}
-              </p>
+
+              {/* Content */}
+              <div className="p-[22px] md:p-[25px]">
+                <div className="flex items-center gap-[10px] mb-[10px]">
+                  <div className="w-[36px] h-[36px] rounded-full bg-[#06201b] text-lime-500 flex items-center justify-center text-[18px] flex-none">
+                    <i className={user.icon}></i>
+                  </div>
+                  <h3 className="!font-semibold !text-[16px] md:!text-[17px] !text-[#06201B] dark:!text-white !mb-0">
+                    {user.title}
+                  </h3>
+                </div>
+                <p className="text-[#7a857d] text-[13px] md:text-[14px] !mb-0 leading-relaxed">
+                  {user.description}
+                </p>
+              </div>
             </div>
           ))}
         </div>
