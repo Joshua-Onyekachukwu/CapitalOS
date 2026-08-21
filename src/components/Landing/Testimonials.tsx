@@ -1,26 +1,30 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 
 const testimonials = [
   {
     name: "Sarah Chen",
     role: "CEO, TechVenture AI",
     stars: 5,
+    avatar: "/images/landing/faq/saas-user1.jpg",
     quote:
       "Capital OS gave us real-time investor intelligence we never had before. Our team now makes faster, smarter fundraising decisions. It's a total game-changer for startup growth.",
   },
   {
     name: "Marcus Williams",
     role: "Founder, GreenScale",
-    stars: 4.5,
+    stars: 5,
+    avatar: "/images/landing/faq/crm-user1.jpg",
     quote:
       "As a founder overseeing fundraising across multiple portfolio companies, Capital OS has been a game changer. I can track investor outreach, monitor pipeline, and ensure nothing slips through.",
   },
   {
     name: "Priya Patel",
     role: "CEO, NeuralPath",
-    stars: 4,
+    stars: 5,
+    avatar: "/images/landing/faq/pm-user1.jpg",
     quote:
       "Capital OS completely transformed the way I manage fundraising. I used to juggle multiple spreadsheets for investors, follow-ups, and pipeline tracking. Now everything is in one place.",
   },
@@ -64,11 +68,20 @@ const Testimonials: React.FC = () => {
                 <p className="text-black dark:text-white font-light !leading-[1.6] -tracking-[.3px] !text-md md:!text-lg">
                   {item.quote}
                 </p>
-                <div className="mt-[16px] md:mt-[18px] lg:mt-[22px] xl:mt-[25px]">
-                  <span className="block font-bold uppercase text-xs text-black dark:text-white tracking-[1.8px] mb-[5px]">
-                    {item.name}
-                  </span>
-                  <span className="block -tracking-[0.14px]">{item.role}</span>
+                <div className="mt-[16px] md:mt-[18px] lg:mt-[22px] xl:mt-[25px] flex items-center gap-[12px]">
+                  <Image
+                    src={item.avatar}
+                    alt={item.name}
+                    width={48}
+                    height={48}
+                    className="rounded-full object-cover w-[48px] h-[48px]"
+                  />
+                  <div>
+                    <span className="block font-bold uppercase text-xs text-black dark:text-white tracking-[1.8px] mb-[2px]">
+                      {item.name}
+                    </span>
+                    <span className="block -tracking-[0.14px]">{item.role}</span>
+                  </div>
                 </div>
               </div>
             </div>
