@@ -1,92 +1,110 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
-const ProblemStatement: React.FC = () => {
-  const problems = [
-    "Finding the right investors takes weeks of manual research",
-    "Cold outreach without context gets ignored",
-    "Spreadsheets can't track conversations across hundreds of investors",
-    "No intelligence on who is actively investing right now",
-  ];
+const capabilities = [
+  {
+    number: "01",
+    title: "Investor Intelligence",
+    description:
+      "AI researches investors across stage, sector, geography, and check size — then explains why each one matters to your specific startup.",
+  },
+  {
+    number: "02",
+    title: "Personalized Outreach",
+    description:
+      "Emails drafted from each investor's thesis, portfolio, and recent activity. You review, edit, and approve before anything is sent.",
+  },
+  {
+    number: "03",
+    title: "Visual Pipeline",
+    description:
+      "Every investor tracked from first discovery through meeting to close, on a single board you can act on.",
+  },
+];
 
-  const solutions = [
-    "AI-powered investor discovery and matching",
-    "Personalized outreach based on investor intelligence",
-    "Visual pipeline from discovery to close",
-    "Automated reply classification and follow-ups",
-  ];
-
+export default function ProblemStatement() {
   return (
-    <>
+    <section>
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="mb-[40px] md:mb-[50px] lg:mb-[60px] text-center mx-auto md:max-w-[600px]">
-          <span className="inline-block font-medium text-[#7a857d] rounded-[30px] border border-[#ebebe0] dark:border-gray-800 py-[5.5px] px-[18px] mb-[12px] md:mb-[15px]">
-            About Capital OS
-          </span>
-          <h2 className="!text-[#06201B] dark:!text-white md:-tracking-[1px] !font-medium !text-2xl md:!text-3xl lg:!text-4xl !leading-[1.2] !mb-[12px] md:!mb-[15px]">
-            Fundraising Is Broken. We Fix It.
-          </h2>
-          <p className="md:text-[15px] lg:text-md text-[#7a857d]">
-            Founders spend weeks on manual research, generic outreach, and spreadsheet tracking.
-            Capital OS replaces that with an intelligent system that does the work while you stay in control.
-          </p>
-        </div>
+        {/* Top: Asymmetric hero — headline + photo */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-[30px] lg:gap-[40px] items-start mb-[60px] md:mb-[80px] lg:mb-[100px]">
+          {/* Left: Headline + explanation */}
+          <div className="lg:col-span-7">
+            <p className="text-[12px] md:text-[13px] font-semibold uppercase tracking-[0.12em] text-[#7a857d] !mb-[16px] md:!mb-[20px]">
+              About Capital OS
+            </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-[25px] md:gap-[30px]">
-          {/* The Problem */}
-          <div className="rounded-[15px] md:rounded-[20px] bg-[#ebebe0] dark:bg-[#0a0e19] p-[25px] md:p-[30px]">
-            <div className="flex items-center gap-[10px] mb-[20px]">
-              <div className="w-[36px] h-[36px] rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center text-red-500 text-[18px]">
-                <i className="ri-close-circle-line"></i>
-              </div>
-              <h3 className="!font-semibold !text-[16px] md:!text-lg !text-[#06201B] dark:!text-white !mb-0">
-                Without Capital OS
-              </h3>
-            </div>
-            <div className="space-y-[14px]">
-              {problems.map((problem, index) => (
-                <div key={index} className="flex items-start gap-[10px]">
-                  <i className="ri-close-line text-red-400 text-[16px] mt-[2px] flex-none"></i>
-                  <span className="text-[#7a857d] text-[14px] md:text-[15px]">{problem}</span>
-                </div>
-              ))}
-            </div>
+            <h2 className="!text-[#06201B] dark:!text-white !font-medium !text-[28px] md:!text-[36px] lg:!text-[42px] !leading-[1.1] !mb-[20px] md:!mb-[24px]">
+              Fundraising doesn&apos;t have
+              <br className="hidden md:block" />
+              {" "}to be a guessing game.
+            </h2>
+
+            <p className="text-[#7a857d] text-[15px] md:text-[16px] lg:text-[17px] leading-[1.7] max-w-[520px] !mb-[28px] md:!mb-[32px]">
+              Capital OS is the operating system behind modern fundraising.
+              It finds the right investors, prepares personalized outreach,
+              and manages every conversation — so you can focus on the part
+              that matters: building relationships.
+            </p>
+
+            <Link
+              href="/signup"
+              className="inline-block font-medium rounded-[7px] bg-[#06201b] text-white py-[11px] md:py-[12px] px-[24px] md:px-[28px] text-[14px] md:text-[15px] transition-all hover:bg-lime-500 hover:text-black"
+            >
+              Start Fundraising
+            </Link>
           </div>
 
-          {/* The Solution */}
-          <div className="rounded-[15px] md:rounded-[20px] bg-[#ebebe0] dark:bg-[#0a0e19] p-[25px] md:p-[30px]">
-            <div className="flex items-center gap-[10px] mb-[20px]">
-              <div className="w-[36px] h-[36px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[18px]">
-                <i className="ri-check-double-line"></i>
-              </div>
-              <h3 className="!font-semibold !text-[16px] md:!text-lg !text-[#06201B] dark:!text-white !mb-0">
-                With Capital OS
-              </h3>
-            </div>
-            <div className="space-y-[14px]">
-              {solutions.map((solution, index) => (
-                <div key={index} className="flex items-start gap-[10px]">
-                  <i className="ri-check-line text-lime-600 text-[16px] mt-[2px] flex-none"></i>
-                  <span className="text-[#7a857d] text-[14px] md:text-[15px]">{solution}</span>
-                </div>
-              ))}
+          {/* Right: Photography */}
+          <div className="lg:col-span-5 lg:mt-[10px]">
+            <div className="relative aspect-[4/5] rounded-[12px] overflow-hidden">
+              <Image
+                src="/images/landing/hero-founder.jpg"
+                alt="Startup founder collaborating with team on fundraising strategy"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 400px"
+              />
             </div>
           </div>
         </div>
 
-        <div className="text-center mt-[30px] md:mt-[40px]">
-          <Link
-            href="/signup"
-            className="inline-block font-medium md:text-base rounded-[7px] bg-[#06201b] text-white py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-500 hover:text-black"
-          >
-            Start Fundraising
-          </Link>
+        {/* Bottom: Three capabilities — clean, editorial */}
+        <div className="border-t border-[#ebebe0] dark:border-gray-800">
+          {capabilities.map((cap, index) => (
+            <div
+              key={cap.number}
+              className={`grid grid-cols-1 md:grid-cols-12 gap-[16px] md:gap-[30px] py-[28px] md:py-[35px] ${
+                index < capabilities.length - 1
+                  ? "border-b border-[#ebebe0] dark:border-gray-800"
+                  : ""
+              }`}
+            >
+              {/* Number */}
+              <div className="md:col-span-1">
+                <span className="text-[12px] font-mono text-[#7a857d]">
+                  {cap.number}
+                </span>
+              </div>
+
+              {/* Title */}
+              <div className="md:col-span-3">
+                <h3 className="!text-[#06201B] dark:!text-white !font-semibold !text-[16px] md:!text-[17px] !mb-0">
+                  {cap.title}
+                </h3>
+              </div>
+
+              {/* Description */}
+              <div className="md:col-span-8">
+                <p className="text-[#7a857d] text-[14px] md:text-[15px] leading-[1.7] !mb-0">
+                  {cap.description}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </>
+    </section>
   );
-};
-
-export default ProblemStatement;
+}
