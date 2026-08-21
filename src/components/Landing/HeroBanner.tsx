@@ -59,7 +59,7 @@ const HeroBanner: React.FC = () => {
             <div className="flex items-end justify-center lg:justify-end">
               <div className="relative w-full max-w-[480px] lg:max-w-none">
                 <Image
-                  src="/images/real-estate-agent/hero-main.png"
+                  src="/images/real-estate-agent/hero-main.jpg"
                   alt="Capital OS Dashboard"
                   width={620}
                   height={500}

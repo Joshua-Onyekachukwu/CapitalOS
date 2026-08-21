@@ -61,3 +61,8 @@ Trezo/
 
 # Sentry
 .sentryclirc
+
+# Hero source images
+hero image.png
+hero image tranparent.jpg
+watermarked_img_*.jpg
