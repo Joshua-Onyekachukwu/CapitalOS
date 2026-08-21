@@ -15,6 +15,7 @@ export function useUser(): UseUserResult {
 
   useEffect(() => {
     let mounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
 
     async function getUser() {
       try {
@@ -25,28 +26,19 @@ export function useUser(): UseUserResult {
           data: { user: currentUser },
         } = await supabase.auth.getUser();
 
-        if (mounted) {
-          setUser(currentUser);
-          setLoading(false);
-        }
+        if (!mounted) return;
+        setUser(currentUser);
+        setLoading(false);
 
         // Listen for auth state changes
-        const {
-          data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-          if (mounted) {
-            setUser(session?.user ?? null);
+        const { data: { subscription: sub } } = supabase.auth.onAuthStateChange(
+          (_event: string, session: { user: User | null } | null) => {
+            if (mounted) setUser(session?.user ?? null);
           }
-        });
-
-        return () => {
-          mounted = false;
-          subscription.unsubscribe();
-        };
+        );
+        subscription = sub;
       } catch {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     }
 
@@ -54,6 +46,7 @@ export function useUser(): UseUserResult {
 
     return () => {
       mounted = false;
+      subscription?.unsubscribe();
     };
   }, []);
 

@@ -16,7 +16,6 @@ const isSupabaseConfigured =
 
 export async function getCurrentUser(): Promise<UserProfile | null> {
   if (!isSupabaseConfigured) {
-    // Return a demo user so the dashboard renders without Supabase
     return {
       id: "demo-user",
       email: "founder@capitalos.com",
@@ -36,7 +35,8 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     return null;
   }
 
-  // Fetch profile data
+  // Parallelize: auth is done, now fetch profile
+  // (auth must complete first to get user.id, but profile fetch is standalone after that)
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, avatar_url")

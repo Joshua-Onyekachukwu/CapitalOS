@@ -1,15 +1,18 @@
+import dynamic from "next/dynamic";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
 import GoTop from "@/components/Layout/GoTop";
 import HeroBanner from "@/components/Landing/HeroBanner";
-import About from "@/components/Landing/About";
-import Features from "@/components/Landing/Features";
-import WhyCapitalOS from "@/components/Landing/WhyCapitalOS";
-import WorkingProcess from "@/components/Landing/WorkingProcess";
-import Benefits from "@/components/Landing/Benefits";
-import Testimonials from "@/components/Landing/Testimonials";
-import Pricing from "@/components/Landing/Pricing";
-import FAQ from "@/components/Landing/FAQ";
+
+// Below-fold sections — dynamically imported for code splitting
+const About = dynamic(() => import("@/components/Landing/About"));
+const Features = dynamic(() => import("@/components/Landing/Features"));
+const WhyCapitalOS = dynamic(() => import("@/components/Landing/WhyCapitalOS"));
+const WorkingProcess = dynamic(() => import("@/components/Landing/WorkingProcess"));
+const Benefits = dynamic(() => import("@/components/Landing/Benefits"));
+const Testimonials = dynamic(() => import("@/components/Landing/Testimonials"));
+const Pricing = dynamic(() => import("@/components/Landing/Pricing"));
+const FAQ = dynamic(() => import("@/components/Landing/FAQ"));
 
 export default function Home() {
   return (

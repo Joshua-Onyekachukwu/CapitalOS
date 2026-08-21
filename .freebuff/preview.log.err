@@ -2073,3 +2073,267 @@ Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
 [browser] Image with src "/images/real-estate-agent/about1.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
 [browser] Image with src "/images/real-estate-agent/why-trezo.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
 Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
+[browser] ./src/app/page.tsx:15:13
+Error: `ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.
+  13 | ...onst Testimonials = dynamic(() => import("@/components/Landing/Testimonials"), { ssr: f...
+  14 | ...onst Pricing = dynamic(() => import("@/components/Landing/Pricing"), { ssr: false });
+> 15 | ...onst FAQ = dynamic(() => import("@/components/Landing/FAQ"), { ssr: false });
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  16 | ...
+  17 | ...xport default function Home() {
+  18 | ... return (
+
+Ecmascript file had an error 
