@@ -9,16 +9,62 @@ interface NavItem {
   label: string;
   href: string;
   icon: string;
+  badge?: string;
 }
 
-const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: "ri-dashboard-3-line" },
-  { label: "My Startup", href: "/dashboard/startup", icon: "ri-rocket-2-line" },
-  { label: "Investors", href: "/dashboard/investors", icon: "ri-user-search-line" },
-  { label: "Campaigns", href: "/dashboard/campaigns", icon: "ri-megaphone-line" },
-  { label: "Outreach", href: "/dashboard/outreach", icon: "ri-mail-send-line" },
-  { label: "Analytics", href: "/dashboard/analytics", icon: "ri-line-chart-line" },
-  { label: "Settings", href: "/dashboard/settings", icon: "ri-settings-3-line" },
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    items: [
+      { label: "Dashboard", href: "/dashboard", icon: "ri-dashboard-3-line" },
+      { label: "Fundraising Copilot", href: "/dashboard/copilot", icon: "ri-sparkling-2-line", badge: "AI" },
+    ],
+  },
+  {
+    title: "Startup",
+    items: [
+      { label: "My Startup", href: "/dashboard/startup", icon: "ri-rocket-2-line" },
+      { label: "Documents", href: "/dashboard/documents", icon: "ri-file-text-line" },
+    ],
+  },
+  {
+    title: "Investors",
+    items: [
+      { label: "Discover", href: "/dashboard/investors/discover", icon: "ri-radar-line" },
+      { label: "Investor Database", href: "/dashboard/investors", icon: "ri-database-2-line" },
+      { label: "Saved Investors", href: "/dashboard/investors/saved", icon: "ri-bookmark-line" },
+    ],
+  },
+  {
+    title: "Pipeline",
+    items: [
+      { label: "Fundraising Pipeline", href: "/dashboard/pipeline", icon: "ri-kanban-view" },
+      { label: "Campaigns", href: "/dashboard/campaigns", icon: "ri-megaphone-line" },
+    ],
+  },
+  {
+    title: "Outreach",
+    items: [
+      { label: "Outreach", href: "/dashboard/outreach", icon: "ri-mail-send-line" },
+      { label: "Meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" },
+    ],
+  },
+  {
+    title: "Insights",
+    items: [
+      { label: "Analytics", href: "/dashboard/analytics", icon: "ri-line-chart-line" },
+      { label: "AI Activity", href: "/dashboard/ai-activity", icon: "ri-robot-2-line" },
+    ],
+  },
+  {
+    items: [
+      { label: "Settings", href: "/dashboard/settings", icon: "ri-settings-3-line" },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -26,15 +72,48 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+function SidebarNavItem({ item, isActive, onClick }: { item: NavItem; isActive: boolean; onClick: () => void }) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={cn(
+        "group flex items-center gap-[12px] px-[14px] py-[9px] rounded-[8px] text-[14px] font-medium transition-all duration-150",
+        isActive
+          ? "bg-lime-50 dark:bg-lime-900/20 text-[#06201b] dark:text-white"
+          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[#06201b] dark:hover:text-white"
+      )}
+    >
+      <i
+        className={cn(
+          "text-[20px] flex-shrink-0 transition-colors",
+          isActive ? "text-lime-600" : "text-gray-400 group-hover:text-gray-500"
+        )}
+      ></i>
+      <span className="flex-1 truncate">{item.label}</span>
+      {item.badge && (
+        <span className="text-[10px] font-bold px-[6px] py-[1px] rounded-full bg-lime-500 text-black">
+          {item.badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === "/dashboard") return pathname === "/dashboard";
+    return pathname.startsWith(href);
+  };
 
   return (
     <>
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[998] lg:hidden"
+          className="fixed inset-0 bg-black/50 z-[998] lg:hidden transition-opacity"
           onClick={onClose}
         />
       )}
@@ -42,77 +121,71 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-[#0a0e19] border-r border-gray-100 dark:border-gray-800 z-[999] transition-transform duration-300",
+          "fixed top-0 left-0 bottom-0 w-[270px] bg-white dark:bg-[#0a0e19] border-r border-gray-100 dark:border-gray-800 z-[999] transition-transform duration-300 ease-in-out",
           "lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="px-[20px] py-[20px] border-b border-gray-100 dark:border-gray-800">
-            <Link href="/dashboard" className="inline-block">
-              <span className="text-xl font-bold text-[#06201b] dark:text-white">
+          <div className="px-[20px] py-[18px] border-b border-gray-100 dark:border-gray-800">
+            <Link href="/dashboard" className="inline-flex items-center gap-[2px]">
+              <span className="text-[19px] font-bold text-[#06201b] dark:text-white">
                 Capital<span className="text-lime-500">OS</span>
               </span>
             </Link>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-[12px] py-[16px] overflow-y-auto">
-            <ul className="space-y-[4px]">
-              {navItems.map((item) => {
-                const isActive =
-                  item.href === "/dashboard"
-                    ? pathname === "/dashboard"
-                    : pathname.startsWith(item.href);
-
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={onClose}
-                      className={cn(
-                        "flex items-center gap-[12px] px-[14px] py-[10px] md:py-[12px] rounded-[8px] text-[14px] md:text-[15px] font-medium transition-all",
-                        isActive
-                          ? "bg-lime-50 dark:bg-lime-900/20 text-[#06201b] dark:text-white"
-                          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[#06201b] dark:hover:text-white"
-                      )}
-                    >
-                      <i
-                        className={cn(
-                          "text-[20px]",
-                          isActive ? "text-lime-600" : "text-gray-400"
-                        )}
-                      ></i>
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+          <nav className="flex-1 overflow-y-auto px-[10px] py-[12px]">
+            {navSections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className={section.title ? "mt-[16px]" : sectionIndex > 0 ? "mt-[4px]" : ""}>
+                {section.title && (
+                  <p className="px-[14px] mb-[6px] text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    {section.title}
+                  </p>
+                )}
+                <ul className="space-y-[2px]">
+                  {section.items.map((item) => (
+                    <li key={item.href}>
+                      <SidebarNavItem
+                        item={item}
+                        isActive={isActive(item.href)}
+                        onClick={onClose}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </nav>
 
-          {/* Upgrade card */}
-          <div className="px-[12px] pb-[16px]">
-            <div className="bg-[#06201b] rounded-[12px] p-[18px]">
-              <h4 className="!text-[14px] !font-semibold !text-white !mb-[6px]">
-                Need help?
-              </h4>
-              <p className="text-[13px] text-gray-400 !mb-[12px]">
-                Check our documentation or contact support.
+          {/* Bottom help card */}
+          <div className="px-[10px] pb-[14px]">
+            <div className="bg-[#06201b] rounded-[12px] p-[16px]">
+              <div className="flex items-center gap-[8px] mb-[6px]">
+                <i className="ri-sparkling-2-line text-lime-500 text-[18px]"></i>
+                <h4 className="!text-[13px] !font-semibold !text-white !mb-0">
+                  AI Copilot
+                </h4>
+              </div>
+              <p className="text-[12px] text-gray-400 !mb-[12px] leading-relaxed">
+                Ask your AI fundraising assistant anything.
               </p>
-              <a
-                href="#"
-                className="inline-block text-[13px] font-medium text-lime-500 hover:text-lime-400"
+              <Link
+                href="/dashboard/copilot"
+                onClick={onClose}
+                className="inline-flex items-center gap-[6px] text-[12px] font-medium text-lime-500 hover:text-lime-400 transition-colors"
               >
-                View Docs →
-              </a>
+                Open Copilot
+                <i className="ri-arrow-right-line text-[14px]"></i>
+              </Link>
             </div>
           </div>
         </div>
       </aside>
     </>
   );
-};
+}
 
 export { Sidebar };

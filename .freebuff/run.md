@@ -10,13 +10,12 @@
 
 ## Start the dev server
 ```powershell
-# From the project root:
-powershell -NoProfile -Command "Start-Process -FilePath 'node.exe' -ArgumentList 'node_modules\next\dist\bin\next','dev' -WorkingDirectory 'C:\Users\engrf\Joshua Dev\Capital OS' -WindowStyle Hidden -PassThru | Select-Object -ExpandProperty Id"
+powershell -NoProfile -Command "Start-Process -FilePath 'node.exe' -ArgumentList 'node_modules\next\dist\bin\next','dev','-p','3000' -WorkingDirectory '<project-root>' -WindowStyle Hidden -PassThru | Select-Object -ExpandProperty Id"
 ```
 
-- The default port is chosen by Next.js (currently **62447**).
-- Logs go to `.freebuff/preview-7277189d-1966-44fc-b194-381cf3dfe6f4.log` (stdout) and `.freebuff/preview-7277189d-1966-44fc-b194-381cf3dfe6f4.log.err` (stderr).
-- Confirm alive: `powershell -NoProfile -Command "Get-Process -Id <pid>"` or check `netstat -ano | findstr :62447`.
+- Default port: **3000**
+- Logs go to `.freebuff/server-stdout.log` and `.freebuff/server-stderr.log` (if using -RedirectStandardOutput/Error)
+- Confirm alive: `netstat -ano | findstr :3000` or check `Get-Process -Id <pid>`
 
 ## Stop
 Kill the node process by PID.

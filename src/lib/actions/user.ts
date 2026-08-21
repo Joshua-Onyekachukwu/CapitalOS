@@ -9,7 +9,22 @@ export interface UserProfile {
   avatar_url: string | null;
 }
 
+const isSupabaseConfigured =
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== "placeholder-anon-key";
+
 export async function getCurrentUser(): Promise<UserProfile | null> {
+  if (!isSupabaseConfigured) {
+    // Return a demo user so the dashboard renders without Supabase
+    return {
+      id: "demo-user",
+      email: "founder@capitalos.com",
+      full_name: "Demo Founder",
+      avatar_url: null,
+    };
+  }
+
   const supabase = await createClient();
 
   const {

@@ -7,9 +7,6 @@ import "./globals.css";
 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Navbar from "@/components/Layout/Navbar";
-import Footer from "@/components/Layout/Footer";
-import GoTop from "@/components/Layout/GoTop";
 
 const inter = Inter({
   variable: "--font-body",
@@ -30,13 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased !bg-white dark:!bg-dark`}>
-        <Navbar />
-
         {children}
-
-        <Footer />
-
-        <GoTop />
       </body>
     </html>
   );
