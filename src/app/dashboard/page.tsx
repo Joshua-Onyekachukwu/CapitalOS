@@ -15,7 +15,7 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">
         {[
-          { label: "Investors Discovered", value: "0", icon: "ri-radar-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
+          { label: "Investors Discovered", value: "0", icon: "ri-radar-line", color: "bg-primary-100 dark:bg-primary-900/20", iconColor: "text-primary-600" },
           { label: "Emails Sent", value: "0", icon: "ri-mail-send-line", color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600" },
           { label: "Meetings", value: "0", icon: "ri-calendar-check-line", color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600" },
           { label: "Interested", value: "0", icon: "ri-heart-3-line", color: "bg-rose-50 dark:bg-rose-900/20", iconColor: "text-rose-600" },
@@ -27,7 +27,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-[12px] md:text-[13px] text-gray-400 !mb-[2px]">{stat.label}</p>
-                <p className="text-[20px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+                <p className="text-[20px] md:text-[24px] font-bold text-[#0f172a] dark:text-white !mb-0">{stat.value}</p>
               </div>
             </CardBody>
           </Card>
@@ -44,45 +44,45 @@ export default function DashboardPage() {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
               <Link href="/dashboard/startup">
-                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
-                  <div className="w-[36px] h-[36px] rounded-[8px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[18px] flex-none">
+                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 transition-all cursor-pointer group">
+                  <div className="w-[36px] h-[36px] rounded-[8px] bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 text-[18px] flex-none">
                     <i className="ri-rocket-2-line"></i>
                   </div>
                   <div>
-                    <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">Set Up Startup</p>
+                    <p className="text-[13px] font-medium text-[#0f172a] dark:text-white !mb-0">Set Up Startup</p>
                     <p className="text-[11px] text-gray-400 !mb-0">Complete your profile</p>
                   </div>
                 </div>
               </Link>
               <Link href="/dashboard/investors/discover">
-                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
+                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 transition-all cursor-pointer group">
                   <div className="w-[36px] h-[36px] rounded-[8px] bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 text-[18px] flex-none">
                     <i className="ri-radar-line"></i>
                   </div>
                   <div>
-                    <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">Find Investors</p>
+                    <p className="text-[13px] font-medium text-[#0f172a] dark:text-white !mb-0">Find Investors</p>
                     <p className="text-[11px] text-gray-400 !mb-0">AI-powered discovery</p>
                   </div>
                 </div>
               </Link>
               <Link href="/dashboard/campaigns">
-                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
+                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 transition-all cursor-pointer group">
                   <div className="w-[36px] h-[36px] rounded-[8px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[18px] flex-none">
                     <i className="ri-megaphone-line"></i>
                   </div>
                   <div>
-                    <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">Create Campaign</p>
+                    <p className="text-[13px] font-medium text-[#0f172a] dark:text-white !mb-0">Create Campaign</p>
                     <p className="text-[11px] text-gray-400 !mb-0">Start outreach</p>
                   </div>
                 </div>
               </Link>
               <Link href="/dashboard/copilot">
-                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
+                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 transition-all cursor-pointer group">
                   <div className="w-[36px] h-[36px] rounded-[8px] bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 text-[18px] flex-none">
                     <i className="ri-sparkling-2-line"></i>
                   </div>
                   <div>
-                    <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">AI Copilot</p>
+                    <p className="text-[13px] font-medium text-[#0f172a] dark:text-white !mb-0">AI Copilot</p>
                     <p className="text-[11px] text-gray-400 !mb-0">Ask anything</p>
                   </div>
                 </div>
@@ -114,8 +114,8 @@ export default function DashboardPage() {
                 >
                   <div className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center flex-none transition-colors ${
                     item.done
-                      ? "bg-lime-500 border-lime-500"
-                      : "border-gray-200 dark:border-gray-700 group-hover:border-lime-500"
+                      ? "bg-primary-500 border-primary-500"
+                      : "border-gray-200 dark:border-gray-700 group-hover:border-primary-500"
                   }`}>
                     {item.done && <i className="ri-check-line text-[12px] text-white"></i>}
                   </div>

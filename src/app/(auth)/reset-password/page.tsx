@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
           </p>
           <button
             onClick={() => router.push("/login")}
-            className="text-[14px] text-lime-600 hover:text-lime-700 font-medium"
+            className="text-[14px] text-primary-600 hover:text-primary-700 font-medium"
           >
             Go to login
           </button>
@@ -142,7 +142,7 @@ export default function ResetPasswordPage() {
         <div className="mt-[20px] pt-[20px] border-t border-gray-100 dark:border-gray-800 text-center">
           <Link
             href="/login"
-            className="text-[14px] text-lime-600 hover:text-lime-700 font-medium"
+            className="text-[14px] text-primary-600 hover:text-primary-700 font-medium"
           >
             Back to login
           </Link>

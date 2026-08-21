@@ -44,7 +44,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-[50] bg-white/80 dark:bg-[#0a0e19]/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
+    <header className="sticky top-0 z-[50] bg-white/80 dark:bg-[#0f1629]/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
       <div className="flex items-center justify-between px-[20px] md:px-[30px] py-[14px] md:py-[16px]">
         {/* Mobile menu button */}
         <button
@@ -52,7 +52,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
           className="lg:hidden flex items-center justify-center w-[36px] h-[36px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           aria-label="Toggle menu"
         >
-          <i className="ri-menu-line text-[22px] text-[#06201b] dark:text-white"></i>
+          <i className="ri-menu-line text-[22px] text-[#0f172a] dark:text-white"></i>
         </button>
 
         {/* Search placeholder */}
@@ -62,7 +62,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
             <input
               type="text"
               placeholder="Search investors, campaigns..."
-              className="w-full py-[9px] pl-[38px] pr-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 focus:border-lime-500"
+              className="w-full py-[9px] pl-[38px] pr-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
             />
           </div>
         </div>
@@ -72,7 +72,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
           {/* Notifications */}
           <button className="relative flex items-center justify-center w-[36px] h-[36px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             <i className="ri-notification-3-line text-[20px] text-gray-500"></i>
-            <span className="absolute top-[6px] right-[6px] w-[8px] h-[8px] bg-danger-500 rounded-full border-2 border-white dark:border-[#0a0e19]"></span>
+            <span className="absolute top-[6px] right-[6px] w-[8px] h-[8px] bg-danger-500 rounded-full border-2 border-white dark:border-[#0f1629]"></span>
           </button>
 
           {/* User menu dropdown */}
@@ -88,7 +88,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
                 showOnline
               />
               <div className="hidden md:block text-left">
-                <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0 leading-tight">
+                <p className="text-[13px] font-medium text-[#0f172a] dark:text-white !mb-0 leading-tight">
                   {user?.name || "User"}
                 </p>
                 <p className="text-[12px] text-gray-400 !mb-0 leading-tight">
@@ -106,7 +106,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
             {menuOpen && (
               <div className="absolute right-0 top-full mt-[8px] w-[200px] bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-gray-700 rounded-[10px] shadow-lg py-[6px] z-[60]">
                 <div className="px-[14px] py-[8px] border-b border-gray-100 dark:border-gray-700 mb-[4px]">
-                  <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">
+                  <p className="text-[13px] font-medium text-[#0f172a] dark:text-white !mb-0">
                     {user?.name || "User"}
                   </p>
                   <p className="text-[12px] text-gray-400 !mb-0 truncate">

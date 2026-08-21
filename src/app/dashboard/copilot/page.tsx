@@ -30,10 +30,10 @@ export default function CopilotPage() {
           {/* Messages area */}
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center max-w-[400px]">
-              <div className="w-[56px] h-[56px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center mx-auto mb-[16px] text-lime-600 text-[26px]">
+              <div className="w-[56px] h-[56px] rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center mx-auto mb-[16px] text-primary-600 text-[26px]">
                 <i className="ri-sparkling-2-line"></i>
               </div>
-              <h3 className="!text-lg !font-semibold !mb-[6px] text-[#06201b] dark:text-white">
+              <h3 className="!text-lg !font-semibold !mb-[6px] text-[#0f172a] dark:text-white">
                 How can I help you fundraise?
               </h3>
               <p className="text-[14px] text-gray-400 !mb-[20px]">
@@ -46,7 +46,7 @@ export default function CopilotPage() {
                   <button
                     key={cmd}
                     onClick={() => setInput(cmd)}
-                    className="text-[13px] px-[12px] py-[6px] rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 hover:border-lime-500 hover:text-lime-600 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all"
+                    className="text-[13px] px-[12px] py-[6px] rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 transition-all"
                   >
                     {cmd}
                   </button>
@@ -63,7 +63,7 @@ export default function CopilotPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about investors, outreach, campaigns..."
-                className="flex-1 py-[11px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 focus:border-lime-500"
+                className="flex-1 py-[11px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && input.trim()) {
                     // TODO: Send message

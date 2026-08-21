@@ -80,19 +80,19 @@ function SidebarNavItem({ item, isActive, onClick }: { item: NavItem; isActive: 
       className={cn(
         "group flex items-center gap-[12px] px-[14px] py-[9px] rounded-[8px] text-[14px] font-medium transition-all duration-150",
         isActive
-          ? "bg-lime-50 dark:bg-lime-900/20 text-[#06201b] dark:text-white"
-          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[#06201b] dark:hover:text-white"
+          ? "bg-primary-50 dark:bg-primary-900/20 text-[#0f172a] dark:text-white"
+          : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[#0f172a] dark:hover:text-white"
       )}
     >
       <i
         className={cn(
           "text-[20px] flex-shrink-0 transition-colors",
-          isActive ? "text-lime-600" : "text-gray-400 group-hover:text-gray-500"
+          isActive ? "text-primary-600" : "text-gray-400 group-hover:text-gray-500"
         )}
       ></i>
       <span className="flex-1 truncate">{item.label}</span>
       {item.badge && (
-        <span className="text-[10px] font-bold px-[6px] py-[1px] rounded-full bg-lime-500 text-black">
+        <span className="text-[10px] font-bold px-[6px] py-[1px] rounded-full bg-primary-500 text-black">
           {item.badge}
         </span>
       )}
@@ -121,7 +121,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 bottom-0 w-[270px] bg-white dark:bg-[#0a0e19] border-r border-gray-100 dark:border-gray-800 z-[999] transition-transform duration-300 ease-in-out",
+          "fixed top-0 left-0 bottom-0 w-[270px] bg-white dark:bg-[#0f1629] border-r border-gray-100 dark:border-gray-800 z-[999] transition-transform duration-300 ease-in-out",
           "lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
@@ -130,8 +130,8 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* Logo */}
           <div className="px-[20px] py-[18px] border-b border-gray-100 dark:border-gray-800">
             <Link href="/dashboard" className="inline-flex items-center gap-[2px]">
-              <span className="text-[19px] font-bold text-[#06201b] dark:text-white">
-                Capital<span className="text-lime-500">OS</span>
+              <span className="text-[19px] font-bold text-[#0f172a] dark:text-white">
+                Capital<span className="text-primary-500">OS</span>
               </span>
             </Link>
           </div>
@@ -162,9 +162,9 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           {/* Bottom help card */}
           <div className="px-[10px] pb-[14px]">
-            <div className="bg-[#06201b] rounded-[12px] p-[16px]">
+            <div className="bg-[#0f172a] rounded-[12px] p-[16px]">
               <div className="flex items-center gap-[8px] mb-[6px]">
-                <i className="ri-sparkling-2-line text-lime-500 text-[18px]"></i>
+                <i className="ri-sparkling-2-line text-primary-500 text-[18px]"></i>
                 <h4 className="!text-[13px] !font-semibold !text-white !mb-0">
                   AI Copilot
                 </h4>
@@ -175,7 +175,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Link
                 href="/dashboard/copilot"
                 onClick={onClose}
-                className="inline-flex items-center gap-[6px] text-[12px] font-medium text-lime-500 hover:text-lime-400 transition-colors"
+                className="inline-flex items-center gap-[6px] text-[12px] font-medium text-primary-500 hover:text-primary-400 transition-colors"
               >
                 Open Copilot
                 <i className="ri-arrow-right-line text-[14px]"></i>

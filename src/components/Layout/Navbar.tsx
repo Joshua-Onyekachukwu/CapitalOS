@@ -44,8 +44,8 @@ const Navbar: React.FC = () => {
         <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
           <div className="flex items-center relative flex-wrap lg:flex-nowrap justify-between lg:justify-start">
             <Link href="/" className="inline-block w-[150px] ltr:mr-[15px] rtl:ml-[15px]">
-              <span className="text-xl font-bold text-[#06201b] dark:text-white">
-                Capital<span className="text-lime-500">OS</span>
+              <span className="text-xl font-bold text-[#0f172a] dark:text-white">
+                Capital<span className="text-primary-500">OS</span>
               </span>
             </Link>
 
@@ -67,8 +67,8 @@ const Navbar: React.FC = () => {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`font-medium transition-all hover:text-[#06201b] ${
-                        pathname === item.href ? "text-[#06201b]" : ""
+                      className={`font-medium transition-all hover:text-[#0f172a] ${
+                        pathname === item.href ? "text-[#0f172a]" : ""
                       }`}
                     >
                       {item.label}
@@ -80,13 +80,13 @@ const Navbar: React.FC = () => {
               <div className="flex items-center gap-[12px]">
                 <Link
                   href="/login"
-                  className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white"
+                  className="inline-block font-medium md:text-base rounded-[7px] text-[#0f172a] border border-[#0f172a] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#0f172a] hover:text-white"
                 >
                   Log In
                 </Link>
                 <Link
                   href="/signup"
-                  className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600"
+                  className="inline-block font-medium md:text-base rounded-[7px] bg-primary-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-primary-600"
                 >
                   Get Started
                 </Link>
@@ -95,7 +95,7 @@ const Navbar: React.FC = () => {
 
             {/* Mobile Navigation */}
             <div
-              className={`bg-white dark:bg-[#0a0e19] rounded-[15px] border border-gray-200 dark:border-[#202c4b] mt-[20px] p-[20px] md:p-[30px] w-full hidden lg:!hidden ${
+              className={`bg-white dark:bg-[#0f1629] rounded-[15px] border border-gray-200 dark:border-[#202c4b] mt-[20px] p-[20px] md:p-[30px] w-full hidden lg:!hidden ${
                 isActiveMobileMenu ? "" : "active"
               }`}
               id="navbar-collapse"
@@ -108,8 +108,8 @@ const Navbar: React.FC = () => {
                   >
                     <Link
                       href={item.href}
-                      className={`font-medium transition-all hover:text-[#06201b] ${
-                        pathname === item.href ? "text-[#06201b]" : ""
+                      className={`font-medium transition-all hover:text-[#0f172a] ${
+                        pathname === item.href ? "text-[#0f172a]" : ""
                       }`}
                     >
                       {item.label}
@@ -121,13 +121,13 @@ const Navbar: React.FC = () => {
               <div className="flex flex-col gap-[10px] mt-[20px]">
                 <Link
                   href="/login"
-                  className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
+                  className="inline-block font-medium md:text-base rounded-[7px] text-[#0f172a] border border-[#0f172a] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#0f172a] hover:text-white text-center"
                 >
                   Log In
                 </Link>
                 <Link
                   href="/signup"
-                  className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                  className="inline-block font-medium md:text-base rounded-[7px] bg-primary-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-primary-600 text-center"
                 >
                   Get Started
                 </Link>

@@ -19,24 +19,24 @@ const CtaSection: React.FC = () => {
               sizes="100vw"
             />
             {/* Dark overlay */}
-            <div className="absolute inset-0 bg-[#06201b]/90"></div>
+            <div className="absolute inset-0 bg-[#0f172a]/90"></div>
           </div>
 
           {/* Content */}
           <div className="relative z-[1] md:max-w-[480px]">
-            <h2 className="!text-[#ebebe0] !font-medium !text-2xl md:!text-3xl lg:!text-4xl !leading-[1.2] md:-tracking-[1px] !mb-[12px] md:!mb-[15px]">
-              Ready to <span className="text-lime-500">Fundraise</span>{" "}
+            <h2 className="!text-[#f1f5f9] !font-medium !text-2xl md:!text-3xl lg:!text-4xl !leading-[1.2] md:-tracking-[1px] !mb-[12px] md:!mb-[15px]">
+              Ready to <span className="text-primary-500">Fundraise</span>{" "}
               Smarter?
             </h2>
 
-            <p className="md:text-[15px] lg:text-md text-[#ebebe0]/70">
+            <p className="md:text-[15px] lg:text-md text-[#f1f5f9]/70">
               Join founders who are using AI to find the right investors,
               craft personalized outreach, and manage their entire
               fundraising process — all from one platform.
             </p>
 
-            <div className="mt-[18px] md:mt-[22px] flex items-center gap-[10px] font-medium text-[#ebebe0]/80 text-[14px]">
-              <span className="block rounded-full w-[18px] h-[18px] bg-lime-500 text-black flex items-center justify-center flex-none">
+            <div className="mt-[18px] md:mt-[22px] flex items-center gap-[10px] font-medium text-[#f1f5f9]/80 text-[14px]">
+              <span className="block rounded-full w-[18px] h-[18px] bg-primary-500 text-black flex items-center justify-center flex-none">
                 <i className="ri-check-fill text-[12px]"></i>
               </span>
               No credit card required. Get started in minutes.
@@ -44,7 +44,7 @@ const CtaSection: React.FC = () => {
 
             <Link
               href="/signup"
-              className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 mt-[22px] md:mt-[35px]"
+              className="inline-block font-medium md:text-base rounded-[7px] bg-primary-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-primary-600 mt-[22px] md:mt-[35px]"
             >
               Get Started Free
             </Link>

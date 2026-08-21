@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 
 const primaryMetrics = [
-  { label: "Reply Rate", value: "—", change: "", icon: "ri-reply-line", color: "bg-lime-100 dark:bg-lime-900/20 text-lime-600" },
+  { label: "Reply Rate", value: "—", change: "", icon: "ri-reply-line", color: "bg-primary-100 dark:bg-primary-900/20 text-primary-600" },
   { label: "Meeting Rate", value: "—", change: "", icon: "ri-calendar-check-line", color: "bg-blue-50 dark:bg-blue-900/20 text-blue-600" },
   { label: "Conversion", value: "—", change: "", icon: "ri-exchange-funds-line", color: "bg-purple-50 dark:bg-purple-900/20 text-purple-600" },
   { label: "Pipeline Velocity", value: "—", change: "", icon: "ri-speed-line", color: "bg-amber-50 dark:bg-amber-900/20 text-amber-600" },
@@ -45,7 +45,7 @@ export default function AnalyticsPage() {
                 )}
               </div>
               <p className="text-[12px] md:text-[13px] text-gray-400 !mb-[4px]">{metric.label}</p>
-              <p className="text-[24px] md:text-[28px] font-bold text-[#06201b] dark:text-white !mb-0">{metric.value}</p>
+              <p className="text-[24px] md:text-[28px] font-bold text-[#0f172a] dark:text-white !mb-0">{metric.value}</p>
             </CardBody>
           </Card>
         ))}
@@ -91,7 +91,7 @@ export default function AnalyticsPage() {
             {secondaryMetrics.map((metric) => (
               <div key={metric.label}>
                 <p className="text-[12px] text-gray-400 !mb-[4px]">{metric.label}</p>
-                <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{metric.value}</p>
+                <p className="text-[18px] font-bold text-[#0f172a] dark:text-white !mb-0">{metric.value}</p>
               </div>
             ))}
           </div>
