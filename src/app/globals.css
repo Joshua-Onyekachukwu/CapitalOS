@@ -47,6 +47,16 @@
   --color-success-700: #1e8308;
   --color-success-800: #1d670d;
   --color-success-900: #1a5710;
+  --color-lime-50: #f5ffed;
+  --color-lime-100: #e6ffd3;
+  --color-lime-200: #d4ffb4;
+  --color-lime-300: #c3ff9a;
+  --color-lime-400: #b8ff8c;
+  --color-lime-500: #b1ff84;
+  --color-lime-600: #8bd466;
+  --color-lime-700: #6fa350;
+  --color-lime-800: #547b3d;
+  --color-lime-900: #3c562b;
   --color-danger-50: #fff2f0;
   --color-danger-100: #ffe1dd;
   --color-danger-200: #ffc8c0;
@@ -88,11 +98,16 @@
   --color-info-800: #0088a2;
   --color-info-900: #006574;
   --shadow-3xl: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  --shadow-custom: 21px 85px 24px 0px rgba(176, 176, 176, 0),
+    13px 54px 22px 0px rgba(176, 176, 176, 0.02),
+    8px 30px 19px 0px rgba(176, 176, 176, 0.06),
+    3px 14px 14px 0px rgba(176, 176, 176, 0.11),
+    1px 3px 8px 0px rgba(176, 176, 176, 0.13);
 }
 
 /** Body */
 body {
-  @apply font-body text-sm md:text-base text-gray-500 bg-white leading-normal dark:bg-[#0a0e19] dark:text-gray-400;
+  @apply font-body text-sm md:text-base text-gray-500 bg-gray-50 leading-normal dark:bg-[#0a0e19] dark:text-gray-400;
 }
 
 /** Paragraph */
@@ -166,12 +181,8 @@ button {
   &.is-sticky {
     @apply z-[999] bg-white dark:bg-dark;
 
-    &.landing-navbar {
-      @apply py-0 shadow-sm dark:bg-[#1c1c1c];
-
-      .inner-navbar {
-        @apply px-0;
-      }
+    &.sales-navbar {
+      @apply py-[15px] md:py-[20px] shadow-sm dark:bg-[#06201b];
     }
   }
   #navbar-burger-menu {

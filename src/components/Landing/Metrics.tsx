@@ -31,14 +31,8 @@ const AnimatedNumber: React.FC<{
       const elapsedTime = currentTime - startTime;
       const progress = Math.min(elapsedTime / duration, 1);
       const currentValue = Math.floor(progress * (end - start) + start);
-
-      setCount(
-        isDecimal ? parseFloat(currentValue.toFixed(1)) : currentValue
-      );
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
+      setCount(isDecimal ? parseFloat(currentValue.toFixed(1)) : currentValue);
+      if (progress < 1) requestAnimationFrame(animate);
     };
 
     const animationId = requestAnimationFrame(animate);

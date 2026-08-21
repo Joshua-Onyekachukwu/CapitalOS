@@ -6,58 +6,64 @@ import Link from "next/link";
 const HeroBanner: React.FC = () => {
   return (
     <>
-      <div className="dark:bg-[#0a0e19] relative z-[1] pt-[155px] md:pt-[200px] lg:pt-[230px] xl:pt-[250px] pb-[70px] md:pb-[80px]">
-        <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-          <div className="text-center mx-auto lg:max-w-[850px]">
-            <div className="inline-block mb-[12px] md:mb-[15px]">
-              <span className="flex items-center gap-[10px] rounded-[30px] bg-white dark:bg-gray-900 border border-primary-100 dark:border-gray-800 py-[3.5px] px-[14px]">
-                <i className="ri-sparkling-2-fill text-primary-500 text-[18px]"></i>
-                AI-Powered Fundraising
-              </span>
+      <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
+        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] py-[70px] px-[20px] md:py-[90px] md:px-[40px] lg:py-[100px] lg:px-[50px] xl:py-[75px] xl:px-[110px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[25px] items-center">
+            <div>
+              <h1 className="!font-medium !text-[#ebebe0] !text-4xl md:!text-[50px] lg:!text-[56px] xl:!text-[62px] !leading-[1.2] md:-tracking-[1.5px] !mb-[15px] lg:!mb-[20px]">
+                Your AI{" "}
+                <span className="italic text-lime-500">Fundraising</span>{" "}
+                Department
+              </h1>
+
+              <p className="text-[#ebebe0] md:text-[15px] lg:text-md xl:text-lg xl:max-w-[400px]">
+                Find the right investors, understand why they are relevant,
+                reach out intelligently, and manage the entire fundraising
+                process — all from one place.
+              </p>
+
+              <div className="mt-[22px] md:mt-[30px] lg:mt-[40px]">
+                <Link
+                  href="/signup"
+                  className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 ltr:mr-[15px] rtl:ml-[15px]"
+                >
+                  Start Fundraising
+                </Link>
+                <Link
+                  href="/#how-it-works"
+                  className="inline-block font-medium rounded-[7px] border border-lime-500 text-base text-lime-500 py-[8.5px] md:py-[10.5px] px-[22px] md:px-[25px] transition-all hover:text-black hover:bg-lime-500 hover:border-lime-500"
+                >
+                  See How It Works
+                </Link>
+              </div>
+
+              <div className="mt-[22px] md:mt-[35px] lg:mt-[50px] xl:mt-[80px] flex flex-wrap gap-[15px] text-[#ebebe0]/60 text-[13px] md:text-[14px]">
+                <span className="flex items-center gap-[6px]">
+                  <i className="ri-shield-check-fill text-lime-500"></i>
+                  No credit card required
+                </span>
+                <span className="flex items-center gap-[6px]">
+                  <i className="ri-time-fill text-lime-500"></i>
+                  Setup in under 10 minutes
+                </span>
+                <span className="flex items-center gap-[6px]">
+                  <i className="ri-lock-fill text-lime-500"></i>
+                  Your data stays private
+                </span>
+              </div>
             </div>
 
-            <h1 className="!font-medium !text-4xl md:!text-[50px] lg:!text-[60px] md:-tracking-[3px] !leading-[1.2] !mb-[10px] md:!mb-[15px] lg:!mb-[20px]">
-              Your AI{" "}
-              <span className="text-primary-500">Fundraising</span>{" "}
-              Department
-            </h1>
-
-            <p className="md:text-[15px] lg:text-md max-w-[600px] mx-auto">
-              Find the right investors, understand why they are relevant, reach
-              out intelligently, and manage the entire fundraising process — all
-              from one place.
-            </p>
-
-            <div className="mt-[25px] md:mt-[35px] lg:mt-[50px]">
-              <Link
-                href="/signup"
-                className="inline-block font-medium md:text-base rounded-[7px] bg-primary-500 text-white py-[11.5px] md:py-[13.5px] px-[22px] md:px-[25px] transition-all hover:bg-primary-600 mx-[8px]"
-              >
-                Start Fundraising
-              </Link>
-              <Link
-                href="/#how-it-works"
-                className="inline-block font-medium md:text-base rounded-[7px] text-primary-500 border border-primary-500 py-[10.5px] md:py-[12.5px] px-[22px] md:px-[25px] transition-all hover:bg-primary-600 hover:border-primary-600 hover:text-white mx-[8px]"
-              >
-                See How It Works
-              </Link>
+            {/* Dashboard Preview Placeholder */}
+            <div className="text-center ltr:lg:-ml-[70px] rtl:lg:-mr-[70px] ltr:xl:-ml-[120px] rtl:xl:-mr-[120px]">
+              <div className="inline-block w-full max-w-[400px] lg:max-w-none aspect-square rounded-[20px] bg-[#0a3d2e] flex items-center justify-center">
+                <div className="text-center px-[20px]">
+                  <i className="ri-dashboard-3-line text-lime-500/30 text-[60px] md:text-[80px] block mb-[15px]"></i>
+                  <span className="text-[#ebebe0]/30 text-[13px] md:text-[14px]">
+                    Dashboard Preview
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-
-          {/* Trust signals */}
-          <div className="mt-[30px] md:mt-[50px] lg:mt-[65px] xl:mt-[85px] flex flex-wrap items-center justify-center gap-[20px] md:gap-[40px] text-gray-400 dark:text-gray-600">
-            <span className="flex items-center gap-[8px] text-[13px] md:text-[14px]">
-              <i className="ri-shield-check-fill text-success-500"></i>
-              No credit card required
-            </span>
-            <span className="flex items-center gap-[8px] text-[13px] md:text-[14px]">
-              <i className="ri-time-fill text-success-500"></i>
-              Setup in under 10 minutes
-            </span>
-            <span className="flex items-center gap-[8px] text-[13px] md:text-[14px]">
-              <i className="ri-lock-fill text-success-500"></i>
-              Your data stays private
-            </span>
           </div>
         </div>
       </div>

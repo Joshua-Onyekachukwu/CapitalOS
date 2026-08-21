@@ -6,14 +6,14 @@ import Link from "next/link";
 const Footer: React.FC = () => {
   return (
     <>
-      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
+      <div className="py-[70px] md:py-[90px] lg:py-[100px] xl:py-[120px] 2xl:py-[140px]">
         <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[25px]">
             {/* Brand */}
             <div className="ltr:lg:-mr-[50px] rtl:lg:-ml-[50px] ltr:xl:-mr-[100px] rtl:xl:-ml-[100px]">
-              <Link href="/" className="inline-block max-w-[132px] mb-[20px] md:mb-[25px]">
-                <span className="text-xl font-bold text-primary-600 dark:text-primary-400">
-                  Capital<span className="text-gray-900 dark:text-white">OS</span>
+              <Link href="/" className="inline-block max-w-[132px] mb-[20px] md:mb-[23px]">
+                <span className="text-xl font-bold text-[#06201b] dark:text-white">
+                  Capital<span className="text-lime-500">OS</span>
                 </span>
               </Link>
               <p className="!leading-[1.6]">
@@ -30,17 +30,17 @@ const Footer: React.FC = () => {
               </h3>
               <ul>
                 <li className="mb-[10px] last:mb-0">
-                  <Link href="/#features" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-primary-600">
+                  <Link href="/#features" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-lime-600">
                     Features
                   </Link>
                 </li>
                 <li className="mb-[10px] last:mb-0">
-                  <Link href="/#how-it-works" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-primary-600">
+                  <Link href="/#how-it-works" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-lime-600">
                     How It Works
                   </Link>
                 </li>
                 <li className="mb-[10px] last:mb-0">
-                  <Link href="/signup" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-primary-600">
+                  <Link href="/signup" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-lime-600">
                     Get Started
                   </Link>
                 </li>
@@ -54,17 +54,17 @@ const Footer: React.FC = () => {
               </h3>
               <ul>
                 <li className="mb-[10px] last:mb-0">
-                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-primary-600">
+                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-lime-600">
                     Documentation
                   </a>
                 </li>
                 <li className="mb-[10px] last:mb-0">
-                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-primary-600">
+                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-lime-600">
                     Help Center
                   </a>
                 </li>
                 <li className="mb-[10px] last:mb-0">
-                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-primary-600">
+                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-lime-600">
                     Blog
                   </a>
                 </li>
@@ -78,17 +78,17 @@ const Footer: React.FC = () => {
               </h3>
               <ul>
                 <li className="mb-[10px] last:mb-0">
-                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-primary-600">
+                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-lime-600">
                     About
                   </a>
                 </li>
                 <li className="mb-[10px] last:mb-0">
-                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-primary-600">
+                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-lime-600">
                     Privacy Policy
                   </a>
                 </li>
                 <li className="mb-[10px] last:mb-0">
-                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-primary-600">
+                  <a href="#" className="lg:text-[15px] xl:text-[16px] inline-block text-gray-500 dark:text-gray-400 transition-all hover:text-lime-600">
                     Terms of Service
                   </a>
                 </li>
@@ -100,11 +100,11 @@ const Footer: React.FC = () => {
 
       {/* Bottom Bar */}
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="py-[25px] md:py-[30px] border-t border-gray-100 dark:border-gray-900">
+        <div className="py-[25px] md:py-[30px] border-t border-[#ebebe0] dark:border-gray-900">
           <div className="text-center lg:text-left">
             <p className="!leading-[1.6]">
               &copy; {new Date().getFullYear()}{" "}
-              <span className="text-primary-500">Capital OS</span>. All rights
+              <span className="text-[#06201b] dark:text-white">Capital OS</span>. All rights
               reserved.
             </p>
           </div>
