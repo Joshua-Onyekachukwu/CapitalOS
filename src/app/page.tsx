@@ -19,15 +19,15 @@ export default function Home() {
 
       <HeroBanner />
 
-      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
+      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
         <ProblemStatement />
       </div>
 
-      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
+      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
         <Metrics />
       </div>
 
-      <div id="features" className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
+      <div id="features" className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
         <KeyFeatures />
       </div>
 
@@ -35,13 +35,13 @@ export default function Home() {
         <HowItWorks />
       </div>
 
-      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
+      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
         <TargetUsers />
       </div>
 
       <Faq />
 
-      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
+      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
         <CtaSection />
       </div>
       <Footer />

@@ -7,16 +7,16 @@ const HeroBanner: React.FC = () => {
   return (
     <>
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] py-[70px] px-[20px] md:py-[90px] md:px-[40px] lg:py-[100px] lg:px-[50px] xl:py-[75px] xl:px-[110px]">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[25px] items-center">
+        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] py-[60px] px-[20px] md:py-[80px] md:px-[40px] lg:py-[90px] lg:px-[50px] xl:py-[75px] xl:px-[110px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] items-center">
             <div>
-              <h1 className="!font-medium !text-[#ebebe0] !text-4xl md:!text-[50px] lg:!text-[56px] xl:!text-[62px] !leading-[1.2] md:-tracking-[1.5px] !mb-[15px] lg:!mb-[20px]">
+              <h1 className="!font-medium !text-[#ebebe0] !text-4xl md:!text-[46px] lg:!text-[52px] xl:!text-[58px] !leading-[1.15] md:-tracking-[1.5px] !mb-[15px] lg:!mb-[20px]">
                 Your AI{" "}
                 <span className="italic text-lime-500">Fundraising</span>{" "}
                 Department
               </h1>
 
-              <p className="text-[#ebebe0] md:text-[15px] lg:text-md xl:text-lg xl:max-w-[400px]">
+              <p className="text-[#ebebe0]/80 md:text-[15px] lg:text-[17px] xl:text-lg xl:max-w-[420px] leading-relaxed">
                 Find the right investors, understand why they are relevant,
                 reach out intelligently, and manage the entire fundraising
                 process — all from one place.
@@ -37,7 +37,7 @@ const HeroBanner: React.FC = () => {
                 </Link>
               </div>
 
-              <div className="mt-[22px] md:mt-[35px] lg:mt-[50px] xl:mt-[80px] flex flex-wrap gap-[15px] text-[#ebebe0]/60 text-[13px] md:text-[14px]">
+              <div className="mt-[22px] md:mt-[35px] lg:mt-[50px] xl:mt-[70px] flex flex-wrap gap-[15px] text-[#ebebe0]/50 text-[13px] md:text-[14px]">
                 <span className="flex items-center gap-[6px]">
                   <i className="ri-shield-check-fill text-lime-500"></i>
                   No credit card required
@@ -53,14 +53,51 @@ const HeroBanner: React.FC = () => {
               </div>
             </div>
 
-            {/* Dashboard Preview Placeholder */}
-            <div className="text-center ltr:lg:-ml-[70px] rtl:lg:-mr-[70px] ltr:xl:-ml-[120px] rtl:xl:-mr-[120px]">
-              <div className="inline-block w-full max-w-[400px] lg:max-w-none aspect-square rounded-[20px] bg-[#0a3d2e] flex items-center justify-center">
-                <div className="text-center px-[20px]">
-                  <i className="ri-dashboard-3-line text-lime-500/30 text-[60px] md:text-[80px] block mb-[15px]"></i>
-                  <span className="text-[#ebebe0]/30 text-[13px] md:text-[14px]">
-                    Dashboard Preview
-                  </span>
+            {/* Dashboard Preview */}
+            <div className="text-center ltr:lg:-ml-[50px] rtl:lg:-mr-[50px] ltr:xl:-ml-[100px] rtl:xl:-mr-[100px]">
+              <div className="inline-block w-full max-w-[400px] lg:max-w-none">
+                {/* Mini dashboard card */}
+                <div className="bg-[#0a3d2e] rounded-[20px] p-[20px] md:p-[25px]">
+                  {/* Header bar */}
+                  <div className="flex items-center justify-between mb-[16px]">
+                    <div className="flex items-center gap-[8px]">
+                      <div className="w-[8px] h-[8px] rounded-full bg-red-400"></div>
+                      <div className="w-[8px] h-[8px] rounded-full bg-yellow-400"></div>
+                      <div className="w-[8px] h-[8px] rounded-full bg-green-400"></div>
+                    </div>
+                    <div className="text-[#ebebe0]/20 text-[11px]">CapitalOS Dashboard</div>
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-3 gap-[10px] mb-[16px]">
+                    {[
+                      { label: "Investors", value: "127", color: "bg-lime-500/20" },
+                      { label: "Sent", value: "34", color: "bg-blue-500/20" },
+                      { label: "Replies", value: "12", color: "bg-purple-500/20" },
+                    ].map((stat) => (
+                      <div key={stat.label} className={`${stat.color} rounded-[10px] p-[12px] text-center`}>
+                        <div className="text-[#ebebe0]/60 text-[10px] mb-[4px]">{stat.label}</div>
+                        <div className="text-[#ebebe0] font-bold text-[18px]">{stat.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Mini pipeline */}
+                  <div className="bg-[#06201b] rounded-[10px] p-[14px]">
+                    <div className="text-[#ebebe0]/40 text-[10px] mb-[10px] uppercase tracking-wider font-medium">
+                      Pipeline
+                    </div>
+                    <div className="flex gap-[6px]">
+                      {["Discovered", "Qualified", "Contacted", "Replied", "Meeting"].map((stage, i) => (
+                        <div key={stage} className="flex-1 text-center">
+                          <div className={`h-[3px] rounded-full mb-[6px] ${
+                            i < 3 ? "bg-lime-500" : i === 3 ? "bg-lime-500/50" : "bg-[#ebebe0]/10"
+                          }`}></div>
+                          <div className="text-[#ebebe0]/30 text-[8px] md:text-[9px]">{stage}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
