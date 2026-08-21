@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const HeroBanner: React.FC = () => {
   return (
@@ -53,16 +54,16 @@ const HeroBanner: React.FC = () => {
               </div>
             </div>
 
-            {/* Dashboard Preview Placeholder */}
+            {/* Banner Image */}
             <div className="text-center ltr:lg:-ml-[70px] rtl:lg:-mr-[70px] ltr:xl:-ml-[120px] rtl:xl:-mr-[120px]">
-              <div className="inline-block w-full max-w-[400px] lg:max-w-none aspect-square rounded-[20px] bg-[#0a3d2e] flex items-center justify-center">
-                <div className="text-center px-[20px]">
-                  <i className="ri-dashboard-3-line text-lime-500/30 text-[60px] md:text-[80px] block mb-[15px]"></i>
-                  <span className="text-[#ebebe0]/30 text-[13px] md:text-[14px]">
-                    Dashboard Preview
-                  </span>
-                </div>
-              </div>
+              <Image
+                src="/images/real-estate-agent/banner.png"
+                className="inline-block"
+                alt="Capital OS Dashboard Preview"
+                width={468}
+                height={400}
+                priority
+              />
             </div>
           </div>
         </div>
