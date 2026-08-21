@@ -1,6 +1,3 @@
-import Navbar from "@/components/Layout/Navbar";
-import Footer from "@/components/Layout/Footer";
-import GoTop from "@/components/Layout/GoTop";
 import HeroBanner from "@/components/Landing/HeroBanner";
 import ProblemStatement from "@/components/Landing/ProblemStatement";
 import HowItWorks from "@/components/Landing/HowItWorks";
@@ -13,21 +10,20 @@ import CtaSection from "@/components/Landing/CtaSection";
 export default function Home() {
   return (
     <>
-      <Navbar />
       {/* Spacer for fixed navbar */}
       <div className="h-[69px] md:h-[89px] lg:h-[114px]"></div>
 
       <HeroBanner />
 
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
+      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
         <ProblemStatement />
       </div>
 
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
+      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
         <Metrics />
       </div>
 
-      <div id="features" className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
+      <div id="features" className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
         <KeyFeatures />
       </div>
 
@@ -35,17 +31,15 @@ export default function Home() {
         <HowItWorks />
       </div>
 
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
+      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
         <TargetUsers />
       </div>
 
       <Faq />
 
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[100px] 2xl:py-[120px]">
+      <div className="py-[70px] md:py-[90px] lg:py-[110px] xl:py-[130px] 2xl:py-[160px]">
         <CtaSection />
       </div>
-      <Footer />
-      <GoTop />
     </>
   );
 }

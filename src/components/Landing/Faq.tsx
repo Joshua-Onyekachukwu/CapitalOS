@@ -13,33 +13,31 @@ const AccordionItem: React.FC<{
   onClick: () => void;
 }> = ({ item, isOpen, onClick }) => {
   return (
-    <div className={`rounded-[12px] mb-[12px] last:mb-0 transition-colors ${
-      isOpen
-        ? "bg-[#ebebe0] dark:bg-[#0a0e19]"
-        : "bg-[#ebebe0]/60 dark:bg-[#0a0e19]/60 hover:bg-[#ebebe0] dark:hover:bg-[#0a0e19]"
-    }`}>
+    <div className="bg-[#ebebe0] dark:bg-[#0a0e19] rounded-[15px] mb-[20px] last:mb-0">
       <button
-        className={`text-[15px] md:text-[16px] px-[20px] md:px-[25px] py-[16px] md:py-[18px] flex items-center justify-between w-full ltr:text-left rtl:text-right font-medium text-[#06201B] dark:text-white`}
+        className={`text-[16px] md:text-lg lg:text-[20px] px-[20px] md:px-[30px] py-[20px] md:py-[25px] flex items-center justify-between w-full ltr:text-left rtl:text-right font-medium relative text-[#06201B] dark:text-white ${
+          isOpen ? "open" : ""
+        }`}
         type="button"
         onClick={onClick}
         aria-expanded={isOpen}
       >
         {item.question}
-        <span className="block w-[28px] h-[28px] md:w-[32px] md:h-[32px] rounded-full bg-white dark:bg-dark flex items-center justify-center text-[18px] md:text-[20px] transition-transform duration-200 flex-none ml-[12px]">
+        <span className="block w-[35px] h-[35px] md:w-[44px] md:h-[44px] rounded-full bg-white dark:bg-dark flex items-center justify-center text-[24px] md:text-[28px] transition-transform duration-200 flex-none">
           <i
-            className={`ri-add-line transition-transform duration-200 ${
-              isOpen ? "rotate-45" : ""
+            className={`ri-arrow-down-s-line transition-transform duration-200 ${
+              isOpen ? "rotate-180" : ""
             }`}
           ></i>
         </span>
       </button>
       <div
         className={`overflow-hidden transition-all duration-200 ${
-          isOpen ? "opacity-100 max-h-[200px]" : "opacity-0 max-h-0"
+          isOpen ? "opacity-100 -mt-[5px] md:-mt-[10px]" : "opacity-0 hidden"
         }`}
       >
-        <div className="px-[20px] md:px-[25px] pb-[16px] md:pb-[18px] text-[#7a857d] text-[14px] md:text-[15px] leading-relaxed">
-          {item.answer}
+        <div className="px-[20px] md:px-[30px] pb-[20px] md:pb-[30px] text-[#7a857d]">
+          <p>{item.answer}</p>
         </div>
       </div>
     </div>
@@ -79,11 +77,11 @@ const Faq: React.FC = () => {
 
   return (
     <>
-      <div className="py-[60px] md:py-[70px] lg:py-[80px] xl:py-[90px] 2xl:py-[100px]">
+      <div className="py-[70px] md:py-[90px] lg:py-[100px] xl:py-[120px] 2xl:py-[140px]">
         <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-          <div className="mb-[30px] md:mb-[40px] lg:mb-[50px] text-center mx-auto md:max-w-[500px]">
+          <div className="mb-[30px] md:mb-[40px] lg:mb-[50px] xl:mb-[60px] text-center mx-auto md:max-w-[415px]">
             <span className="inline-block font-medium text-[#7a857d] rounded-[30px] border border-[#ebebe0] dark:border-gray-800 py-[5.5px] px-[18px] mb-[12px] md:mb-[15px]">
-              FAQ
+              Frequently Asked Questions
             </span>
             <h2 className="!text-[#06201B] dark:!text-white md:-tracking-[1px] !font-medium !text-2xl md:!text-3xl lg:!text-4xl !leading-[1.2] !mb-[12px] md:!mb-[15px]">
               Got Questions? We&apos;ve Got Answers
@@ -94,7 +92,7 @@ const Faq: React.FC = () => {
             </p>
           </div>
 
-          <div className="mx-auto max-w-[780px]">
+          <div className="mx-auto max-w-[848px]">
             {faqItems.map((item, index) => (
               <AccordionItem
                 key={index}

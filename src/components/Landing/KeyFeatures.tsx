@@ -44,7 +44,7 @@ const KeyFeatures: React.FC = () => {
   return (
     <>
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="mb-[30px] md:mb-[40px] lg:mb-[50px] xl:mb-[60px] text-center mx-auto md:max-w-[500px]">
+        <div className="mb-[30px] md:mb-[40px] lg:mb-[50px] xl:mb-[60px] text-center mx-auto md:max-w-[415px]">
           <span className="inline-block font-medium text-[#7a857d] rounded-[30px] border border-[#ebebe0] dark:border-gray-800 py-[5.5px] px-[18px] mb-[12px] md:mb-[15px]">
             Features
           </span>
@@ -57,21 +57,19 @@ const KeyFeatures: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[20px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[25px]">
           {features.map((feature) => (
             <div
               key={feature.id}
-              className="rounded-[15px] md:rounded-[20px] bg-[#ebebe0] dark:bg-[#0a0e19] p-[25px] md:p-[30px] hover:shadow-md transition-shadow"
+              className="rounded-[15px] md:rounded-[30px] bg-[#ebebe0] dark:bg-[#0a0e19] py-[30px] md:py-[40px] lg:py-[55px] px-[25px] md:px-[30px] lg:px-[20px] xl:px-[40px]"
             >
-              <div className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-[#06201b] mb-[20px] md:mb-[25px]">
-                <i className={`${feature.icon} text-lime-500 text-[22px]`}></i>
+              <div className="flex items-center justify-center w-[65px] h-[65px] rounded-full bg-[#06201b] mb-[40px] md:mb-[100px]">
+                <i className={`${feature.icon} text-lime-500 text-[28px]`}></i>
               </div>
-              <h3 className="!text-[#06201B] dark:!text-white !font-semibold !text-[15px] md:!text-[16px] !mb-[8px] md:!mb-[10px]">
+              <h3 className="!text-[#06201B] dark:!text-white !font-medium !text-md md:!text-lg lg:!text-[20px] !mb-[15px] md:!mb-[20px]">
                 {feature.title}
               </h3>
-              <p className="text-[#7a857d] text-[13px] md:text-[14px] !mb-0 leading-relaxed">
-                {feature.description}
-              </p>
+              <p className="text-[#7a857d]">{feature.description}</p>
             </div>
           ))}
         </div>
