@@ -8,9 +8,7 @@ import { useUser } from "@/hooks/useUser";
 const publicMenuItems = [
   { label: "Home", href: "/" },
   { label: "Features", href: "/#features" },
-  { label: "Why Us", href: "/#why-us" },
-  { label: "Pricing", href: "/#pricing" },
-  { label: "FAQ", href: "/#faq" },
+  { label: "How It Works", href: "/#how-it-works" },
 ];
 
 const authMenuItems = [
@@ -18,22 +16,17 @@ const authMenuItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Investors", href: "/dashboard/investors" },
   { label: "Campaigns", href: "/dashboard/campaigns" },
-  { label: "Outreach", href: "/dashboard/outreach" },
 ];
 
 const Navbar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, signedIn } = useUser();
-  const [isActiveMobileMenu, setActiveMobileMenu] = useState<boolean>(true);
-  const [signingOut, setSigningOut] = useState(false);
-
-  const menuItems = signedIn ? authMenuItems : publicMenuItems;
 
   useEffect(() => {
     const elementId = document.getElementById("navbar");
     const handleScroll = () => {
-      if (window.scrollY > 80) {
+      if (window.scrollY > 100) {
         elementId?.classList.add("is-sticky");
       } else {
         elementId?.classList.remove("is-sticky");
@@ -45,6 +38,9 @@ const Navbar: React.FC = () => {
       document.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  const [isActiveMobileMenu, setActiveMobileMenu] = useState<boolean>(true);
+  const [signingOut, setSigningOut] = useState(false);
 
   const handleToggleMobileMenu = (): void => {
     setActiveMobileMenu(!isActiveMobileMenu);
@@ -64,18 +60,18 @@ const Navbar: React.FC = () => {
   };
 
   // During loading, show the public nav to avoid flash of wrong content
-  const displayItems = loading ? publicMenuItems : menuItems;
+  const displayItems = loading ? publicMenuItems : signedIn ? authMenuItems : publicMenuItems;
 
   return (
     <>
       <div
-        className="real-estate-agent-navbar fixed top-0 right-0 left-0 transition-all h-auto z-[5] py-[15px] md:py-[20px] lg:py-[25px] xl:py-[30px]"
+        className="sales-navbar bg-white dark:bg-dark fixed top-0 right-0 left-0 transition-all h-auto z-[5] py-[20px] md:py-[30px] lg:py-[35px]"
         id="navbar"
       >
-        <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1430px] 2xl:max-w-[1745px] mx-auto px-[12px]">
+        <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
           <div className="flex items-center relative flex-wrap lg:flex-nowrap justify-between lg:justify-start">
             {/* Logo */}
-            <Link href={signedIn ? "/dashboard" : "/"} className="inline-block w-[110px]">
+            <Link href={signedIn ? "/dashboard" : "/"} className="inline-block w-[150px] ltr:mr-[15px] rtl:ml-[15px]">
               <span className="text-xl font-bold text-[#06201b] dark:text-white">
                 Capital<span className="text-lime-500">OS</span>
               </span>
@@ -84,7 +80,6 @@ const Navbar: React.FC = () => {
             {/* Mobile burger */}
             <button
               type="button"
-              id="navbar-burger-menu"
               className="inline-block relative leading-none lg:hidden"
               onClick={handleToggleMobileMenu}
               aria-label="Toggle menu"
@@ -96,85 +91,58 @@ const Navbar: React.FC = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center grow basis-full">
-              {/* Pill nav container */}
-              <ul className="flex mx-auto flex-row bg-white/40 dark:bg-dark/40 rounded-[40px] p-[5px]">
-                {displayItems.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className={`font-semibold rounded-[70px] text-base block py-[9.5px] xl:py-[11.5px] px-[20px] xl:px-[26px] transition-all ${
-                          isActive
-                            ? "bg-lime-500 text-black"
-                            : "text-black dark:text-white hover:bg-lime-500 hover:text-black"
-                        }`}
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  );
-                })}
+              <ul className="flex mx-auto flex-row gap-[30px] xl:gap-[40px]">
+                {displayItems.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`font-medium transition-all hover:text-[#06201b] ${
+                        pathname === item.href ? "text-[#06201b]" : ""
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
 
-              {/* Right side actions */}
-              <div className="flex items-center gap-[20px] xl:gap-[30px]">
+              <div className="flex items-center gap-[12px]">
                 {loading ? (
-                  /* Loading skeleton — matches size of buttons */
-                  <div className="flex items-center gap-[20px]">
-                    <div className="w-[60px] h-[16px] bg-gray-200/50 rounded animate-pulse"></div>
-                    <div className="w-[100px] h-[45px] bg-gray-200/50 rounded-full animate-pulse"></div>
+                  /* Loading skeleton */
+                  <div className="flex items-center gap-[12px]">
+                    <div className="w-[80px] h-[40px] bg-gray-100 rounded-[7px] animate-pulse"></div>
+                    <div className="w-[100px] h-[40px] bg-gray-100 rounded-[7px] animate-pulse"></div>
                   </div>
                 ) : signedIn ? (
-                  /* Authenticated user actions */
+                  /* Authenticated: Dashboard + Account */
                   <>
                     <Link
                       href="/dashboard"
-                      className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
+                      className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white"
                     >
                       Dashboard
                     </Link>
                     <Link
                       href="/dashboard/settings"
-                      className="flex items-center gap-[10px]"
+                      className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600"
                     >
-                      <div className="flex-none flex items-center justify-center rounded-full bg-[#06201b] dark:bg-dark text-lime-500 text-lg w-[45px] h-[45px] xl:w-[50px] xl:h-[50px] transition-all hover:bg-lime-500 hover:text-black">
-                        <i className="ri-user-line"></i>
-                      </div>
-                      <div className="pt-[3px] hidden xl:block">
-                        <span className="block uppercase tracking-[1.8px] text-xs font-semibold mb-px">
-                          ACCOUNT
-                        </span>
-                        <span className="inline-block tracking-[0.18px] font-bold text-base md:text-[15px] lg:text-md xl:text-lg text-black dark:text-white transition-all hover:text-lime-500">
-                          {user?.email?.split("@")[0] || "Profile"}
-                        </span>
-                      </div>
+                      {user?.email?.split("@")[0] || "Account"}
                     </Link>
                   </>
                 ) : (
-                  /* Logged-out visitor actions */
+                  /* Visitor: Log In + Get Started */
                   <>
                     <Link
                       href="/login"
-                      className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
+                      className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white"
                     >
-                      Log in
+                      Log In
                     </Link>
                     <Link
                       href="/signup"
-                      className="flex items-center gap-[10px]"
+                      className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600"
                     >
-                      <div className="flex-none flex items-center justify-center rounded-full bg-[#06201b] dark:bg-dark text-lime-500 text-lg w-[45px] h-[45px] xl:w-[50px] xl:h-[50px] transition-all hover:bg-lime-500 hover:text-black">
-                        <i className="ri-rocket-2-fill"></i>
-                      </div>
-                      <div className="pt-[3px] hidden xl:block">
-                        <span className="block uppercase tracking-[1.8px] text-xs font-semibold mb-px">
-                          GET STARTED
-                        </span>
-                        <span className="inline-block tracking-[0.18px] font-bold text-base md:text-[15px] lg:text-md xl:text-lg text-black dark:text-white transition-all hover:text-lime-500">
-                          Start Free Trial
-                        </span>
-                      </div>
+                      Get Started
                     </Link>
                   </>
                 )}
@@ -183,50 +151,47 @@ const Navbar: React.FC = () => {
 
             {/* Mobile Navigation */}
             <div
-              className={`bg-white dark:bg-[#06201b] rounded-[15px] border border-gray-200 dark:border-gray-900 mt-[15px] p-[20px] md:p-[30px] w-full hidden lg:!hidden ${
+              className={`bg-white dark:bg-[#0a0e19] rounded-[15px] border border-gray-200 dark:border-[#202c4b] mt-[20px] p-[20px] md:p-[30px] w-full hidden lg:!hidden ${
                 isActiveMobileMenu ? "" : "active"
               }`}
               id="navbar-collapse"
             >
               <ul>
-                {displayItems.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <li
-                      key={item.href}
-                      className="my-[15px] md:my-[17px] first:mt-0 last:mb-0"
+                {displayItems.map((item) => (
+                  <li
+                    key={item.href}
+                    className="my-[14px] md:my-[16px] first:mt-0 last:mb-0"
+                  >
+                    <Link
+                      href={item.href}
+                      className={`font-medium transition-all hover:text-[#06201b] ${
+                        pathname === item.href ? "text-[#06201b]" : ""
+                      }`}
                     >
-                      <Link
-                        href={item.href}
-                        className={`font-semibold text-base block transition-all ${
-                          isActive
-                            ? "text-lime-500"
-                            : "text-black dark:text-white hover:text-lime-500"
-                        }`}
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  );
-                })}
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
-              <div className="sm:flex items-center gap-[25px] mt-[15px] md:mt-[17px]">
+
+              <div className="flex flex-col gap-[10px] mt-[20px]">
                 {loading ? (
-                  <div className="flex items-center gap-[25px]">
-                    <div className="h-[40px] w-[120px] bg-gray-200 rounded animate-pulse"></div>
+                  <div className="space-y-[10px]">
+                    <div className="h-[44px] bg-gray-100 rounded-[7px] animate-pulse"></div>
+                    <div className="h-[44px] bg-gray-100 rounded-[7px] animate-pulse"></div>
                   </div>
                 ) : signedIn ? (
                   <>
                     <Link
                       href="/dashboard"
-                      className="inline-block font-medium text-base rounded-[7px] bg-lime-500 text-black py-[10px] md:py-[11px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                      className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
                     >
                       Go to Dashboard
                     </Link>
                     <button
                       onClick={handleSignOut}
                       disabled={signingOut}
-                      className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
+                      className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
                     >
                       {signingOut ? "Signing out..." : "Sign Out"}
                     </button>
@@ -234,16 +199,16 @@ const Navbar: React.FC = () => {
                 ) : (
                   <>
                     <Link
-                      href="/signup"
-                      className="inline-block font-medium text-base rounded-[7px] bg-lime-500 text-black py-[10px] md:py-[11px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                      href="/login"
+                      className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
                     >
-                      Get Started
+                      Log In
                     </Link>
                     <Link
-                      href="/login"
-                      className="text-[#D15616] font-black text-xs uppercase tracking-[1.2px] xl:tracking-[1.8px] transition-all underline underline-offset-2 hover:text-lime-500"
+                      href="/signup"
+                      className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
                     >
-                      Log in
+                      Get Started
                     </Link>
                   </>
                 )}
