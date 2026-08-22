@@ -109,7 +109,7 @@ const FAQ: React.FC = () => {
             {faqData.map((item, index) => (
               <div
                 key={index}
-                className="border-b border-[#7D6B61]/10 dark:border-white/10 pb-[20px] md:pb-[25px] xl:pb-[30px] mb-[20px] md:mb-[25px] xl:mb-[30px] last:mb-0"
+                className={`border-b border-[#7D6B61]/10 dark:border-white/10 pb-[20px] md:pb-[25px] xl:pb-[30px] mb-[20px] md:mb-[25px] xl:mb-[30px] last:mb-0 ${index === 0 ? 'pt-[10px]' : ''}`}
               >
                 <button
                   className="text-black dark:text-white font-normal text-lg md:text-[20px] lg:text-[22px] xl:text-xl -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] flex items-center justify-between w-full ltr:text-left rtl:text-right"

@@ -17,7 +17,7 @@ const About: React.FC = () => {
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
         <div className="ltr:lg:ml-auto rtl:lg:mr-auto lg:max-w-[1178px] mb-[25px] md:mb-[35px]">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-[25px] xl:gap-[80px] items-center">
-            <div className="text-center lg:max-w-[186px]">
+            <div className="text-center lg:max-w-[186px] hidden md:block">
               <Image
                 src="/images/real-estate-agent/about1.jpg"
                 className="inline-block rounded-[10px]"

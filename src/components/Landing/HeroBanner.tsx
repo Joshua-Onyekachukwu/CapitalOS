@@ -8,10 +8,10 @@ const HeroBanner: React.FC = () => {
   return (
     <>
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] py-[50px] px-[20px] md:py-[60px] md:px-[40px] lg:py-[80px] lg:px-[50px] xl:py-[60px] xl:px-[80px] overflow-hidden">
+        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] pt-[50px] pb-0 px-[20px] md:py-[60px] md:px-[40px] lg:py-[80px] lg:px-[50px] xl:py-[60px] xl:px-[80px] overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] lg:gap-[20px] items-end">
             {/* Left: Copy */}
-            <div className="pb-[20px] lg:pb-[40px]">
+            <div className="pb-[50px] md:pb-0 lg:pb-[40px]">
               <h1 className="!font-medium !text-[#ebebe0] !text-[32px] md:!text-[44px] lg:!text-[50px] xl:!text-[58px] !leading-[1.15] md:-tracking-[1.5px] !mb-[12px] lg:!mb-[16px]">
                 Your AI{" "}
                 <span className="italic text-lime-500">Fundraising</span>{" "}
