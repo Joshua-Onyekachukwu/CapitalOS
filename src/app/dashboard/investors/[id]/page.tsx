@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
+import { DataHistory } from "@/components/Dashboard/DataHistory";
 
 // Placeholder data — will be replaced with Supabase query
 const INVESTOR_DATA: Record<string, {
@@ -70,6 +71,7 @@ const DEFAULT_INVESTOR = INVESTOR_DATA["1"];
 
 export default function InvestorDetailPage({ params }: { params: { id: string } }) {
   const investor = INVESTOR_DATA[params.id] || DEFAULT_INVESTOR;
+  const investorId = params.id;
 
   return (
     <div>
@@ -199,6 +201,16 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
                   </div>
                 ))}
               </div>
+            </CardBody>
+          </Card>
+
+          {/* Data History */}
+          <Card>
+            <CardHeader>
+              <h3 className="!text-[16px] !font-semibold !mb-0">Data History</h3>
+            </CardHeader>
+            <CardBody className="pt-0">
+              <DataHistory investorId={investorId} />
             </CardBody>
           </Card>
         </div>
