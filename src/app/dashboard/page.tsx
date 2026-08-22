@@ -2,13 +2,15 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { getDashboardStats, getRecentInvestors, getPipelineSummary } from "@/lib/actions/dashboard";
+import { getOrCreateCompanyProfile } from "@/lib/actions/company";
 import Link from "next/link";
 
 export default async function DashboardPage() {
-  const [stats, recentInvestors, pipeline] = await Promise.all([
+  const [stats, recentInvestors, pipeline, companyProfile] = await Promise.all([
     getDashboardStats(),
     getRecentInvestors(5),
     getPipelineSummary(),
+    getOrCreateCompanyProfile(),
   ]);
 
   const stageColors: Record<string, string> = {
@@ -19,12 +21,91 @@ export default async function DashboardPage() {
     do_not_contact: "bg-red-500",
   };
 
+  const readinessScore = companyProfile?.readinessScore || 0;
+  const onboardingCompleted = companyProfile?.onboardingCompleted || false;
+
+  // Determine next steps based on what's missing
+  const nextSteps: Array<{ label: string; href: string; icon: string }> = [];
+  if (!companyProfile?.companyName) {
+    nextSteps.push({ label: "Complete your company profile", href: "/onboarding", icon: "ri-building-line" });
+  }
+  if (!companyProfile?.hasPitchDeck) {
+    nextSteps.push({ label: "Upload or create your pitch deck", href: "/dashboard/documents", icon: "ri-file-ppt-2-line" });
+  }
+  if (stats.totalInvestors === 0) {
+    nextSteps.push({ label: "Discover your first investors", href: "/dashboard/investors/discover", icon: "ri-radar-line" });
+  }
+  if (stats.highFitInvestors === 0 && stats.totalInvestors > 0) {
+    nextSteps.push({ label: "Run fit analysis on your investors", href: "/dashboard/investors", icon: "ri-star-line" });
+  }
+  if (nextSteps.length === 0) {
+    nextSteps.push({ label: "Start an outreach campaign", href: "/dashboard/campaigns", icon: "ri-megaphone-line" });
+  }
+
   return (
     <div>
       <PageHeader
-        title="Welcome back 👋"
-        description="Here's an overview of your fundraising progress."
+        title={`Welcome back${companyProfile?.companyName ? `, ${companyProfile.companyName}` : ""} 👋`}
+        description="Here is an overview of your fundraising progress."
       />
+
+      {/* Company Readiness — only show if onboarding completed */}
+      {onboardingCompleted && readinessScore > 0 && (
+        <Card className="mb-[20px]">
+          <CardBody className="p-[20px]">
+            <div className="flex items-center gap-[20px] flex-wrap">
+              <div className="flex items-center gap-[14px] flex-1">
+                <div className="w-[48px] h-[48px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center flex-none">
+                  <span className="text-[18px] font-bold text-lime-700 dark:text-lime-400">{readinessScore}%</span>
+                </div>
+                <div>
+                  <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">
+                    Fundraising Readiness
+                  </p>
+                  <p className="text-[12px] text-gray-400 !mb-0">
+                    {readinessScore >= 80
+                      ? "Your profile is strong. Start discovering investors."
+                      : readinessScore >= 50
+                      ? "Good progress. Complete a few more fields to strengthen your profile."
+                      : "Complete your company profile to improve investor matching."}
+                  </p>
+                </div>
+              </div>
+              <Link href="/onboarding">
+                <Badge variant={readinessScore >= 80 ? "success" : "warning"}>
+                  {readinessScore >= 80 ? "Profile Complete" : "Improve Profile"}
+                </Badge>
+              </Link>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Onboarding CTA — only show if not completed */}
+      {!onboardingCompleted && (
+        <Card className="mb-[20px]">
+          <CardBody className="p-[20px]">
+            <div className="flex items-center gap-[16px]">
+              <div className="w-[48px] h-[48px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center text-lime-600 text-[22px] flex-none">
+                <i className="ri-rocket-2-line"></i>
+              </div>
+              <div className="flex-1">
+                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">
+                  Set up your fundraising workspace
+                </p>
+                <p className="text-[12px] text-gray-400 !mb-0">
+                  Tell us about your company so we can match you with the right investors.
+                </p>
+              </div>
+              <Link href="/onboarding">
+                <span className="text-[13px] font-medium text-lime-600 hover:text-lime-700 whitespace-nowrap">
+                  Get Started →
+                </span>
+              </Link>
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">
@@ -50,57 +131,26 @@ export default async function DashboardPage() {
 
       {/* Quick Actions + Pipeline */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">
-        {/* Quick Actions */}
+        {/* Next Steps */}
         <Card>
           <CardBody>
             <h3 className="!text-[16px] md:!text-lg !font-semibold !mb-[16px]">
-              Quick Actions
+              Next Steps
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
-              <Link href="/dashboard/startup">
-                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
-                  <div className="w-[36px] h-[36px] rounded-[8px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[18px] flex-none">
-                    <i className="ri-rocket-2-line"></i>
+            <div className="space-y-[10px]">
+              {nextSteps.map((step, i) => (
+                <Link key={i} href={step.href}>
+                  <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
+                    <div className="w-[36px] h-[36px] rounded-[8px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[18px] flex-none">
+                      <i className={step.icon}></i>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">{step.label}</p>
+                    </div>
+                    <i className="ri-arrow-right-line text-gray-300 group-hover:text-lime-500 text-[16px]"></i>
                   </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">Set Up Startup</p>
-                    <p className="text-[11px] text-gray-400 !mb-0">Complete your profile</p>
-                  </div>
-                </div>
-              </Link>
-              <Link href="/dashboard/investors/discover">
-                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
-                  <div className="w-[36px] h-[36px] rounded-[8px] bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 text-[18px] flex-none">
-                    <i className="ri-radar-line"></i>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">Find Investors</p>
-                    <p className="text-[11px] text-gray-400 !mb-0">AI-powered discovery</p>
-                  </div>
-                </div>
-              </Link>
-              <Link href="/dashboard/campaigns">
-                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
-                  <div className="w-[36px] h-[36px] rounded-[8px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[18px] flex-none">
-                    <i className="ri-megaphone-line"></i>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">Create Campaign</p>
-                    <p className="text-[11px] text-gray-400 !mb-0">Start outreach</p>
-                  </div>
-                </div>
-              </Link>
-              <Link href="/dashboard/copilot">
-                <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
-                  <div className="w-[36px] h-[36px] rounded-[8px] bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 text-[18px] flex-none">
-                    <i className="ri-sparkling-2-line"></i>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">AI Copilot</p>
-                    <p className="text-[11px] text-gray-400 !mb-0">Ask anything</p>
-                  </div>
-                </div>
-              </Link>
+                </Link>
+              ))}
             </div>
           </CardBody>
         </Card>

@@ -1,0 +1,814 @@
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+
+// =============================================
+// Types
+// =============================================
+
+interface OnboardingData {
+  // Step 1 — Company Identity
+  companyName: string;
+  websiteUrl: string;
+  industry: string;
+  location: string;
+  companyStage: string;
+  businessModel: string;
+  // Step 2 — What You Build
+  oneLiner: string;
+  description: string;
+  differentiator: string;
+  targetCustomer: string;
+  // Step 3 — Fundraising
+  currentlyRaising: boolean;
+  fundingAmount: string;
+  roundType: string;
+  targetInvestorGeographies: string[];
+  hasPitchDeck: boolean;
+  // Step 4 — Traction
+  mrr: string;
+  arr: string;
+  customerCount: string;
+  growthRate: string;
+  milestones: string;
+  employeeCount: string;
+  // Step 5 — Team
+  teamMembers: Array<{ name: string; title: string; linkedinUrl: string; isFounder: boolean }>;
+}
+
+const STEPS = [
+  { id: 1, title: "Company Identity", icon: "ri-building-line" },
+  { id: 2, title: "What You Build", icon: "ri-lightbulb-line" },
+  { id: 3, title: "Fundraising", icon: "ri-funds-line" },
+  { id: 4, title: "Traction", icon: "ri-line-chart-line" },
+  { id: 5, title: "Team", icon: "ri-team-line" },
+  { id: 6, title: "Documents", icon: "ri-file-text-line" },
+  { id: 7, title: "Review & Launch", icon: "ri-check-double-line" },
+];
+
+const INDUSTRIES = [
+  "AI / Machine Learning", "FinTech", "HealthTech", "ClimateTech", "CleanTech",
+  "EdTech", "Cybersecurity", "SaaS", "Enterprise Software", "Consumer",
+  "Marketplace", "DeepTech", "Robotics", "SpaceTech", "PropTech",
+  "AgriTech", "Logistics", "Mobility", "Energy", "Media", "Web3",
+];
+
+const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B", "Series C", "Growth"];
+
+const BUSINESS_MODELS = ["SaaS", "Marketplace", "Hardware", "Services", "Consumer", "Other"];
+
+const ROUND_TYPES = ["Pre-Seed", "Seed", "Series A", "Series B", "Series C", "Growth"];
+
+const GEOGRAPHIES = ["United States", "Europe", "United Kingdom", "Asia", "Africa", "Latin America", "Middle East", "Global"];
+
+// =============================================
+// Onboarding Page
+// =============================================
+
+export default function OnboardingPage() {
+  const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [data, setData] = useState<OnboardingData>({
+    companyName: "",
+    websiteUrl: "",
+    industry: "",
+    location: "",
+    companyStage: "",
+    businessModel: "",
+    oneLiner: "",
+    description: "",
+    differentiator: "",
+    targetCustomer: "",
+    currentlyRaising: false,
+    fundingAmount: "",
+    roundType: "",
+    targetInvestorGeographies: [],
+    hasPitchDeck: false,
+    mrr: "",
+    arr: "",
+    customerCount: "",
+    growthRate: "",
+    milestones: "",
+    employeeCount: "",
+    teamMembers: [{ name: "", title: "Founder & CEO", linkedinUrl: "", isFounder: true }],
+  });
+
+  // Load existing profile on mount
+  useEffect(() => {
+    async function loadProfile() {
+      setLoading(true);
+      try {
+        const { getOrCreateCompanyProfile } = await import("@/lib/actions/company");
+        const profile = await getOrCreateCompanyProfile();
+        if (profile) {
+          setData({
+            companyName: profile.companyName || "",
+            websiteUrl: profile.websiteUrl || "",
+            industry: profile.industry || "",
+            location: profile.location || "",
+            companyStage: profile.companyStage || "",
+            businessModel: profile.businessModel || "",
+            oneLiner: profile.oneLiner || "",
+            description: profile.description || "",
+            differentiator: profile.differentiator || "",
+            targetCustomer: profile.targetCustomer || "",
+            currentlyRaising: profile.currentlyRaising,
+            fundingAmount: profile.fundingAmount ? String(profile.fundingAmount) : "",
+            roundType: profile.roundType || "",
+            targetInvestorGeographies: profile.targetInvestorGeographies || [],
+            hasPitchDeck: profile.hasPitchDeck,
+            mrr: profile.mrr ? String(profile.mrr) : "",
+            arr: profile.arr ? String(profile.arr) : "",
+            customerCount: profile.customerCount ? String(profile.customerCount) : "",
+            growthRate: profile.growthRate || "",
+            milestones: (profile.milestones || []).join(", "),
+            employeeCount: profile.employeeCount ? String(profile.employeeCount) : "",
+            teamMembers: [{ name: "", title: "Founder & CEO", linkedinUrl: "", isFounder: true }],
+          });
+          if (profile.onboardingStep > 0) {
+            setStep(Math.min(profile.onboardingStep + 1, 7));
+          }
+          if (profile.onboardingCompleted) {
+            router.push("/dashboard");
+            return;
+          }
+        }
+      } catch {
+        // Profile doesn't exist yet, start fresh
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProfile();
+  }, [router]);
+
+  const update = useCallback((field: keyof OnboardingData, value: unknown) => {
+    setData((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const saveProgress = useCallback(async (currentStep: number) => {
+    setSaving(true);
+    try {
+      const { updateCompanyProfile } = await import("@/lib/actions/company");
+      await updateCompanyProfile({
+        companyName: data.companyName || undefined,
+        websiteUrl: data.websiteUrl || undefined,
+        industry: data.industry || undefined,
+        location: data.location || undefined,
+        companyStage: data.companyStage || undefined,
+        businessModel: data.businessModel || undefined,
+        oneLiner: data.oneLiner || undefined,
+        description: data.description || undefined,
+        differentiator: data.differentiator || undefined,
+        targetCustomer: data.targetCustomer || undefined,
+        currentlyRaising: data.currentlyRaising,
+        fundingAmount: data.fundingAmount ? Number(data.fundingAmount) : undefined,
+        roundType: data.roundType || undefined,
+        targetInvestorGeographies: data.targetInvestorGeographies,
+        hasPitchDeck: data.hasPitchDeck,
+        mrr: data.mrr ? Number(data.mrr) : undefined,
+        arr: data.arr ? Number(data.arr) : undefined,
+        customerCount: data.customerCount ? Number(data.customerCount) : undefined,
+        growthRate: data.growthRate || undefined,
+        milestones: data.milestones ? data.milestones.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        employeeCount: data.employeeCount ? Number(data.employeeCount) : undefined,
+        onboardingStep: currentStep,
+      });
+    } catch {
+      // Silently fail — progress is saved on next step
+    } finally {
+      setSaving(false);
+    }
+  }, [data]);
+
+  const handleNext = async () => {
+    await saveProgress(step);
+    if (step < 7) {
+      setStep(step + 1);
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const handleComplete = async () => {
+    setSaving(true);
+    try {
+      const { updateCompanyProfile } = await import("@/lib/actions/company");
+      await updateCompanyProfile({
+        companyName: data.companyName || undefined,
+        websiteUrl: data.websiteUrl || undefined,
+        industry: data.industry || undefined,
+        location: data.location || undefined,
+        companyStage: data.companyStage || undefined,
+        businessModel: data.businessModel || undefined,
+        oneLiner: data.oneLiner || undefined,
+        description: data.description || undefined,
+        differentiator: data.differentiator || undefined,
+        targetCustomer: data.targetCustomer || undefined,
+        currentlyRaising: data.currentlyRaising,
+        fundingAmount: data.fundingAmount ? Number(data.fundingAmount) : undefined,
+        roundType: data.roundType || undefined,
+        targetInvestorGeographies: data.targetInvestorGeographies,
+        hasPitchDeck: data.hasPitchDeck,
+        mrr: data.mrr ? Number(data.mrr) : undefined,
+        arr: data.arr ? Number(data.arr) : undefined,
+        customerCount: data.customerCount ? Number(data.customerCount) : undefined,
+        growthRate: data.growthRate || undefined,
+        milestones: data.milestones ? data.milestones.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        employeeCount: data.employeeCount ? Number(data.employeeCount) : undefined,
+        onboardingCompleted: true,
+        onboardingStep: 7,
+      });
+      router.push("/dashboard");
+    } catch {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0a0e19]">
+        <div className="text-center">
+          <div className="flex gap-[4px] justify-center mb-[12px]">
+            <div className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "0ms" }}></div>
+            <div className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
+            <div className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+          </div>
+          <p className="text-[14px] text-gray-400">Loading your workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const progress = Math.round((step / STEPS.length) * 100);
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0e19]">
+      {/* Header */}
+      <div className="bg-white dark:bg-[#111827] border-b border-gray-200 dark:border-gray-800 px-[20px] py-[16px]">
+        <div className="max-w-[700px] mx-auto">
+          <div className="flex items-center justify-between mb-[12px]">
+            <div className="flex items-center gap-[8px]">
+              <span className="text-[18px] font-bold text-[#06201b] dark:text-white">
+                Capital<span className="text-lime-500">OS</span>
+              </span>
+            </div>
+            <span className="text-[13px] text-gray-400">
+              Step {step} of {STEPS.length}
+            </span>
+          </div>
+          {/* Progress bar */}
+          <div className="w-full h-[4px] bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-lime-500 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          <div className="flex items-center justify-between mt-[8px]">
+            {STEPS.map((s) => (
+              <div
+                key={s.id}
+                className={`flex items-center gap-[4px] text-[11px] ${
+                  s.id === step
+                    ? "text-lime-600 font-semibold"
+                    : s.id < step
+                    ? "text-lime-500"
+                    : "text-gray-300 dark:text-gray-600"
+                }`}
+              >
+                <i className={`${s.icon} text-[12px]`}></i>
+                <span className="hidden sm:inline">{s.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-[700px] mx-auto px-[20px] py-[30px]">
+        <Card>
+          <CardBody className="p-[24px] md:p-[32px]">
+            {/* Step Title */}
+            <div className="mb-[24px]">
+              <div className="flex items-center gap-[10px] mb-[6px]">
+                <div className="w-[36px] h-[36px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[16px]">
+                  <i className={STEPS[step - 1].icon}></i>
+                </div>
+                <h2 className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">
+                  {STEPS[step - 1].title}
+                </h2>
+              </div>
+              <p className="text-[14px] text-gray-400 !mb-0 ml-[46px]">
+                {step === 1 && "Tell us about your company."}
+                {step === 2 && "What does your company do?"}
+                {step === 3 && "Tell us about your fundraising plans."}
+                {step === 4 && "Share your traction metrics (optional but recommended)."}
+                {step === 5 && "Who is behind this company?"}
+                {step === 6 && "Upload any existing materials (optional)."}
+                {step === 7 && "Review your company profile before launching."}
+              </p>
+            </div>
+
+            {/* Step 1 — Company Identity */}
+            {step === 1 && (
+              <div className="space-y-[20px]">
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Company Name *</label>
+                  <input
+                    type="text"
+                    value={data.companyName}
+                    onChange={(e) => update("companyName", e.target.value)}
+                    placeholder="e.g., Acme Inc."
+                    className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Website URL</label>
+                  <input
+                    type="url"
+                    value={data.websiteUrl}
+                    onChange={(e) => update("websiteUrl", e.target.value)}
+                    placeholder="https://yourcompany.com"
+                    className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Industry / Sector *</label>
+                  <select
+                    value={data.industry}
+                    onChange={(e) => update("industry", e.target.value)}
+                    className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+                  >
+                    <option value="">Select industry</option>
+                    {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-[16px]">
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Location</label>
+                    <input
+                      type="text"
+                      value={data.location}
+                      onChange={(e) => update("location", e.target.value)}
+                      placeholder="e.g., San Francisco, CA"
+                      className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Company Stage *</label>
+                    <select
+                      value={data.companyStage}
+                      onChange={(e) => update("companyStage", e.target.value)}
+                      className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+                    >
+                      <option value="">Select stage</option>
+                      {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Business Model</label>
+                  <div className="flex flex-wrap gap-[8px]">
+                    {BUSINESS_MODELS.map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => update("businessModel", m)}
+                        className={`px-[14px] py-[6px] rounded-full text-[13px] font-medium transition-all ${
+                          data.businessModel === m
+                            ? "bg-[#06201b] text-white dark:bg-lime-500 dark:text-black"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200"
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2 — What You Build */}
+            {step === 2 && (
+              <div className="space-y-[20px]">
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">One-liner Description *</label>
+                  <input
+                    type="text"
+                    value={data.oneLiner}
+                    onChange={(e) => update("oneLiner", e.target.value)}
+                    placeholder="e.g., We help startups raise faster with AI-powered investor matching"
+                    className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Detailed Description</label>
+                  <textarea
+                    value={data.description}
+                    onChange={(e) => update("description", e.target.value)}
+                    placeholder="Tell us more about what your company does, the problem you solve, and how you solve it..."
+                    rows={4}
+                    className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Key Differentiator *</label>
+                  <input
+                    type="text"
+                    value={data.differentiator}
+                    onChange={(e) => update("differentiator", e.target.value)}
+                    placeholder="What makes you different from competitors?"
+                    className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Target Customer *</label>
+                  <input
+                    type="text"
+                    value={data.targetCustomer}
+                    onChange={(e) => update("targetCustomer", e.target.value)}
+                    placeholder="Who specifically uses/buys your product?"
+                    className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 3 — Fundraising */}
+            {step === 3 && (
+              <div className="space-y-[20px]">
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Are you currently raising?</label>
+                  <div className="flex gap-[10px]">
+                    {["Yes", "No", "Planning to"].map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => update("currentlyRaising", opt === "Yes")}
+                        className={`px-[16px] py-[8px] rounded-[8px] text-[13px] font-medium transition-all ${
+                          (opt === "Yes" && data.currentlyRaising) || (opt === "No" && !data.currentlyRaising)
+                            ? "bg-[#06201b] text-white dark:bg-lime-500 dark:text-black"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {data.currentlyRaising && (
+                  <>
+                    <div className="grid grid-cols-2 gap-[16px]">
+                      <div>
+                        <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Funding Amount</label>
+                        <input
+                          type="text"
+                          value={data.fundingAmount}
+                          onChange={(e) => update("fundingAmount", e.target.value)}
+                          placeholder="e.g., 1000000"
+                          className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Round Type</label>
+                        <select
+                          value={data.roundType}
+                          onChange={(e) => update("roundType", e.target.value)}
+                          className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+                        >
+                          <option value="">Select round</option>
+                          {ROUND_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Target Investor Geographies</label>
+                      <div className="flex flex-wrap gap-[8px]">
+                        {GEOGRAPHIES.map((g) => (
+                          <button
+                            key={g}
+                            onClick={() => {
+                              const current = data.targetInvestorGeographies;
+                              update(
+                                "targetInvestorGeographies",
+                                current.includes(g) ? current.filter((x) => x !== g) : [...current, g]
+                              );
+                            }}
+                            className={`px-[12px] py-[5px] rounded-full text-[12px] font-medium transition-all ${
+                              data.targetInvestorGeographies.includes(g)
+                                ? "bg-lime-500 text-black"
+                                : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200"
+                            }`}
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Do you have a pitch deck?</label>
+                  <div className="flex gap-[10px]">
+                    {["Yes", "No"].map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => update("hasPitchDeck", opt === "Yes")}
+                        className={`px-[16px] py-[8px] rounded-[8px] text-[13px] font-medium transition-all ${
+                          (opt === "Yes" && data.hasPitchDeck) || (opt === "No" && !data.hasPitchDeck)
+                            ? "bg-[#06201b] text-white dark:bg-lime-500 dark:text-black"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                  {!data.hasPitchDeck && (
+                    <p className="text-[12px] text-lime-600 mt-[8px] !mb-0">
+                      <i className="ri-sparkling-2-line mr-[4px]"></i>
+                      We can help you create one after onboarding!
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 4 — Traction */}
+            {step === 4 && (
+              <div className="space-y-[20px]">
+                <p className="text-[13px] text-gray-400 !mb-0">
+                  This information helps us match you with the right investors. All fields are optional.
+                </p>
+                <div className="grid grid-cols-2 gap-[16px]">
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Monthly Revenue (MRR)</label>
+                    <input
+                      type="text"
+                      value={data.mrr}
+                      onChange={(e) => update("mrr", e.target.value)}
+                      placeholder="e.g., 50000"
+                      className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Annual Revenue (ARR)</label>
+                    <input
+                      type="text"
+                      value={data.arr}
+                      onChange={(e) => update("arr", e.target.value)}
+                      placeholder="e.g., 600000"
+                      className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-[16px]">
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Customer Count</label>
+                    <input
+                      type="text"
+                      value={data.customerCount}
+                      onChange={(e) => update("customerCount", e.target.value)}
+                      placeholder="e.g., 150"
+                      className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Growth Rate</label>
+                    <input
+                      type="text"
+                      value={data.growthRate}
+                      onChange={(e) => update("growthRate", e.target.value)}
+                      placeholder="e.g., 20% MoM"
+                      className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-[16px]">
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Employee Count</label>
+                    <input
+                      type="text"
+                      value={data.employeeCount}
+                      onChange={(e) => update("employeeCount", e.target.value)}
+                      placeholder="e.g., 12"
+                      className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Key Milestones</label>
+                    <input
+                      type="text"
+                      value={data.milestones}
+                      onChange={(e) => update("milestones", e.target.value)}
+                      placeholder="Comma-separated, e.g., YC W24, 100 customers"
+                      className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5 — Team */}
+            {step === 5 && (
+              <div className="space-y-[20px]">
+                <p className="text-[13px] text-gray-400 !mb-0">
+                  Add your founding team. This helps investors understand who is behind the company.
+                </p>
+                {data.teamMembers.map((member, idx) => (
+                  <div key={idx} className="bg-gray-50 dark:bg-gray-800/30 rounded-[10px] p-[16px] space-y-[12px]">
+                    <div className="flex items-center justify-between">
+                      <Badge variant={member.isFounder ? "success" : "default"} size="sm">
+                        {member.isFounder ? "Founder" : "Team Member"}
+                      </Badge>
+                      {idx > 0 && (
+                        <button
+                          onClick={() => {
+                            const updated = [...data.teamMembers];
+                            updated.splice(idx, 1);
+                            update("teamMembers", updated);
+                          }}
+                          className="text-[12px] text-red-500 hover:text-red-600"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-[12px]">
+                      <input
+                        type="text"
+                        value={member.name}
+                        onChange={(e) => {
+                          const updated = [...data.teamMembers];
+                          updated[idx] = { ...updated[idx], name: e.target.value };
+                          update("teamMembers", updated);
+                        }}
+                        placeholder="Full name"
+                        className="py-[9px] px-[12px] text-[13px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                      />
+                      <input
+                        type="text"
+                        value={member.title}
+                        onChange={(e) => {
+                          const updated = [...data.teamMembers];
+                          updated[idx] = { ...updated[idx], title: e.target.value };
+                          update("teamMembers", updated);
+                        }}
+                        placeholder="Title"
+                        className="py-[9px] px-[12px] text-[13px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                      />
+                    </div>
+                    <input
+                      type="url"
+                      value={member.linkedinUrl}
+                      onChange={(e) => {
+                        const updated = [...data.teamMembers];
+                        updated[idx] = { ...updated[idx], linkedinUrl: e.target.value };
+                        update("teamMembers", updated);
+                      }}
+                      placeholder="LinkedIn URL (optional)"
+                      className="w-full py-[9px] px-[12px] text-[13px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                    />
+                  </div>
+                ))}
+                <button
+                  onClick={() =>
+                    update("teamMembers", [
+                      ...data.teamMembers,
+                      { name: "", title: "", linkedinUrl: "", isFounder: false },
+                    ])
+                  }
+                  className="w-full py-[10px] border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[10px] text-[13px] text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all"
+                >
+                  + Add Team Member
+                </button>
+              </div>
+            )}
+
+            {/* Step 6 — Documents */}
+            {step === 6 && (
+              <div className="space-y-[20px]">
+                <p className="text-[13px] text-gray-400 !mb-0">
+                  Upload any existing materials. This is optional — you can always add documents later.
+                </p>
+                <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[12px] p-[30px] text-center">
+                  <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[12px] text-gray-300 text-[20px]">
+                    <i className="ri-upload-cloud-2-line"></i>
+                  </div>
+                  <p className="text-[14px] text-gray-400 !mb-[4px]">Drag & drop files here</p>
+                  <p className="text-[12px] text-gray-300 dark:text-gray-600 !mb-[12px]">
+                    PDF, PPTX, DOCX — Pitch decks, business plans, financial models
+                  </p>
+                  <Button variant="outline" size="sm">
+                    <i className="ri-file-upload-line text-[16px]"></i>
+                    Browse Files
+                  </Button>
+                </div>
+                <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] p-[14px] border border-lime-100 dark:border-lime-800/30">
+                  <p className="text-[13px] text-gray-600 dark:text-gray-400 !mb-0">
+                    <i className="ri-sparkling-2-line text-lime-500 mr-[4px]"></i>
+                    {data.hasPitchDeck
+                      ? "You mentioned you have a pitch deck. Upload it here for AI analysis."
+                      : "Don't have a pitch deck yet? We can help you create one after onboarding."}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 7 — Review & Launch */}
+            {step === 7 && (
+              <div className="space-y-[20px]">
+                <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[12px] p-[20px] border border-lime-100 dark:border-lime-800/30 text-center">
+                  <div className="w-[56px] h-[56px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center mx-auto mb-[12px] text-lime-600 text-[24px]">
+                    <i className="ri-check-double-line"></i>
+                  </div>
+                  <h3 className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-[4px]">
+                    Your workspace is ready
+                  </h3>
+                  <p className="text-[14px] text-gray-400 !mb-0">
+                    Here is a summary of what you have told us about your company.
+                  </p>
+                </div>
+
+                {/* Summary */}
+                <div className="space-y-[12px]">
+                  {[
+                    { label: "Company", value: data.companyName || "Not set" },
+                    { label: "Industry", value: data.industry || "Not set" },
+                    { label: "Stage", value: data.companyStage || "Not set" },
+                    { label: "Description", value: data.oneLiner || "Not set" },
+                    { label: "Differentiator", value: data.differentiator || "Not set" },
+                    { label: "Target Customer", value: data.targetCustomer || "Not set" },
+                    { label: "Raising", value: data.currentlyRaising ? `Yes — ${data.roundType || "Round"} $${data.fundingAmount || "?"}` : "Not currently raising" },
+                    { label: "MRR", value: data.mrr ? `$${Number(data.mrr).toLocaleString()}` : "Not set" },
+                    { label: "Customers", value: data.customerCount || "Not set" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center justify-between py-[8px] border-b border-gray-100 dark:border-gray-800 last:border-0">
+                      <span className="text-[13px] text-gray-400">{item.label}</span>
+                      <span className="text-[13px] font-medium text-[#06201b] dark:text-white text-right max-w-[60%] truncate">
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-[10px] p-[14px] border border-amber-100 dark:border-amber-800/30">
+                  <p className="text-[13px] text-gray-600 dark:text-gray-400 !mb-0">
+                    <i className="ri-information-line text-amber-500 mr-[4px]"></i>
+                    You can edit your company profile anytime from the dashboard.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex items-center justify-between mt-[28px] pt-[20px] border-t border-gray-100 dark:border-gray-800">
+              {step > 1 ? (
+                <Button variant="outline" onClick={handleBack}>
+                  <i className="ri-arrow-left-line text-[16px]"></i>
+                  Back
+                </Button>
+              ) : (
+                <div></div>
+              )}
+
+              {step < 7 ? (
+                <Button onClick={handleNext} disabled={saving}>
+                  {saving ? "Saving..." : "Continue"}
+                  <i className="ri-arrow-right-line text-[16px]"></i>
+                </Button>
+              ) : (
+                <Button onClick={handleComplete} disabled={saving}>
+                  {saving ? "Launching..." : "Launch Workspace"}
+                  <i className="ri-rocket-2-line text-[16px]"></i>
+                </Button>
+              )}
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Skip */}
+        {step < 7 && (
+          <div className="text-center mt-[16px]">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="text-[13px] text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Skip for now →
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

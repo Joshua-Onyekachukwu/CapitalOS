@@ -28,6 +28,7 @@ const navSections: NavSection[] = [
     title: "Startup",
     items: [
       { label: "My Startup", href: "/dashboard/startup", icon: "ri-rocket-2-line" },
+      { label: "Onboarding", href: "/onboarding", icon: "ri-flask-line" },
       { label: "Documents", href: "/dashboard/documents", icon: "ri-file-text-line" },
     ],
   },
