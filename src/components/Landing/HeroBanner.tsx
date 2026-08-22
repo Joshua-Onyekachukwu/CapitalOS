@@ -55,23 +55,21 @@ const HeroBanner: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Hero Image — contained within grid */}
-            <div className="flex items-end justify-center lg:justify-end">
-              <div className="relative w-full max-w-[480px] lg:max-w-none">
-                <Image
-                  src="/images/real-estate-agent/hero-main.png"
-                  alt="Capital OS Dashboard"
-                  width={620}
-                  height={500}
-                  className="block w-full h-auto"
-                  style={{
-                    objectFit: "contain",
-                    objectPosition: "bottom center",
-                  }}
-                  sizes="(max-width: 1023px) 480px, (max-width: 1279px) 500px, 600px"
-                  priority
-                />
-              </div>
+            {/* Right: Hero Image — big, bottom-aligned */}
+            <div className="relative flex items-end justify-center lg:justify-end -mb-0">
+              <Image
+                src="/images/real-estate-agent/hero-main.png"
+                alt="Capital OS Dashboard"
+                width={900}
+                height={720}
+                className="block w-full h-auto max-w-none"
+                style={{
+                  objectFit: "contain",
+                  objectPosition: "bottom center",
+                }}
+                sizes="(max-width: 1023px) 100vw, (max-width: 1279px) 50vw, 55vw"
+                priority
+              />
             </div>
           </div>
         </div>
