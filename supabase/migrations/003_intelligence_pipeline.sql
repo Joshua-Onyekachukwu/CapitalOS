@@ -1,15 +1,19 @@
 -- =============================================
 -- Capital-OS: Intelligence Pipeline Schema
--- Migration 003
+-- Migration 003 (Idempotent — safe to re-run)
 -- =============================================
 
 -- =============================================
--- NEW ENUMS
+-- NEW ENUMS (skip if exists)
 -- =============================================
 
-CREATE TYPE review_status AS ENUM (
-  'pending', 'approved', 'rejected', 'auto_resolved'
-);
+DO $$ BEGIN
+  CREATE TYPE review_status AS ENUM (
+    'pending', 'approved', 'rejected', 'auto_resolved'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- =============================================
 -- RAW RECORDS — Ingestion Staging
@@ -33,10 +37,10 @@ CREATE TABLE IF NOT EXISTS public.raw_records (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_raw_records_status ON public.raw_records(status);
-CREATE INDEX idx_raw_records_job ON public.raw_records(import_job_id);
-CREATE INDEX idx_raw_records_matched ON public.raw_records(matched_investor_id);
-CREATE INDEX idx_raw_records_created ON public.raw_records(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_raw_records_status ON public.raw_records(status);
+CREATE INDEX IF NOT EXISTS idx_raw_records_job ON public.raw_records(import_job_id);
+CREATE INDEX IF NOT EXISTS idx_raw_records_matched ON public.raw_records(matched_investor_id);
+CREATE INDEX IF NOT EXISTS idx_raw_records_created ON public.raw_records(created_at DESC);
 
 -- =============================================
 -- DUPLICATE CANDIDATES — Review Queue
@@ -56,8 +60,8 @@ CREATE TABLE IF NOT EXISTS public.duplicate_candidates (
   UNIQUE(investor_a_id, investor_b_id)
 );
 
-CREATE INDEX idx_dup_candidates_status ON public.duplicate_candidates(status);
-CREATE INDEX idx_dup_candidates_confidence ON public.duplicate_candidates(confidence DESC);
+CREATE INDEX IF NOT EXISTS idx_dup_candidates_status ON public.duplicate_candidates(status);
+CREATE INDEX IF NOT EXISTS idx_dup_candidates_confidence ON public.duplicate_candidates(confidence DESC);
 
 -- =============================================
 -- DATA CHANGE LOG — Version History
@@ -78,9 +82,9 @@ CREATE TABLE IF NOT EXISTS public.data_change_log (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_change_log_investor ON public.data_change_log(investor_id);
-CREATE INDEX idx_change_log_field ON public.data_change_log(field_name);
-CREATE INDEX idx_change_log_created ON public.data_change_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_change_log_investor ON public.data_change_log(investor_id);
+CREATE INDEX IF NOT EXISTS idx_change_log_field ON public.data_change_log(field_name);
+CREATE INDEX IF NOT EXISTS idx_change_log_created ON public.data_change_log(created_at DESC);
 
 -- =============================================
 -- FIRM ALIASES — Organization Name Resolution
@@ -96,7 +100,7 @@ CREATE TABLE IF NOT EXISTS public.firm_aliases (
   UNIQUE(firm_id, normalized)
 );
 
-CREATE INDEX idx_firm_aliases_normalized ON public.firm_aliases(normalized);
+CREATE INDEX IF NOT EXISTS idx_firm_aliases_normalized ON public.firm_aliases(normalized);
 
 -- =============================================
 -- EMAIL ACCOUNTS — OAuth-connected email
@@ -118,7 +122,7 @@ CREATE TABLE IF NOT EXISTS public.email_accounts (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_email_accounts_user ON public.email_accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_accounts_user ON public.email_accounts(user_id);
 
 -- =============================================
 -- EMAIL MESSAGES — Outreach History
@@ -151,10 +155,10 @@ CREATE TABLE IF NOT EXISTS public.email_messages (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_email_messages_investor ON public.email_messages(investor_id);
-CREATE INDEX idx_email_messages_user ON public.email_messages(user_id);
-CREATE INDEX idx_email_messages_thread ON public.email_messages(thread_id);
-CREATE INDEX idx_email_messages_status ON public.email_messages(status);
+CREATE INDEX IF NOT EXISTS idx_email_messages_investor ON public.email_messages(investor_id);
+CREATE INDEX IF NOT EXISTS idx_email_messages_user ON public.email_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_messages_thread ON public.email_messages(thread_id);
+CREATE INDEX IF NOT EXISTS idx_email_messages_status ON public.email_messages(status);
 
 -- =============================================
 -- CAMPAIGN INVESTORS — Junction Table
@@ -170,8 +174,8 @@ CREATE TABLE IF NOT EXISTS public.campaign_investors (
   UNIQUE(campaign_id, investor_id)
 );
 
-CREATE INDEX idx_campaign_investors_campaign ON public.campaign_investors(campaign_id);
-CREATE INDEX idx_campaign_investors_investor ON public.campaign_investors(investor_id);
+CREATE INDEX IF NOT EXISTS idx_campaign_investors_campaign ON public.campaign_investors(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_campaign_investors_investor ON public.campaign_investors(investor_id);
 
 -- =============================================
 -- SAVED INVESTORS — User Bookmarks
@@ -186,21 +190,18 @@ CREATE TABLE IF NOT EXISTS public.saved_investors (
   UNIQUE(user_id, investor_id)
 );
 
-CREATE INDEX idx_saved_investors_user ON public.saved_investors(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_investors_user ON public.saved_investors(user_id);
 
 -- =============================================
--- ALTER EXISTING TABLES
+-- ALTER EXISTING TABLES (IF NOT EXISTS)
 -- =============================================
 
--- Add merge tracking to investors
 ALTER TABLE public.investors ADD COLUMN IF NOT EXISTS merged_into_id UUID REFERENCES public.investors(id);
 ALTER TABLE public.investors ADD COLUMN IF NOT EXISTS merge_history JSONB DEFAULT '[]';
-
--- Add normalized name and alias tracking to firms
 ALTER TABLE public.investor_firms ADD COLUMN IF NOT EXISTS normalized_name TEXT;
 
 -- =============================================
--- RLS POLICIES FOR NEW TABLES
+-- RLS POLICIES (drop and recreate to be idempotent)
 -- =============================================
 
 ALTER TABLE public.raw_records ENABLE ROW LEVEL SECURITY;
@@ -212,87 +213,123 @@ ALTER TABLE public.email_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.campaign_investors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.saved_investors ENABLE ROW LEVEL SECURITY;
 
--- Raw records: service-role only (background processing)
-CREATE POLICY "Service role manages raw records"
-  ON public.raw_records FOR ALL
-  USING (auth.role() = 'service_role');
+-- Raw records
+DO $$ BEGIN
+  CREATE POLICY "Service role manages raw records"
+    ON public.raw_records FOR ALL
+    USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Duplicate candidates: service-role for detection, authenticated for review
-CREATE POLICY "Authenticated users can view duplicates"
-  ON public.duplicate_candidates FOR SELECT
-  USING (auth.role() = 'authenticated');
+-- Duplicate candidates
+DO $$ BEGIN
+  CREATE POLICY "Authenticated users can view duplicates"
+    ON public.duplicate_candidates FOR SELECT
+    USING (auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Authenticated users can update duplicates"
-  ON public.duplicate_candidates FOR UPDATE
-  USING (auth.role() = 'authenticated');
+DO $$ BEGIN
+  CREATE POLICY "Authenticated users can update duplicates"
+    ON public.duplicate_candidates FOR UPDATE
+    USING (auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Service role manages duplicate detection"
-  ON public.duplicate_candidates FOR ALL
-  USING (auth.role() = 'service_role');
+DO $$ BEGIN
+  CREATE POLICY "Service role manages duplicate detection"
+    ON public.duplicate_candidates FOR ALL
+    USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Data change log: service-role only
-CREATE POLICY "Service role manages change log"
-  ON public.data_change_log FOR ALL
-  USING (auth.role() = 'service_role');
+-- Data change log
+DO $$ BEGIN
+  CREATE POLICY "Service role manages change log"
+    ON public.data_change_log FOR ALL
+    USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Firm aliases: authenticated read, service-role write
-CREATE POLICY "Authenticated users can view firm aliases"
-  ON public.firm_aliases FOR SELECT
-  USING (auth.role() = 'authenticated');
+-- Firm aliases
+DO $$ BEGIN
+  CREATE POLICY "Authenticated users can view firm aliases"
+    ON public.firm_aliases FOR SELECT
+    USING (auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Service role manages firm aliases"
-  ON public.firm_aliases FOR ALL
-  USING (auth.role() = 'service_role');
+DO $$ BEGIN
+  CREATE POLICY "Service role manages firm aliases"
+    ON public.firm_aliases FOR ALL
+    USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Email accounts: users manage their own
-CREATE POLICY "Users can view own email accounts"
-  ON public.email_accounts FOR SELECT
-  USING (auth.uid() = user_id);
+-- Email accounts (user-owned)
+DO $$ BEGIN
+  CREATE POLICY "Users can view own email accounts"
+    ON public.email_accounts FOR SELECT
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Users can insert own email accounts"
-  ON public.email_accounts FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can insert own email accounts"
+    ON public.email_accounts FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Users can update own email accounts"
-  ON public.email_accounts FOR UPDATE
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can update own email accounts"
+    ON public.email_accounts FOR UPDATE
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Users can delete own email accounts"
-  ON public.email_accounts FOR DELETE
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can delete own email accounts"
+    ON public.email_accounts FOR DELETE
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Email messages: users manage their own
-CREATE POLICY "Users can view own email messages"
-  ON public.email_messages FOR SELECT
-  USING (auth.uid() = user_id);
+-- Email messages (user-owned)
+DO $$ BEGIN
+  CREATE POLICY "Users can view own email messages"
+    ON public.email_messages FOR SELECT
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Users can insert own email messages"
-  ON public.email_messages FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can insert own email messages"
+    ON public.email_messages FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Users can update own email messages"
-  ON public.email_messages FOR UPDATE
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can update own email messages"
+    ON public.email_messages FOR UPDATE
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Campaign investors: service-role
-CREATE POLICY "Service role manages campaign investors"
-  ON public.campaign_investors FOR ALL
-  USING (auth.role() = 'service_role');
+-- Campaign investors
+DO $$ BEGIN
+  CREATE POLICY "Service role manages campaign investors"
+    ON public.campaign_investors FOR ALL
+    USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Saved investors: users manage their own
-CREATE POLICY "Users can view own saved investors"
-  ON public.saved_investors FOR SELECT
-  USING (auth.uid() = user_id);
+-- Saved investors
+DO $$ BEGIN
+  CREATE POLICY "Users can view own saved investors"
+    ON public.saved_investors FOR SELECT
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Users can manage own saved investors"
-  ON public.saved_investors FOR ALL
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can manage own saved investors"
+    ON public.saved_investors FOR ALL
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- =============================================
--- TRIGGERS
+-- TRIGGERS (drop and recreate to be idempotent)
 -- =============================================
 
--- Auto-update updated_at on email_accounts
+-- email_accounts auto-update trigger
+DROP TRIGGER IF EXISTS on_email_account_updated ON public.email_accounts;
+
 CREATE OR REPLACE FUNCTION public.handle_email_account_updated()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -310,10 +347,9 @@ CREATE TRIGGER on_email_account_updated
   EXECUTE FUNCTION public.handle_email_account_updated();
 
 -- =============================================
--- HELPER FUNCTIONS
+-- HELPER FUNCTIONS (CREATE OR REPLACE = always idempotent)
 -- =============================================
 
--- Log a data change (called from application code)
 CREATE OR REPLACE FUNCTION public.log_data_change(
   p_investor_id UUID,
   p_field_name TEXT,
@@ -346,7 +382,6 @@ BEGIN
 END;
 $$;
 
--- Normalize a firm name (strip legal suffixes)
 CREATE OR REPLACE FUNCTION public.normalize_firm_name(name TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql IMMUTABLE
@@ -365,10 +400,9 @@ END;
 $$;
 
 -- =============================================
--- VIEWS FOR NEW TABLES
+-- VIEWS (CREATE OR REPLACE = always idempotent)
 -- =============================================
 
--- Pending duplicates for review
 CREATE OR REPLACE VIEW public.v_pending_duplicates AS
 SELECT
   dc.id,
@@ -390,7 +424,6 @@ LEFT JOIN public.investor_firms fb ON ib.current_firm_id = fb.id
 WHERE dc.status = 'pending'
 ORDER BY dc.confidence DESC;
 
--- Data health overview
 CREATE OR REPLACE VIEW public.v_data_health AS
 SELECT
   (SELECT COUNT(*) FROM public.investors WHERE is_active = true) AS total_investors,
@@ -401,3 +434,9 @@ SELECT
   (SELECT COUNT(*) FROM public.investors WHERE is_active = true AND fit_score >= 80) AS high_fit,
   (SELECT COUNT(*) FROM public.duplicate_candidates WHERE status = 'pending') AS pending_duplicates,
   (SELECT COUNT(*) FROM public.raw_records WHERE status = 'pending') AS pending_raw_records;
+
+-- =============================================
+-- DONE
+-- =============================================
+
+SELECT 'Migration 003 complete — Intelligence Pipeline schema ready.' AS result;
