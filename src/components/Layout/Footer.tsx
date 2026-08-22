@@ -29,10 +29,10 @@ const Footer: React.FC = () => {
                   <ul className="font-medium -tracking-[0.14px]">
                     <li className="mb-[12px] md:mb-[15px] last:mb-0">
                       <Link
-                        href="/"
+                        href="/#about"
                         className="text-black dark:text-white transition-all hover:text-[#D15616]"
                       >
-                        Home
+                        About
                       </Link>
                     </li>
                     <li className="mb-[12px] md:mb-[15px] last:mb-0">
@@ -45,18 +45,18 @@ const Footer: React.FC = () => {
                     </li>
                     <li className="mb-[12px] md:mb-[15px] last:mb-0">
                       <Link
-                        href="/signup"
+                        href="/#how-it-works"
                         className="text-black dark:text-white transition-all hover:text-[#D15616]"
                       >
-                        Get Started
+                        How It Works
                       </Link>
                     </li>
                     <li className="mb-[12px] md:mb-[15px] last:mb-0">
                       <Link
-                        href="/login"
+                        href="/#pricing"
                         className="text-black dark:text-white transition-all hover:text-[#D15616]"
                       >
-                        Log In
+                        Pricing
                       </Link>
                     </li>
                   </ul>
@@ -76,29 +76,19 @@ const Footer: React.FC = () => {
                     </li>
                     <li className="mb-[12px] md:mb-[15px] last:mb-0">
                       <Link
-                        href="/dashboard/copilot"
+                        href="/signup"
                         className="text-black dark:text-white transition-all hover:text-[#D15616]"
                       >
-                        AI Copilot
+                        Get Started
                       </Link>
                     </li>
                     <li className="mb-[12px] md:mb-[15px] last:mb-0">
                       <Link
-                        href="/dashboard/investors/discover"
+                        href="/login"
                         className="text-black dark:text-white transition-all hover:text-[#D15616]"
                       >
-                        Discover Investors
+                        Log In
                       </Link>
-                    </li>
-                    <li className="mb-[12px] md:mb-[15px] last:mb-0">
-                      <a
-                        href="https://github.com/Joshua-Onyekachukwu/CapitalOS"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-black dark:text-white transition-all hover:text-[#D15616]"
-                      >
-                        GitHub
-                      </a>
                     </li>
                   </ul>
                 </div>
