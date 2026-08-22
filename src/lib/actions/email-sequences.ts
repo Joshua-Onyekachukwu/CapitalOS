@@ -51,7 +51,7 @@ export async function generateEmailSequence(params: {
   const { data: firm } = await supabase
     .from("investor_firms")
     .select("*")
-    .eq("id", investor.firm_id)
+    .eq("id", investor.current_firm_id)
     .single();
 
   const { data: profile } = await supabase

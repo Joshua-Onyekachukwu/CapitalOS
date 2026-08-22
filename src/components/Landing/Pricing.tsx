@@ -7,13 +7,14 @@ import Link from "next/link";
 const plans = [
   {
     name: "STARTER",
-    price: "$29",
+    price: "$49",
     suffix: "/month",
     features: [
       "AI-powered investor discovery",
-      "Up to 50 investor matches",
-      "Basic outreach drafts",
+      "Up to 500 investor matches",
+      "AI email drafting & outreach",
       "Visual pipeline board",
+      "500 Capital Credits/month",
     ],
     cta: "Get Started Now",
     bgColor: "bg-[#06201b]",
@@ -24,13 +25,14 @@ const plans = [
   },
   {
     name: "PROFESSIONAL",
-    price: "$79",
+    price: "$199",
     suffix: "/month",
     features: [
       "Unlimited investor discovery",
       "Advanced AI matching & scoring",
       "Personalized outreach at scale",
       "Full analytics & reporting",
+      "2,000 Capital Credits/month",
     ],
     cta: "Get Started Now",
     bgColor: "bg-[#D15616]",

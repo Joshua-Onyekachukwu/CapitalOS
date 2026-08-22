@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS public.billing_plans (
 INSERT INTO public.billing_plans (name, slug, monthly_price, included_credits, investor_db_limit, deep_research_limit, pitch_deck_limit, campaign_limit, email_accounts_limit, team_seats)
 VALUES
   ('Free', 'free', 0, 50, 100, 3, 1, 1, 0, 1),
-  ('Workspace', 'workspace', 29, 500, 5000, 30, 3, 5, 1, 1),
-  ('Workspace Pro', 'workspace_pro', 79, 2000, 50000, 999, 999, 999, 3, 5)
+  ('Workspace', 'workspace', 49, 500, 5000, 30, 3, 5, 1, 1),
+  ('Workspace Pro', 'workspace_pro', 199, 2000, 50000, 999, 999, 999, 3, 5)
 ON CONFLICT (slug) DO NOTHING;
 
 -- =============================================

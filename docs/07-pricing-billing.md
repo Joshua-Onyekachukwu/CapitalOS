@@ -20,7 +20,7 @@ Instead, we chose **Fundraising Capacity** — a model where:
 
 | | Free | Workspace | Workspace Pro |
 |---|------|-----------|---------------|
-| **Monthly Price** | $0 | $29/mo | $79/mo |
+| **Monthly Price** | $0 | $49/mo | $199/mo |
 | **Monthly Credits** | 50 | 500 | 2,000 |
 | **Investor DB Limit** | 100 | 5,000 | 50,000 |
 | **Deep Research** | 3/mo | 30/mo | Unlimited |
@@ -51,8 +51,8 @@ Instead, we chose **Fundraising Capacity** — a model where:
 | Free tier AI cost/month | ~$0.15 (negligible) |
 | Workspace AI cost/month (500 credits) | ~$5.00 |
 | Workspace Pro AI cost/month (2000 credits) | ~$20.00 |
-| Workspace gross margin | ~83% ($29 - $5) |
-| Workspace Pro gross margin | ~75% ($79 - $20) |
+| Workspace gross margin | ~90% ($49 - $5) |
+| Workspace Pro gross margin | ~90% ($199 - $20) |
 
 ## Billing Architecture
 
