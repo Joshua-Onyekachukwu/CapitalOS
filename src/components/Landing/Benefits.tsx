@@ -13,7 +13,7 @@ const benefits = [
     bgColor: "bg-[#06201b]",
     numberBg: "bg-lime-500",
     numberColor: "text-black",
-    textColor: "text-white",
+    textColor: "!text-white",
     bottomPadding: true,
   },
   {
