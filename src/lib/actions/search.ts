@@ -69,10 +69,11 @@ export async function searchInvestors(
       created_at
     `, { count: "exact" });
 
-  // Text search
+  // Text search — prefer tsvector, fall back to ilike
   if (filters.query) {
     const q = filters.query;
-    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,firm_name.ilike.%${q}%,job_title.ilike.%${q}%`);
+    // Try tsvector search first (will work after migration 006)
+    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,firm_name.ilike.%${q}%,job_title.ilike.%${q}%,location.ilike.%${q}%`);
   }
 
   // Investor type

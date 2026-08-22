@@ -37,7 +37,8 @@ export default function MeetingsPage() {
         .limit(50);
 
       if (data) {
-        setInvestors(data.map((inv: Record<string, unknown>) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setInvestors(data.map((inv: any) => ({
           id: inv.id,
           full_name: inv.full_name,
           firm_name: inv.firm_name,

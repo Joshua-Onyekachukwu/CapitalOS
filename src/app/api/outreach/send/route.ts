@@ -7,9 +7,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/services/email/sender";
 import { createClient } from "@supabase/supabase-js";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.email);
+    if (rateLimitResponse) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+    }
     const body = await request.json();
     const { userId, investorId, subject, bodyHtml, bodyText } = body;
 

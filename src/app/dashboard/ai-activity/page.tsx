@@ -64,7 +64,8 @@ export default function AIActivityPage() {
         .single();
 
       if (ledgerData) {
-        setEntries(ledgerData.map((r: Record<string, unknown>) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setEntries(ledgerData.map((r: any) => ({
           id: r.id,
           amount: r.amount,
           balanceAfter: r.balance_after,

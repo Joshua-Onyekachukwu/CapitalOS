@@ -377,11 +377,21 @@ export async function runBatchQualification(
     for (const investor of investors) {
       const result = computeFitScore(investor, startup);
 
-      // Update investor record
+      // Update investor record with score and breakdown
       await supabase
         .from("investors")
         .update({
           fit_score: result.overallScore,
+          fit_score_breakdown: {
+            factors: result.factors.map((f) => ({
+              factor: f.factor,
+              score: f.score,
+              weight: f.weight,
+              explanation: f.explanation,
+            })),
+            confidence: result.confidence,
+            dataQuality: result.dataQuality,
+          },
           data_quality_score: result.dataQuality,
           outreach_readiness: result.outreachReadiness,
         })

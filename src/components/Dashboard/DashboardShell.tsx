@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Sidebar } from "@/components/Dashboard/Sidebar";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 interface DashboardShellProps {
   user: {
@@ -27,7 +28,9 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
           onMenuClick={() => setSidebarOpen(true)}
         />
 
-        <main className="p-[20px] md:p-[30px]">{children}</main>
+        <main className="p-[20px] md:p-[30px]">
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </main>
       </div>
     </div>
   );
