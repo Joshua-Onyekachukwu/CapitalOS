@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardBody } from "@//components/ui/Card";
+import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Tabs } from "@/components/ui/Tabs";
@@ -55,9 +55,9 @@ export default function OutreachPage() {
         const supabase = createClient();
 
         const { data } = await supabase
-          .from("investors")
-          .select("id, first_name, last_name, firm_name, investor_type, fit_score, email_address")
-          .not("email_address", "is", null)
+          .from("v_investors_with_firms")
+          .select("id, first_name, last_name, firm_name, investor_type, fit_score, email")
+          .not("email", "is", null)
           .order("fit_score", { ascending: false })
           .limit(50);
 
@@ -65,14 +65,14 @@ export default function OutreachPage() {
           const mappedDrafts: EmailDraft[] = data.map((inv: any) => ({
             id: `draft-${inv.id}`,
             investorId: inv.id,
-            investorName: `${inv.first_name} ${inv.last_name}`,
+            investorName: `${inv.first_name || ""} ${inv.last_name || ""}`.trim() || "Unknown Investor",
             investorFirm: inv.firm_name || "Unknown",
-            subject: `Capital OS — Personalized outreach for ${inv.firm_name || "your firm"}`,
-            body: `Hi ${inv.first_name},\n\nI came across ${inv.firm_name || "your firm"}'s portfolio and believe Capital OS could be a strong fit for your investment thesis.\n\nWe're building the AI-powered operating system for startup fundraising, and I'd love to share how we can help streamline your deal flow.\n\nWould you be open to a brief conversation?\n\nBest regards`,
+            subject: `Partnership opportunity — ${inv.firm_name || "your firm"}`,
+            body: `Hi ${inv.first_name || "there"},\n\nI came across ${inv.firm_name || "your firm"}'s portfolio and believe Capital OS could be a strong fit for your investment thesis.\n\nWe're building the AI-powered operating system for startup fundraising, and I'd love to share how we can help streamline your deal flow.\n\nWould you be open to a brief conversation?\n\nBest regards`,
             status: "draft",
             createdAt: "Just now",
             fitScore: inv.fit_score || 75,
-            aiAnalysis: `Investor type: ${inv.investor_type || "Unknown"}. Score: ${inv.fit_score || 75}%`,
+            aiAnalysis: `Investor type: ${(inv.investor_type || "Unknown").replace(/_/g, " ")}. Score: ${inv.fit_score || 75}%`,
           }));
 
           setDrafts(mappedDrafts);
@@ -109,43 +109,38 @@ export default function OutreachPage() {
     setGenerating(true);
 
     try {
-      // Call the AI to generate a new personalized email
-      const { chatCompletion } = await import("@/lib/ai/client");
-
-      const response = await chatCompletion({
-        task: "email_drafting",
-        systemPrompt: `You are a fundraising outreach specialist for Capital OS, an AI-powered platform that helps founders manage fundraising. Write a personalized, professional investor outreach email. The email should be concise, reference the investor's thesis/portfolio, and explain why Capital OS is relevant. Return JSON with "subject" and "body" fields. Keep it under 150 words.`,
-        messages: [
-          {
-            role: "user",
-            content: `Draft a personalized outreach email to ${selectedDraft.investorName} at ${selectedDraft.investorFirm}. They are a ${selectedDraft.aiAnalysis}. Their fit score with our startup is ${selectedDraft.fitScore}%.`
-          }
-        ],
+      // Call the API route for AI email drafting
+      const response = await fetch("/api/outreach/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          investorName: selectedDraft.investorName,
+          investorFirm: selectedDraft.investorFirm,
+          fitScore: selectedDraft.fitScore,
+          aiAnalysis: selectedDraft.aiAnalysis,
+          tone: "warm",
+        }),
       });
 
-      const content = response.content;
-      try {
-        const parsed = JSON.parse(content);
-        setDrafts((prev) =>
-          prev.map((d) =>
-            d.id === selectedDraft.id
-              ? { ...d, subject: parsed.subject || d.subject, body: parsed.body || d.body, status: "draft" as const }
-              : d
-          )
-        );
-        setSelectedDraft((prev) =>
-          prev
-            ? { ...prev, subject: parsed.subject || prev.subject, body: parsed.body || prev.body, status: "draft" as const }
-            : prev
-        );
-      } catch {
-        // If AI response isn't JSON, use it as-is
-        setDrafts((prev) =>
-          prev.map((d) =>
-            d.id === selectedDraft.id ? { ...d, body: content, status: "draft" as const } : d
-          )
-        );
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Draft generation failed:", data.error);
+        return;
       }
+
+      setDrafts((prev) =>
+        prev.map((d) =>
+          d.id === selectedDraft.id
+            ? { ...d, subject: data.subject || d.subject, body: data.body || d.body, status: "draft" as const }
+            : d
+        )
+      );
+      setSelectedDraft((prev) =>
+        prev
+          ? { ...prev, subject: data.subject || prev.subject, body: data.body || prev.body, status: "draft" as const }
+          : prev
+      );
     } catch {
       // AI may not be available
     } finally {
@@ -167,7 +162,6 @@ export default function OutreachPage() {
     setSendResult(null);
 
     try {
-      const { sendEmail } = await import("@/lib/services/email/sender");
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -177,27 +171,21 @@ export default function OutreachPage() {
         return;
       }
 
-      // Find the investor's email
-      const { data: investor } = await supabase
-        .from("investors")
-        .select("email_address")
-        .eq("id", selectedDraft.investorId)
-        .single();
-
-      if (!investor?.email_address) {
-        setSendResult({ type: "error", text: "No email address found for this investor." });
-        return;
-      }
-
-      const result = await sendEmail({
-        userId: user.id,
-        to: investor.email_address,
-        subject: selectedDraft.subject,
-        bodyHtml: selectedDraft.body.replace(/\n/g, "<br>"),
-        bodyText: selectedDraft.body,
+      const response = await fetch("/api/outreach/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          investorId: selectedDraft.investorId,
+          subject: selectedDraft.subject,
+          bodyHtml: selectedDraft.body.replace(/\n/g, "<br>"),
+          bodyText: selectedDraft.body,
+        }),
       });
 
-      if (result.success) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         setDrafts((prev) =>
           prev.map((d) => (d.id === selectedDraft.id ? { ...d, status: "sent" as const } : d))
         );
