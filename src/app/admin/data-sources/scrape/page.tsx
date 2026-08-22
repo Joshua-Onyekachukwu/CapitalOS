@@ -5,6 +5,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
+import { QualificationCard } from "@/components/Dashboard/QualificationCard";
 
 interface ScrapeJob {
   id: string;
@@ -284,6 +285,9 @@ export default function ScrapePage() {
             </a>
           </CardBody>
         </Card>
+
+        {/* Batch Qualification */}
+        <QualificationCard />
 
         {/* Data Health */}
         <Card>
