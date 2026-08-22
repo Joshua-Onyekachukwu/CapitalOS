@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -15,10 +15,11 @@ interface Campaign {
   name: string;
   description: string;
   status: CampaignStatus;
-  investorCount: number;
-  emailsSent: number;
+  investor_count: number;
+  emails_sent: number;
   responses: number;
-  createdAt: string;
+  created_at: string;
+  user_id: string;
   sector?: string;
   stage?: string;
 }
@@ -30,55 +31,36 @@ const statusConfig: Record<CampaignStatus, { label: string; variant: "success" |
   completed: { label: "Completed", variant: "info" },
 };
 
-// Sample campaigns — replace with real Supabase data
-const sampleCampaigns: Campaign[] = [
-  {
-    id: "1",
-    name: "Seed Round — AI/SaaS Investors",
-    description: "Targeting AI and SaaS-focused VCs for our seed round.",
-    status: "active",
-    investorCount: 45,
-    emailsSent: 32,
-    responses: 8,
-    createdAt: "2025-01-15",
-    sector: "AI/SaaS",
-    stage: "Seed",
-  },
-  {
-    id: "2",
-    name: "Series A — FinTech Focus",
-    description: "Reaching out to FinTech specialists for Series A.",
-    status: "draft",
-    investorCount: 0,
-    emailsSent: 0,
-    responses: 0,
-    createdAt: "2025-01-20",
-    sector: "FinTech",
-    stage: "Series A",
-  },
-  {
-    id: "3",
-    name: "Angel Outreach — Crypto/Web3",
-    description: "Warm outreach to angel investors in the Web3 space.",
-    status: "completed",
-    investorCount: 28,
-    emailsSent: 28,
-    responses: 12,
-    createdAt: "2024-12-01",
-    sector: "Web3",
-    stage: "Pre-Seed",
-  },
-];
-
 export default function CampaignsPage() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | CampaignStatus>("all");
 
-  const filtered = filter === "all" ? sampleCampaigns : sampleCampaigns.filter((c) => c.status === filter);
+  const fetchCampaigns = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { getCampaigns } = await import("@/lib/actions/campaigns");
+      const data = await getCampaigns();
+      setCampaigns(data);
+    } catch (err) {
+      console.error("Failed to fetch campaigns:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+
+  const filtered = filter === "all" ? campaigns : campaigns.filter((c) => c.status === filter);
 
   const stats = {
-    active: sampleCampaigns.filter((c) => c.status === "active").length,
-    totalInvestors: sampleCampaigns.reduce((sum, c) => sum + c.investorCount, 0),
-    totalEmails: sampleCampaigns.reduce((sum, c) => sum + c.emailsSent, 0),
+    active: campaigns.filter((c) => c.status === "active").length,
+    totalInvestors: campaigns.reduce((sum, c) => sum + c.investor_count, 0),
+    totalEmails: campaigns.reduce((sum, c) => sum + c.emails_sent, 0),
   };
 
   return (
@@ -149,17 +131,29 @@ export default function CampaignsPage() {
       </div>
 
       {/* Campaign List */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="space-y-[15px]">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardBody>
+                <div className="animate-pulse flex items-center gap-[16px]">
+                  <div className="w-[48px] h-[48px] rounded-[12px] bg-gray-100 dark:bg-gray-800"></div>
+                  <div className="flex-1">
+                    <div className="h-[16px] bg-gray-100 dark:bg-gray-800 rounded w-[200px] mb-[8px]"></div>
+                    <div className="h-[12px] bg-gray-100 dark:bg-gray-800 rounded w-[300px]"></div>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <Card>
           <CardBody>
             <EmptyState
               icon={<i className="ri-megaphone-line"></i>}
               title="No campaigns yet"
               description="Create your first fundraising campaign to start tracking investors and outreach."
-              action={{
-                label: "Create Campaign",
-                onClick: () => {},
-              }}
             />
           </CardBody>
         </Card>
@@ -167,7 +161,7 @@ export default function CampaignsPage() {
         <div className="space-y-[15px]">
           {filtered.map((campaign) => {
             const config = statusConfig[campaign.status];
-            const responseRate = campaign.emailsSent > 0 ? Math.round((campaign.responses / campaign.emailsSent) * 100) : 0;
+            const responseRate = campaign.emails_sent > 0 ? Math.round((campaign.responses / campaign.emails_sent) * 100) : 0;
 
             return (
               <Card key={campaign.id} className="hover:shadow-md transition-shadow">
@@ -190,18 +184,18 @@ export default function CampaignsPage() {
                       <div className="flex items-center gap-[12px] mt-[8px] text-[12px] text-gray-400">
                         {campaign.sector && <span><i className="ri-building-line mr-[4px]"></i>{campaign.sector}</span>}
                         {campaign.stage && <span><i className="ri-flag-line mr-[4px]"></i>{campaign.stage}</span>}
-                        <span><i className="ri-calendar-line mr-[4px]"></i>{campaign.createdAt}</span>
+                        <span><i className="ri-calendar-line mr-[4px]"></i>{new Date(campaign.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
 
                     {/* Campaign Metrics */}
                     <div className="flex items-center gap-[20px] sm:flex-shrink-0">
                       <div className="text-center">
-                        <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{campaign.investorCount}</p>
+                        <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{campaign.investor_count}</p>
                         <p className="text-[11px] text-gray-400 !mb-0">Investors</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{campaign.emailsSent}</p>
+                        <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{campaign.emails_sent}</p>
                         <p className="text-[11px] text-gray-400 !mb-0">Sent</p>
                       </div>
                       <div className="text-center">
