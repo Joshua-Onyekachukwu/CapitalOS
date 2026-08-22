@@ -1,247 +1,116 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Table, type Column } from "@/components/ui/Table";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 
 interface Investor {
   id: string;
   full_name: string;
   email: string | null;
-  investor_type: string;
+  linkedin_url: string | null;
   job_title: string | null;
-  company: string | null;
-  location: string | null;
-  investment_stages: string[];
-  investment_sectors: string[];
+  investor_type: string;
   fit_score: number;
   data_quality_score: number;
   outreach_readiness: string;
   is_verified: boolean;
+  country: string | null;
+  city: string | null;
+  firm_name: string | null;
+  investment_stages: string[];
+  investment_sectors: string[];
+  created_at: string;
 }
 
-// Placeholder data — will be replaced with Supabase queries
-const PLACEHOLDER_INVESTORS: Investor[] = [
-  {
-    id: "1",
-    full_name: "Sarah Chen",
-    email: "sarah@horizonvc.com",
-    investor_type: "venture_capital",
-    job_title: "General Partner",
-    company: "Horizon Ventures",
-    location: "San Francisco, CA",
-    investment_stages: ["seed", "series_a"],
-    investment_sectors: ["AI", "SaaS", "Developer Tools"],
-    fit_score: 94,
-    data_quality_score: 88,
-    outreach_readiness: "ready",
-    is_verified: true,
-  },
-  {
-    id: "2",
-    full_name: "Marcus Williams",
-    email: "marcus@greenscale.io",
-    investor_type: "angel_investor",
-    job_title: "Angel Investor",
-    company: "Independent",
-    location: "New York, NY",
-    investment_stages: ["pre_seed", "seed"],
-    investment_sectors: ["ClimateTech", "FinTech", "SaaS"],
-    fit_score: 91,
-    data_quality_score: 72,
-    outreach_readiness: "ready",
-    is_verified: false,
-  },
-  {
-    id: "3",
-    full_name: "Priya Patel",
-    email: "priya@neuralfund.com",
-    investor_type: "venture_capital",
-    job_title: "Partner",
-    company: "Neural Fund",
-    location: "London, UK",
-    investment_stages: ["seed", "series_a", "series_b"],
-    investment_sectors: ["AI", "Machine Learning", "HealthTech"],
-    fit_score: 89,
-    data_quality_score: 95,
-    outreach_readiness: "needs_verification",
-    is_verified: true,
-  },
-  {
-    id: "4",
-    full_name: "David Kim",
-    email: "david@accrete.vc",
-    investor_type: "micro_vc",
-    job_title: "Founding Partner",
-    company: "Accrete VC",
-    location: "Austin, TX",
-    investment_stages: ["pre_seed", "seed"],
-    investment_sectors: ["AI Infrastructure", "Developer Tools", "DeepTech"],
-    fit_score: 87,
-    data_quality_score: 81,
-    outreach_readiness: "ready",
-    is_verified: true,
-  },
-  {
-    id: "5",
-    full_name: "Elena Rodriguez",
-    email: "elena@forgeaccelerator.com",
-    investor_type: "accelerator",
-    job_title: "Director",
-    company: "Forge Accelerator",
-    location: "Miami, FL",
-    investment_stages: ["pre_seed"],
-    investment_sectors: ["SaaS", "Consumer", "Marketplace"],
-    fit_score: 78,
-    data_quality_score: 65,
-    outreach_readiness: "not_ready",
-    is_verified: false,
-  },
-];
-
-const readinessMap: Record<string, { label: string; variant: "success" | "warning" | "default" | "info" | "danger" }> = {
-  ready: { label: "Ready", variant: "success" },
-  needs_verification: { label: "Needs Review", variant: "warning" },
-  not_ready: { label: "Not Ready", variant: "default" },
-  contacted: { label: "Contacted", variant: "info" },
-  do_not_contact: { label: "Do Not Contact", variant: "danger" },
-};
-
-const typeLabels: Record<string, string> = {
-  venture_capital: "VC",
-  angel_investor: "Angel",
-  micro_vc: "Micro VC",
-  accelerator: "Accelerator",
-  corporate_venture: "CVC",
-  family_office: "Family Office",
+const readinessColors: Record<string, "success" | "warning" | "info" | "danger" | "default"> = {
+  ready: "success",
+  needs_verification: "warning",
+  not_ready: "default",
+  contacted: "info",
+  do_not_contact: "danger",
 };
 
 export default function InvestorsPage() {
-  const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState<string>("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [investors, setInvestors] = useState<Investor[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [readinessFilter, setReadinessFilter] = useState("");
+  const [sortBy, setSortBy] = useState("fit_score");
+  const [page, setPage] = useState(0);
+  const limit = 25;
 
-  const filteredInvestors = PLACEHOLDER_INVESTORS.filter((inv) => {
-    const matchesSearch =
-      !search ||
-      inv.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      inv.company?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.investment_sectors.some((s) => s.toLowerCase().includes(search.toLowerCase()));
-    const matchesStage = !stageFilter || inv.investment_stages.includes(stageFilter);
-    const matchesType = !typeFilter || inv.investor_type === typeFilter;
-    return matchesSearch && matchesStage && matchesType;
-  });
+  const fetchInvestors = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (query) params.set("query", query);
+      if (typeFilter) params.set("investorType", typeFilter);
+      if (readinessFilter) params.set("outreachReadiness", readinessFilter);
+      params.set("sortBy", sortBy);
+      params.set("sortDirection", "desc");
+      params.set("limit", String(limit));
+      params.set("offset", String(page * limit));
 
-  const columns: Column<Investor>[] = [
-    {
-      key: "full_name",
-      header: "Investor",
-      render: (inv) => (
-        <div className="flex items-center gap-[10px]">
-          <div className="w-[36px] h-[36px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center text-[14px] font-semibold text-lime-700 dark:text-lime-400 flex-none">
-            {inv.full_name.split(" ").map((n) => n[0]).join("")}
-          </div>
-          <div>
-            <div className="flex items-center gap-[6px]">
-              <span className="font-medium text-gray-900 dark:text-white">{inv.full_name}</span>
-              {inv.is_verified && <i className="ri-verified-badge-fill text-lime-500 text-[14px]"></i>}
-            </div>
-            <span className="text-[12px] text-gray-400">{inv.job_title} {inv.company ? `at ${inv.company}` : ""}</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "investor_type",
-      header: "Type",
-      render: (inv) => (
-        <Badge variant="default" size="sm">{typeLabels[inv.investor_type] || inv.investor_type}</Badge>
-      ),
-    },
-    {
-      key: "location",
-      header: "Location",
-      render: (inv) => (
-        <span className="flex items-center gap-[4px]">
-          <i className="ri-map-pin-line text-gray-400 text-[13px]"></i>
-          {inv.location || "—"}
-        </span>
-      ),
-    },
-    {
-      key: "fit_score",
-      header: "Fit Score",
-      render: (inv) => (
-        <div className="flex items-center gap-[6px]">
-          <div className="w-[36px] h-[6px] bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${inv.fit_score}%`,
-                backgroundColor: inv.fit_score >= 85 ? "#b1ff84" : inv.fit_score >= 70 ? "#ffc107" : "#ff4023",
-              }}
-            />
-          </div>
-          <span className="text-[13px] font-medium">{inv.fit_score}%</span>
-        </div>
-      ),
-    },
-    {
-      key: "outreach_readiness",
-      header: "Status",
-      render: (inv) => {
-        const readiness = readinessMap[inv.outreach_readiness] || readinessMap.not_ready;
-        return <Badge variant={readiness.variant} size="sm">{readiness.label}</Badge>;
-      },
-    },
-    {
-      key: "id",
-      header: "",
-      render: (inv) => (
-        <Link
-          href={`/dashboard/investors/${inv.id}`}
-          className="text-lime-600 hover:text-lime-700 text-[13px] font-medium"
-        >
-          View <i className="ri-arrow-right-s-line"></i>
-        </Link>
-      ),
-    },
-  ];
+      const response = await fetch(`/api/investors?${params.toString()}`);
+      const data = await response.json();
+
+      setInvestors(data.investors || []);
+      setTotal(data.total || 0);
+    } catch (err) {
+      console.error("Failed to fetch investors:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [query, typeFilter, readinessFilter, sortBy, page]);
+
+  useEffect(() => {
+    fetchInvestors();
+  }, [fetchInvestors]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(0);
+    fetchInvestors();
+  };
 
   return (
     <div>
       <PageHeader
-        title="Investors"
-        description="Discover, research, and track investors for your fundraising campaign."
+        title="Investor Database"
+        description={`${total.toLocaleString()} investors in your database.`}
         actions={
           <Link href="/dashboard/investors/discover">
             <Button>
-              <i className="ri-radar-line text-[18px]"></i>
-              Discover Investors
+              <i className="ri-radar-line text-[16px]"></i>
+              AI Discovery
             </Button>
           </Link>
         }
       />
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-[16px] mb-[20px]">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-[12px] mb-[20px]">
         {[
-          { label: "Total Investors", value: PLACEHOLDER_INVESTORS.length, icon: "ri-user-line", color: "text-lime-500" },
-          { label: "Ready to Contact", value: PLACEHOLDER_INVESTORS.filter((i) => i.outreach_readiness === "ready").length, icon: "ri-check-double-line", color: "text-success-500" },
-          { label: "High Fit (85%+)", value: PLACEHOLDER_INVESTORS.filter((i) => i.fit_score >= 85).length, icon: "ri-heart-line", color: "text-warning-500" },
-          { label: "Verified", value: PLACEHOLDER_INVESTORS.filter((i) => i.is_verified).length, icon: "ri-verified-badge-line", color: "text-info-500" },
+          { label: "Total", value: total, icon: "ri-team-line", color: "text-blue-600" },
+          { label: "High Fit", value: investors.filter((i) => i.fit_score >= 80).length, icon: "ri-star-line", color: "text-green-600" },
+          { label: "Ready", value: investors.filter((i) => i.outreach_readiness === "ready").length, icon: "ri-check-line", color: "text-lime-600" },
+          { label: "Verified", value: investors.filter((i) => i.is_verified).length, icon: "ri-shield-check-line", color: "text-purple-600" },
         ].map((stat) => (
           <Card key={stat.label}>
-            <CardBody className="py-[16px] px-[18px]">
-              <div className="flex items-center gap-[10px] mb-[8px]">
+            <CardBody className="p-[14px]">
+              <div className="flex items-center gap-[10px]">
                 <i className={`${stat.icon} ${stat.color} text-[18px]`}></i>
-                <span className="text-[12px] text-gray-400 uppercase tracking-wide">{stat.label}</span>
+                <div>
+                  <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+                  <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
+                </div>
               </div>
-              <span className="text-[22px] font-bold text-gray-900 dark:text-white">{stat.value}</span>
             </CardBody>
           </Card>
         ))}
@@ -249,60 +118,158 @@ export default function InvestorsPage() {
 
       {/* Search & Filters */}
       <Card className="mb-[20px]">
-        <CardBody className="py-[14px] px-[16px]">
-          <div className="flex items-center gap-[12px] flex-wrap">
-            <div className="relative flex-1 min-w-[200px]">
-              <i className="ri-search-line absolute left-[12px] top-1/2 -translate-y-1/2 text-gray-400 text-[18px]"></i>
+        <CardBody className="p-[14px]">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-[10px]">
+            <div className="flex-1 relative">
+              <i className="ri-search-line absolute left-[12px] top-1/2 -translate-y-1/2 text-gray-400 text-[16px]"></i>
               <input
                 type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, firm, sector..."
-                className="w-full py-[9px] pl-[38px] pr-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 focus:border-lime-500"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name, email, firm, or title..."
+                className="w-full py-[9px] pl-[36px] pr-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
               />
             </div>
             <select
-              value={stageFilter}
-              onChange={(e) => setStageFilter(e.target.value)}
-              className="py-[9px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
-            >
-              <option value="">All Stages</option>
-              <option value="pre_seed">Pre-Seed</option>
-              <option value="seed">Seed</option>
-              <option value="series_a">Series A</option>
-              <option value="series_b">Series B</option>
-            </select>
-            <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="py-[9px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+              onChange={(e) => { setTypeFilter(e.target.value); setPage(0); }}
+              className="py-[9px] px-[14px] text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
             >
               <option value="">All Types</option>
               <option value="venture_capital">VC</option>
               <option value="angel_investor">Angel</option>
-              <option value="micro_vc">Micro VC</option>
               <option value="accelerator">Accelerator</option>
+              <option value="family_office">Family Office</option>
+              <option value="corporate_venture">CVC</option>
             </select>
-          </div>
+            <select
+              value={readinessFilter}
+              onChange={(e) => { setReadinessFilter(e.target.value); setPage(0); }}
+              className="py-[9px] px-[14px] text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+            >
+              <option value="">All Status</option>
+              <option value="ready">Ready</option>
+              <option value="needs_verification">Needs Verification</option>
+              <option value="contacted">Contacted</option>
+              <option value="not_ready">Not Ready</option>
+            </select>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="py-[9px] px-[14px] text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+            >
+              <option value="fit_score">Fit Score</option>
+              <option value="data_quality_score">Data Quality</option>
+              <option value="created_at">Recently Added</option>
+              <option value="full_name">Name</option>
+            </select>
+          </form>
         </CardBody>
       </Card>
 
-      {/* Results Table */}
+      {/* Results */}
       <Card>
-        <div className="px-[16px] py-[12px] border-b border-gray-100 dark:border-gray-800">
-          <span className="text-[13px] text-gray-500">
-            {filteredInvestors.length} investor{filteredInvestors.length !== 1 ? "s" : ""} found
-          </span>
-        </div>
-        <Table
-          columns={columns as unknown as Column<Record<string, unknown>>[]}
-          data={filteredInvestors as unknown as Record<string, unknown>[]}
-          rowKey={(item) => String((item as Record<string, unknown>).id)}
-          onRowClick={(item) => {
-            window.location.href = `/dashboard/investors/${(item as unknown as Investor).id}`;
-          }}
-          emptyMessage="No investors match your filters."
-        />
+        <CardBody className="p-0">
+          {loading ? (
+            <div className="p-[20px] space-y-[10px]">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="animate-pulse flex items-center gap-[12px] p-[14px]">
+                  <div className="w-[36px] h-[36px] rounded-full bg-gray-100 dark:bg-gray-800"></div>
+                  <div className="flex-1">
+                    <div className="h-[14px] bg-gray-100 dark:bg-gray-800 rounded w-[150px] mb-[6px]"></div>
+                    <div className="h-[10px] bg-gray-100 dark:bg-gray-800 rounded w-[200px]"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : investors.length === 0 ? (
+            <div className="text-center py-[40px]">
+              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 text-[24px]">
+                <i className="ri-team-line"></i>
+              </div>
+              <p className="text-[14px] text-gray-400 !mb-[4px]">No investors found</p>
+              <p className="text-[13px] text-gray-300 !mb-0">Try adjusting your search or filters.</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-100 dark:border-gray-800">
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px]">Investor</th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px] hidden sm:table-cell">Type</th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px] hidden md:table-cell">Firm</th>
+                      <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px]">Fit</th>
+                      <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px] hidden lg:table-cell">Quality</th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px]">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {investors.map((inv) => (
+                      <tr key={inv.id} className="border-b border-gray-50 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                        <td className="px-[14px] py-[12px]">
+                          <Link href={`/dashboard/investors/${inv.id}`} className="hover:text-lime-600 transition-colors">
+                            <p className="text-[13px] font-semibold text-[#06201b] dark:text-white !mb-0">{inv.full_name}</p>
+                            <p className="text-[11px] text-gray-400 !mb-0">{inv.email || inv.job_title || "No details"}</p>
+                          </Link>
+                        </td>
+                        <td className="px-[14px] py-[12px] hidden sm:table-cell">
+                          <span className="text-[12px] text-gray-500 capitalize">{inv.investor_type.replace(/_/g, " ")}</span>
+                        </td>
+                        <td className="px-[14px] py-[12px] hidden md:table-cell">
+                          <span className="text-[12px] text-gray-500">{inv.firm_name || "—"}</span>
+                        </td>
+                        <td className="px-[14px] py-[12px] text-center">
+                          <span className={`text-[13px] font-bold ${inv.fit_score >= 80 ? "text-green-600" : inv.fit_score >= 60 ? "text-amber-600" : "text-gray-400"}`}>
+                            {inv.fit_score}%
+                          </span>
+                        </td>
+                        <td className="px-[14px] py-[12px] text-center hidden lg:table-cell">
+                          <div className="w-[40px] h-[4px] bg-gray-100 dark:bg-gray-800 rounded-full mx-auto overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-lime-500"
+                              style={{ width: `${inv.data_quality_score}%` }}
+                            ></div>
+                          </div>
+                        </td>
+                        <td className="px-[14px] py-[12px]">
+                          <Badge variant={readinessColors[inv.outreach_readiness] || "default"} size="sm">
+                            {inv.outreach_readiness.replace(/_/g, " ")}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-[14px] py-[12px] border-t border-gray-100 dark:border-gray-800">
+                <p className="text-[12px] text-gray-400 !mb-0">
+                  Showing {page * limit + 1}—{Math.min((page + 1) * limit, total)} of {total.toLocaleString()}
+                </p>
+                <div className="flex items-center gap-[8px]">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={!investors.length || investors.length < limit}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </CardBody>
       </Card>
     </div>
   );
