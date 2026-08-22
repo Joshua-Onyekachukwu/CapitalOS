@@ -1,10 +1,24 @@
 import { Card, CardBody } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
+import { getDashboardStats, getRecentInvestors, getPipelineSummary } from "@/lib/actions/dashboard";
 import Link from "next/link";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [stats, recentInvestors, pipeline] = await Promise.all([
+    getDashboardStats(),
+    getRecentInvestors(5),
+    getPipelineSummary(),
+  ]);
+
+  const stageColors: Record<string, string> = {
+    not_ready: "bg-gray-400",
+    needs_verification: "bg-amber-500",
+    ready: "bg-lime-500",
+    contacted: "bg-blue-500",
+    do_not_contact: "bg-red-500",
+  };
+
   return (
     <div>
       <PageHeader
@@ -15,10 +29,10 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">
         {[
-          { label: "Investors Discovered", value: "0", icon: "ri-radar-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
-          { label: "Emails Sent", value: "0", icon: "ri-mail-send-line", color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600" },
-          { label: "Meetings", value: "0", icon: "ri-calendar-check-line", color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600" },
-          { label: "Interested", value: "0", icon: "ri-heart-3-line", color: "bg-rose-50 dark:bg-rose-900/20", iconColor: "text-rose-600" },
+          { label: "Investors in Database", value: stats.totalInvestors.toLocaleString(), icon: "ri-database-2-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
+          { label: "Investor Firms", value: stats.totalFirms.toLocaleString(), icon: "ri-building-2-line", color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600" },
+          { label: "High-Fit Investors", value: stats.highFitInvestors.toLocaleString(), icon: "ri-star-line", color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600" },
+          { label: "Added This Week", value: stats.investorsThisWeek.toLocaleString(), icon: "ri-add-circle-line", color: "bg-amber-50 dark:bg-amber-900/20", iconColor: "text-amber-600" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="flex items-center gap-[15px]">
@@ -34,7 +48,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Quick Actions + Getting Started */}
+      {/* Quick Actions + Pipeline */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">
         {/* Quick Actions */}
         <Card>
@@ -91,64 +105,108 @@ export default function DashboardPage() {
           </CardBody>
         </Card>
 
-        {/* Getting Started Checklist */}
+        {/* Pipeline Summary */}
         <Card>
           <CardBody>
             <div className="flex items-center justify-between mb-[16px]">
               <h3 className="!text-[16px] md:!text-lg !font-semibold !mb-0">
-                Getting Started
+                Pipeline Overview
               </h3>
-              <Badge variant="warning" size="sm">0 / 4</Badge>
+              <Link href="/dashboard/pipeline" className="text-[13px] text-lime-600 hover:text-lime-700 font-medium">
+                View All →
+              </Link>
             </div>
-            <div className="space-y-[12px]">
-              {[
-                { step: "Set up your startup profile", href: "/dashboard/startup", done: false },
-                { step: "Upload your pitch deck", href: "/dashboard/documents", done: false },
-                { step: "Discover your first investors", href: "/dashboard/investors/discover", done: false },
-                { step: "Create your first campaign", href: "/dashboard/campaigns", done: false },
-              ].map((item, i) => (
-                <Link
-                  key={i}
-                  href={item.href}
-                  className="flex items-center gap-[12px] p-[12px] rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
-                >
-                  <div className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center flex-none transition-colors ${
-                    item.done
-                      ? "bg-lime-500 border-lime-500"
-                      : "border-gray-200 dark:border-gray-700 group-hover:border-lime-500"
-                  }`}>
-                    {item.done && <i className="ri-check-line text-[12px] text-white"></i>}
+            {pipeline.length === 0 ? (
+              <div className="text-center py-[30px]">
+                <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 dark:text-gray-600 text-[24px]">
+                  <i className="ri-kanban-view"></i>
+                </div>
+                <p className="text-[14px] text-gray-400 !mb-[4px]">No pipeline data yet</p>
+                <p className="text-[13px] text-gray-300 dark:text-gray-600 !mb-0">
+                  Discover investors to populate your pipeline.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-[10px]">
+                {pipeline.map((stage) => (
+                  <div key={stage.stage} className="flex items-center gap-[12px]">
+                    <div className={`w-[8px] h-[8px] rounded-full flex-none ${stageColors[stage.stage] || "bg-gray-400"}`}></div>
+                    <span className="text-[13px] text-gray-500 flex-1 capitalize">{stage.stage.replace(/_/g, " ")}</span>
+                    <span className="text-[14px] font-bold text-[#06201b] dark:text-white">{stage.count}</span>
                   </div>
-                  <span className={`text-[14px] ${item.done ? "text-gray-400 line-through" : "text-gray-600 dark:text-gray-400"}`}>
-                    {item.step}
-                  </span>
-                  {!item.done && (
-                    <i className="ri-arrow-right-s-line text-[16px] text-gray-300 ml-auto opacity-0 group-hover:opacity-100 transition-opacity"></i>
-                  )}
-                </Link>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardBody>
         </Card>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Investors */}
       <Card>
         <CardBody>
           <div className="flex items-center justify-between mb-[16px]">
             <h3 className="!text-[16px] md:!text-lg !font-semibold !mb-0">
-              Recent Activity
+              Recent Investors
             </h3>
+            <Link href="/dashboard/investors" className="text-[13px] text-lime-600 hover:text-lime-700 font-medium">
+              View All →
+            </Link>
           </div>
-          <div className="text-center py-[30px]">
-            <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 dark:text-gray-600 text-[24px]">
-              <i className="ri-time-line"></i>
+          {recentInvestors.length === 0 ? (
+            <div className="text-center py-[30px]">
+              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 dark:text-gray-600 text-[24px]">
+                <i className="ri-team-line"></i>
+              </div>
+              <p className="text-[14px] text-gray-400 !mb-[4px]">No investors yet</p>
+              <p className="text-[13px] text-gray-300 dark:text-gray-600 !mb-0">
+                Run a data acquisition job or import investors via CSV.
+              </p>
             </div>
-            <p className="text-[14px] text-gray-400 !mb-[4px]">No activity yet</p>
-            <p className="text-[13px] text-gray-300 dark:text-gray-600 !mb-0">
-              Start by setting up your startup profile.
-            </p>
-          </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
+                    <th className="text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wider pb-[10px]">Name</th>
+                    <th className="text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wider pb-[10px]">Type</th>
+                    <th className="text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wider pb-[10px]">Firm</th>
+                    <th className="text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wider pb-[10px]">Fit</th>
+                    <th className="text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wider pb-[10px]">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentInvestors.map((investor) => (
+                    <tr key={investor.id} className="border-b border-gray-50 dark:border-gray-800/50 last:border-0">
+                      <td className="py-[12px]">
+                        <Link href={`/dashboard/investors/${investor.id}`} className="text-[14px] font-medium text-[#06201b] dark:text-white hover:text-lime-600 transition-colors">
+                          {investor.full_name}
+                        </Link>
+                      </td>
+                      <td className="py-[12px]">
+                        <span className="text-[13px] text-gray-500 capitalize">{investor.investor_type.replace(/_/g, " ")}</span>
+                      </td>
+                      <td className="py-[12px]">
+                        <span className="text-[13px] text-gray-500">{investor.firm_name || "—"}</span>
+                      </td>
+                      <td className="py-[12px]">
+                        <span className={`text-[14px] font-bold ${investor.fit_score >= 80 ? "text-green-600" : investor.fit_score >= 60 ? "text-amber-600" : "text-gray-400"}`}>
+                          {investor.fit_score}%
+                        </span>
+                      </td>
+                      <td className="py-[12px]">
+                        <Badge
+                          variant={investor.outreach_readiness === "ready" ? "success" : investor.outreach_readiness === "contacted" ? "info" : "default"}
+                          size="sm"
+                        >
+                          {investor.outreach_readiness.replace(/_/g, " ")}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardBody>
       </Card>
     </div>
