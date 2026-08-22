@@ -1,59 +1,38 @@
 "use client";
 
-import React, { useState } from "react";
-import { Card, CardBody } from "@/components/ui/Card";
+import React, { useState, useEffect } from "react";
+import { Card, CardBody } from "@//components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 
+interface InvestorRecord {
+  id: string;
+  first_name: string;
+  last_name: string;
+  firm_name: string;
+  investor_type: string;
+  fit_score: number;
+  email_address: string | null;
+}
+
 interface EmailDraft {
   id: string;
+  investorId: string;
   investorName: string;
   investorFirm: string;
   subject: string;
-  preview: string;
-  status: "pending" | "approved" | "sent" | "replied";
+  body: string;
+  status: "draft" | "approved" | "sent" | "replied";
   createdAt: string;
   fitScore: number;
+  aiAnalysis?: string;
 }
 
-const sampleDrafts: EmailDraft[] = [
-  {
-    id: "1",
-    investorName: "Sarah Chen",
-    investorFirm: "Sequoia Capital",
-    subject: "Capital OS — AI-powered fundraising for B2B SaaS",
-    preview: "Hi Sarah, I noticed your recent investment in Developer Tools startups. Our platform helps founders like me discover the right investors...",
-    status: "pending",
-    createdAt: "2h ago",
-    fitScore: 94,
-  },
-  {
-    id: "2",
-    investorName: "Marcus Williams",
-    investorFirm: "a16z",
-    subject: "Re: Your thesis on AI infrastructure",
-    preview: "Hi Marcus, Your recent talk on AI infrastructure resonated with our approach. We're building the operating system for startup fundraising...",
-    status: "approved",
-    createdAt: "5h ago",
-    fitScore: 91,
-  },
-  {
-    id: "3",
-    investorName: "Priya Patel",
-    investorFirm: "Y Combinator",
-    subject: "Founder seeking Seed round — AI/SaaS",
-    preview: "Hi Priya, We're raising a $2M seed round for Capital OS, an AI-powered platform that helps founders manage the entire fundraising process...",
-    status: "sent",
-    createdAt: "1d ago",
-    fitScore: 88,
-  },
-];
-
 const statusConfig: Record<string, { label: string; variant: "success" | "warning" | "info" | "default" }> = {
-  pending: { label: "Needs Review", variant: "warning" },
+  draft: { label: "Needs Review", variant: "warning" },
   approved: { label: "Approved", variant: "success" },
   sent: { label: "Sent", variant: "info" },
   replied: { label: "Replied", variant: "success" },
@@ -61,22 +40,202 @@ const statusConfig: Record<string, { label: string; variant: "success" | "warnin
 
 export default function OutreachPage() {
   const [activeTab, setActiveTab] = useState("drafts");
-  const [selectedDraft, setSelectedDraft] = useState<EmailDraft | null>(sampleDrafts[0]);
+  const [drafts, setDrafts] = useState<EmailDraft[]>([]);
+  const [selectedDraft, setSelectedDraft] = useState<EmailDraft | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Load investors from database for email drafting
+  useEffect(() => {
+    async function loadInvestors() {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+
+        const { data } = await supabase
+          .from("investors")
+          .select("id, first_name, last_name, firm_name, investor_type, fit_score, email_address")
+          .not("email_address", "is", null)
+          .order("fit_score", { ascending: false })
+          .limit(50);
+
+        if (data && data.length > 0) {
+          const mappedDrafts: EmailDraft[] = data.map((inv: any) => ({
+            id: `draft-${inv.id}`,
+            investorId: inv.id,
+            investorName: `${inv.first_name} ${inv.last_name}`,
+            investorFirm: inv.firm_name || "Unknown",
+            subject: `Capital OS — Personalized outreach for ${inv.firm_name || "your firm"}`,
+            body: `Hi ${inv.first_name},\n\nI came across ${inv.firm_name || "your firm"}'s portfolio and believe Capital OS could be a strong fit for your investment thesis.\n\nWe're building the AI-powered operating system for startup fundraising, and I'd love to share how we can help streamline your deal flow.\n\nWould you be open to a brief conversation?\n\nBest regards`,
+            status: "draft",
+            createdAt: "Just now",
+            fitScore: inv.fit_score || 75,
+            aiAnalysis: `Investor type: ${inv.investor_type || "Unknown"}. Score: ${inv.fit_score || 75}%`,
+          }));
+
+          setDrafts(mappedDrafts);
+          if (mappedDrafts.length > 0) {
+            setSelectedDraft(mappedDrafts[0]);
+          }
+        }
+      } catch {
+        // Table may not have data yet
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadInvestors();
+  }, []);
 
   const tabs = [
-    { id: "drafts", label: "Drafts", count: sampleDrafts.filter((d) => d.status === "pending").length },
-    { id: "approved", label: "Approved", count: sampleDrafts.filter((d) => d.status === "approved").length },
-    { id: "sent", label: "Sent", count: sampleDrafts.filter((d) => d.status === "sent").length },
+    { id: "drafts", label: "Drafts", count: drafts.filter((d) => d.status === "draft").length },
+    { id: "approved", label: "Approved", count: drafts.filter((d) => d.status === "approved").length },
+    { id: "sent", label: "Sent", count: drafts.filter((d) => d.status === "sent").length },
     { id: "replies", label: "Replies", count: 0 },
   ];
 
   const filteredDrafts = activeTab === "drafts"
-    ? sampleDrafts.filter((d) => d.status === "pending")
+    ? drafts.filter((d) => d.status === "draft")
     : activeTab === "approved"
-    ? sampleDrafts.filter((d) => d.status === "approved")
+    ? drafts.filter((d) => d.status === "approved")
     : activeTab === "sent"
-    ? sampleDrafts.filter((d) => d.status === "sent")
+    ? drafts.filter((d) => d.status === "sent")
     : [];
+
+  const handleRegenerate = async () => {
+    if (!selectedDraft) return;
+    setGenerating(true);
+
+    try {
+      // Call the AI to generate a new personalized email
+      const { chatCompletion } = await import("@/lib/ai/client");
+
+      const response = await chatCompletion({
+        task: "email_drafting",
+        systemPrompt: `You are a fundraising outreach specialist for Capital OS, an AI-powered platform that helps founders manage fundraising. Write a personalized, professional investor outreach email. The email should be concise, reference the investor's thesis/portfolio, and explain why Capital OS is relevant. Return JSON with "subject" and "body" fields. Keep it under 150 words.`,
+        messages: [
+          {
+            role: "user",
+            content: `Draft a personalized outreach email to ${selectedDraft.investorName} at ${selectedDraft.investorFirm}. They are a ${selectedDraft.aiAnalysis}. Their fit score with our startup is ${selectedDraft.fitScore}%.`
+          }
+        ],
+      });
+
+      const content = response.content;
+      try {
+        const parsed = JSON.parse(content);
+        setDrafts((prev) =>
+          prev.map((d) =>
+            d.id === selectedDraft.id
+              ? { ...d, subject: parsed.subject || d.subject, body: parsed.body || d.body, status: "draft" as const }
+              : d
+          )
+        );
+        setSelectedDraft((prev) =>
+          prev
+            ? { ...prev, subject: parsed.subject || prev.subject, body: parsed.body || prev.body, status: "draft" as const }
+            : prev
+        );
+      } catch {
+        // If AI response isn't JSON, use it as-is
+        setDrafts((prev) =>
+          prev.map((d) =>
+            d.id === selectedDraft.id ? { ...d, body: content, status: "draft" as const } : d
+          )
+        );
+      }
+    } catch {
+      // AI may not be available
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleApprove = () => {
+    if (!selectedDraft) return;
+    setDrafts((prev) =>
+      prev.map((d) => (d.id === selectedDraft.id ? { ...d, status: "approved" as const } : d))
+    );
+    setSelectedDraft((prev) => (prev ? { ...prev, status: "approved" as const } : prev));
+  };
+
+  const handleSend = async () => {
+    if (!selectedDraft) return;
+    setSending(true);
+    setSendResult(null);
+
+    try {
+      const { sendEmail } = await import("@/lib/services/email/sender");
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setSendResult({ type: "error", text: "Please sign in to send emails." });
+        return;
+      }
+
+      // Find the investor's email
+      const { data: investor } = await supabase
+        .from("investors")
+        .select("email_address")
+        .eq("id", selectedDraft.investorId)
+        .single();
+
+      if (!investor?.email_address) {
+        setSendResult({ type: "error", text: "No email address found for this investor." });
+        return;
+      }
+
+      const result = await sendEmail({
+        userId: user.id,
+        to: investor.email_address,
+        subject: selectedDraft.subject,
+        bodyHtml: selectedDraft.body.replace(/\n/g, "<br>"),
+        bodyText: selectedDraft.body,
+      });
+
+      if (result.success) {
+        setDrafts((prev) =>
+          prev.map((d) => (d.id === selectedDraft.id ? { ...d, status: "sent" as const } : d))
+        );
+        setSelectedDraft((prev) => (prev ? { ...prev, status: "sent" as const } : prev));
+        setSendResult({ type: "success", text: "Email sent successfully!" });
+      } else {
+        setSendResult({ type: "error", text: result.error || "Failed to send email." });
+      }
+    } catch (err) {
+      setSendResult({ type: "error", text: `Failed to send: ${String(err)}` });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="Outreach" description="Review AI-generated emails and manage your outreach." />
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-[20px]">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardBody className="p-[16px]">
+                <p className="text-[13px] text-gray-400 text-center !mb-0">Loading investors...</p>
+              </CardBody>
+            </Card>
+          </div>
+          <div className="lg:col-span-3">
+            <Card>
+              <CardBody>
+                <p className="text-[13px] text-gray-400 text-center !mb-0">Select an investor to draft an email.</p>
+              </CardBody>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -96,17 +255,24 @@ export default function OutreachPage() {
                   <EmptyState
                     icon={<i className="ri-mail-line"></i>}
                     title="No emails here"
-                    description="AI-generated drafts will appear here for your review."
+                    description={activeTab === "drafts"
+                      ? "Investor emails with matching profiles will appear here for your review."
+                      : activeTab === "sent"
+                      ? "Sent emails will appear here."
+                      : "No emails in this category."}
                   />
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-[500px] overflow-y-auto">
                   {filteredDrafts.map((draft) => {
                     const config = statusConfig[draft.status];
                     return (
                       <button
                         key={draft.id}
-                        onClick={() => setSelectedDraft(draft)}
+                        onClick={() => {
+                          setSelectedDraft(draft);
+                          setSendResult(null);
+                        }}
                         className={`w-full text-left p-[16px] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
                           selectedDraft?.id === draft.id ? "bg-lime-50/50 dark:bg-lime-900/10 border-l-2 border-l-lime-500" : ""
                         }`}
@@ -153,6 +319,16 @@ export default function OutreachPage() {
                   </Badge>
                 </div>
 
+                {sendResult && (
+                  <div className={`rounded-[10px] p-[12px] mb-[16px] text-[13px] font-medium ${
+                    sendResult.type === "success"
+                      ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                      : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                  }`}>
+                    {sendResult.text}
+                  </div>
+                )}
+
                 {/* Email Content */}
                 <div className="bg-gray-50 dark:bg-gray-800/30 rounded-[10px] p-[20px] mb-[16px]">
                   <div className="mb-[12px]">
@@ -162,44 +338,41 @@ export default function OutreachPage() {
                     </p>
                   </div>
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-[12px]">
-                    <p className="text-[14px] text-gray-600 dark:text-gray-300 leading-[1.7] !mb-0">
-                      {selectedDraft.preview}
+                    <p className="text-[14px] text-gray-600 dark:text-gray-300 leading-[1.7] !mb-0 whitespace-pre-line">
+                      {selectedDraft.body}
                     </p>
                   </div>
                 </div>
 
                 {/* AI Analysis */}
-                <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] p-[16px] mb-[16px] border border-lime-100 dark:border-lime-800/30">
-                  <div className="flex items-center gap-[8px] mb-[8px]">
-                    <i className="ri-sparkling-2-line text-lime-600 text-[16px]"></i>
-                    <span className="text-[13px] font-semibold text-[#06201b] dark:text-white">AI Analysis</span>
+                {selectedDraft.aiAnalysis && (
+                  <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] p-[16px] mb-[16px] border border-lime-100 dark:border-lime-800/30">
+                    <div className="flex items-center gap-[8px] mb-[8px]">
+                      <i className="ri-sparkling-2-line text-lime-600 text-[16px]"></i>
+                      <span className="text-[13px] font-semibold text-[#06201b] dark:text-white">AI Analysis</span>
+                    </div>
+                    <p className="text-[13px] text-gray-500 dark:text-gray-400 !mb-0 leading-[1.6]">
+                      {selectedDraft.aiAnalysis}
+                    </p>
                   </div>
-                  <p className="text-[13px] text-gray-500 dark:text-gray-400 !mb-0 leading-[1.6]">
-                    This email references {selectedDraft.investorFirm}&apos;s recent investments in B2B SaaS and aligns with their thesis on developer productivity tools.
-                    Personalization score: <span className="font-bold text-lime-600">High</span>
-                  </p>
-                </div>
+                )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-[10px]">
-                  {selectedDraft.status === "pending" && (
+                <div className="flex items-center gap-[10px] flex-wrap">
+                  {selectedDraft.status === "draft" && (
                     <>
-                      <Button>
+                      <Button onClick={handleApprove}>
                         <i className="ri-check-line text-[16px]"></i>
-                        Approve & Send
+                        Approve
                       </Button>
-                      <Button variant="outline">
-                        <i className="ri-edit-line text-[16px]"></i>
-                        Edit
-                      </Button>
-                      <Button variant="outline">
+                      <Button variant="outline" onClick={handleRegenerate} loading={generating}>
                         <i className="ri-refresh-line text-[16px]"></i>
-                        Regenerate
+                        Regenerate with AI
                       </Button>
                     </>
                   )}
                   {selectedDraft.status === "approved" && (
-                    <Button>
+                    <Button onClick={handleSend} loading={sending}>
                       <i className="ri-send-plane-line text-[16px]"></i>
                       Send Now
                     </Button>
@@ -207,7 +380,7 @@ export default function OutreachPage() {
                   {selectedDraft.status === "sent" && (
                     <Button variant="outline" disabled>
                       <i className="ri-check-double-line text-[16px]"></i>
-                      Sent
+                      Sent ✓
                     </Button>
                   )}
                 </div>
