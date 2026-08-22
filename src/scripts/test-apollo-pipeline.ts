@@ -8,6 +8,7 @@
  *   npx tsx src/scripts/test-apollo-pipeline.ts
  */
 
+import "./load-env";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -26,9 +27,11 @@ async function testApolloConnection(): Promise<boolean> {
   try {
     const response = await fetch(`${APOLLO_BASE_URL}/people/search`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Api-Key": APOLLO_API_KEY,
+      },
       body: JSON.stringify({
-        api_key: APOLLO_API_KEY,
         q_keywords: "AI investor",
         per_page: 3,
       }),

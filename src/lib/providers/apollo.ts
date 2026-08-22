@@ -48,12 +48,10 @@ async function apolloRequest<T>(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-Api-Key": APOLLO_API_KEY,
       "Cache-Control": "no-cache",
     },
-    body: JSON.stringify({
-      api_key: APOLLO_API_KEY,
-      ...body,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {

@@ -7,6 +7,7 @@
  * Checks that all expected tables, views, indexes, and RLS policies exist.
  */
 
+import "./load-env";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
