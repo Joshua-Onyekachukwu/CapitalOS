@@ -252,11 +252,12 @@ export async function findMatchingInvestor(
     new Map(candidates.map((c) => [c.id, c])).values()
   );
 
+  // Phase 2: Fuzzy name match (broader search)
   if (uniqueCandidates.length === 0) {
-    // Phase 2: Fuzzy name match (broader search)
     const name = incoming.fullName.toLowerCase();
     const tokens = nameTokens(name);
 
+    // Last name fuzzy search
     if (tokens.last) {
       const { data: nameMatches } = await supabase
         .from("investors")
@@ -269,17 +270,63 @@ export async function findMatchingInvestor(
     }
   }
 
+  // Phase 3: Email domain match (same domain = likely same firm)
+  if (uniqueCandidates.length === 0 && incoming.email) {
+    const domain = incoming.email.split("@")[1];
+    if (domain && !["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com"].includes(domain.toLowerCase())) {
+      const { data: domainMatches } = await supabase
+        .from("investors")
+        .select("id, full_name, email, linkedin_url, first_name, last_name, current_firm_id, job_title, city, country")
+        .ilike("email", `%@${domain}`)
+        .eq("is_active", true)
+        .limit(10);
+
+      if (domainMatches) uniqueCandidates.push(...domainMatches);
+    }
+  }
+
+  // Phase 4: Firm name fuzzy match (same firm but different person names)
+  if (uniqueCandidates.length === 0 && incoming.currentFirmName) {
+    const firmName = incoming.currentFirmName.toLowerCase().replace(/\b(ventures?|capital|fund|partners?|associates?|advisors?|llc|inc|ltd)\b/gi, "").trim();
+    if (firmName.length > 2) {
+      const { data: firmMatches } = await supabase
+        .from("investor_firms")
+        .select("id")
+        .ilike("normalized_name", `%${firmName}%`)
+        .limit(5);
+
+      if (firmMatches && firmMatches.length > 0) {
+        const firmIds = firmMatches.map((f) => f.id);
+        const { data: investorsAtFirm } = await supabase
+          .from("investors")
+          .select("id, full_name, email, linkedin_url, first_name, last_name, current_firm_id, job_title, city, country")
+          .in("current_firm_id", firmIds)
+          .eq("is_active", true)
+          .limit(20);
+
+        if (investorsAtFirm) uniqueCandidates.push(...investorsAtFirm);
+      }
+    }
+  }
+
   if (uniqueCandidates.length === 0) return null;
+
+  // Deduplicate candidates again after Phase 2-4
+  const finalCandidates = Array.from(
+    new Map(uniqueCandidates.map((c) => [c.id, c])).values()
+  );
+
+  if (finalCandidates.length === 0) return null;
 
   // Score each candidate
   let bestMatch: MatchResult | null = null;
 
-  for (const candidate of uniqueCandidates) {
+  for (const candidate of finalCandidates) {
     const { confidence, signals } = computeConfidence(incoming, candidate);
 
     // Boost for exact email or LinkedIn match
-    if (signals.email === 1.0) signals.email = 1.0; // Already 1.0
-    if (signals.linkedin === 1.0) signals.linkedin = 1.0; // Already 1.0
+    if (signals.email === 1.0) signals.email = 1.0;
+    if (signals.linkedin === 1.0) signals.linkedin = 1.0;
 
     if (!bestMatch || confidence > bestMatch.confidence) {
       bestMatch = {
@@ -289,6 +336,9 @@ export async function findMatchingInvestor(
       };
     }
   }
+
+  // Only return if confidence is above threshold
+  if (bestMatch && bestMatch.confidence < 0.25) return null;
 
   return bestMatch;
 }

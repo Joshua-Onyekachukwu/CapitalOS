@@ -28,6 +28,7 @@ const navSections: NavSection[] = [
     title: "Startup",
     items: [
       { label: "My Startup", href: "/dashboard/startup", icon: "ri-rocket-2-line" },
+      { label: "Edit Profile", href: "/dashboard/startup/edit", icon: "ri-edit-line" },
       { label: "Onboarding", href: "/onboarding", icon: "ri-flask-line" },
       { label: "Documents", href: "/dashboard/documents", icon: "ri-file-text-line" },
     ],
@@ -38,6 +39,7 @@ const navSections: NavSection[] = [
       { label: "Discover", href: "/dashboard/investors/discover", icon: "ri-radar-line" },
       { label: "Investor Database", href: "/dashboard/investors", icon: "ri-database-2-line" },
       { label: "Saved Investors", href: "/dashboard/investors/saved", icon: "ri-bookmark-line" },
+      { label: "Fit Analysis", href: "/dashboard/investors/fit", icon: "ri-pie-chart-line" },
     ],
   },
   {

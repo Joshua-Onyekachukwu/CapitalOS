@@ -28,6 +28,7 @@ export interface NormalizedInvestor {
   maxCheckSize?: number;
   currency: string;
   portfolioCount: number;
+  currentFirmName?: string;
   websiteUrl?: string;
   avatarUrl?: string;
   source: string;
