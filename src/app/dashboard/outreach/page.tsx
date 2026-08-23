@@ -65,6 +65,10 @@ export default function OutreachPage() {
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
 
+  // Email account state
+  const [emailConnected, setEmailConnected] = useState<boolean | null>(null);
+  const [emailProvider, setEmailProvider] = useState<string | null>(null);
+
   // Load top-fit investors for email drafting
   const loadInvestors = useCallback(async () => {
     try {
@@ -99,6 +103,31 @@ export default function OutreachPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Check email account status
+  useEffect(() => {
+    async function checkEmailAccount() {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { getConnectedEmails } = await import("@/lib/actions/email");
+        const result = await getConnectedEmails(user.id);
+        if (result.data && result.data.length > 0) {
+          const active = result.data.find((a: { is_active: boolean }) => a.is_active);
+          setEmailConnected(!!active);
+          setEmailProvider(active?.provider || null);
+        } else {
+          setEmailConnected(false);
+        }
+      } catch {
+        setEmailConnected(false);
+      }
+    }
+    checkEmailAccount();
   }, []);
 
   useEffect(() => {
@@ -275,7 +304,13 @@ export default function OutreachPage() {
         );
         setSendResult({ type: "success", text: "Email sent successfully!" });
       } else {
-        setSendResult({ type: "error", text: result.error || "Failed to send email." });
+        const errorMsg = result.error || "Failed to send email.";
+        if (errorMsg.includes("No email account connected")) {
+          setEmailConnected(false);
+          setSendResult({ type: "error", text: "No email account connected. Please connect Gmail or Outlook in Settings first." });
+        } else {
+          setSendResult({ type: "error", text: errorMsg });
+        }
       }
     } catch (err) {
       setSendResult({ type: "error", text: `Failed to send: ${String(err)}` });
@@ -337,6 +372,41 @@ export default function OutreachPage() {
           </div>
         }
       />
+
+      {/* Email Connection Banner */}
+      {emailConnected === false && (
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-[12px] p-[16px] mb-[20px]">
+          <div className="flex items-center justify-between flex-wrap gap-[12px]">
+            <div className="flex items-center gap-[10px]">
+              <div className="w-[36px] h-[36px] rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 text-[18px] flex-none">
+                <i className="ri-mail-line"></i>
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">
+                  No email account connected
+                </p>
+                <p className="text-[12px] text-gray-500 dark:text-gray-400 !mb-0">
+                  Connect Gmail or Outlook to send AI-generated emails directly to investors.
+                </p>
+              </div>
+            </div>
+            <a href="/dashboard/settings" className="no-underline">
+              <Button size="sm" variant="outline">
+                <i className="ri-settings-3-line text-[14px]"></i>
+                Connect Email
+              </Button>
+            </a>
+          </div>
+        </div>
+      )}
+      {emailConnected === true && emailProvider && (
+        <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-[12px] p-[14px] mb-[20px] flex items-center gap-[10px]">
+          <div className="w-[8px] h-[8px] rounded-full bg-green-500 flex-none"></div>
+          <span className="text-[13px] text-green-700 dark:text-green-400">
+            Connected via {emailProvider === "google" ? "Gmail" : "Outlook"} — emails will be sent from your account
+          </span>
+        </div>
+      )}
 
       {/* Bulk Generation Progress */}
       {bulkGenerating && (
@@ -577,7 +647,12 @@ export default function OutreachPage() {
                     </Button>
                   )}
                   {selectedDraft.status === "approved" && (
-                    <Button onClick={() => handleSend(selectedDraft)} loading={sending}>
+                    <Button
+                      onClick={() => handleSend(selectedDraft)}
+                      loading={sending}
+                      disabled={emailConnected === false}
+                      title={emailConnected === false ? "Connect an email account in Settings first" : undefined}
+                    >
                       <i className="ri-send-plane-line text-[16px]"></i>
                       Send Now
                     </Button>
