@@ -405,7 +405,7 @@ export async function executeSend(
     return false;
   }
 
-  // Import and use the email sender
+  // Import and use the email sender (tracking is auto-injected)
   const { sendEmail } = await import("@/lib/services/email/sender");
 
   const result = await sendEmail({
@@ -413,6 +413,7 @@ export async function executeSend(
     to: investorEmail,
     subject,
     bodyHtml,
+    enableTracking: true,
   });
 
   if (!result.success) {

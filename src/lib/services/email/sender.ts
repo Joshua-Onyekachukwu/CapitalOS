@@ -6,6 +6,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { encryptToken, decryptToken } from "./crypto";
+import { generateTrackingId, injectTracking } from "./tracking";
 
 // =============================================
 // Types
@@ -19,6 +20,7 @@ interface SendEmailParams {
   bodyText?: string;
   cc?: string[];
   attachments?: Array<{ name: string; content: string; mimeType: string }>;
+  enableTracking?: boolean; // default: true
 }
 
 interface SendResult {
@@ -253,25 +255,35 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
     }
   }
 
-  // Send via provider
+  // Generate tracking ID and inject pixel/rewrite links
+  const trackingEnabled = params.enableTracking !== false;
+  const trackingId = trackingEnabled ? generateTrackingId() : null;
+  let trackedHtml = params.bodyHtml;
+
+  if (trackingEnabled && trackingId) {
+    trackedHtml = injectTracking(params.bodyHtml, trackingId, true);
+  }
+
+  // Send via provider (use tracked HTML)
+  const sendParams = { ...params, bodyHtml: trackedHtml };
   let result: SendResult;
 
   if (account.provider === "google") {
-    result = await sendViaGmail(accessToken, params);
+    result = await sendViaGmail(accessToken, sendParams);
   } else if (account.provider === "microsoft") {
-    result = await sendViaMicrosoft(accessToken, params);
+    result = await sendViaMicrosoft(accessToken, sendParams);
   } else {
     return { success: false, error: `Unsupported provider: ${account.provider}` };
   }
 
-  // Log the email
+  // Log the email with tracking ID
   if (result.success) {
     await supabase.from("email_messages").insert({
       user_id: params.userId,
       investor_id: null, // Will be linked by caller if needed
       direction: "outbound",
       subject: params.subject,
-      body_html: params.bodyHtml,
+      body_html: trackedHtml,
       body_text: params.bodyText,
       from_address: account.email_address,
       to_address: params.to,
@@ -279,6 +291,10 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
       status: "sent",
       sent_at: new Date().toISOString(),
       message_id: result.messageId,
+      tracking_id: trackingId,
+      tracking_enabled: trackingEnabled,
+      open_count: 0,
+      click_count: 0,
     });
   }
 
