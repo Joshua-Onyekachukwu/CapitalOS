@@ -290,6 +290,41 @@ export async function addCompanyDocument(doc: {
 }
 
 // =============================================
+// Rename / Delete Documents
+// =============================================
+
+export async function renameCompanyDocument(
+  documentId: string,
+  newName: string
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase
+    .from("company_documents")
+    .update({ file_name: newName })
+    .eq("id", documentId);
+
+  return !error;
+}
+
+export async function deleteCompanyDocument(
+  documentId: string
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase
+    .from("company_documents")
+    .delete()
+    .eq("id", documentId);
+
+  return !error;
+}
+
+// =============================================
 // Readiness Score Calculation
 // =============================================
 

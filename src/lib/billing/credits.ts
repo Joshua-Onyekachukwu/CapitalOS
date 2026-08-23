@@ -2,15 +2,9 @@
 // Credit Service
 // =============================================
 // Manages credit consumption, balance checks, and ledger queries.
+// Uses CockroachDB for data.
 
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
+import { query } from "@/lib/db";
 
 // =============================================
 // Check if User Has Enough Credits
@@ -20,26 +14,21 @@ export async function hasCredits(
   userId: string,
   operation: string
 ): Promise<{ hasCredits: boolean; balance: number; cost: number }> {
-  const supabase = getSupabase();
-
   // Get user's remaining credits
-  const { data: sub } = await supabase
-    .from("user_subscriptions")
-    .select("credits_remaining")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .single();
+  const subs = await query<{ credits_remaining: number }>(
+    `SELECT credits_remaining FROM user_subscriptions WHERE user_id = $1 AND status = 'active' LIMIT 1`,
+    [userId]
+  );
 
-  const balance = sub?.credits_remaining ?? 0;
+  const balance = subs[0]?.credits_remaining ?? 0;
 
   // Get operation cost
-  const { data: costData } = await supabase
-    .from("credit_costs")
-    .select("credit_cost")
-    .eq("operation", operation)
-    .single();
+  const costs = await query<{ credit_cost: number }>(
+    `SELECT credit_cost FROM credit_costs WHERE operation = $1`,
+    [operation]
+  );
 
-  const cost = costData?.credit_cost ?? 0;
+  const cost = costs[0]?.credit_cost ?? 0;
 
   return {
     hasCredits: balance >= cost,
@@ -61,28 +50,25 @@ export async function consumeCredits(
     detail?: Record<string, unknown>;
   }
 ): Promise<{ success: boolean; balance: number; cost: number; error?: string }> {
-  const supabase = getSupabase();
-
   // Get subscription
-  const { data: sub } = await supabase
-    .from("user_subscriptions")
-    .select("id, credits_remaining")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .single();
+  const subs = await query<{ id: string; credits_remaining: number }>(
+    `SELECT id, credits_remaining FROM user_subscriptions WHERE user_id = $1 AND status = 'active' LIMIT 1`,
+    [userId]
+  );
 
-  if (!sub) {
+  if (!subs.length) {
     return { success: false, balance: 0, cost: 0, error: "No active subscription" };
   }
 
-  // Get operation cost
-  const { data: costData } = await supabase
-    .from("credit_costs")
-    .select("credit_cost")
-    .eq("operation", operation)
-    .single();
+  const sub = subs[0];
 
-  const cost = costData?.credit_cost ?? 0;
+  // Get operation cost
+  const costs = await query<{ credit_cost: number }>(
+    `SELECT credit_cost FROM credit_costs WHERE operation = $1`,
+    [operation]
+  );
+
+  const cost = costs[0]?.credit_cost ?? 0;
 
   if (sub.credits_remaining < cost) {
     return {
@@ -96,21 +82,17 @@ export async function consumeCredits(
   const newBalance = sub.credits_remaining - cost;
 
   // Update subscription balance
-  await supabase
-    .from("user_subscriptions")
-    .update({ credits_remaining: newBalance })
-    .eq("id", sub.id);
+  await query(
+    `UPDATE user_subscriptions SET credits_remaining = $1 WHERE id = $2`,
+    [newBalance, sub.id]
+  );
 
   // Log to ledger
-  await supabase.from("credit_ledger").insert({
-    user_id: userId,
-    amount: -cost,
-    balance_after: newBalance,
-    operation,
-    operation_detail: options?.detail || {},
-    model_used: options?.modelUsed || null,
-    tokens_used: options?.tokensUsed || null,
-  });
+  await query(
+    `INSERT INTO credit_ledger (user_id, amount, balance_after, operation, operation_detail, model_used, tokens_used)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [userId, -cost, newBalance, operation, options?.detail || {}, options?.modelUsed || null, options?.tokensUsed || null]
+  );
 
   return { success: true, balance: newBalance, cost };
 }
@@ -125,33 +107,28 @@ export async function addCredits(
   reason: string,
   detail?: Record<string, unknown>
 ): Promise<{ success: boolean; balance: number }> {
-  const supabase = getSupabase();
+  const subs = await query<{ id: string; credits_remaining: number }>(
+    `SELECT id, credits_remaining FROM user_subscriptions WHERE user_id = $1 AND status = 'active' LIMIT 1`,
+    [userId]
+  );
 
-  const { data: sub } = await supabase
-    .from("user_subscriptions")
-    .select("id, credits_remaining")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .single();
-
-  if (!sub) {
+  if (!subs.length) {
     return { success: false, balance: 0 };
   }
 
+  const sub = subs[0];
   const newBalance = sub.credits_remaining + amount;
 
-  await supabase
-    .from("user_subscriptions")
-    .update({ credits_remaining: newBalance })
-    .eq("id", sub.id);
+  await query(
+    `UPDATE user_subscriptions SET credits_remaining = $1 WHERE id = $2`,
+    [newBalance, sub.id]
+  );
 
-  await supabase.from("credit_ledger").insert({
-    user_id: userId,
-    amount,
-    balance_after: newBalance,
-    operation: reason,
-    operation_detail: detail || {},
-  });
+  await query(
+    `INSERT INTO credit_ledger (user_id, amount, balance_after, operation, operation_detail)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [userId, amount, newBalance, reason, detail || {}]
+  );
 
   return { success: true, balance: newBalance };
 }
@@ -175,16 +152,12 @@ export async function getCreditHistory(
     createdAt: string;
   }>
 > {
-  const supabase = getSupabase();
+  const rows = await query<any>(
+    `SELECT * FROM credit_ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
+    [userId, limit]
+  );
 
-  const { data } = await supabase
-    .from("credit_ledger")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  return (data || []).map((r) => ({
+  return rows.map((r) => ({
     id: r.id,
     amount: r.amount,
     balanceAfter: r.balance_after,

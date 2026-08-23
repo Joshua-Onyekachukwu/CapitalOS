@@ -7,9 +7,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPendingSends, executeSend } from "@/lib/services/campaigns/sequence";
 import { chatCompletion } from "@/lib/ai";
-import { createClient } from "@supabase/supabase-js";
+import { query } from "@/lib/db";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const body = await request.json().catch(() => ({}));
     const { userId, dryRun = false } = body;
@@ -29,18 +33,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    // Get company profile from CockroachDB
+    const profiles = await query<any>(
+      "SELECT * FROM company_profiles WHERE user_id = $1 LIMIT 1",
+      [userId]
     );
 
-    // Get company profile for template variables
-    const { data: profile } = await supabase
-      .from("company_profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
+    const profile = profiles[0] || null;
     const companyName = profile?.company_name || "Our Company";
     const oneLiner = profile?.one_liner || "";
     const senderName = profile?.team_members?.[0]?.name || "The Team";

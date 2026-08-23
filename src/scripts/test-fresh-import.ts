@@ -1,15 +1,7 @@
 // Test: Import fresh CSV and verify full pipeline
-import { config } from "dotenv";
-import { resolve } from "path";
-config({ path: resolve(__dirname, "../../.env.local") });
-
-import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { resolve } from "path";
+import { query, closePool } from "./db";
 
 async function main() {
   const csvPath = resolve(__dirname, "../../test-data/test-fresh-import.csv");
@@ -23,10 +15,10 @@ async function main() {
   console.log("");
 
   // Count before
-  const { count: before } = await supabase
-    .from("investors")
-    .select("id", { count: "exact", head: true });
-  console.log(`Investors before: ${before?.toLocaleString()}`);
+  const [before] = await query<{ count: string }>(
+    `SELECT count(*) as count FROM investors`
+  );
+  console.log(`Investors before: ${parseInt(before?.count || "0").toLocaleString()}`);
 
   // Step 1: Import
   console.log("\n--- Step 1: CSV Import ---");
@@ -45,22 +37,23 @@ async function main() {
   console.log(`  Time: ${importTime}s`);
 
   // Count after
-  const { count: after } = await supabase
-    .from("investors")
-    .select("id", { count: "exact", head: true });
-  console.log(`  Investors after: ${after?.toLocaleString()} (+${(after || 0) - (before || 0)})`);
+  const [after] = await query<{ count: string }>(
+    `SELECT count(*) as count FROM investors`
+  );
+  console.log(`  Investors after: ${parseInt(after?.count || "0").toLocaleString()} (+${parseInt(after?.count || "0") - parseInt(before?.count || "0")})`);
 
   // Step 2: Verify imported records
   console.log("\n--- Step 2: Verify Imported Records ---");
-  const { data: imported } = await supabase
-    .from("investors")
-    .select("id, full_name, email, investor_type, country, city, data_quality_score, outreach_readiness, investment_stages, investment_sectors, source_provider, source_id")
-    .eq("source_provider", source)
-    .order("created_at", { ascending: false });
+  const imported = await query<any>(
+    `SELECT id, full_name, email, investor_type, country, city, data_quality_score, outreach_readiness, investment_stages, investment_sectors, source_provider, source_id
+     FROM investors WHERE source_provider = $1
+     ORDER BY created_at DESC`,
+    [source]
+  );
 
-  if (imported && imported.length > 0) {
+  if (imported.length > 0) {
     console.log(`  Found ${imported.length} imported records:\n`);
-    imported.forEach((inv, i) => {
+    imported.forEach((inv: any, i: number) => {
       console.log(`  ${i + 1}. ${inv.full_name}`);
       console.log(`     Email: ${inv.email || "—"}`);
       console.log(`     Type: ${inv.investor_type} | ${inv.country || "?"}, ${inv.city || "?"}`);
@@ -76,14 +69,14 @@ async function main() {
   // Step 3: Verify normalization
   console.log("\n--- Step 3: Verify Normalization ---");
   const normalizationChecks = [
-    { name: "Names populated", pass: imported?.every((i) => i.full_name && i.full_name.length > 2) },
-    { name: "Emails present", pass: imported?.every((i) => i.email && i.email.includes("@")) },
-    { name: "Investor types set", pass: imported?.every((i) => i.investor_type && i.investor_type.length > 0) },
-    { name: "Stages normalized", pass: imported?.some((i) => (i.investment_stages || []).length > 0) },
-    { name: "Sectors normalized", pass: imported?.some((i) => (i.investment_sectors || []).length > 0) },
-    { name: "Countries set", pass: imported?.every((i) => i.country && i.country.length > 0) },
-    { name: "Source tracked", pass: imported && imported.length > 0 && imported[0].source_provider === source },
-    { name: "Source IDs preserved", pass: imported?.every((i) => i.source_id && i.source_id.startsWith("FF-")) },
+    { name: "Names populated", pass: imported.every((i: any) => i.full_name && i.full_name.length > 2) },
+    { name: "Emails present", pass: imported.every((i: any) => i.email && i.email.includes("@")) },
+    { name: "Investor types set", pass: imported.every((i: any) => i.investor_type && i.investor_type.length > 0) },
+    { name: "Stages normalized", pass: imported.some((i: any) => (i.investment_stages || []).length > 0) },
+    { name: "Sectors normalized", pass: imported.some((i: any) => (i.investment_sectors || []).length > 0) },
+    { name: "Countries set", pass: imported.every((i: any) => i.country && i.country.length > 0) },
+    { name: "Source tracked", pass: imported.length > 0 && imported[0].source_provider === source },
+    { name: "Source IDs preserved", pass: imported.every((i: any) => i.source_id && i.source_id.startsWith("FF-")) },
   ];
   normalizationChecks.forEach((c) => {
     console.log(`  ${c.pass ? "✅" : "❌"} ${c.name}`);
@@ -95,20 +88,21 @@ async function main() {
   await new Promise((r) => setTimeout(r, 8000));
 
   // Re-fetch records to get enrichment results
-  const { data: enrichedRecords } = await supabase
-    .from("investors")
-    .select("data_quality_score, outreach_readiness, last_enriched_at")
-    .eq("source_provider", source);
+  const enrichedRecords = await query<any>(
+    `SELECT data_quality_score, outreach_readiness, last_enriched_at
+     FROM investors WHERE source_provider = $1`,
+    [source]
+  );
 
   const enrichmentChecks = [
-    { name: "Data quality scored", pass: enrichedRecords?.every((i) => (i.data_quality_score || 0) > 0) },
-    { name: "Outreach readiness updated", pass: enrichedRecords?.some((i) => i.outreach_readiness && i.outreach_readiness !== "not_ready") || enrichedRecords?.every((i) => i.outreach_readiness === "not_ready") },
-    { name: "Quality >= 50%", pass: enrichedRecords?.every((i) => (i.data_quality_score || 0) >= 50) },
-    { name: "Enrichment timestamp set", pass: enrichedRecords?.some((i) => i.last_enriched_at !== null) },
+    { name: "Data quality scored", pass: enrichedRecords.every((i: any) => (i.data_quality_score || 0) > 0) },
+    { name: "Outreach readiness updated", pass: enrichedRecords.some((i: any) => i.outreach_readiness && i.outreach_readiness !== "not_ready") || enrichedRecords.every((i: any) => i.outreach_readiness === "not_ready") },
+    { name: "Quality >= 50%", pass: enrichedRecords.every((i: any) => (i.data_quality_score || 0) >= 50) },
+    { name: "Enrichment timestamp set", pass: enrichedRecords.some((i: any) => i.last_enriched_at !== null) },
   ];
-  const avgQ = enrichedRecords && enrichedRecords.length > 0 ? Math.round(enrichedRecords.reduce((s, i) => s + (i.data_quality_score || 0), 0) / enrichedRecords.length) : 0;
+  const avgQ = enrichedRecords.length > 0 ? Math.round(enrichedRecords.reduce((s: number, i: any) => s + (i.data_quality_score || 0), 0) / enrichedRecords.length) : 0;
   console.log(`  Avg quality score: ${avgQ}%`);
-  console.log(`  Enriched: ${enrichedRecords?.filter((i) => i.last_enriched_at).length || 0}/${enrichedRecords?.length || 0}`);
+  console.log(`  Enriched: ${enrichedRecords.filter((i: any) => i.last_enriched_at).length || 0}/${enrichedRecords.length || 0}`);
   enrichmentChecks.forEach((c) => {
     console.log(`  ${c.pass ? "✅" : "❌"} ${c.name}`);
   });
@@ -135,14 +129,14 @@ async function main() {
 
   // Step 6: Verify firm resolution
   console.log("\n--- Step 6: Verify Firm Resolution ---");
-  const { data: firms } = await supabase
-    .from("investor_firms")
-    .select("id, name, domain")
-    .in("name", ["FreshFund", "GreenVC", "MENA Ventures", "Tokyo Seed", "GrowCap"]);
+  const firms = await query<any>(
+    `SELECT id, name, domain FROM investor_firms
+     WHERE name IN ('FreshFund', 'GreenVC', 'MENA Ventures', 'Tokyo Seed', 'GrowCap')`
+  );
 
-  if (firms && firms.length > 0) {
+  if (firms.length > 0) {
     console.log(`  Found ${firms.length} firms:`);
-    firms.forEach((f) => console.log(`    - ${f.name} (${f.domain || "no domain"})`));
+    firms.forEach((f: any) => console.log(`    - ${f.name} (${f.domain || "no domain"})`));
   } else {
     console.log("  ⚠️ No firms found — firm resolution may not have run");
   }
@@ -173,10 +167,12 @@ async function main() {
     });
   }
 
-  console.log(`\n  Investors in DB: ${after?.toLocaleString()}`);
-  console.log(`  New from this test: ${(after || 0) - (before || 0)}`);
+  console.log(`\n  Investors in DB: ${parseInt(after?.count || "0").toLocaleString()}`);
+  console.log(`  New from this test: ${parseInt(after?.count || "0") - parseInt(before?.count || "0")}`);
   console.log(`  Avg data quality: ${avgQ || 50}%`);
   console.log(`  Import speed: ${(result.parsed / parseFloat(importTime)).toFixed(0)} rows/sec`);
+
+  await closePool();
 }
 
 main().catch(console.error);

@@ -7,15 +7,7 @@
 
 import { readFileSync } from "fs";
 import { join } from "path";
-import { config } from "dotenv";
-import { createClient } from "@supabase/supabase-js";
-
-config({ path: ".env.local" });
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { query, closePool } from "./db";
 
 function parseCsvLine(line: string): string[] {
   const fields: string[] = [];
@@ -66,7 +58,6 @@ function normalizeInvestorType(type: string): string {
     "university_fund","venture_studio","micro_vc","impact_investor","strategic_investor",
     "debt_investor","fund_of_funds",
   ];
-  // Map types not in enum to closest valid type
   const mappings: Record<string, string> = {
     growth_equity: "private_equity",
   };
@@ -144,7 +135,7 @@ async function main() {
   console.log(`\n🔄 Normalization: ${normalized} OK, ${normErrors} errors`);
 
   // 4. Batch insert
-  console.log(`\n💾 Inserting into Supabase...`);
+  console.log(`\n💾 Inserting into CockroachDB...`);
   const BATCH = 50;
   let inserted = 0;
   let insertErrors = 0;
@@ -152,16 +143,47 @@ async function main() {
 
   for (let i = 0; i < normalizedRecords.length; i += BATCH) {
     const batch = normalizedRecords.slice(i, i + BATCH);
-    const { data, error } = await supabase
-      .from("investors")
-      .insert(batch)
-      .select("id");
 
-    if (error) {
-      console.error(`   ⚠️  Batch ${Math.floor(i / BATCH) + 1} error: ${error.message}`);
+    // Build multi-row INSERT
+    const values: string[] = [];
+    const params: any[] = [];
+    let paramIdx = 1;
+
+    for (const rec of batch) {
+      values.push(`(
+        $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+        $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+        $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+        $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+        $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+        $${paramIdx++}
+      )`);
+      params.push(
+        rec.full_name, rec.first_name, rec.last_name, rec.email, rec.phone,
+        rec.linkedin_url, rec.job_title, rec.investor_type, rec.investment_stages,
+        rec.investment_sectors, rec.investment_geographies, rec.country, rec.city,
+        rec.min_check_size, rec.max_check_size, rec.currency, rec.portfolio_count,
+        rec.bio, rec.is_verified, rec.is_active, rec.fit_score, rec.outreach_readiness,
+        rec.source, rec.source_id, "csv_import", new Date().toISOString()
+      );
+    }
+
+    try {
+      const rows = await query(
+        `INSERT INTO investors (
+          full_name, first_name, last_name, email, phone,
+          linkedin_url, job_title, investor_type, investment_stages,
+          investment_sectors, investment_geographies, country, city,
+          min_check_size, max_check_size, currency, portfolio_count,
+          bio, is_verified, is_active, fit_score, outreach_readiness,
+          source, source_id, source_provider, created_at
+        ) VALUES ${values.join(", ")} RETURNING id`,
+        params
+      );
+      inserted += rows.length;
+    } catch (err: any) {
+      console.error(`   ⚠️  Batch ${Math.floor(i / BATCH) + 1} error: ${err.message}`);
       insertErrors += batch.length;
-    } else {
-      inserted += data?.length || 0;
     }
 
     if ((i + BATCH) % 200 === 0 || i + BATCH >= normalizedRecords.length) {
@@ -176,45 +198,33 @@ async function main() {
   // 5. Verify data in database
   console.log(`\n🔍 Verifying data in database...`);
 
-  // Count total
-  const { count: total } = await supabase
-    .from("investors")
-    .select("id", { count: "exact", head: true });
+  const [totalResult] = await query<{ count: string }>(
+    `SELECT count(*) as count FROM investors`
+  );
 
-  // Count by source
-  const { data: sourceData } = await supabase
-    .from("investors")
-    .select("source")
-    .eq("source", "csv_import");
+  const sourceData = await query<{ source: string }>(
+    `SELECT source FROM investors WHERE source = 'csv_import'`
+  );
 
-  // Count new records from this import (using source_id prefix)
-  const { data: importRecords } = await supabase
-    .from("investors")
-    .select("id, full_name, email, investor_type, country, fit_score, outreach_readiness, data_quality_score")
-    .like("source_id", "test_%")
-    .order("created_at", { ascending: false })
-    .limit(20);
+  const importRecords = await query<any>(
+    `SELECT id, full_name, email, investor_type, country, fit_score, outreach_readiness, data_quality_score
+     FROM investors WHERE source_id LIKE 'test_%'
+     ORDER BY created_at DESC LIMIT 20`
+  );
 
-  // Check edge case records — they use source_id like 'edge_001'
-  const { data: emptyRecord } = await supabase
-    .from("investors")
-    .select("id, full_name, email, bio")
-    .eq("source_id", "edge_001")
-    .maybeSingle();
+  const [emptyRecord] = await query<any>(
+    `SELECT id, full_name, email, bio FROM investors WHERE source_id = 'edge_001' LIMIT 1`
+  );
 
-  const { data: specialCharRecord } = await supabase
-    .from("investors")
-    .select("id, full_name, email, country")
-    .eq("source_id", "edge_002")
-    .maybeSingle();
+  const [specialCharRecord] = await query<any>(
+    `SELECT id, full_name, email, country FROM investors WHERE source_id = 'edge_002' LIMIT 1`
+  );
 
-  const { data: commaRecord } = await supabase
-    .from("investors")
-    .select("id, full_name, email, bio")
-    .eq("source_id", "edge_004")
-    .maybeSingle();
+  const [commaRecord] = await query<any>(
+    `SELECT id, full_name, email, bio FROM investors WHERE source_id = 'edge_004' LIMIT 1`
+  );
 
-  console.log(`   Total investors in DB: ${total?.toLocaleString()}`);
+  console.log(`   Total investors in DB: ${parseInt(totalResult?.count || "0").toLocaleString()}`);
   console.log(`   Records from csv_import source: ${sourceData?.length || 0}`);
   console.log(`   Sample records:`);
 
@@ -251,7 +261,7 @@ async function main() {
     { name: "CSV parse", pass: records.length === dataLines.length },
     { name: "Normalization", pass: normErrors === 0 },
     { name: "Batch insert", pass: inserted > 0 },
-    { name: "Data in DB", pass: (total || 0) > 0 },
+    { name: "Data in DB", pass: (parseInt(totalResult?.count || "0")) > 0 },
     { name: "Edge: empty fields", pass: !!emptyRecord },
     { name: "Edge: special chars", pass: !!specialCharRecord },
     { name: "Edge: commas in CSV", pass: !!commaRecord },
@@ -273,6 +283,8 @@ async function main() {
   }
 
   console.log("");
+
+  await closePool();
 }
 
 main().catch((err) => {

@@ -1,8 +1,12 @@
 // API Route: Scheduled Deduplication
 import { NextRequest, NextResponse } from "next/server";
 import { runScheduledDedup } from "@/lib/services/investor/scheduled-dedup";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const body = await request.json();
     const { limit, batchSize } = body;

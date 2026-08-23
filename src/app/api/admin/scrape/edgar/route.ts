@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runEdgarPipeline } from "@/lib/services/scrapers/edgar";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const body = await request.json();
     const { startDate, endDate, limit } = body;

@@ -1,16 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+import { query, closePool } from "./db";
 
 async function main() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const { count } = await supabase
-    .from("investors")
-    .select("id", { count: "exact", head: true });
-
-  console.log("Current investor count:", count);
+  const rows = await query<{ count: string }>("SELECT COUNT(*)::text AS count FROM investors");
+  console.log("Current investor count:", rows[0]?.count || "0");
+  await closePool();
 }
 
 main();

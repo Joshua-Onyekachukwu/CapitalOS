@@ -70,67 +70,35 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
   const fetchInvestor = useCallback(async () => {
     setLoading(true);
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-
-      const { data, error } = await supabase
-        .from("investors")
-        .select("*")
-        .eq("id", investorId)
-        .single();
-
-      if (error || !data) {
-        setLoading(false);
-        return;
-      }
-
-      // Fetch firm data
-      let firmName = null;
-      let firmType = null;
-      let fundSize = null;
-      if (data.current_firm_id) {
-        const { data: firm } = await supabase
-          .from("investor_firms")
-          .select("name, firm_type, fund_size")
-          .eq("id", data.current_firm_id)
-          .single();
-        firmName = firm?.name || null;
-        firmType = firm?.firm_type || null;
-        fundSize = firm?.fund_size || null;
-      }
+      const res = await fetch(`/api/investors/${investorId}`);
+      if (!res.ok) throw new Error("Failed to fetch investor");
+      const data = await res.json();
 
       setInvestor({
-        ...data,
-        firm_name: firmName,
-        firm_type: firmType,
-        fund_size: fundSize,
+        ...data.investor,
+        firm_name: data.firm?.name || null,
+        firm_type: data.firm?.firm_type || null,
+        fund_size: data.firm?.fund_size || null,
       });
 
-      // Check for existing research
-      const { data: profile } = await supabase
-        .from("investor_profiles")
-        .select("ai_reasoning, ai_summary, recommended_angle, potential_objections")
-        .eq("investor_id", investorId)
-        .single();
-
-      if (profile?.ai_reasoning) {
+      if (data.profile?.ai_reasoning) {
         try {
-          const parsed = JSON.parse(profile.ai_reasoning);
+          const parsed = JSON.parse(data.profile.ai_reasoning);
           setResearch({
-            summary: profile.ai_summary || "",
+            summary: data.profile.ai_summary || "",
             investmentThesis: parsed.investmentThesis || "",
             keyStrengths: parsed.keyStrengths || [],
             potentialConcerns: parsed.potentialConcerns || [],
-            recommendedApproach: profile.recommended_angle || "",
+            recommendedApproach: data.profile.recommended_angle || "",
             talkingPoints: parsed.talkingPoints || [],
           });
         } catch {
           setResearch({
-            summary: profile.ai_summary || "",
+            summary: data.profile.ai_summary || "",
             investmentThesis: "",
             keyStrengths: [],
-            potentialConcerns: profile.potential_objections || [],
-            recommendedApproach: profile.recommended_angle || "",
+            potentialConcerns: data.profile.potential_objections || [],
+            recommendedApproach: data.profile.recommended_angle || "",
             talkingPoints: [],
           });
         }
@@ -170,7 +138,7 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
         recommendedApproach: result.recommendedApproach,
         talkingPoints: result.talkingPoints,
       });
-    } catch (err) {
+    } catch {
       setResearchError("AI service unavailable. Please try again later.");
     } finally {
       setResearchLoading(false);
@@ -226,9 +194,7 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-[20px]">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-[20px]">
-          {/* Profile Card */}
           <Card>
             <CardBody className="p-[24px]">
               <div className="flex items-start gap-[16px]">
@@ -276,7 +242,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
             </CardBody>
           </Card>
 
-          {/* AI Research Summary */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -309,12 +274,10 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
                 </div>
               ) : research ? (
                 <div className="space-y-[16px]">
-                  {/* Executive Summary */}
                   <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] p-[16px] border border-lime-100 dark:border-lime-800/30">
                     <p className="text-[14px] text-gray-700 dark:text-gray-300 leading-[1.7] !mb-0">{research.summary}</p>
                   </div>
 
-                  {/* Investment Thesis */}
                   {research.investmentThesis && (
                     <div>
                       <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Investment Thesis</h4>
@@ -322,7 +285,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
                     </div>
                   )}
 
-                  {/* Key Strengths */}
                   {research.keyStrengths.length > 0 && (
                     <div>
                       <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Key Strengths</h4>
@@ -337,7 +299,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
                     </div>
                   )}
 
-                  {/* Potential Concerns */}
                   {research.potentialConcerns.length > 0 && (
                     <div>
                       <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Potential Concerns</h4>
@@ -352,7 +313,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
                     </div>
                   )}
 
-                  {/* Recommended Approach */}
                   {research.recommendedApproach && (
                     <div>
                       <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Recommended Approach</h4>
@@ -360,7 +320,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
                     </div>
                   )}
 
-                  {/* Talking Points */}
                   {research.talkingPoints.length > 0 && (
                     <div>
                       <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Talking Points</h4>
@@ -398,7 +357,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
             </CardBody>
           </Card>
 
-          {/* Investment Preferences */}
           <Card>
             <CardHeader>
               <h3 className="!text-[16px] !font-semibold !mb-0">Investment Preferences</h3>
@@ -444,7 +402,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
             </CardBody>
           </Card>
 
-          {/* Data History */}
           <Card>
             <CardHeader>
               <h3 className="!text-[16px] !font-semibold !mb-0">Data History</h3>
@@ -454,7 +411,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
             </CardBody>
           </Card>
 
-          {/* Communication Timeline */}
           <Card>
             <CardBody>
               <CommunicationTimeline investorId={investorId} />
@@ -462,9 +418,7 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
           </Card>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-[20px]">
-          {/* Overall Fit Score */}
           <Card>
             <CardBody className="p-[20px] text-center">
               <div className="w-[80px] h-[80px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center mx-auto mb-[12px]">
@@ -477,7 +431,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
             </CardBody>
           </Card>
 
-          {/* Quick Stats */}
           <Card>
             <CardBody className="p-[16px] space-y-[12px]">
               <div className="flex items-center justify-between">
@@ -519,7 +472,6 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
             </CardBody>
           </Card>
 
-          {/* Quick Actions */}
           <Card>
             <CardBody className="p-[20px] space-y-[10px]">
               <Button fullWidth>

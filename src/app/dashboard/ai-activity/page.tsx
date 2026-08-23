@@ -43,47 +43,14 @@ export default function AIActivityPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const res = await fetch("/api/dashboard/ai-activity");
+      const data = await res.json();
 
-      // Fetch credit history
-      const { data: ledgerData } = await supabase
-        .from("credit_ledger")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      // Fetch billing info
-      const { data: billingData } = await supabase
-        .from("v_user_billing")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (ledgerData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setEntries(ledgerData.map((r: any) => ({
-          id: r.id,
-          amount: r.amount,
-          balanceAfter: r.balance_after,
-          operation: r.operation,
-          operationDetail: r.operation_detail || {},
-          modelUsed: r.model_used,
-          tokensUsed: r.tokens_used,
-          createdAt: r.created_at,
-        })));
+      if (data.entries) {
+        setEntries(data.entries);
       }
-
-      if (billingData) {
-        setBilling({
-          planName: billingData.plan_name,
-          creditsRemaining: billingData.credits_remaining,
-          creditsUsedThisPeriod: billingData.credits_used_this_period,
-          includedCredits: billingData.included_credits,
-        });
+      if (data.billing) {
+        setBilling(data.billing);
       }
     } catch {
       // Data may not be available yet

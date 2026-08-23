@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatWithCopilot } from "@/lib/actions/copilot";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.ai);
     if (rateLimitResponse) {

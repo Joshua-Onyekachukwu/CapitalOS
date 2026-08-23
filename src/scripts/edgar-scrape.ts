@@ -5,7 +5,7 @@
 // Filters out operating companies filing Form D
 // Uses the EFTS search API with proper form type filtering
 
-import { createClient } from "@supabase/supabase-js";
+import { query, closePool } from "./db";
 
 interface EdgarFiling {
   adsh: string;
@@ -51,7 +51,6 @@ export async function searchFundFilings(
   const batchSize = 100;
 
   while (filings.length < limit) {
-    // Search for filings mentioning Form D, we filter by root_forms below
     const url = `${EDGAR_BASE}/search-index?q=%22form+d%22&dateRange=custom&startdt=${startDate}&enddt=${endDate}&from=${offset}&size=${batchSize}`;
 
     try {
@@ -68,7 +67,6 @@ export async function searchFundFilings(
 
       for (const hit of hits) {
         const src = hit._source;
-        // Only keep actual Form D filings
         const isFormD = src.root_forms?.includes("D") || src.form === "D" || src.form === "D/A";
 
         if (isFormD) {
@@ -130,7 +128,6 @@ function stateToLocation(state: string, city: string): { country: string; city: 
   if (US_STATES[s]) {
     return { country: "United States", city: city.split(",")[0]?.trim() || "", state: US_STATES[s] };
   }
-  // Non-US codes
   if (s === "E9") return { country: "Cayman Islands", city: city.split(",")[0]?.trim() || "", state: "" };
   if (s === "A1") return { country: "Canada", city: city.split(",")[0]?.trim() || "", state: "" };
   if (s === "A2") return { country: "Canada", city: city.split(",")[0]?.trim() || "", state: "" };
@@ -150,93 +147,78 @@ function stateToLocation(state: string, city: string): { country: string; city: 
 export async function stageFundFilings(
   filings: EdgarFiling[]
 ): Promise<{ staged: number; errors: number; errorMessages: string[] }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   let staged = 0;
   let errors = 0;
   const errorMessages: string[] = [];
 
   // Ensure EDGAR provider exists
-  let { data: provider } = await supabase
-    .from("data_providers")
-    .select("id")
-    .eq("name", "sec_edgar")
-    .single();
+  const providers = await query<{ id: string }>(
+    `SELECT id FROM data_providers WHERE name = $1`,
+    ["sec_edgar"]
+  );
 
-  if (!provider) {
-    const { data: newProvider } = await supabase
-      .from("data_providers")
-      .insert({
-        name: "sec_edgar",
-        display_name: "SEC EDGAR",
-        provider_type: "public_records",
-        status: "active",
-      })
-      .select("id")
-      .single();
-    provider = newProvider;
+  let providerId: string | null = null;
+  if (providers.length > 0) {
+    providerId = providers[0].id;
+  } else {
+    const newProviders = await query<{ id: string }>(
+      `INSERT INTO data_providers (name, display_name, provider_type, status) 
+       VALUES ($1, $2, $3, $4) RETURNING id`,
+      ["sec_edgar", "SEC EDGAR", "public_records", "active"]
+    );
+    providerId = newProviders[0]?.id || null;
   }
 
   // Create acquisition job
-  const { data: job } = await supabase
-    .from("data_acquisition_jobs")
-    .insert({
-      provider_id: provider?.id,
-      job_type: "edgar_fetch",
-      filters: { source: "sec_edgar", form_type: "D", filing_count: filings.length },
-      requested_count: filings.length,
-      status: "running",
-      started_at: new Date().toISOString(),
-    })
-    .select("id")
-    .single();
+  const jobs = await query<{ id: string }>(
+    `INSERT INTO data_acquisition_jobs (provider_id, job_type, filters, requested_count, status, started_at) 
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [providerId, "edgar_fetch", JSON.stringify({ source: "sec_edgar", form_type: "D", filing_count: filings.length }), filings.length, "running", new Date().toISOString()]
+  );
+  const jobId = jobs[0]?.id || null;
 
   // Process in batches
   const BATCH_SIZE = 200;
 
   for (let i = 0; i < filings.length; i += BATCH_SIZE) {
     const batch = filings.slice(i, i + BATCH_SIZE);
-    const rawRecords: Record<string, unknown>[] = [];
 
     for (const filing of batch) {
       try {
-        // Clean up the fund name
         let name = filing.display_names[0] || "";
         name = name.replace(/\s*\(CIK\s+\d+\)\s*$/i, "").trim();
-        name = name.replace(/\s*\(.*?\)\s*$/g, "").trim(); // Remove ticker symbols
+        name = name.replace(/\s*\(.*?\)\s*$/g, "").trim();
 
         if (!name || name.length < 3) continue;
 
-        // Determine fund type
         const investorType = classifyFundType(filing.items);
-
-        // Get location
         const location = filing.biz_locations[0] || "";
         const state = filing.biz_states[0] || "";
         const { country, city } = stateToLocation(state, location);
 
-        rawRecords.push({
-          raw_data: {
-            fullName: name,
-            firmName: name,
-            location: location,
-            country: country,
-            city: city,
-            investorType: investorType,
-            sourceId: filing.adsh,
-            filingDate: filing.file_date,
-            formType: filing.form,
-            fundItems: filing.items.join(","),
-          },
-          source_type: "public_records",
-          source_provider: "sec_edgar",
-          source_url: `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${filing.ciks[0]}&type=D&dateb=&owner=include&count=40`,
-          import_job_id: job?.id || null,
-          status: "pending",
-        });
+        await query(
+          `INSERT INTO raw_records (raw_data, source_type, source_provider, source_url, import_job_id, status) 
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            JSON.stringify({
+              fullName: name,
+              firmName: name,
+              location,
+              country,
+              city,
+              investorType,
+              sourceId: filing.adsh,
+              filingDate: filing.file_date,
+              formType: filing.form,
+              fundItems: filing.items.join(","),
+            }),
+            "public_records",
+            "sec_edgar",
+            `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${filing.ciks[0]}&type=D&dateb=&owner=include&count=40`,
+            jobId,
+            "pending",
+          ]
+        );
 
         staged++;
       } catch (err) {
@@ -245,27 +227,16 @@ export async function stageFundFilings(
       }
     }
 
-    // Batch insert
-    if (rawRecords.length > 0) {
-      const { error } = await supabase.from("raw_records").insert(rawRecords);
-      if (error) {
-        errorMessages.push(`Batch insert error: ${error.message}`);
-        errors += rawRecords.length;
-      }
-    }
+    const processed = Math.min(i + BATCH_SIZE, filings.length);
+    console.log(`  Progress: ${processed}/${filings.length}`);
   }
 
   // Update job
-  if (job) {
-    await supabase
-      .from("data_acquisition_jobs")
-      .update({
-        status: "completed",
-        found_count: filings.length,
-        processed_count: staged,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", job.id);
+  if (jobId) {
+    await query(
+      `UPDATE data_acquisition_jobs SET status = $1, found_count = $2, processed_count = $3, completed_at = $4 WHERE id = $5`,
+      ["completed", filings.length, staged, new Date().toISOString(), jobId]
+    );
   }
 
   return { staged, errors, errorMessages };
@@ -298,4 +269,21 @@ export async function runEdgarFundPipeline(
     errors: result.errors,
     errorMessages: result.errorMessages,
   };
+}
+
+// Run if called directly
+if (require.main === module) {
+  main().catch(console.error);
+}
+
+async function main() {
+  const result = await runEdgarFundPipeline();
+  console.log("\n=== Results ===");
+  console.log(`Filings found: ${result.filingsFound}`);
+  console.log(`Staged: ${result.staged}`);
+  console.log(`Errors: ${result.errors}`);
+  if (result.errorMessages.length > 0) {
+    console.log("Error messages:", result.errorMessages.slice(0, 5));
+  }
+  await closePool();
 }

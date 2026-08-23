@@ -1,17 +1,9 @@
 // Import Apollo CSV through the full pipeline
-import { config } from "dotenv";
-import { resolve } from "path";
 import { readFileSync } from "fs";
-config({ path: resolve(__dirname, "../../.env.local") });
-
-import { createClient } from "@supabase/supabase-js";
+import { resolve } from "path";
+import { query, closePool } from "./db";
 import { normalizeInvestor, type NormalizedInvestor } from "../lib/services/investor/normalization";
 import { enrichInvestor } from "../lib/services/investor/enrichment";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 function parseCsvLine(line: string): string[] {
   const result: string[] = [];
@@ -47,14 +39,12 @@ async function main() {
   console.log("");
 
   // Fetch existing emails for dedup
-  const { data: existing } = await supabase
-    .from("investors")
-    .select("email")
-    .not("email", "is", null)
-    .limit(50000);
+  const existing = await query<{ email: string }>(
+    `SELECT email FROM investors WHERE email IS NOT NULL LIMIT 50000`
+  );
 
   const existingEmails = new Set(
-    (existing || []).map((inv) => inv.email?.toLowerCase()).filter(Boolean)
+    existing.map((inv) => inv.email?.toLowerCase()).filter(Boolean)
   );
 
   let inserted = 0;
@@ -112,53 +102,45 @@ async function main() {
       const norm = normalizeInvestor(providerResult);
 
       // Insert into investors
-      const { data: investor, error } = await supabase
-        .from("investors")
-        .insert({
-          full_name: norm.fullName,
-          first_name: norm.firstName,
-          last_name: norm.lastName,
-          email: norm.email,
-          phone: norm.phone,
-          linkedin_url: norm.linkedinUrl,
-          job_title: norm.jobTitle,
-          bio: norm.bio,
-          location: norm.location,
-          country: norm.country,
-          city: norm.city,
-          investor_type: norm.investorType,
-          investment_stages: norm.investmentStages,
-          investment_sectors: norm.investmentSectors,
-          investment_geographies: norm.investmentGeographies,
-          min_check_size: norm.minCheckSize,
-          max_check_size: norm.maxCheckSize,
-          currency: norm.currency,
-          portfolio_count: norm.portfolioCount,
-          website_url: norm.websiteUrl,
-          avatar_url: norm.avatarUrl,
-          source: "apollo_csv_import",
-          source_id: norm.sourceId,
-          source_provider: "apollo_csv_import",
-          data_quality_score: 0, // Will be enriched
-          outreach_readiness: "not_ready",
-          is_active: true,
-        })
-        .select("id")
-        .single();
+      const investors = await query<{ id: string }>(
+        `INSERT INTO investors (
+          full_name, first_name, last_name, email, phone, linkedin_url, job_title, bio,
+          location, country, city, investor_type, investment_stages, investment_sectors,
+          investment_geographies, min_check_size, max_check_size, currency, portfolio_count,
+          website_url, avatar_url, source, source_id, source_provider,
+          data_quality_score, outreach_readiness, is_active
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8,
+          $9, $10, $11, $12, $13, $14,
+          $15, $16, $17, $18, $19,
+          $20, $21, $22, $23, $24,
+          $25, $26, $27
+        ) RETURNING id`,
+        [
+          norm.fullName, norm.firstName, norm.lastName, norm.email || null, norm.phone || null,
+          norm.linkedinUrl || null, norm.jobTitle || null, norm.bio || null,
+          norm.location || null, norm.country || null, norm.city || null, norm.investorType,
+          norm.investmentStages || [], norm.investmentSectors || [], norm.investmentGeographies || [],
+          norm.minCheckSize || null, norm.maxCheckSize || null, norm.currency || "USD",
+          norm.portfolioCount || 0, norm.websiteUrl || null, norm.avatarUrl || null,
+          "apollo_csv_import", norm.sourceId, "apollo_csv_import",
+          0, "not_ready", true,
+        ]
+      );
 
-      if (error) {
+      if (investors.length === 0) {
         errors++;
-        if (i <= 5) console.log(`  Row ${i} error: ${error.message}`);
+        if (i <= 5) console.log(`  Row ${i} error: no ID returned`);
         continue;
       }
 
       inserted++;
-      insertedIds.push(investor.id);
+      insertedIds.push(investors[0].id);
       if (email) existingEmails.add(email);
 
       // Auto-enrich
       try {
-        await enrichInvestor(investor.id);
+        await enrichInvestor(investors[0].id);
       } catch {
         // Non-critical
       }
@@ -177,12 +159,12 @@ async function main() {
 
   // Summary of what was imported
   if (insertedIds.length > 0) {
-    const { data: imported } = await supabase
-      .from("investors")
-      .select("investor_type, country, data_quality_score, outreach_readiness")
-      .in("id", insertedIds);
+    const imported = await query<{ investor_type: string; country: string; data_quality_score: number; outreach_readiness: string }>(
+      `SELECT investor_type, country, data_quality_score, outreach_readiness FROM investors WHERE id = ANY($1)`,
+      [insertedIds]
+    );
 
-    if (imported) {
+    if (imported.length > 0) {
       const types: Record<string, number> = {};
       const countries: Record<string, number> = {};
       let avgQuality = 0;
@@ -203,6 +185,8 @@ async function main() {
       console.log("Readiness:", Object.entries(readiness).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join(", "));
     }
   }
+
+  await closePool();
 }
 
 main().catch(console.error);

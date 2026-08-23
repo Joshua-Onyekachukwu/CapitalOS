@@ -1,22 +1,14 @@
-// =============================================
-// Capital OS — Batch Investor Qualification (Optimized)
-// =============================================
-// Scores all un-scored investors using deterministic rules.
-// Uses grouped bulk updates for speed on 1M+ records.
-//
-// Run: npx tsx src/scripts/qualify-investors.ts
-// =============================================
+import { query, closePool } from "./db";
 
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// =============================================
-// Scoring Functions
-// =============================================
+/** Parse a CockroachDB/PostgreSQL text[] value into a JS array. */
+function parsePgArray(val: unknown): string[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val !== "string") return [];
+  // CockroachDB returns "{a,b,c}" — strip braces and split
+  const inner = val.replace(/^\{/, "").replace(/\}$/, "");
+  if (!inner) return [];
+  return inner.split(",").map((s) => s.trim().replace(/^"|"$/g, ""));
+}
 
 const SECTOR_GROUPS: Record<string, string[]> = {
   ai: ["ai", "machinelearning", "ml", "datascience", "nlp", "deeplearning"],
@@ -96,137 +88,112 @@ function outreachReadiness(inv: any): string {
 
 function computeScores(inv: any, startup: { sector: string; stage: string; geo: string }) {
   const factors = [
-    { s: sectorScore(inv.investment_sectors || [], startup.sector), w: 0.25 },
-    { s: stageScore(inv.investment_stages || [], startup.stage), w: 0.20 },
-    { s: geoScore(inv.investment_geographies || [], inv.country, startup.geo), w: 0.15 },
+    { s: sectorScore(parsePgArray(inv.investment_sectors), startup.sector), w: 0.25 },
+    { s: stageScore(parsePgArray(inv.investment_stages), startup.stage), w: 0.20 },
+    { s: geoScore(parsePgArray(inv.investment_geographies), inv.country, startup.geo), w: 0.15 },
     { s: (inv.min_check_size || inv.max_check_size) ? 70 : 50, w: 0.10 },
     { s: completenessScore(inv), w: 0.10 },
     { s: (() => { let o = 0; if (inv.email) o += 30; if (inv.linkedin_url) o += 20; if (inv.is_verified) o += 15; return Math.min(o, 100); })(), w: 0.10 },
-    { s: 50, w: 0.05 }, // activity (default)
+    { s: 50, w: 0.05 },
     { s: (inv.bio && inv.bio.length > 50) ? 80 : inv.bio ? 40 : 20, w: 0.05 },
   ];
-  
+
   const fitScore = Math.round(factors.reduce((sum, f) => sum + f.s * f.w, 0));
   const dq = completenessScore(inv);
   const readiness = outreachReadiness(inv);
-  
+
   return { fitScore, dq, readiness };
 }
 
-// =============================================
-// Main
-// =============================================
-
 async function main() {
   const startup = { sector: "saas", stage: "seed", geo: "United States" };
-  
-  // Check for company profile override
-  const { data: profiles } = await supabase
-    .from("company_profiles")
-    .select("industry, company_stage, location")
-    .limit(1);
-  
-  if (profiles?.[0]) {
+
+  const profiles = await query<any>(
+    `SELECT industry, company_stage, location FROM company_profiles LIMIT 1`
+  );
+
+  if (profiles[0]) {
     startup.sector = profiles[0].industry || startup.sector;
     startup.stage = profiles[0].company_stage || startup.stage;
     startup.geo = profiles[0].location || startup.geo;
   }
-  
+
   console.log(`\n🎯 Scoring against: ${startup.sector} / ${startup.stage} / ${startup.geo}\n`);
-  
+
   const startTime = Date.now();
   let processed = 0;
-  let offset = 0;
   const BATCH = 5000;
-  
-  // Collect all unique (fit_score, dq, readiness) combinations
-  // Then do bulk updates per combination
-  const scoreGroups = new Map<string, string[]>(); // key -> [id, id, ...]
-  
+  const scoreGroups = new Map<string, string[]>();
+
+  // Score in memory
+  let offset = 0;
   while (true) {
-    const { data: batch, error } = await supabase
-      .from("investors")
-      .select("id, email, linkedin_url, job_title, investor_type, investment_stages, investment_sectors, investment_geographies, country, city, min_check_size, max_check_size, bio, is_verified, do_not_contact, data_quality_score")
-      .eq("fit_score", 0)
-      .order("id")
-      .range(offset, offset + BATCH - 1);
-    
-    if (error) { console.error("Error:", error.message); break; }
-    if (!batch || batch.length === 0) break;
-    
-    // Score in memory (fast)
+    const batch = await query<any>(
+      `SELECT id, email, linkedin_url, job_title, investor_type, investment_stages, investment_sectors, investment_geographies, country, city, min_check_size, max_check_size, bio, is_verified, do_not_contact, data_quality_score
+       FROM investors WHERE fit_score = 0 ORDER BY id LIMIT $1 OFFSET $2`,
+      [BATCH, offset]
+    );
+
+    if (!batch.length) break;
+
     for (const inv of batch) {
       const { fitScore, dq, readiness } = computeScores(inv, startup);
       const key = `${fitScore}|${dq}|${readiness}`;
       if (!scoreGroups.has(key)) scoreGroups.set(key, []);
       scoreGroups.get(key)!.push(inv.id);
     }
-    
+
     processed += batch.length;
-    
-    if (processed % 10000 === 0) {
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-      const rate = Math.round(processed / (Date.now() - startTime) * 1000);
-      console.log(`  📊 Scored ${processed.toLocaleString()} in memory — ${rate}/s (${scoreGroups.size} unique score groups)`);
-    }
-    
     offset += BATCH;
     if (batch.length < BATCH) break;
   }
-  
+
   console.log(`\n📦 Memory scoring complete: ${processed.toLocaleString()} investors, ${scoreGroups.size} score groups`);
   console.log(`⏳ Now updating database in bulk...\n`);
-  
+
   let updated = 0;
   let groupNum = 0;
-  
+
   for (const [key, ids] of scoreGroups) {
-    const [fitScore, dq, readiness] = key.split("|").map(v => parseInt(v) || v);
-    
-    // Update in chunks of 500 (Supabase limit for IN clause)
+    const [fitScore, dq, readiness] = key.split("|");
+
     for (let i = 0; i < ids.length; i += 500) {
       const chunk = ids.slice(i, i + 500);
-      const { error } = await supabase
-        .from("investors")
-        .update({
-          fit_score: Number(fitScore),
-          data_quality_score: Number(dq),
-          outreach_readiness: readiness,
-        })
-        .in("id", chunk);
-      
-      if (error) {
-        console.error(`  ⚠️  Update error for group ${key}: ${error.message}`);
-      } else {
-        updated += chunk.length;
-      }
+      const placeholders = chunk.map((_, j) => `$${j + 4}`).join(", ");
+      await query(
+        `UPDATE investors SET fit_score = $1, data_quality_score = $2, outreach_readiness = $3 WHERE id IN (${placeholders})`,
+        [parseInt(fitScore), parseInt(dq), readiness, ...chunk]
+      );
+      updated += chunk.length;
     }
-    
+
     groupNum++;
     if (groupNum % 10 === 0 || groupNum === scoreGroups.size) {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
       console.log(`  📝 Updated ${updated.toLocaleString()} / ${processed.toLocaleString()} (${groupNum}/${scoreGroups.size} groups) — ${elapsed}s`);
     }
   }
-  
+
   // Final stats
-  const { count: ready } = await supabase.from("investors").select("id", { count: "exact", head: true }).eq("outreach_readiness", "ready");
-  const { count: needsReview } = await supabase.from("investors").select("id", { count: "exact", head: true }).eq("outreach_readiness", "needs_verification");
-  const { count: highFit } = await supabase.from("investors").select("id", { count: "exact", head: true }).gte("fit_score", 80);
-  const { count: medFit } = await supabase.from("investors").select("id", { count: "exact", head: true }).gte("fit_score", 50).lt("fit_score", 80);
-  const { count: withEmail } = await supabase.from("investors").select("id", { count: "exact", head: true }).not("email", "is", null).eq("outreach_readiness", "ready");
-  
+  const ready = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE outreach_readiness = 'ready'`);
+  const needsReview = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE outreach_readiness = 'needs_verification'`);
+  const highFit = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE fit_score >= 80`);
+  const medFit = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE fit_score >= 50 AND fit_score < 80`);
+  const withEmail = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE email IS NOT NULL AND outreach_readiness = 'ready'`);
+
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  
+
   console.log(`\n✅ Qualification complete!`);
   console.log(`   Total scored: ${updated.toLocaleString()}`);
   console.log(`   Time: ${elapsed}s\n`);
   console.log(`📊 Results:`);
-  console.log(`   🟢 Ready for outreach:      ${ready?.toLocaleString() || 0}`);
-  console.log(`   🟡 Needs verification:      ${needsReview?.toLocaleString() || 0}`);
-  console.log(`   ⭐ High fit (80+):          ${highFit?.toLocaleString() || 0}`);
-  console.log(`   🔵 Medium fit (50-79):      ${medFit?.toLocaleString() || 0}`);
-  console.log(`   📧 Ready + has email:       ${withEmail?.toLocaleString() || 0}\n`);
+  console.log(`   🟢 Ready for outreach:      ${parseInt(ready[0]?.count || "0").toLocaleString()}`);
+  console.log(`   🟡 Needs verification:      ${parseInt(needsReview[0]?.count || "0").toLocaleString()}`);
+  console.log(`   ⭐ High fit (80+):          ${parseInt(highFit[0]?.count || "0").toLocaleString()}`);
+  console.log(`   🔵 Medium fit (50-79):      ${parseInt(medFit[0]?.count || "0").toLocaleString()}`);
+  console.log(`   📧 Ready + has email:       ${parseInt(withEmail[0]?.count || "0").toLocaleString()}\n`);
+
+  await closePool();
 }
 
 main().catch(err => { console.error("Fatal:", err); process.exit(1); });

@@ -1,17 +1,12 @@
 // =============================================
 // Capital OS — Investor Data Generator
 // =============================================
-// Generates 100K+ realistic investor records directly into Supabase.
+// Generates 100K+ realistic investor records directly into CockroachDB.
 // Uses real firm names, realistic names, proper investment profiles.
 // Run: npx tsx src/scripts/generate-investors.ts
 // =============================================
 
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { query, closePool } from "./db";
 
 // =============================================
 // Reference Data
@@ -86,70 +81,63 @@ const SECTORS = [
   "devtools", "marketplace",
 ];
 
-const CITIES: Array<{ city: string; country: string; lat: number; lng: number }> = [
-  // USA
-  { city: "San Francisco", country: "United States", lat: 37.77, lng: -122.41 },
-  { city: "New York", country: "United States", lat: 40.71, lng: -74.00 },
-  { city: "Los Angeles", country: "United States", lat: 34.05, lng: -118.24 },
-  { city: "Boston", country: "United States", lat: 42.36, lng: -71.05 },
-  { city: "Austin", country: "United States", lat: 30.26, lng: -97.74 },
-  { city: "Seattle", country: "United States", lat: 47.60, lng: -122.33 },
-  { city: "Chicago", country: "United States", lat: 41.87, lng: -87.62 },
-  { city: "Miami", country: "United States", lat: 25.76, lng: -80.19 },
-  { city: "Denver", country: "United States", lat: 39.73, lng: -104.99 },
-  { city: "Portland", country: "United States", lat: 45.52, lng: -122.67 },
-  { city: "Nashville", country: "United States", lat: 36.16, lng: -86.78 },
-  { city: "Atlanta", country: "United States", lat: 33.75, lng: -84.39 },
-  { city: "Washington DC", country: "United States", lat: 38.91, lng: -77.04 },
-  { city: "Dallas", country: "United States", lat: 32.78, lng: -96.80 },
-  { city: "San Diego", country: "United States", lat: 32.72, lng: -117.16 },
-  // UK
-  { city: "London", country: "United Kingdom", lat: 51.51, lng: -0.13 },
-  { city: "Manchester", country: "United Kingdom", lat: 53.48, lng: -2.24 },
-  // Europe
-  { city: "Berlin", country: "Germany", lat: 52.52, lng: 13.40 },
-  { city: "Munich", country: "Germany", lat: 48.14, lng: 11.58 },
-  { city: "Paris", country: "France", lat: 48.86, lng: 2.35 },
-  { city: "Amsterdam", country: "Netherlands", lat: 52.37, lng: 4.90 },
-  { city: "Stockholm", country: "Sweden", lat: 59.33, lng: 18.07 },
-  { city: "Zurich", country: "Switzerland", lat: 47.37, lng: 8.54 },
-  { city: "Barcelona", country: "Spain", lat: 41.39, lng: 2.17 },
-  { city: "Dublin", country: "Ireland", lat: 53.35, lng: -6.26 },
-  { city: "Lisbon", country: "Portugal", lat: 38.72, lng: -9.14 },
-  { city: "Copenhagen", country: "Denmark", lat: 55.68, lng: 12.57 },
-  { city: "Helsinki", country: "Finland", lat: 60.17, lng: 24.94 },
-  { city: "Vienna", country: "Austria", lat: 48.21, lng: 16.37 },
-  { city: "Milan", country: "Italy", lat: 45.46, lng: 9.19 },
-  // Asia
-  { city: "Singapore", country: "Singapore", lat: 1.35, lng: 103.82 },
-  { city: "Tokyo", country: "Japan", lat: 35.68, lng: 139.69 },
-  { city: "Seoul", country: "South Korea", lat: 37.57, lng: 126.98 },
-  { city: "Mumbai", country: "India", lat: 19.08, lng: 72.88 },
-  { city: "Bangalore", country: "India", lat: 12.97, lng: 77.59 },
-  { city: "Delhi", country: "India", lat: 28.61, lng: 77.21 },
-  { city: "Beijing", country: "China", lat: 39.90, lng: 116.40 },
-  { city: "Shanghai", country: "China", lat: 31.23, lng: 121.47 },
-  { city: "Shenzhen", country: "China", lat: 22.54, lng: 114.06 },
-  { city: "Tel Aviv", country: "Israel", lat: 32.09, lng: 34.78 },
-  { city: "Hong Kong", country: "Hong Kong", lat: 22.32, lng: 114.17 },
-  // Middle East & Africa
-  { city: "Dubai", country: "United Arab Emirates", lat: 25.20, lng: 55.27 },
-  { city: "Abu Dhabi", country: "United Arab Emirates", lat: 24.45, lng: 54.65 },
-  { city: "Riyadh", country: "Saudi Arabia", lat: 24.71, lng: 46.67 },
-  { city: "Lagos", country: "Nigeria", lat: 6.52, lng: 3.38 },
-  { city: "Nairobi", country: "Kenya", lat: -1.29, lng: 36.82 },
-  { city: "Cape Town", country: "South Africa", lat: -33.92, lng: 18.42 },
-  { city: "Cairo", country: "Egypt", lat: 30.04, lng: 31.24 },
-  // LATAM
-  { city: "São Paulo", country: "Brazil", lat: -23.55, lng: -46.63 },
-  { city: "Mexico City", country: "Mexico", lat: 19.43, lng: -99.13 },
-  { city: "Buenos Aires", country: "Argentina", lat: -34.60, lng: -58.38 },
-  { city: "Bogotá", country: "Colombia", lat: 4.71, lng: -74.07 },
-  { city: "Santiago", country: "Chile", lat: -33.45, lng: -70.67 },
-  // Oceania
-  { city: "Sydney", country: "Australia", lat: -33.87, lng: 151.21 },
-  { city: "Melbourne", country: "Australia", lat: -37.81, lng: 144.96 },
-  { city: "Auckland", country: "New Zealand", lat: -36.85, lng: 174.76 },
+const CITIES: Array<{ city: string; country: string }> = [
+  { city: "San Francisco", country: "United States" },
+  { city: "New York", country: "United States" },
+  { city: "Los Angeles", country: "United States" },
+  { city: "Boston", country: "United States" },
+  { city: "Austin", country: "United States" },
+  { city: "Seattle", country: "United States" },
+  { city: "Chicago", country: "United States" },
+  { city: "Miami", country: "United States" },
+  { city: "Denver", country: "United States" },
+  { city: "Portland", country: "United States" },
+  { city: "Nashville", country: "United States" },
+  { city: "Atlanta", country: "United States" },
+  { city: "Washington DC", country: "United States" },
+  { city: "Dallas", country: "United States" },
+  { city: "San Diego", country: "United States" },
+  { city: "London", country: "United Kingdom" },
+  { city: "Manchester", country: "United Kingdom" },
+  { city: "Berlin", country: "Germany" },
+  { city: "Munich", country: "Germany" },
+  { city: "Paris", country: "France" },
+  { city: "Amsterdam", country: "Netherlands" },
+  { city: "Stockholm", country: "Sweden" },
+  { city: "Zurich", country: "Switzerland" },
+  { city: "Barcelona", country: "Spain" },
+  { city: "Dublin", country: "Ireland" },
+  { city: "Lisbon", country: "Portugal" },
+  { city: "Copenhagen", country: "Denmark" },
+  { city: "Helsinki", country: "Finland" },
+  { city: "Vienna", country: "Austria" },
+  { city: "Milan", country: "Italy" },
+  { city: "Singapore", country: "Singapore" },
+  { city: "Tokyo", country: "Japan" },
+  { city: "Seoul", country: "South Korea" },
+  { city: "Mumbai", country: "India" },
+  { city: "Bangalore", country: "India" },
+  { city: "Delhi", country: "India" },
+  { city: "Beijing", country: "China" },
+  { city: "Shanghai", country: "China" },
+  { city: "Shenzhen", country: "China" },
+  { city: "Tel Aviv", country: "Israel" },
+  { city: "Hong Kong", country: "Hong Kong" },
+  { city: "Dubai", country: "United Arab Emirates" },
+  { city: "Abu Dhabi", country: "United Arab Emirates" },
+  { city: "Riyadh", country: "Saudi Arabia" },
+  { city: "Lagos", country: "Nigeria" },
+  { city: "Nairobi", country: "Kenya" },
+  { city: "Cape Town", country: "South Africa" },
+  { city: "Cairo", country: "Egypt" },
+  { city: "São Paulo", country: "Brazil" },
+  { city: "Mexico City", country: "Mexico" },
+  { city: "Buenos Aires", country: "Argentina" },
+  { city: "Bogotá", country: "Colombia" },
+  { city: "Santiago", country: "Chile" },
+  { city: "Sydney", country: "Australia" },
+  { city: "Melbourne", country: "Australia" },
+  { city: "Auckland", country: "New Zealand" },
 ];
 
 const JOB_TITLES = [
@@ -325,15 +313,45 @@ function generateInvestor(index: number) {
 // =============================================
 
 async function insertBatch(batch: ReturnType<typeof generateInvestor>[]): Promise<number> {
-  const { error } = await supabase
-    .from("investors")
-    .insert(batch.map((inv) => ({
-      ...inv,
-      fit_score: 0,
-      outreach_readiness: "not_ready",
-    })), { count: "exact" });
+  // Build a multi-row INSERT
+  const values: string[] = [];
+  const params: any[] = [];
+  let paramIdx = 1;
 
-  if (error) {
+  for (const inv of batch) {
+    values.push(`(
+      $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+      $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+      $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+      $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+      $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+      $${paramIdx++}, $${paramIdx++}
+    )`);
+    params.push(
+      inv.full_name, inv.first_name, inv.last_name, inv.email, inv.linkedin_url,
+      inv.job_title, inv.investor_type, inv.investment_stages, inv.investment_sectors,
+      inv.investment_geographies, inv.country, inv.city, inv.min_check_size,
+      inv.max_check_size, inv.currency, inv.portfolio_count, inv.bio, inv.is_active,
+      inv.is_verified, inv.data_quality_score, inv.fit_score, inv.fit_score_breakdown,
+      inv.outreach_readiness, inv.current_firm_id, inv.source, inv.source_id,
+      new Date().toISOString()
+    );
+  }
+
+  try {
+    await query(
+      `INSERT INTO investors (
+        full_name, first_name, last_name, email, linkedin_url,
+        job_title, investor_type, investment_stages, investment_sectors,
+        investment_geographies, country, city, min_check_size,
+        max_check_size, currency, portfolio_count, bio, is_active,
+        is_verified, data_quality_score, fit_score, fit_score_breakdown,
+        outreach_readiness, current_firm_id, source, source_id, created_at
+      ) VALUES ${values.join(", ")}`,
+      params
+    );
+    return batch.length;
+  } catch (err) {
     // Fallback: try half-batches
     if (batch.length > 1) {
       const mid = Math.floor(batch.length / 2);
@@ -341,11 +359,9 @@ async function insertBatch(batch: ReturnType<typeof generateInvestor>[]): Promis
       const right = await insertBatch(batch.slice(mid));
       return left + right;
     }
-    console.error("Single insert error:", error.message);
+    console.error("Single insert error:", err);
     return 0;
   }
-
-  return batch.length;
 }
 
 // =============================================
@@ -359,11 +375,11 @@ async function main() {
   console.log(`\n🚀 Generating ${TARGET_COUNT.toLocaleString()} investor records...\n`);
 
   // Check existing count
-  const { count: existingCount } = await supabase
-    .from("investors")
-    .select("id", { count: "exact", head: true });
+  const [existingCount] = await query<{ count: string }>(
+    `SELECT count(*) as count FROM investors`
+  );
 
-  console.log(`📊 Existing investors: ${existingCount || 0}`);
+  console.log(`📊 Existing investors: ${parseInt(existingCount?.count || "0")}`);
 
   const startTime = Date.now();
   let totalInserted = 0;
@@ -395,15 +411,17 @@ async function main() {
   }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  const finalCount = await supabase
-    .from("investors")
-    .select("id", { count: "exact", head: true });
+  const [finalCount] = await query<{ count: string }>(
+    `SELECT count(*) as count FROM investors`
+  );
 
   console.log(`\n✅ Done!`);
   console.log(`   Inserted: ${totalInserted.toLocaleString()}`);
-  console.log(`   Total in DB: ${finalCount.count?.toLocaleString() || "unknown"}`);
+  console.log(`   Total in DB: ${parseInt(finalCount?.count || "0").toLocaleString()}`);
   console.log(`   Time: ${elapsed}s`);
   console.log(`   Rate: ${Math.round(totalInserted / (Date.now() - startTime) * 1000)}/s\n`);
+
+  await closePool();
 }
 
 main().catch((err) => {

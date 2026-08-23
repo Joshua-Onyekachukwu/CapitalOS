@@ -2,9 +2,9 @@
 // CSV Bulk Import Pipeline
 // =============================================
 // Parses CSV investor data, normalizes through our pipeline,
-// deduplicates, and batch-inserts into Supabase.
+// deduplicates, and batch-inserts into CockroachDB.
 
-import { createClient } from "@supabase/supabase-js";
+import { query } from "@/lib/db";
 import {
   normalizeInvestor,
   generateDeduplicationKeys,
@@ -33,8 +33,6 @@ export interface ImportResult {
   failed: number;
   errors: string[];
 }
-
-// Column mapping imported from shared module
 
 // =============================================
 // Parse CSV
@@ -135,10 +133,6 @@ export async function importCsvToSupabase(
   csvContent: string,
   source: string = "csv_import"
 ): Promise<ImportResult> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
   const result: ImportResult = {
     totalRows: 0,
     parsed: 0,
@@ -175,7 +169,6 @@ export async function importCsvToSupabase(
     result.normalized = normalized.length;
 
     // 3. Deduplicate against existing data
-    // Collect all emails and linkedins from the CSV for targeted lookup
     const csvEmails = normalized
       .map((inv) => inv.email?.toLowerCase().trim())
       .filter((e): e is string => !!e);
@@ -183,30 +176,31 @@ export async function importCsvToSupabase(
       .map((inv) => inv.linkedinUrl?.toLowerCase().trim().replace(/\/+$/, ""))
       .filter((l): l is string => !!l);
 
-    // Targeted lookup — check for specific emails/linkedins in batches of 100
     const existingEmails = new Set<string>();
     const existingLinkedins = new Set<string>();
 
-    // Batch query emails (Supabase in-queries max ~100 per call)
+    // Batch query emails from CockroachDB
     for (let i = 0; i < csvEmails.length; i += 100) {
       const batch = csvEmails.slice(i, i + 100);
-      const { data } = await supabase
-        .from("investors")
-        .select("email")
-        .in("email", batch);
-      (data || []).forEach((inv) => {
+      const placeholders = batch.map((_, j) => `$${j + 1}`).join(", ");
+      const data = await query<{ email: string }>(
+        `SELECT email FROM investors WHERE email IN (${placeholders})`,
+        batch
+      );
+      data.forEach((inv) => {
         if (inv.email) existingEmails.add(inv.email.toLowerCase());
       });
     }
 
-    // Batch query linkedins
+    // Batch query linkedins from CockroachDB
     for (let i = 0; i < csvLinkedins.length; i += 100) {
       const batch = csvLinkedins.slice(i, i + 100);
-      const { data } = await supabase
-        .from("investors")
-        .select("linkedin_url")
-        .in("linkedin_url", batch);
-      (data || []).forEach((inv) => {
+      const placeholders = batch.map((_, j) => `$${j + 1}`).join(", ");
+      const data = await query<{ linkedin_url: string }>(
+        `SELECT linkedin_url FROM investors WHERE linkedin_url IN (${placeholders})`,
+        batch
+      );
+      data.forEach((inv) => {
         if (inv.linkedin_url) existingLinkedins.add(inv.linkedin_url.toLowerCase().replace(/\/+$/, ""));
       });
     }
@@ -225,89 +219,95 @@ export async function importCsvToSupabase(
         result.duplicates++;
       } else {
         unique.push(inv);
-        // Add to set to catch intra-batch duplicates
         if (inv.email) existingEmails.add(inv.email.toLowerCase());
         if (inv.linkedinUrl) existingLinkedins.add(inv.linkedinUrl.toLowerCase().replace(/\/+$/, ""));
       }
     }
 
-    // 4. Batch insert into Supabase (500 at a time)
+    // 4. Batch insert into CockroachDB (500 at a time)
     const BATCH_SIZE = 500;
     for (let i = 0; i < unique.length; i += BATCH_SIZE) {
       const batch = unique.slice(i, i + BATCH_SIZE);
 
-      const insertData = batch.map((inv) => ({
-        full_name: inv.fullName,
-        first_name: inv.firstName,
-        last_name: inv.lastName,
-        email: inv.email,
-        phone: inv.phone,
-        linkedin_url: inv.linkedinUrl,
-        job_title: inv.jobTitle,
-        bio: inv.bio,
-        location: inv.location,
-        country: inv.country,
-        city: inv.city,
-        investor_type: inv.investorType,
-        investment_stages: inv.investmentStages,
-        investment_sectors: inv.investmentSectors,
-        investment_geographies: inv.investmentGeographies,
-        min_check_size: inv.minCheckSize,
-        max_check_size: inv.maxCheckSize,
-        currency: inv.currency,
-        portfolio_count: inv.portfolioCount,
-        website_url: inv.websiteUrl,
-        avatar_url: inv.avatarUrl,
-        source: inv.source,
-        source_id: inv.sourceId,
-        source_provider: inv.source,
-        data_quality_score: inv.email ? 50 : 20,
-        outreach_readiness: "not_ready",
-        is_active: true,
-      }));
+      // Build multi-row INSERT
+      const valuePlaceholders: string[] = [];
+      const params: any[] = [];
+      let paramIdx = 1;
 
-      const { error, data } = await supabase
-        .from("investors")
-        .insert(insertData)
-        .select("id");
+      for (const inv of batch) {
+        const rowPlaceholders = [
+          `$${paramIdx++}`, // full_name
+          `$${paramIdx++}`, // first_name
+          `$${paramIdx++}`, // last_name
+          `$${paramIdx++}`, // email
+          `$${paramIdx++}`, // phone
+          `$${paramIdx++}`, // linkedin_url
+          `$${paramIdx++}`, // job_title
+          `$${paramIdx++}`, // bio
+          `$${paramIdx++}`, // location
+          `$${paramIdx++}`, // country
+          `$${paramIdx++}`, // city
+          `$${paramIdx++}`, // investor_type
+          `$${paramIdx++}::text[]`, // investment_stages
+          `$${paramIdx++}::text[]`, // investment_sectors
+          `$${paramIdx++}::text[]`, // investment_geographies
+          `$${paramIdx++}`, // min_check_size
+          `$${paramIdx++}`, // max_check_size
+          `$${paramIdx++}`, // currency
+          `$${paramIdx++}`, // portfolio_count
+          `$${paramIdx++}`, // website_url
+          `$${paramIdx++}`, // avatar_url
+          `$${paramIdx++}`, // source
+          `$${paramIdx++}`, // source_id
+          `$${paramIdx++}`, // source_provider
+          `$${paramIdx++}`, // data_quality_score
+          `$${paramIdx++}`, // outreach_readiness
+          `$${paramIdx++}`, // is_active
+        ];
 
-      if (error) {
-        result.errors.push(`Batch insert error: ${error.message}`);
-        result.failed += batch.length;
-      } else {
-        result.inserted += (data?.length || batch.length);
+        valuePlaceholders.push(`(${rowPlaceholders.join(", ")})`);
+
+        params.push(
+          inv.fullName,
+          inv.firstName,
+          inv.lastName,
+          inv.email,
+          inv.phone,
+          inv.linkedinUrl,
+          inv.jobTitle,
+          inv.bio,
+          inv.location,
+          inv.country,
+          inv.city,
+          inv.investorType,
+          inv.investmentStages,
+          inv.investmentSectors,
+          inv.investmentGeographies,
+          inv.minCheckSize,
+          inv.maxCheckSize,
+          inv.currency,
+          inv.portfolioCount,
+          inv.websiteUrl,
+          inv.avatarUrl,
+          inv.source,
+          inv.sourceId,
+          inv.source,
+          inv.email ? 50 : 20,
+          "not_ready",
+          true
+        );
       }
-    }
 
-    // 5. Post-import enrichment — enrich the records we just inserted
-    if (result.inserted > 0) {
       try {
-        const { enrichInvestor } = await import("./enrichment");
-        // Enrich the latest batch of inserted records
-        const { data: latestRecords } = await supabase
-          .from("investors")
-          .select("id")
-          .eq("source_provider", source)
-          .is("last_enriched_at", null)
-          .order("created_at", { ascending: false })
-          .limit(Math.min(result.inserted, 200));
-
-        if (latestRecords) {
-          let enriched = 0;
-          for (const rec of latestRecords) {
-            try {
-              await enrichInvestor(rec.id);
-              enriched++;
-            } catch {
-              // Non-critical
-            }
-          }
-          if (enriched > 0) {
-            result.errors.push(`Enriched ${enriched} records`);
-          }
-        }
-      } catch {
-        // Non-critical — enrichment can be run separately
+        await query(
+          `INSERT INTO investors (full_name, first_name, last_name, email, phone, linkedin_url, job_title, bio, location, country, city, investor_type, investment_stages, investment_sectors, investment_geographies, min_check_size, max_check_size, currency, portfolio_count, website_url, avatar_url, source, source_id, source_provider, data_quality_score, outreach_readiness, is_active)
+           VALUES ${valuePlaceholders.join(", ")}`,
+          params
+        );
+        result.inserted += batch.length;
+      } catch (err: any) {
+        result.errors.push(`Batch insert error: ${err.message}`);
+        result.failed += batch.length;
       }
     }
 

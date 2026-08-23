@@ -1,7 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { processRawRecords, promoteNewRecords } from "@/lib/services/investor/ingestion";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
   try {
     // Step 1: Process pending raw records (normalize + match)
     const processResult = await processRawRecords(500);

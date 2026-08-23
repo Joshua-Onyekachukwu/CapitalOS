@@ -31,7 +31,6 @@ export default function SettingsPage() {
   const [saveError, setSaveError] = useState("");
   const [fullName, setFullName] = useState("");
 
-  // Email accounts state
   const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
   const [emailLoading, setEmailLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
@@ -40,28 +39,14 @@ export default function SettingsPage() {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const { createClient } = await import("@/lib/supabase/client");
-        const supabase = createClient();
-
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
-
-        if (!authUser) return;
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", authUser.id)
-          .single();
-
-        setUser({
-          full_name: profile?.full_name ?? authUser.user_metadata?.full_name ?? "",
-          email: authUser.email ?? "",
-        });
-        setFullName(profile?.full_name ?? authUser.user_metadata?.full_name ?? "");
+        const res = await fetch("/api/dashboard/settings/profile");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+          setFullName(data.full_name || "");
+        }
       } catch {
-        // Profile table may not exist yet
+        // Profile may not exist yet
       } finally {
         setLoading(false);
       }
@@ -69,17 +54,14 @@ export default function SettingsPage() {
     loadProfile();
   }, []);
 
-  // Load email accounts
   useEffect(() => {
     async function loadEmails() {
       try {
-        const { createClient } = await import("@/lib/supabase/client");
-        const supabase = createClient();
-
-        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const { getConnectedEmails } = await import("@/lib/actions/email");
+        const { getCurrentUser } = await import("@/lib/auth");
+        const authUser = await getCurrentUser();
         if (!authUser) return;
 
-        const { getConnectedEmails } = await import("@/lib/actions/email");
         const result = await getConnectedEmails(authUser.id);
         if (result.data) {
           setEmailAccounts(result.data);
@@ -93,7 +75,6 @@ export default function SettingsPage() {
     loadEmails();
   }, []);
 
-  // Check URL params for email connection status
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -102,12 +83,8 @@ export default function SettingsPage() {
 
     if (connected) {
       setEmailMessage({ type: "success", text: `${connected.charAt(0).toUpperCase() + connected.slice(1)} account connected successfully!` });
-      // Clean URL
       window.history.replaceState({}, "", "/dashboard/settings");
-      // Reload email accounts
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      setTimeout(() => window.location.reload(), 1500);
     }
     if (error) {
       setEmailMessage({ type: "error", text: error });
@@ -121,22 +98,15 @@ export default function SettingsPage() {
     setSaveSuccess(false);
 
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
+      const res = await fetch("/api/dashboard/settings/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ full_name: fullName }),
+      });
 
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
-
-      if (!authUser) return;
-
-      // Update profile
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({ id: authUser.id, full_name: fullName });
-
-      if (error) {
-        setSaveError(error.message);
+      if (!res.ok) {
+        const data = await res.json();
+        setSaveError(data.error || "Failed to save changes.");
       } else {
         setSaveSuccess(true);
         setUser((prev) => (prev ? { ...prev, full_name: fullName } : prev));
@@ -151,12 +121,11 @@ export default function SettingsPage() {
   const handleDisconnect = async (provider: string) => {
     setDisconnecting(provider);
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { disconnectEmail } = await import("@/lib/actions/email");
+      const { getCurrentUser } = await import("@/lib/auth");
+      const authUser = await getCurrentUser();
       if (!authUser) return;
 
-      const { disconnectEmail } = await import("@/lib/actions/email");
       const result = await disconnectEmail(authUser.id, provider);
       if (result.success) {
         setEmailAccounts((prev) => prev.filter((a) => a.provider !== provider));
@@ -202,72 +171,35 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-[25px] md:mb-[30px]">
-        <h1 className="!text-xl md:!text-2xl !font-semibold !mb-[4px]">
-          Settings
-        </h1>
-        <p className="text-[14px] text-gray-500 !mb-0">
-          Manage your account, email, and preferences.
-        </p>
+        <h1 className="!text-xl md:!text-2xl !font-semibold !mb-[4px]">Settings</h1>
+        <p className="text-[14px] text-gray-500 !mb-0">Manage your account, email, and preferences.</p>
       </div>
 
-      {/* Profile Settings */}
       <Card className="mb-[20px]">
         <CardHeader>
           <h3 className="!text-[16px] !font-semibold !mb-0">Profile</h3>
         </CardHeader>
         <CardBody className="space-y-[16px]">
-          {saveSuccess && (
-            <Alert variant="success" className="mb-0">
-              Profile updated successfully.
-            </Alert>
-          )}
-          {saveError && (
-            <Alert variant="danger" className="mb-0">
-              {saveError}
-            </Alert>
-          )}
-          <Input
-            label="Full Name"
-            placeholder="Your name"
-            value={fullName}
-            onChange={(e) => {
-              setFullName(e.target.value);
-              setSaveSuccess(false);
-            }}
-          />
-          <Input
-            label="Email"
-            type="email"
-            placeholder="Your email"
-            value={user?.email || ""}
-            disabled
-          />
-          <Button size="sm" loading={saving} onClick={handleSave}>
-            Save Changes
-          </Button>
+          {saveSuccess && <Alert variant="success" className="mb-0">Profile updated successfully.</Alert>}
+          {saveError && <Alert variant="danger" className="mb-0">{saveError}</Alert>}
+          <Input label="Full Name" placeholder="Your name" value={fullName} onChange={(e) => { setFullName(e.target.value); setSaveSuccess(false); }} />
+          <Input label="Email" type="email" placeholder="Your email" value={user?.email || ""} disabled />
+          <Button size="sm" loading={saving} onClick={handleSave}>Save Changes</Button>
         </CardBody>
       </Card>
 
-      {/* Email Accounts */}
       <Card className="mb-[20px]">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <h3 className="!text-[16px] !font-semibold !mb-0">Email Accounts</h3>
-              <p className="text-[13px] text-gray-400 !mb-0 mt-[4px]">
-                Connect your email to send investor outreach directly from Capital OS.
-              </p>
+              <p className="text-[13px] text-gray-400 !mb-0 mt-[4px]">Connect your email to send investor outreach directly from Capital OS.</p>
             </div>
           </div>
         </CardHeader>
         <CardBody>
           {emailMessage && (
-            <Alert
-              variant={emailMessage.type === "success" ? "success" : "danger"}
-              className="mb-[16px]"
-              onDismiss={() => setEmailMessage(null)}
-              dismissible
-            >
+            <Alert variant={emailMessage.type === "success" ? "success" : "danger"} className="mb-[16px]" onDismiss={() => setEmailMessage(null)} dismissible>
               {emailMessage.text}
             </Alert>
           )}
@@ -279,9 +211,7 @@ export default function SettingsPage() {
             </div>
           ) : emailAccounts.length === 0 ? (
             <div>
-              <p className="text-[14px] text-gray-500 !mb-[16px]">
-                No email accounts connected. Connect one to enable AI-powered investor outreach.
-              </p>
+              <p className="text-[14px] text-gray-500 !mb-[16px]">No email accounts connected. Connect one to enable AI-powered investor outreach.</p>
               <div className="flex items-center gap-[12px] flex-wrap">
                 <a href="/api/auth/google" className="no-underline">
                   <Button variant="outline" size="sm">
@@ -310,10 +240,7 @@ export default function SettingsPage() {
           ) : (
             <div className="space-y-[12px]">
               {emailAccounts.map((account) => (
-                <div
-                  key={account.id}
-                  className="flex items-center justify-between p-[14px] rounded-[10px] border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
-                >
+                <div key={account.id} className="flex items-center justify-between p-[14px] rounded-[10px] border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                   <div className="flex items-center gap-[12px]">
                     {account.provider === "google" ? (
                       <div className="w-[36px] h-[36px] rounded-[8px] bg-red-50 flex items-center justify-center">
@@ -335,25 +262,14 @@ export default function SettingsPage() {
                       </div>
                     )}
                     <div>
-                      <p className="text-[14px] font-medium text-[#06201b] dark:text-white !mb-[2px]">
-                        {account.display_name || account.email_address}
-                      </p>
-                      <p className="text-[12px] text-gray-400 !mb-0">
-                        {account.email_address} • {account.provider === "google" ? "Gmail" : "Outlook"}
-                      </p>
+                      <p className="text-[14px] font-medium text-[#06201b] dark:text-white !mb-[2px]">{account.display_name || account.email_address}</p>
+                      <p className="text-[12px] text-gray-400 !mb-0">{account.email_address} • {account.provider === "google" ? "Gmail" : "Outlook"}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-[8px]">
-                    <Badge variant={account.is_active ? "success" : "default"} size="sm">
-                      {account.is_active ? "Active" : "Disconnected"}
-                    </Badge>
+                    <Badge variant={account.is_active ? "success" : "default"} size="sm">{account.is_active ? "Active" : "Disconnected"}</Badge>
                     {account.is_active && (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        loading={disconnecting === account.provider}
-                        onClick={() => handleDisconnect(account.provider)}
-                      >
+                      <Button variant="danger" size="sm" loading={disconnecting === account.provider} onClick={() => handleDisconnect(account.provider)}>
                         Disconnect
                       </Button>
                     )}
@@ -365,7 +281,6 @@ export default function SettingsPage() {
         </CardBody>
       </Card>
 
-      {/* Notifications */}
       <Card className="mb-[20px]">
         <CardHeader>
           <h3 className="!text-[16px] !font-semibold !mb-0">Notifications</h3>
@@ -392,7 +307,6 @@ export default function SettingsPage() {
         </CardBody>
       </Card>
 
-      {/* Danger Zone */}
       <Card>
         <CardHeader>
           <h3 className="!text-[16px] !font-semibold !mb-0 text-danger-600">Account</h3>
@@ -402,14 +316,7 @@ export default function SettingsPage() {
             <p className="text-[14px] font-medium !mb-[2px]">Sign out</p>
             <p className="text-[13px] text-gray-400 !mb-0">Sign out of your account on this device.</p>
           </div>
-          <Button
-            variant="danger"
-            size="sm"
-            loading={signingOut}
-            onClick={handleSignOut}
-          >
-            Sign Out
-          </Button>
+          <Button variant="danger" size="sm" loading={signingOut} onClick={handleSignOut}>Sign Out</Button>
         </CardBody>
       </Card>
     </div>

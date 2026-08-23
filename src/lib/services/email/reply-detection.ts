@@ -1,14 +1,9 @@
 // =============================================
 // Email Reply Detection Service
 // =============================================
-// Detects replies to outreach emails and updates investor status.
-// Uses email threading and header analysis.
+// Uses CockroachDB for data.
 
-import { createClient } from "@supabase/supabase-js";
-
-// =============================================
-// Types
-// =============================================
+import { query } from "@/lib/db";
 
 export interface ReplyDetectionResult {
   threadId: string;
@@ -33,14 +28,9 @@ export interface ThreadSummary {
   sentiment: "positive" | "negative" | "neutral" | "meeting_requested" | "not_interested";
 }
 
-// =============================================
-// Sentiment Analysis (lightweight — no LLM needed)
-// =============================================
-
 export function analyzeSentiment(subject: string, body: string): ReplyDetectionResult["sentiment"] {
   const text = `${subject} ${body}`.toLowerCase();
 
-  // Meeting / positive signals
   const meetingKeywords = [
     "let's meet", "schedule a meeting", "calendar", "availability",
     "available this week", "happy to chat", "love to learn more",
@@ -49,7 +39,6 @@ export function analyzeSentiment(subject: string, body: string): ReplyDetectionR
     "let's schedule", "book a time", "calendly", "zoom call",
   ];
 
-  // Negative signals
   const negativeKeywords = [
     "not interested", "passing on", "not a fit", "out of scope",
     "we'll pass", "not the right time", "don't think it's a fit",
@@ -57,27 +46,15 @@ export function analyzeSentiment(subject: string, body: string): ReplyDetectionR
     "not for us", "decline", "unfortunately", "regret",
   ];
 
-  // Meeting requested (highest priority)
   if (meetingKeywords.some((k) => text.includes(k))) return "meeting_requested";
-
-  // Not interested
   if (negativeKeywords.some((k) => text.includes(k))) return "not_interested";
 
-  // Positive (but not meeting)
   const positiveKeywords = ["thanks", "thank you", "interesting", "keep me posted", "sounds good", "will review"];
   if (positiveKeywords.some((k) => text.includes(k))) return "positive";
 
   return "neutral";
 }
 
-// =============================================
-// Reply Detection from Email Headers
-// =============================================
-
-/**
- * Detect if an incoming email is a reply to an outreach thread.
- * Checks In-Reply-To and References headers against known message IDs.
- */
 export async function detectReply(
   messageId: string,
   inReplyTo: string | null,
@@ -86,42 +63,30 @@ export async function detectReply(
   subject: string,
   bodyPreview: string
 ): Promise<ReplyDetectionResult | null> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  // Find the original email thread by In-Reply-To message ID
   let threadId: string | null = null;
   let investorId: string | null = null;
 
   if (inReplyTo) {
-    const { data: originalEmail } = await supabase
-      .from("email_messages")
-      .select("thread_id, investor_id")
-      .eq("message_id", inReplyTo)
-      .single();
-
-    if (originalEmail) {
-      threadId = originalEmail.thread_id;
-      investorId = originalEmail.investor_id;
+    const original = await query<any>(
+      `SELECT thread_id, investor_id FROM email_messages WHERE message_id = $1`,
+      [inReplyTo]
+    );
+    if (original.length) {
+      threadId = original[0].thread_id;
+      investorId = original[0].investor_id;
     }
   }
 
-  // If no match via In-Reply-To, try subject matching (strip Re:/Fwd:)
   if (!threadId) {
     const cleanSubject = subject.replace(/^(re:|fwd?:|fw:)\s*/i, "").trim();
-    const { data: possibleThreads } = await supabase
-      .from("email_threads")
-      .select("id, investor_id, subject")
-      .ilike("subject", `%${cleanSubject}%`)
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const possibleThreads = await query<any>(
+      `SELECT id, investor_id, subject FROM email_threads WHERE subject ILIKE $1 ORDER BY created_at DESC LIMIT 5`,
+      [`%${cleanSubject}%`]
+    );
 
-    if (possibleThreads && possibleThreads.length > 0) {
-      // Find the closest match
+    if (possibleThreads.length) {
       const exactMatch = possibleThreads.find(
-        (t) => t.subject.toLowerCase().replace(/^(re:|fwd?:|fw:)\s*/i, "").trim() === cleanSubject.toLowerCase()
+        (t: any) => t.subject.toLowerCase().replace(/^(re:|fwd?:|fw:)\s*/i, "").trim() === cleanSubject.toLowerCase()
       );
       if (exactMatch) {
         threadId = exactMatch.id;
@@ -132,53 +97,31 @@ export async function detectReply(
 
   if (!threadId) return null;
 
-  // Analyze sentiment
   const sentiment = analyzeSentiment(subject, bodyPreview);
 
-  // Store the reply
-  await supabase.from("email_messages").insert({
-    thread_id: threadId,
-    investor_id: investorId,
-    message_id: messageId,
-    direction: "inbound",
-    from_email: fromEmail,
-    subject,
-    body_preview: bodyPreview,
-    received_at: new Date().toISOString(),
-  });
+  await query(
+    `INSERT INTO email_messages (thread_id, investor_id, message_id, direction, from_address, subject, body_text, status, replied_at)
+     VALUES ($1, $2, $3, 'inbound', $4, $5, $6, $7, NOW())`,
+    [threadId, investorId, messageId, fromEmail, subject, bodyPreview, sentiment === "meeting_requested" ? "replied" : "replied"]
+  );
 
-  // Update thread message count and last message
-  const { count: msgCount } = await supabase
-    .from("email_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("thread_id", threadId);
+  const msgCount = await query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count FROM email_messages WHERE thread_id = $1`,
+    [threadId]
+  );
 
-  await supabase
-    .from("email_threads")
-    .update({
-      message_count: (msgCount || 0) + 1,
-      last_message_at: new Date().toISOString(),
-      last_message_preview: bodyPreview.slice(0, 200),
-    })
-    .eq("id", threadId);
+  await query(
+    `UPDATE email_threads SET message_count = $1, last_message_at = NOW(), last_message_preview = $2 WHERE id = $3`,
+    [(parseInt(msgCount[0]?.count || "0") || 0) + 1, bodyPreview.slice(0, 200), threadId]
+  );
 
-  // Update investor status based on sentiment
   if (investorId) {
     if (sentiment === "meeting_requested") {
-      await supabase
-        .from("investors")
-        .update({ outreach_readiness: "meeting_requested" })
-        .eq("id", investorId);
+      await query(`UPDATE investors SET outreach_readiness = 'ready' WHERE id = $1`, [investorId]);
     } else if (sentiment === "positive") {
-      await supabase
-        .from("investors")
-        .update({ outreach_readiness: "replied" })
-        .eq("id", investorId);
+      await query(`UPDATE investors SET outreach_readiness = 'contacted' WHERE id = $1`, [investorId]);
     } else if (sentiment === "not_interested") {
-      await supabase
-        .from("investors")
-        .update({ outreach_readiness: "not_interested" })
-        .eq("id", investorId);
+      await query(`UPDATE investors SET outreach_readiness = 'do_not_contact' WHERE id = $1`, [investorId]);
     }
   }
 
@@ -194,82 +137,49 @@ export async function detectReply(
   };
 }
 
-// =============================================
-// Thread Summary
-// =============================================
-
 export async function getThreadSummary(threadId: string): Promise<ThreadSummary | null> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const threads = await query<any>(`SELECT * FROM email_threads WHERE id = $1`, [threadId]);
+  if (!threads.length) return null;
+  const thread = threads[0];
+
+  const count = await query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count FROM email_messages WHERE thread_id = $1`,
+    [threadId]
   );
 
-  const { data: thread } = await supabase
-    .from("email_threads")
-    .select("*")
-    .eq("id", threadId)
-    .single();
-
-  if (!thread) return null;
-
-  // Count messages
-  const { count } = await supabase
-    .from("email_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("thread_id", threadId);
-
-  // Get last message
-  const { data: lastMsg } = await supabase
-    .from("email_messages")
-    .select("from_email, subject, body_preview, direction, received_at")
-    .eq("thread_id", threadId)
-    .order("received_at", { ascending: false })
-    .limit(1)
-    .single();
+  const lastMsg = await query<any>(
+    `SELECT from_address, subject, body_text, direction, created_at FROM email_messages WHERE thread_id = $1 ORDER BY created_at DESC LIMIT 1`,
+    [threadId]
+  );
 
   return {
     threadId: thread.id,
     investorId: thread.investor_id,
     subject: thread.subject,
-    messageCount: count || 0,
-    lastMessageAt: lastMsg?.received_at || thread.created_at,
-    lastMessageFrom: lastMsg?.from_email || "",
-    lastMessagePreview: lastMsg?.body_preview || "",
+    messageCount: parseInt(count[0]?.count || "0"),
+    lastMessageAt: lastMsg[0]?.created_at || thread.created_at,
+    lastMessageFrom: lastMsg[0]?.from_address || "",
+    lastMessagePreview: lastMsg[0]?.body_text || "",
     status: thread.status,
     sentiment: "neutral",
   };
 }
 
-// =============================================
-// Get All Threads for User
-// =============================================
-
-export async function getUserThreads(
-  userId: string,
-  options?: { limit?: number; status?: string }
-): Promise<ThreadSummary[]> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  let query = supabase
-    .from("email_threads")
-    .select("*")
-    .eq("user_id", userId)
-    .order("last_message_at", { ascending: false });
+export async function getUserThreads(userId: string, options?: { limit?: number; status?: string }): Promise<ThreadSummary[]> {
+  let sql = `SELECT * FROM email_threads WHERE user_id = $1 ORDER BY last_message_at DESC`;
+  const params: any[] = [userId];
 
   if (options?.status) {
-    query = query.eq("status", options.status);
+    params.push(options.status);
+    sql += ` AND status = $${params.length}`;
   }
 
   if (options?.limit) {
-    query = query.limit(options.limit);
+    params.push(options.limit);
+    sql += ` LIMIT $${params.length}`;
   }
 
-  const { data: threads } = await query;
-
-  if (!threads) return [];
+  const threads = await query<any>(sql, params);
 
   return threads.map((thread) => ({
     threadId: thread.id,

@@ -3,8 +3,9 @@
 // =============================================
 // Provider-agnostic billing interface.
 // When Stripe is added, only the adapter needs implementation.
+// Uses CockroachDB for data.
 
-import { createClient } from "@supabase/supabase-js";
+import { query } from "@/lib/db";
 
 // =============================================
 // Types
@@ -13,19 +14,11 @@ import { createClient } from "@supabase/supabase-js";
 export interface BillingProvider {
   name: string;
   isConfigured: boolean;
-
-  // Subscription management
   createCheckoutSession(input: CheckoutInput): Promise<CheckoutResult>;
   cancelSubscription(subscriptionId: string): Promise<boolean>;
   reactivateSubscription(subscriptionId: string): Promise<boolean>;
-
-  // Plan changes
   changePlan(subscriptionId: string, newPlanId: string): Promise<PlanChangeResult>;
-
-  // Credit purchases
   purchaseCreditPack(input: CreditPackInput): Promise<CheckoutResult>;
-
-  // Webhooks
   verifyWebhookSignature(payload: string, signature: string): boolean;
   handleWebhook(event: WebhookEvent): Promise<WebhookResult>;
 }
@@ -53,7 +46,7 @@ export interface PlanChangeResult {
 
 export interface CreditPackInput {
   userId: string;
-  packId: string; // 'pack_100' or 'pack_500'
+  packId: string;
   successUrl: string;
   cancelUrl: string;
 }
@@ -72,212 +65,158 @@ export interface WebhookResult {
 // Local Provider (No Stripe — uses internal billing)
 // =============================================
 
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 class LocalBillingProvider implements BillingProvider {
   name = "local";
-  isConfigured = true; // Always available
+  isConfigured = true;
 
   async createCheckoutSession(input: CheckoutInput): Promise<CheckoutResult> {
-    // When Stripe is not configured, directly activate the plan
-    const supabase = getSupabase();
+    const plans = await query<{ id: string }>(
+      `SELECT id FROM billing_plans WHERE id = $1`,
+      [input.planId]
+    );
 
-    const { data: plan } = await supabase
-      .from("billing_plans")
-      .select("id")
-      .eq("id", input.planId)
-      .single();
-
-    if (!plan) {
+    if (!plans.length) {
       return { success: false, error: "Plan not found" };
     }
 
-    // Log the billing event
-    await supabase.from("billing_events").insert({
-      user_id: input.userId,
-      event_type: "checkout_completed_local",
-      event_data: { planId: input.planId },
-    });
+    await query(
+      `INSERT INTO billing_events (user_id, event_type, event_data)
+       VALUES ($1, 'checkout_completed_local', $2::jsonb)`,
+      [input.userId, JSON.stringify({ planId: input.planId })]
+    );
 
     return { success: true };
   }
 
-  async cancelSubscription(_subscriptionId: string): Promise<boolean> {
-    const supabase = getSupabase();
+  async cancelSubscription(subscriptionId: string): Promise<boolean> {
+    const subs = await query<{ current_period_end: string }>(
+      `SELECT current_period_end FROM user_subscriptions WHERE id = $1`,
+      [subscriptionId]
+    );
 
-    // Set cancel_at to end of current period (don't immediately revoke)
-    const { data: sub } = await supabase
-      .from("user_subscriptions")
-      .select("current_period_end")
-      .eq("id", _subscriptionId)
-      .single();
+    if (!subs.length) return false;
 
-    if (!sub) return false;
+    await query(
+      `UPDATE user_subscriptions SET cancel_at = $1, status = 'active' WHERE id = $2`,
+      [subs[0].current_period_end, subscriptionId]
+    );
 
-    await supabase
-      .from("user_subscriptions")
-      .update({
-        cancel_at: sub.current_period_end,
-        status: "active", // Still active until period end
-      })
-      .eq("id", _subscriptionId);
-
-    await supabase.from("billing_events").insert({
-      user_id: "", // Will be filled by the subscription lookup
-      event_type: "subscription_cancel_requested",
-      event_data: { subscriptionId: _subscriptionId, effectiveAt: sub.current_period_end },
-    });
+    await query(
+      `INSERT INTO billing_events (user_id, event_type, event_data)
+       VALUES ('', 'subscription_cancel_requested', $1::jsonb)`,
+      [JSON.stringify({ subscriptionId, effectiveAt: subs[0].current_period_end })]
+    );
 
     return true;
   }
 
   async reactivateSubscription(subscriptionId: string): Promise<boolean> {
-    const supabase = getSupabase();
-
-    await supabase
-      .from("user_subscriptions")
-      .update({
-        cancel_at: null,
-        status: "active",
-      })
-      .eq("id", subscriptionId);
-
+    await query(
+      `UPDATE user_subscriptions SET cancel_at = NULL, status = 'active' WHERE id = $1`,
+      [subscriptionId]
+    );
     return true;
   }
 
   async changePlan(subscriptionId: string, newPlanId: string): Promise<PlanChangeResult> {
-    const supabase = getSupabase();
+    const newPlans = await query<any>(
+      `SELECT * FROM billing_plans WHERE id = $1`,
+      [newPlanId]
+    );
 
-    // Get new plan details
-    const { data: newPlan } = await supabase
-      .from("billing_plans")
-      .select("*")
-      .eq("id", newPlanId)
-      .single();
-
-    if (!newPlan) {
+    if (!newPlans.length) {
       return { success: false, effectiveDate: "", error: "Plan not found" };
     }
 
-    // Get current subscription
-    const { data: currentSub } = await supabase
-      .from("user_subscriptions")
-      .select("*")
-      .eq("id", subscriptionId)
-      .single();
+    const newPlan = newPlans[0];
 
-    if (!currentSub) {
+    const currentSubs = await query<any>(
+      `SELECT * FROM user_subscriptions WHERE id = $1`,
+      [subscriptionId]
+    );
+
+    if (!currentSubs.length) {
       return { success: false, effectiveDate: "", error: "Subscription not found" };
     }
 
-    // Upgrade: immediate. Downgrade: at period end.
-    const isUpgrade = newPlan.monthly_price > 0 && (
-      currentSub.plan_id === (await supabase.from("billing_plans").select("id").eq("slug", "free").single()).data?.id
+    const currentSub = currentSubs[0];
+
+    // Check if upgrading from free
+    const freePlans = await query<{ id: string }>(
+      `SELECT id FROM billing_plans WHERE slug = 'free'`
     );
+    const isUpgrade = newPlan.monthly_price > 0 && currentSub.plan_id === freePlans[0]?.id;
 
     if (isUpgrade) {
-      // Immediate upgrade
-      await supabase
-        .from("user_subscriptions")
-        .update({
-          previous_plan_id: currentSub.plan_id,
-          plan_id: newPlanId,
-          credits_remaining: newPlan.included_credits,
-          credits_used_this_period: 0,
-          plan_changed_at: new Date().toISOString(),
-        })
-        .eq("id", subscriptionId);
+      await query(
+        `UPDATE user_subscriptions SET previous_plan_id = plan_id, plan_id = $1, credits_remaining = $2, credits_used_this_period = 0, plan_changed_at = NOW() WHERE id = $3`,
+        [newPlanId, newPlan.included_credits, subscriptionId]
+      );
 
-      // Log event
-      await supabase.from("billing_events").insert({
-        user_id: currentSub.user_id,
-        event_type: "plan_upgraded",
-        event_data: {
-          from: currentSub.plan_id,
-          to: newPlanId,
-          creditsAdded: newPlan.included_credits,
-        },
-      });
+      await query(
+        `INSERT INTO billing_events (user_id, event_type, event_data)
+         VALUES ($1, 'plan_upgraded', $2::jsonb)`,
+        [currentSub.user_id, JSON.stringify({ from: currentSub.plan_id, to: newPlanId, creditsAdded: newPlan.included_credits })]
+      );
 
       return { success: true, effectiveDate: new Date().toISOString() };
     } else {
       // Downgrade: schedule for period end
-      await supabase
-        .from("user_subscriptions")
-        .update({
-          pending_plan_id: newPlanId,
-          downgrade_at: currentSub.current_period_end,
-          status: "downgrading",
-        })
-        .eq("id", subscriptionId);
+      await query(
+        `UPDATE user_subscriptions SET pending_plan_id = $1, downgrade_at = $2, status = 'downgrading' WHERE id = $3`,
+        [newPlanId, currentSub.current_period_end, subscriptionId]
+      );
 
-      await supabase.from("billing_events").insert({
-        user_id: currentSub.user_id,
-        event_type: "plan_downgrade_scheduled",
-        event_data: {
-          from: currentSub.plan_id,
-          to: newPlanId,
-          effectiveAt: currentSub.current_period_end,
-        },
-      });
+      await query(
+        `INSERT INTO billing_events (user_id, event_type, event_data)
+         VALUES ($1, 'plan_downgrade_scheduled', $2::jsonb)`,
+        [currentSub.user_id, JSON.stringify({ from: currentSub.plan_id, to: newPlanId, effectiveAt: currentSub.current_period_end })]
+      );
 
       return { success: true, effectiveDate: currentSub.current_period_end };
     }
   }
 
   async purchaseCreditPack(input: CreditPackInput): Promise<CheckoutResult> {
-    const supabase = getSupabase();
-
     const packCredits = input.packId === "pack_500" ? 500 : 100;
 
-    // Directly add credits (no Stripe)
-    const { data: sub } = await supabase
-      .from("user_subscriptions")
-      .select("id, credits_remaining")
-      .eq("user_id", input.userId)
-      .eq("status", "active")
-      .single();
+    const subs = await query<{ id: string; credits_remaining: number }>(
+      `SELECT id, credits_remaining FROM user_subscriptions WHERE user_id = $1 AND status = 'active' LIMIT 1`,
+      [input.userId]
+    );
 
-    if (!sub) {
+    if (!subs.length) {
       return { success: false, error: "No active subscription" };
     }
 
+    const sub = subs[0];
     const newBalance = sub.credits_remaining + packCredits;
 
-    await supabase
-      .from("user_subscriptions")
-      .update({ credits_remaining: newBalance })
-      .eq("id", sub.id);
+    await query(
+      `UPDATE user_subscriptions SET credits_remaining = $1 WHERE id = $2`,
+      [newBalance, sub.id]
+    );
 
-    await supabase.from("credit_ledger").insert({
-      user_id: input.userId,
-      amount: packCredits,
-      balance_after: newBalance,
-      operation: "credit_pack_purchase",
-      operation_detail: { packId: input.packId, credits: packCredits },
-    });
+    await query(
+      `INSERT INTO credit_ledger (user_id, amount, balance_after, operation, operation_detail)
+       VALUES ($1, $2, $3, 'credit_pack_purchase', $4::jsonb)`,
+      [input.userId, packCredits, newBalance, JSON.stringify({ packId: input.packId, credits: packCredits })]
+    );
 
-    await supabase.from("billing_events").insert({
-      user_id: input.userId,
-      event_type: "credit_pack_purchased",
-      event_data: { packId: input.packId, credits: packCredits },
-    });
+    await query(
+      `INSERT INTO billing_events (user_id, event_type, event_data)
+       VALUES ($1, 'credit_pack_purchased', $2::jsonb)`,
+      [input.userId, JSON.stringify({ packId: input.packId, credits: packCredits })]
+    );
 
     return { success: true };
   }
 
   verifyWebhookSignature(_payload: string, _signature: string): boolean {
-    // Local provider doesn't verify webhooks
     return true;
   }
 
-  async handleWebhook(event: WebhookEvent): Promise<WebhookResult> {
-    // Local provider handles events directly, no webhook processing needed
+  async handleWebhook(_event: WebhookEvent): Promise<WebhookResult> {
     return { handled: false, error: "Webhook handling not supported in local mode" };
   }
 }
@@ -288,79 +227,55 @@ class LocalBillingProvider implements BillingProvider {
 
 class StripeBillingProvider implements BillingProvider {
   name = "stripe";
-  isConfigured = false; // Will be true when Stripe keys are provided
+  isConfigured = false;
 
   constructor() {
-    // Check if Stripe is configured
     this.isConfigured = !!process.env.STRIPE_SECRET_KEY;
   }
 
   async createCheckoutSession(_input: CheckoutInput): Promise<CheckoutResult> {
-    if (!this.isConfigured) {
-      return { success: false, error: "Stripe not configured" };
-    }
-    // TODO: Implement Stripe checkout session creation
+    if (!this.isConfigured) return { success: false, error: "Stripe not configured" };
     return { success: false, error: "Stripe checkout not yet implemented" };
   }
 
   async cancelSubscription(_subscriptionId: string): Promise<boolean> {
-    if (!this.isConfigured) return false;
-    // TODO: Implement Stripe subscription cancellation
     return false;
   }
 
   async reactivateSubscription(_subscriptionId: string): Promise<boolean> {
-    if (!this.isConfigured) return false;
-    // TODO: Implement Stripe subscription reactivation
     return false;
   }
 
   async changePlan(_subscriptionId: string, _newPlanId: string): Promise<PlanChangeResult> {
-    if (!this.isConfigured) {
-      return { success: false, effectiveDate: "", error: "Stripe not configured" };
-    }
-    // TODO: Implement Stripe plan change with proration
-    return { success: false, effectiveDate: "", error: "Stripe plan change not yet implemented" };
+    return { success: false, effectiveDate: "", error: "Stripe not configured" };
   }
 
   async purchaseCreditPack(_input: CreditPackInput): Promise<CheckoutResult> {
-    if (!this.isConfigured) {
-      return { success: false, error: "Stripe not configured" };
-    }
-    // TODO: Implement Stripe credit pack checkout
-    return { success: false, error: "Stripe credit pack purchase not yet implemented" };
+    return { success: false, error: "Stripe not configured" };
   }
 
   verifyWebhookSignature(_payload: string, _signature: string): boolean {
-    if (!this.isConfigured) return false;
-    // TODO: Implement Stripe webhook signature verification
     return false;
   }
 
   async handleWebhook(_event: WebhookEvent): Promise<WebhookResult> {
-    if (!this.isConfigured) {
-      return { handled: false, error: "Stripe not configured" };
-    }
-    // TODO: Handle Stripe webhook events (invoice.paid, customer.subscription.updated, etc.)
-    return { handled: false, error: "Stripe webhook handling not yet implemented" };
+    return { handled: false, error: "Stripe not configured" };
   }
 }
 
 // =============================================
-// Factory — Returns the appropriate provider
+// Factory
 // =============================================
 
 let _provider: BillingProvider | null = null;
 
 export function getBillingProvider(): BillingProvider {
   if (_provider) return _provider;
-
   if (process.env.STRIPE_SECRET_KEY) {
     _provider = new StripeBillingProvider();
   } else {
     _provider = new LocalBillingProvider();
   }
-
   return _provider;
 }
 
@@ -368,27 +283,22 @@ export function getBillingProvider(): BillingProvider {
 // Grace Period Handler
 // =============================================
 
-/**
- * Check if a subscription is in grace period and handle transitions.
- * Called on every billing check to ensure state consistency.
- */
 export async function handleGracePeriod(userId: string): Promise<{
   inGracePeriod: boolean;
   gracePeriodEnd: string | null;
   daysRemaining: number;
   action: "none" | "downgrade" | "suspend";
 }> {
-  const supabase = getSupabase();
+  const subs = await query<any>(
+    `SELECT * FROM user_subscriptions WHERE user_id = $1 LIMIT 1`,
+    [userId]
+  );
 
-  const { data: sub } = await supabase
-    .from("user_subscriptions")
-    .select("*")
-    .eq("user_id", userId)
-    .single();
-
-  if (!sub) {
+  if (!subs.length) {
     return { inGracePeriod: false, gracePeriodEnd: null, daysRemaining: 0, action: "none" };
   }
+
+  const sub = subs[0];
 
   // Check for scheduled downgrade
   if (sub.status === "downgrading" && sub.downgrade_at) {
@@ -396,37 +306,27 @@ export async function handleGracePeriod(userId: string): Promise<{
     const now = new Date();
 
     if (now >= downgradeDate && sub.pending_plan_id) {
-      // Execute the downgrade
-      await supabase
-        .from("user_subscriptions")
-        .update({
-          plan_id: sub.pending_plan_id,
-          pending_plan_id: null,
-          downgrade_at: null,
-          status: "active",
-          plan_changed_at: new Date().toISOString(),
-        })
-        .eq("id", sub.id);
+      await query(
+        `UPDATE user_subscriptions SET plan_id = $1, pending_plan_id = NULL, downgrade_at = NULL, status = 'active', plan_changed_at = NOW() WHERE id = $2`,
+        [sub.pending_plan_id, sub.id]
+      );
 
-      // Get new plan credits
-      const { data: newPlan } = await supabase
-        .from("billing_plans")
-        .select("included_credits")
-        .eq("id", sub.pending_plan_id)
-        .single();
+      const newPlans = await query<{ included_credits: number }>(
+        `SELECT included_credits FROM billing_plans WHERE id = $1`,
+        [sub.pending_plan_id]
+      );
 
-      if (newPlan) {
-        await supabase
-          .from("user_subscriptions")
-          .update({ credits_remaining: newPlan.included_credits })
-          .eq("id", sub.id);
+      if (newPlans.length) {
+        await query(
+          `UPDATE user_subscriptions SET credits_remaining = $1 WHERE id = $2`,
+          [newPlans[0].included_credits, sub.id]
+        );
       }
 
-      await supabase.from("billing_events").insert({
-        user_id: userId,
-        event_type: "plan_downgrade_executed",
-        event_data: { toPlanId: sub.pending_plan_id },
-      });
+      await query(
+        `INSERT INTO billing_events (user_id, event_type, event_data) VALUES ($1, 'plan_downgrade_executed', $2::jsonb)`,
+        [userId, JSON.stringify({ toPlanId: sub.pending_plan_id })]
+      );
 
       return { inGracePeriod: false, gracePeriodEnd: null, daysRemaining: 0, action: "downgrade" };
     }
@@ -437,36 +337,26 @@ export async function handleGracePeriod(userId: string): Promise<{
 
   // Check for grace period after payment failure
   if (sub.status === "past_due" || sub.status === "grace_period") {
-    const graceEnd = sub.grace_period_end ? new Date(sub.grace_period_end) : null;
-
-    if (graceEnd) {
+    if (sub.grace_period_end) {
+      const graceEnd = new Date(sub.grace_period_end);
       const now = new Date();
       const daysRemaining = Math.max(0, Math.ceil((graceEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
       if (now >= graceEnd) {
-        // Grace period expired — downgrade to free
-        const { data: freePlan } = await supabase
-          .from("billing_plans")
-          .select("id")
-          .eq("slug", "free")
-          .single();
+        const freePlans = await query<{ id: string }>(
+          `SELECT id FROM billing_plans WHERE slug = 'free'`
+        );
 
-        if (freePlan) {
-          await supabase
-            .from("user_subscriptions")
-            .update({
-              plan_id: freePlan.id,
-              status: "active",
-              grace_period_end: null,
-              credits_remaining: 50,
-            })
-            .eq("id", sub.id);
+        if (freePlans.length) {
+          await query(
+            `UPDATE user_subscriptions SET plan_id = $1, status = 'active', grace_period_end = NULL, credits_remaining = 50 WHERE id = $2`,
+            [freePlans[0].id, sub.id]
+          );
 
-          await supabase.from("billing_events").insert({
-            user_id: userId,
-            event_type: "grace_period_expired_downgrade",
-            event_data: { fromPlanId: sub.plan_id },
-          });
+          await query(
+            `INSERT INTO billing_events (user_id, event_type, event_data) VALUES ($1, 'grace_period_expired_downgrade', $2::jsonb)`,
+            [userId, JSON.stringify({ fromPlanId: sub.plan_id })]
+          );
         }
 
         return { inGracePeriod: false, gracePeriodEnd: null, daysRemaining: 0, action: "suspend" };
@@ -492,25 +382,24 @@ export type SubscriptionState =
   | "trialing"
   | "pending_change";
 
-/**
- * Get the current effective subscription state for a user,
- * accounting for grace periods, scheduled downgrades, etc.
- */
 export async function getEffectiveSubscriptionState(userId: string): Promise<{
   state: SubscriptionState;
   planSlug: string;
   creditsRemaining: number;
   canUseFeature: (feature: string) => boolean;
 }> {
-  const supabase = getSupabase();
+  const rows = await query<any>(
+    `SELECT us.*, bp.slug AS plan_slug, bp.name AS plan_name,
+            bp.included_credits, bp.investor_db_limit, bp.deep_research_limit,
+            bp.pitch_deck_limit, bp.campaign_limit, bp.email_accounts_limit, bp.team_seats
+     FROM user_subscriptions us
+     JOIN billing_plans bp ON us.plan_id = bp.id
+     WHERE us.user_id = $1
+     LIMIT 1`,
+    [userId]
+  );
 
-  const { data: sub } = await supabase
-    .from("v_user_billing")
-    .select("*")
-    .eq("user_id", userId)
-    .single();
-
-  if (!sub) {
+  if (!rows.length) {
     return {
       state: "active",
       planSlug: "free",
@@ -519,16 +408,16 @@ export async function getEffectiveSubscriptionState(userId: string): Promise<{
     };
   }
 
+  const sub = rows[0];
+
   const graceInfo = await handleGracePeriod(userId);
 
-  let effectiveState: SubscriptionState = sub.subscription_status;
+  let effectiveState: SubscriptionState = sub.status;
   if (graceInfo.inGracePeriod) effectiveState = "grace_period";
 
-  // Feature access based on state
   const canUseFeature = (feature: string): boolean => {
     if (effectiveState === "cancelled") return false;
     if (effectiveState === "grace_period") {
-      // Grace period allows read-only access
       return ["view_investors", "view_profile", "view_dashboard"].includes(feature);
     }
     return true;

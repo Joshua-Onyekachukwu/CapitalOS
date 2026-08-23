@@ -4,7 +4,7 @@
 // Manages multi-step drip campaigns for investor outreach.
 // Handles creation, enrollment, scheduling, and execution.
 
-import { createClient } from "@supabase/supabase-js";
+import { query } from "@/lib/db";
 
 // =============================================
 // Types
@@ -66,17 +66,6 @@ export interface SequenceStats {
 }
 
 // =============================================
-// Supabase Client
-// =============================================
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
-// =============================================
 // Create Sequence
 // =============================================
 
@@ -93,51 +82,50 @@ export async function createSequence(
     stop_on_reply?: boolean;
   }
 ): Promise<Sequence | null> {
-  const supabase = getSupabase();
-
   // Create the sequence
-  const { data: sequence, error: seqError } = await supabase
-    .from("campaign_sequences")
-    .insert({
-      campaign_id: campaignId,
-      user_id: userId,
-      name: data.name,
-      description: data.description,
-      status: "draft",
-      total_steps: data.steps.length,
-      send_window_start: data.send_window_start || "09:00",
-      send_window_end: data.send_window_end || "17:00",
-      send_days: data.send_days || [1, 2, 3, 4, 5],
-      stop_on_reply: data.stop_on_reply ?? true,
-    })
-    .select()
-    .single();
+  const rows = await query<any>(
+    `INSERT INTO campaign_sequences (campaign_id, user_id, name, description, status, total_steps, send_window_start, send_window_end, send_days, stop_on_reply)
+     VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9)
+     RETURNING *`,
+    [
+      campaignId,
+      userId,
+      data.name,
+      data.description,
+      data.steps.length,
+      data.send_window_start || "09:00",
+      data.send_window_end || "17:00",
+      data.send_days || [1, 2, 3, 4, 5],
+      data.stop_on_reply ?? true,
+    ]
+  );
 
-  if (seqError || !sequence) {
-    console.error("Failed to create sequence:", seqError);
+  if (!rows.length) {
+    console.error("Failed to create sequence");
     return null;
   }
 
+  const sequence = rows[0];
+
   // Create the steps
   if (data.steps.length > 0) {
-    const steps = data.steps.map((step, i) => ({
-      sequence_id: sequence.id,
-      step_number: step.step_number || i + 1,
-      step_type: step.step_type,
-      subject_template: step.subject_template,
-      body_template: step.body_template,
-      delay_days: step.delay_days,
-      delay_hours: step.delay_hours,
-      tone: step.tone || "professional",
-      is_active: step.is_active,
-    }));
-
-    const { error: stepsError } = await supabase
-      .from("campaign_sequence_steps")
-      .insert(steps);
-
-    if (stepsError) {
-      console.error("Failed to create steps:", stepsError);
+    for (const step of data.steps) {
+      const stepNumber = step.step_number || data.steps.indexOf(step) + 1;
+      await query(
+        `INSERT INTO campaign_sequence_steps (sequence_id, step_number, step_type, subject_template, body_template, delay_days, delay_hours, tone, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          sequence.id,
+          stepNumber,
+          step.step_type,
+          step.subject_template,
+          step.body_template,
+          step.delay_days,
+          step.delay_hours,
+          step.tone || "professional",
+          step.is_active,
+        ]
+      );
     }
   }
 
@@ -152,12 +140,24 @@ export async function updateSequence(
   sequenceId: string,
   updates: Partial<Sequence>
 ): Promise<boolean> {
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from("campaign_sequences")
-    .update(updates)
-    .eq("id", sequenceId);
-  return !error;
+  const setClauses: string[] = [];
+  const params: any[] = [];
+  let paramIdx = 1;
+
+  for (const [key, value] of Object.entries(updates)) {
+    if (key === "steps" || key === "id") continue;
+    setClauses.push(`${key} = $${paramIdx++}`);
+    params.push(value);
+  }
+
+  if (setClauses.length === 0) return true;
+
+  params.push(sequenceId);
+  await query(
+    `UPDATE campaign_sequences SET ${setClauses.join(", ")} WHERE id = $${paramIdx}`,
+    params
+  );
+  return true;
 }
 
 // =============================================
@@ -165,12 +165,8 @@ export async function updateSequence(
 // =============================================
 
 export async function deleteSequence(sequenceId: string): Promise<boolean> {
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from("campaign_sequences")
-    .delete()
-    .eq("id", sequenceId);
-  return !error;
+  await query(`DELETE FROM campaign_sequences WHERE id = $1`, [sequenceId]);
+  return true;
 }
 
 // =============================================
@@ -178,23 +174,19 @@ export async function deleteSequence(sequenceId: string): Promise<boolean> {
 // =============================================
 
 export async function getSequence(sequenceId: string): Promise<Sequence | null> {
-  const supabase = getSupabase();
+  const sequences = await query<any>(
+    `SELECT * FROM campaign_sequences WHERE id = $1`,
+    [sequenceId]
+  );
 
-  const { data: sequence, error } = await supabase
-    .from("campaign_sequences")
-    .select("*")
-    .eq("id", sequenceId)
-    .single();
+  if (!sequences.length) return null;
 
-  if (error || !sequence) return null;
+  const steps = await query<SequenceStep>(
+    `SELECT * FROM campaign_sequence_steps WHERE sequence_id = $1 ORDER BY step_number ASC`,
+    [sequenceId]
+  );
 
-  const { data: steps } = await supabase
-    .from("campaign_sequence_steps")
-    .select("*")
-    .eq("sequence_id", sequenceId)
-    .order("step_number", { ascending: true });
-
-  return { ...sequence, steps: steps || [] };
+  return { ...sequences[0], steps };
 }
 
 // =============================================
@@ -204,25 +196,19 @@ export async function getSequence(sequenceId: string): Promise<Sequence | null> 
 export async function getCampaignSequences(
   campaignId: string
 ): Promise<Sequence[]> {
-  const supabase = getSupabase();
-
-  const { data: sequences } = await supabase
-    .from("campaign_sequences")
-    .select("*")
-    .eq("campaign_id", campaignId)
-    .order("created_at", { ascending: true });
-
-  if (!sequences) return [];
+  const sequences = await query<any>(
+    `SELECT * FROM campaign_sequences WHERE campaign_id = $1 ORDER BY created_at ASC`,
+    [campaignId]
+  );
 
   // Fetch steps for each sequence
   const sequencesWithSteps = await Promise.all(
     sequences.map(async (seq) => {
-      const { data: steps } = await supabase
-        .from("campaign_sequence_steps")
-        .select("*")
-        .eq("sequence_id", seq.id)
-        .order("step_number", { ascending: true });
-      return { ...seq, steps: steps || [] };
+      const steps = await query<SequenceStep>(
+        `SELECT * FROM campaign_sequence_steps WHERE sequence_id = $1 ORDER BY step_number ASC`,
+        [seq.id]
+      );
+      return { ...seq, steps };
     })
   );
 
@@ -239,7 +225,6 @@ export async function enrollInvestors(
   campaignId: string,
   userId: string
 ): Promise<{ enrolled: number; errors: number }> {
-  const supabase = getSupabase();
   let enrolled = 0;
   let errors = 0;
 
@@ -258,36 +243,30 @@ export async function enrollInvestors(
     sequence.send_days
   );
 
-  // Batch enroll
-  const enrollments = investorIds.map((investorId) => ({
-    sequence_id: sequenceId,
-    investor_id: investorId,
-    campaign_id: campaignId,
-    user_id: userId,
-    current_step: 0,
-    status: "scheduled" as const,
-    next_send_at: nextSendAt,
-  }));
+  // Batch enroll in groups of 100
+  for (let i = 0; i < investorIds.length; i += 100) {
+    const batch = investorIds.slice(i, i + 100);
 
-  // Insert in batches of 100
-  for (let i = 0; i < enrollments.length; i += 100) {
-    const batch = enrollments.slice(i, i + 100);
-    const { error } = await supabase
-      .from("campaign_sequence_enrollments")
-      .upsert(batch, { onConflict: "sequence_id,investor_id" });
-
-    if (error) {
-      errors += batch.length;
-    } else {
-      enrolled += batch.length;
+    for (const investorId of batch) {
+      try {
+        await query(
+          `INSERT INTO campaign_sequence_enrollments (sequence_id, investor_id, campaign_id, user_id, current_step, status, next_send_at)
+           VALUES ($1, $2, $3, $4, 0, 'scheduled', $5)
+           ON CONFLICT (sequence_id, investor_id) DO UPDATE SET status = 'scheduled', next_send_at = $5`,
+          [sequenceId, investorId, campaignId, userId, nextSendAt]
+        );
+        enrolled++;
+      } catch {
+        errors++;
+      }
     }
   }
 
   // Update sequence enrollment count
-  await supabase
-    .from("campaign_sequences")
-    .update({ total_enrolled: enrolled })
-    .eq("id", sequenceId);
+  await query(
+    `UPDATE campaign_sequences SET total_enrolled = $1 WHERE id = $2`,
+    [enrolled, sequenceId]
+  );
 
   return { enrolled, errors };
 }
@@ -299,78 +278,67 @@ export async function enrollInvestors(
 export async function getPendingSends(limit = 50): Promise<
   Array<Enrollment & { investor_email: string; investor_name: string; step: SequenceStep }>
 > {
-  const supabase = getSupabase();
+  const enrollments = await query<any>(
+    `SELECT e.*, i.email AS investor_email, i.full_name AS investor_name, i.first_name, i.last_name,
+            cs.stop_on_reply
+     FROM campaign_sequence_enrollments e
+     INNER JOIN investors i ON e.investor_id = i.id
+     INNER JOIN campaign_sequences cs ON e.sequence_id = cs.id
+     WHERE e.status = 'scheduled' AND e.next_send_at <= NOW()
+     LIMIT $1`,
+    [limit]
+  );
 
-  const { data: enrollments } = await supabase
-    .from("campaign_sequence_enrollments")
-    .select(`
-      *,
-      investors!inner(id, email, full_name, first_name, last_name),
-      campaign_sequences!inner(id, stop_on_reply)
-    `)
-    .eq("status", "scheduled")
-    .lte("next_send_at", new Date().toISOString())
-    .limit(limit);
+  if (!enrollments.length) return [];
 
-  if (!enrollments || enrollments.length === 0) return [];
-
-  const results = [];
+  const results: Array<Enrollment & { investor_email: string; investor_name: string; step: SequenceStep }> = [];
 
   for (const enrollment of enrollments) {
-    const inv = enrollment.investors as any;
-    const seq = enrollment.campaign_sequences as any;
-
     // Skip if investor has no email
-    if (!inv?.email) {
-      await supabase
-        .from("campaign_sequence_enrollments")
-        .update({ status: "skipped", stopped_reason: "no_email" })
-        .eq("id", enrollment.id);
+    if (!enrollment.investor_email) {
+      await query(
+        `UPDATE campaign_sequence_enrollments SET status = 'skipped', stopped_reason = 'no_email' WHERE id = $1`,
+        [enrollment.id]
+      );
       continue;
     }
 
     // Check if investor replied (stop on reply)
-    if (seq?.stop_on_reply) {
-      const { data: replies } = await supabase
-        .from("campaign_sequence_emails")
-        .select("id")
-        .eq("investor_id", enrollment.investor_id)
-        .eq("status", "replied")
-        .limit(1);
+    if (enrollment.stop_on_reply) {
+      const replies = await query<any>(
+        `SELECT id FROM campaign_sequence_emails WHERE investor_id = $1 AND status = 'replied' LIMIT 1`,
+        [enrollment.investor_id]
+      );
 
-      if (replies && replies.length > 0) {
-        await supabase
-          .from("campaign_sequence_enrollments")
-          .update({ status: "stopped", stopped_reason: "replied" })
-          .eq("id", enrollment.id);
+      if (replies.length > 0) {
+        await query(
+          `UPDATE campaign_sequence_enrollments SET status = 'stopped', stopped_reason = 'replied' WHERE id = $1`,
+          [enrollment.id]
+        );
         continue;
       }
     }
 
     // Get the current step
     const nextStepNumber = enrollment.current_step + 1;
-    const { data: step } = await supabase
-      .from("campaign_sequence_steps")
-      .select("*")
-      .eq("sequence_id", enrollment.sequence_id)
-      .eq("step_number", nextStepNumber)
-      .eq("is_active", true)
-      .single();
+    const steps = await query<SequenceStep>(
+      `SELECT * FROM campaign_sequence_steps WHERE sequence_id = $1 AND step_number = $2 AND is_active = true`,
+      [enrollment.sequence_id, nextStepNumber]
+    );
 
-    if (!step) {
+    if (!steps.length) {
       // No more steps — sequence complete
-      await supabase
-        .from("campaign_sequence_enrollments")
-        .update({ status: "completed", completed_at: new Date().toISOString() })
-        .eq("id", enrollment.id);
+      await query(
+        `UPDATE campaign_sequence_enrollments SET status = 'completed', completed_at = NOW() WHERE id = $1`,
+        [enrollment.id]
+      );
       continue;
     }
 
     results.push({
       ...enrollment,
-      investor_email: inv.email,
-      investor_name: inv.full_name || `${inv.first_name} ${inv.last_name}`,
-      step,
+      investor_name: enrollment.full_name || `${enrollment.first_name || ""} ${enrollment.last_name || ""}`.trim(),
+      step: steps[0],
     });
   }
 
@@ -390,22 +358,20 @@ export async function executeSend(
   subject: string,
   bodyHtml: string
 ): Promise<boolean> {
-  const supabase = getSupabase();
+  // Get the user's email account from CockroachDB
+  const accounts = await query<any>(
+    `SELECT * FROM email_accounts WHERE user_id = $1 AND is_active = true LIMIT 1`,
+    [userId]
+  );
 
-  // Get the user's email account
-  const { data: account } = await supabase
-    .from("email_accounts")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("is_active", true)
-    .single();
-
-  if (!account) {
+  if (!accounts.length) {
     console.error("No email account connected");
     return false;
   }
 
-  // Import and use the email sender (tracking is auto-injected)
+  const account = accounts[0];
+
+  // Import and use the email sender
   const { sendEmail } = await import("@/lib/services/email/sender");
 
   const result = await sendEmail({
@@ -422,28 +388,31 @@ export async function executeSend(
   }
 
   // Get investor_id from enrollment
-  const { data: enrollment } = await supabase
-    .from("campaign_sequence_enrollments")
-    .select("investor_id, sequence_id, current_step")
-    .eq("id", enrollmentId)
-    .single();
+  const enrollments = await query<any>(
+    `SELECT investor_id, sequence_id, current_step FROM campaign_sequence_enrollments WHERE id = $1`,
+    [enrollmentId]
+  );
 
-  if (!enrollment) return false;
+  if (!enrollments.length) return false;
+
+  const enrollment = enrollments[0];
 
   // Log the sent email
-  await supabase.from("campaign_sequence_emails").insert({
-    enrollment_id: enrollmentId,
-    step_id: step.id,
-    investor_id: enrollment.investor_id,
-    user_id: userId,
-    subject,
-    body_html: bodyHtml,
-    from_address: account.email_address,
-    to_address: investorEmail,
-    message_id: result.messageId,
-    status: "sent",
-    ai_generated: true,
-  });
+  await query(
+    `INSERT INTO campaign_sequence_emails (enrollment_id, step_id, investor_id, user_id, subject, body_html, from_address, to_address, message_id, status, ai_generated)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'sent', true)`,
+    [
+      enrollmentId,
+      step.id,
+      enrollment.investor_id,
+      userId,
+      subject,
+      bodyHtml,
+      account.email_address,
+      investorEmail,
+      result.messageId,
+    ]
+  );
 
   // Calculate next step
   const sequence = await getSequence(enrollment.sequence_id);
@@ -452,33 +421,24 @@ export async function executeSend(
 
   if (nextStepNumber >= totalSteps) {
     // Sequence complete
-    await supabase
-      .from("campaign_sequence_enrollments")
-      .update({
-        current_step: nextStepNumber,
-        status: "completed",
-        last_sent_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", enrollmentId);
+    await query(
+      `UPDATE campaign_sequence_enrollments SET current_step = $1, status = 'completed', last_sent_at = NOW(), completed_at = NOW() WHERE id = $2`,
+      [nextStepNumber, enrollmentId]
+    );
 
     // Update sequence completed count
-    try {
-      await supabase.rpc("increment_counter", {
-        table_name: "campaign_sequences",
-        column_name: "total_completed",
-        row_id: enrollment.sequence_id,
-      });
-    } catch {
-      // Fallback: direct update
-      await supabase
-        .from("campaign_sequences")
-        .update({ total_completed: (sequence?.total_completed || 0) + 1 })
-        .eq("id", enrollment.sequence_id);
-    }
+    await query(
+      `UPDATE campaign_sequences SET total_completed = $1 WHERE id = $2`,
+      [(sequence?.total_completed || 0) + 1, enrollment.sequence_id]
+    );
   } else {
     // Schedule next step
-    const nextStep = sequence?.steps?.find((s) => s.step_number === nextStepNumber + 1);
+    const nextSteps = await query<SequenceStep>(
+      `SELECT * FROM campaign_sequence_steps WHERE sequence_id = $1 AND step_number = $2`,
+      [enrollment.sequence_id, nextStepNumber + 1]
+    );
+    const nextStep = nextSteps[0];
+
     const nextSendAt = calculateNextSendTime(
       nextStep?.delay_days || 3,
       nextStep?.delay_hours || 0,
@@ -487,31 +447,26 @@ export async function executeSend(
       sequence?.send_days
     );
 
-    await supabase
-      .from("campaign_sequence_enrollments")
-      .update({
-        current_step: nextStepNumber,
-        status: "scheduled",
-        last_sent_at: new Date().toISOString(),
-        next_send_at: nextSendAt,
-      })
-      .eq("id", enrollmentId);
+    await query(
+      `UPDATE campaign_sequence_enrollments SET current_step = $1, status = 'scheduled', last_sent_at = NOW(), next_send_at = $2 WHERE id = $3`,
+      [nextStepNumber, nextSendAt, enrollmentId]
+    );
   }
 
   // Also log in email_messages for the outreach tracking system
-  await supabase.from("email_messages").insert({
-    user_id: userId,
-    investor_id: enrollment.investor_id,
-    direction: "outbound",
-    subject,
-    body_html: bodyHtml,
-    from_address: account.email_address,
-    to_address: investorEmail,
-    status: "sent",
-    sent_at: new Date().toISOString(),
-    message_id: result.messageId,
-    ai_generated: true,
-  });
+  await query(
+    `INSERT INTO email_messages (user_id, investor_id, direction, subject, body_html, from_address, to_address, status, sent_at, message_id, ai_generated)
+     VALUES ($1, $2, 'outbound', $3, $4, $5, $6, 'sent', NOW(), $7, true)`,
+    [
+      userId,
+      enrollment.investor_id,
+      subject,
+      bodyHtml,
+      account.email_address,
+      investorEmail,
+      result.messageId,
+    ]
+  );
 
   return true;
 }
@@ -523,40 +478,32 @@ export async function executeSend(
 export async function getSequenceStats(
   sequenceId: string
 ): Promise<SequenceStats> {
-  const supabase = getSupabase();
-
-  const { data: enrollments } = await supabase
-    .from("campaign_sequence_enrollments")
-    .select("id, status, stopped_reason")
-    .eq("sequence_id", sequenceId);
-
-  const { count: emailsSent } = await supabase
-    .from("campaign_sequence_emails")
-    .select("id", { count: "exact", head: true })
-    .eq("enrollment_id", "") // Will be replaced
-    .eq("investor_id", ""); // Placeholder
+  const enrollments = await query<any>(
+    `SELECT id, status, stopped_reason FROM campaign_sequence_enrollments WHERE sequence_id = $1`,
+    [sequenceId]
+  );
 
   // Count emails for this sequence's enrollments
-  const enrollmentIds = (enrollments || []).map((e) => e.id);
+  const enrollmentIds = enrollments.map((e) => e.id);
   let totalEmails = 0;
+
   if (enrollmentIds.length > 0) {
-    const { count } = await supabase
-      .from("campaign_sequence_emails")
-      .select("id", { count: "exact", head: true })
-      .in("enrollment_id", enrollmentIds);
-    totalEmails = count || 0;
+    const placeholders = enrollmentIds.map((_, i) => `$${i + 1}`).join(", ");
+    const emailCount = await query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM campaign_sequence_emails WHERE enrollment_id IN (${placeholders})`,
+      enrollmentIds
+    );
+    totalEmails = parseInt(emailCount[0]?.count || "0");
   }
 
-  const stats: SequenceStats = {
-    totalEnrolled: enrollments?.length || 0,
-    activeNow: enrollments?.filter((e) => e.status === "scheduled").length || 0,
-    completed: enrollments?.filter((e) => e.status === "completed").length || 0,
-    replied: enrollments?.filter((e) => e.status === "stopped" && (e as any).stopped_reason === "replied").length || 0,
-    bounced: enrollments?.filter((e) => e.status === "stopped" && (e as any).stopped_reason === "bounced").length || 0,
+  return {
+    totalEnrolled: enrollments.length,
+    activeNow: enrollments.filter((e) => e.status === "scheduled").length,
+    completed: enrollments.filter((e) => e.status === "completed").length,
+    replied: enrollments.filter((e) => e.status === "stopped" && e.stopped_reason === "replied").length,
+    bounced: enrollments.filter((e) => e.status === "stopped" && e.stopped_reason === "bounced").length,
     emailsSent: totalEmails,
   };
-
-  return stats;
 }
 
 // =============================================
@@ -577,7 +524,6 @@ function calculateNextSendTime(
   if (windowStart && sendDays && sendDays.length > 0) {
     const [startHour, startMin] = windowStart.split(":").map(Number);
 
-    // Find next valid day
     for (let i = 0; i < 14; i++) {
       const checkDate = new Date(nextTime.getTime() + i * 86400000);
       const dayOfWeek = checkDate.getDay(); // 0=Sun, 1=Mon...

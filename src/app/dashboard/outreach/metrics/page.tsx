@@ -47,84 +47,21 @@ export default function CampaignMetricsPage() {
 
   const loadStats = useCallback(async () => {
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Fetch all email messages
-      const { data: emails } = await supabase
-        .from("email_messages")
-        .select("id, investor_id, subject, status, direction, sent_at, created_at, ai_generated")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      const allEmails = (emails || []) as EmailRecord[];
-      const outbound = allEmails.filter((e) => e.direction === "outbound");
-
-      // Compute stats
-      const sent = outbound.filter((e) => e.status === "sent" || e.status === "delivered").length;
-      const drafted = outbound.filter((e) => e.status === "draft").length;
-      const replied = allEmails.filter((e) => e.direction === "inbound").length;
-      const bounced = outbound.filter((e) => e.status === "bounced").length;
-      const opened = outbound.filter((e) => e.status === "opened").length;
-
-      // Emails by day (last 14 days)
-      const now = new Date();
-      const emailsByDay: Array<{ date: string; sent: number; replied: number }> = [];
-      for (let i = 13; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().split("T")[0];
-        const dayLabel = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-        emailsByDay.push({
-          date: dayLabel,
-          sent: outbound.filter((e) => e.sent_at?.startsWith(dateStr) || e.created_at.startsWith(dateStr)).length,
-          replied: allEmails.filter((e) => e.direction === "inbound" && e.created_at.startsWith(dateStr)).length,
-        });
-      }
-
-      // Status breakdown
-      const statusBreakdown = [
-        { name: "Sent", value: sent, color: "#3b82f6" },
-        { name: "Drafted", value: drafted, color: "#f59e0b" },
-        { name: "Replied", value: replied, color: "#84cc16" },
-        { name: "Bounced", value: bounced, color: "#ef4444" },
-      ].filter((s) => s.value > 0);
-
-      // Fetch unique investor names for top investors
-      const investorIds = [...new Set(outbound.map((e) => e.investor_id).filter(Boolean))];
-      let topInvestors: CampaignStats["topInvestors"] = [];
-      if (investorIds.length > 0) {
-        const { data: invs } = await supabase
-          .from("investors")
-          .select("id, first_name, last_name, fit_score")
-          .in("id", investorIds.slice(0, 20));
-        const invMap = new Map((invs || []).map((i: any) => [i.id, i]));
-        topInvestors = outbound.slice(0, 10).map((e) => {
-          const inv = invMap.get(e.investor_id);
-          return {
-            name: inv ? `${inv.first_name} ${inv.last_name}` : "Unknown",
-            firm: "",
-            status: e.status,
-            fitScore: inv?.fit_score || 0,
-          };
-        });
-      }
-
+      const res = await fetch("/api/dashboard/outreach/metrics");
+      const data = await res.json();
       setStats({
-        totalEmails: allEmails.length,
-        sent,
-        drafted,
-        replied,
-        bounced,
-        opened,
-        responseRate: sent > 0 ? Math.round((replied / sent) * 100) : 0,
+        totalEmails: data.totalEmails || 0,
+        sent: data.sent || 0,
+        drafted: data.drafted || 0,
+        replied: data.replied || 0,
+        bounced: data.bounced || 0,
+        opened: data.opened || 0,
+        responseRate: data.responseRate || 0,
         avgSendTime: "—",
-        emailsByDay,
-        statusBreakdown,
+        emailsByDay: data.emailsByDay || [],
+        statusBreakdown: data.statusBreakdown || [],
         toneBreakdown: [],
-        topInvestors,
+        topInvestors: data.topInvestors || [],
       });
     } catch {
       // Stats may not be available

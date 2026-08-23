@@ -177,9 +177,8 @@ export default function NewDeckPage() {
     setError(null);
     const startTime = Date.now();
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-      const { data: { user } } = await supabase.auth.getUser();
+      const { getCurrentUser } = await import("@/lib/auth");
+      const user = await getCurrentUser();
       if (!user) { setError("Please sign in"); setGenerating(false); return; }
 
       const response = await fetch("/api/deck/generate", {

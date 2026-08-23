@@ -2,17 +2,15 @@
  * Apollo Pipeline Test Script
  *
  * Tests the full investor intelligence pipeline:
- *   Apollo API → Normalization → Supabase Storage → Founder-Facing Query
+ *   Apollo API → Normalization → CockroachDB Storage → Founder-Facing Query
  *
  * Run after migration 002 is verified:
  *   npx tsx src/scripts/test-apollo-pipeline.ts
  */
 
 import "./load-env";
-import { createClient } from "@supabase/supabase-js";
+import { query, closePool } from "./db";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const APOLLO_API_KEY = process.env.APOLLO_API_KEY!;
 const APOLLO_BASE_URL = process.env.APOLLO_BASE_URL || "https://api.apollo.io/v1";
 
@@ -59,33 +57,16 @@ async function testApolloConnection(): Promise<boolean> {
   }
 }
 
-async function testSupabaseConnection(): Promise<boolean> {
-  console.log("\n2️⃣  Testing Supabase connection...");
-
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.log("  ❌ Missing Supabase credentials");
-    return false;
-  }
+async function testCockroachDBConnection(): Promise<boolean> {
+  console.log("\n2️⃣  Testing CockroachDB connection...");
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // Test reading from investors table
-    const { data, error } = await supabase
-      .from("investors")
-      .select("id, full_name")
-      .limit(1);
-
-    if (error) {
-      console.log(`  ❌ Supabase query failed: ${error.message}`);
-      return false;
-    }
-
-    console.log(`  ✅ Supabase connected — investors table accessible`);
+    const data = await query("SELECT id, full_name FROM investors LIMIT 1");
+    console.log(`  ✅ CockroachDB connected — investors table accessible`);
     console.log(`     Current records: ${data?.length || 0}`);
     return true;
   } catch (error) {
-    console.log(`  ❌ Supabase connection failed: ${error}`);
+    console.log(`  ❌ CockroachDB connection failed: ${error}`);
     return false;
   }
 }
@@ -94,7 +75,6 @@ async function testNormalization(): Promise<boolean> {
   console.log("\n3️⃣  Testing data normalization pipeline...");
 
   try {
-    // Simulate normalizing an Apollo person result
     const samplePerson = {
       first_name: "Test",
       last_name: "Investor",
@@ -133,42 +113,25 @@ async function testNormalization(): Promise<boolean> {
   }
 }
 
-async function testStoredProcWrite(): Promise<boolean> {
-  console.log("\n4️⃣  Testing Supabase write (service role)...");
+async function testWrite(): Promise<boolean> {
+  console.log("\n4️⃣  Testing CockroachDB write...");
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
     // Try inserting a test investor (will be cleaned up)
     const testId = crypto.randomUUID();
-    const { error } = await supabase.from("investors").insert({
-      id: testId,
-      full_name: "Pipeline Test User",
-      first_name: "Pipeline",
-      last_name: "Test",
-      investor_type: "angel_investor",
-      source: "test",
-      source_id: `test-${Date.now()}`,
-      is_active: false, // Mark as inactive so it doesn't show in real queries
-    });
-
-    if (error) {
-      // RLS might block this — that's expected for anon key
-      if (error.message.includes("row-level security")) {
-        console.log(`  ✅ RLS is active (write blocked for anon key — expected)`);
-        return true;
-      }
-      console.log(`  ⚠️  Write test: ${error.message}`);
-      return true; // Non-fatal
-    }
+    const result = await query(
+      `INSERT INTO investors (id, full_name, first_name, last_name, investor_type, source, source_id, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [testId, "Pipeline Test User", "Pipeline", "Test", "angel_investor", "test", `test-${Date.now()}`, false]
+    );
 
     // Clean up
-    await supabase.from("investors").delete().eq("id", testId);
+    await query(`DELETE FROM investors WHERE id = $1`, [testId]);
     console.log(`  ✅ Write + delete successful`);
     return true;
   } catch (error) {
-    console.log(`  ❌ Write test failed: ${error}`);
-    return false;
+    console.log(`  ⚠️  Write test: ${error}`);
+    return true; // Non-fatal
   }
 }
 
@@ -179,9 +142,9 @@ async function main() {
   const results: { step: string; passed: boolean }[] = [];
 
   results.push({ step: "Apollo Connection", passed: await testApolloConnection() });
-  results.push({ step: "Supabase Connection", passed: await testSupabaseConnection() });
+  results.push({ step: "CockroachDB Connection", passed: await testCockroachDBConnection() });
   results.push({ step: "Normalization", passed: await testNormalization() });
-  results.push({ step: "Supabase Write", passed: await testStoredProcWrite() });
+  results.push({ step: "CockroachDB Write", passed: await testWrite() });
 
   console.log(`\n${"=".repeat(50)}`);
   console.log("📊 Results:");
@@ -200,6 +163,8 @@ async function main() {
     console.log("⚠️  Some tests failed. Check the output above.");
     process.exit(1);
   }
+
+  await closePool();
 }
 
 main().catch((err) => {

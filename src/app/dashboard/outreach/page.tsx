@@ -109,9 +109,8 @@ export default function OutreachPage() {
   useEffect(() => {
     async function checkEmailAccount() {
       try {
-        const { createClient } = await import("@/lib/supabase/client");
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const { getCurrentUser } = await import("@/lib/auth");
+        const user = await getCurrentUser();
         if (!user) return;
 
         const { getConnectedEmails } = await import("@/lib/actions/email");
@@ -272,9 +271,8 @@ export default function OutreachPage() {
     setSendResult(null);
 
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { getCurrentUser } = await import("@/lib/auth");
+      const user = await getCurrentUser();
 
       if (!user) {
         setSendResult({ type: "error", text: "Please sign in to send emails." });

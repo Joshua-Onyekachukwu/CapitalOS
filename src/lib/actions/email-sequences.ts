@@ -2,11 +2,11 @@
 // Campaign Email Sequence — AI Drafting
 // =============================================
 // Generates personalized email sequences for campaigns.
-// Each sequence is a series of follow-up emails tailored to each investor.
+// Uses CockroachDB for data.
 
 "use server";
 
-import { createClient } from "@supabase/supabase-js";
+import { query } from "@/lib/db";
 import { chatCompletion } from "@/lib/ai";
 
 interface EmailSequenceStep {
@@ -34,31 +34,27 @@ export async function generateEmailSequence(params: {
   startupStage: string;
   founderName: string;
 }): Promise<CampaignSequence | null> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  // Fetch investor data from CockroachDB
+  const investors = await query<any>(
+    `SELECT * FROM investors WHERE id = $1`,
+    [params.investorId]
   );
 
-  // Fetch investor + firm data
-  const { data: investor } = await supabase
-    .from("investors")
-    .select("*")
-    .eq("id", params.investorId)
-    .single();
+  if (!investors.length) return null;
+  const investor = investors[0];
 
-  if (!investor) return null;
+  // Fetch firm data
+  const firms = investor.current_firm_id
+    ? await query<any>(`SELECT * FROM investor_firms WHERE id = $1`, [investor.current_firm_id])
+    : [];
+  const firm = firms[0] || null;
 
-  const { data: firm } = await supabase
-    .from("investor_firms")
-    .select("*")
-    .eq("id", investor.current_firm_id)
-    .single();
-
-  const { data: profile } = await supabase
-    .from("investor_profiles")
-    .select("*")
-    .eq("investor_id", params.investorId)
-    .single();
+  // Fetch existing profile
+  const profiles = await query<any>(
+    `SELECT * FROM investor_profiles WHERE investor_id = $1`,
+    [params.investorId]
+  );
+  const profile = profiles[0] || null;
 
   const prompt = `You are an expert fundraising strategist for startup founders. Generate a 3-step email outreach sequence for the following investor.
 
@@ -72,9 +68,9 @@ INVESTOR:
 - Name: ${investor.first_name} ${investor.last_name}
 - Type: ${investor.investor_type}
 - Firm: ${firm?.name || "Independent"}
-- Investment Stages: ${(investor.preferred_stages || []).join(", ") || "Not specified"}
-- Sectors: ${(investor.preferred_sectors || []).join(", ") || "Not specified"}
-- Geography: ${(investor.preferred_geographies || []).join(", ") || "Not specified"}
+- Investment Stages: ${(investor.investment_stages || []).join(", ") || "Not specified"}
+- Sectors: ${(investor.investment_sectors || []).join(", ") || "Not specified"}
+- Geography: ${(investor.investment_geographies || []).join(", ") || "Not specified"}
 - Thesis: ${profile?.ai_summary || "Not available"}
 
 Generate 3 emails:
@@ -150,38 +146,34 @@ export async function generateCampaignSequences(params: {
   founderName: string;
   limit?: number;
 }): Promise<{ generated: number; total: number }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  // Get campaign data from CockroachDB
+  const campaigns = await query<any>(
+    `SELECT * FROM data_acquisition_jobs WHERE id = $1`,
+    [params.campaignId]
   );
 
-  // Get investors assigned to this campaign
-  const { data: campaign } = await supabase
-    .from("data_acquisition_jobs")
-    .select("*")
-    .eq("id", params.campaignId)
-    .single();
-
-  if (!campaign) return { generated: 0, total: 0 };
+  if (!campaigns.length) return { generated: 0, total: 0 };
+  const campaign = campaigns[0];
 
   // Find investors that match the campaign's filter criteria
-  let query = supabase
-    .from("investors")
-    .select("id")
-    .not("email_address", "is", null)
-    .eq("outreach_readiness", "ready");
+  let sql = `SELECT id FROM investors WHERE email IS NOT NULL AND outreach_readiness = 'ready'`;
+  const params_arr: any[] = [];
 
   if (campaign.filters?.sector) {
-    query = query.contains("preferred_sectors", [campaign.filters.sector]);
+    params_arr.push(campaign.filters.sector);
+    sql += ` AND $${params_arr.length} = ANY(investment_sectors)`;
   }
   if (campaign.filters?.stage) {
-    query = query.contains("preferred_stages", [campaign.filters.stage]);
+    params_arr.push(campaign.filters.stage);
+    sql += ` AND $${params_arr.length} = ANY(investment_stages)`;
   }
 
-  const limit = params.limit || 20;
-  const { data: investors } = await query.order("fit_score", { ascending: false }).limit(limit);
+  sql += ` ORDER BY fit_score DESC LIMIT $${params_arr.length + 1}`;
+  params_arr.push(params.limit || 20);
 
-  if (!investors || investors.length === 0) return { generated: 0, total: 0 };
+  const investors = await query<{ id: string }>(sql, params_arr);
+
+  if (!investors.length) return { generated: 0, total: 0 };
 
   let generated = 0;
 

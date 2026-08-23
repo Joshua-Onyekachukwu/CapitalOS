@@ -2,8 +2,9 @@
 // Billing Plans Service
 // =============================================
 // Manages plan definitions, lookups, and entitlement checks.
+// Uses CockroachDB for data.
 
-import { createClient } from "@supabase/supabase-js";
+import { query } from "@/lib/db";
 
 export interface BillingPlan {
   id: string;
@@ -41,29 +42,16 @@ export interface UserSubscription {
   currentPeriodEnd: string;
 }
 
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 // =============================================
 // Get All Active Plans
 // =============================================
 
 export async function getActivePlans(): Promise<BillingPlan[]> {
-  const supabase = getSupabase();
+  const rows = await query<any>(
+    `SELECT * FROM billing_plans WHERE is_active = true ORDER BY monthly_price ASC`
+  );
 
-  const { data, error } = await supabase
-    .from("billing_plans")
-    .select("*")
-    .eq("is_active", true)
-    .order("monthly_price", { ascending: true });
-
-  if (error || !data) return [];
-
-  return data.map((p) => ({
+  return rows.map((p) => ({
     id: p.id,
     name: p.name,
     slug: p.slug,
@@ -87,23 +75,29 @@ export async function getActivePlans(): Promise<BillingPlan[]> {
 export async function getUserSubscription(
   userId: string
 ): Promise<UserSubscription | null> {
-  const supabase = getSupabase();
+  // Use a JOIN query since we don't have the view in CockroachDB
+  const rows = await query<any>(
+    `SELECT us.*, bp.name AS plan_name, bp.slug AS plan_slug,
+            bp.monthly_price, bp.included_credits, bp.investor_db_limit,
+            bp.deep_research_limit, bp.pitch_deck_limit, bp.campaign_limit,
+            bp.email_accounts_limit, bp.team_seats
+     FROM user_subscriptions us
+     JOIN billing_plans bp ON us.plan_id = bp.id
+     WHERE us.user_id = $1
+     LIMIT 1`,
+    [userId]
+  );
 
-  const { data, error } = await supabase
-    .from("v_user_billing")
-    .select("*")
-    .eq("user_id", userId)
-    .single();
+  if (!rows.length) return null;
 
-  if (error || !data) return null;
-
+  const data = rows[0];
   return {
     id: data.plan_id,
     userId: data.user_id,
     planId: data.plan_id,
     planName: data.plan_name,
     planSlug: data.plan_slug,
-    status: data.subscription_status,
+    status: data.status,
     creditsRemaining: data.credits_remaining,
     creditsUsedThisPeriod: data.credits_used_this_period,
     includedCredits: data.included_credits,
@@ -125,15 +119,12 @@ export async function getUserSubscription(
 export async function getCreditCost(
   operation: string
 ): Promise<number | null> {
-  const supabase = getSupabase();
+  const rows = await query<{ credit_cost: number }>(
+    `SELECT credit_cost FROM credit_costs WHERE operation = $1`,
+    [operation]
+  );
 
-  const { data } = await supabase
-    .from("credit_costs")
-    .select("credit_cost")
-    .eq("operation", operation)
-    .single();
-
-  return data?.credit_cost ?? null;
+  return rows[0]?.credit_cost ?? null;
 }
 
 // =============================================
@@ -143,14 +134,11 @@ export async function getCreditCost(
 export async function getAllCreditCosts(): Promise<
   Array<{ operation: string; creditCost: number; description: string }>
 > {
-  const supabase = getSupabase();
+  const rows = await query<any>(
+    `SELECT operation, credit_cost, description FROM credit_costs ORDER BY credit_cost ASC`
+  );
 
-  const { data } = await supabase
-    .from("credit_costs")
-    .select("operation, credit_cost, description")
-    .order("credit_cost", { ascending: true });
-
-  return (data || []).map((c) => ({
+  return rows.map((c) => ({
     operation: c.operation,
     creditCost: c.credit_cost,
     description: c.description || "",

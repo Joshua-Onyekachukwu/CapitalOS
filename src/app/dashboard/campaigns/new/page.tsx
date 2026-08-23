@@ -138,9 +138,8 @@ export default function NewCampaignPage() {
         if (sequenceName && sequenceSteps.length > 0 && sequenceSteps.some(s => s.subject_template)) {
           try {
             const { createSequence } = await import("@/lib/services/campaigns/sequence");
-            const { createClient } = await import("@supabase/supabase-js");
-            const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-            const { data: { user } } = await supabase.auth.getUser();
+            const { getCurrentUser } = await import("@/lib/auth");
+            const user = await getCurrentUser();
             if (user) {
               await createSequence(campaign.id, user.id, {
                 name: sequenceName,

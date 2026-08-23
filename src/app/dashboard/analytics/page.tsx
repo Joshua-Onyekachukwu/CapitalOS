@@ -44,29 +44,18 @@ export default function AnalyticsPage() {
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-
-      const [
-        investorsResult,
-        emailResult,
-        duplicateResult,
-        campaignResult,
-      ] = await Promise.all([
-        supabase.from("investors").select("id, email, fit_score, is_verified, investment_sectors, country, investor_type, outreach_readiness, created_at"),
-        supabase.from("email_messages").select("id, direction, status, created_at"),
-        supabase.from("duplicate_candidates").select("id").eq("status", "pending"),
-        supabase.from("data_acquisition_jobs").select("id, status").eq("job_type", "campaign"),
-      ]);
+      const res = await fetch("/api/dashboard/analytics");
+      if (!res.ok) throw new Error("Failed to load analytics");
+      const json = await res.json();
 
       const investors: Array<{
         id: string; email: string | null; fit_score: number;
         is_verified: boolean; investment_sectors: string[];
         country: string | null; investor_type: string;
         outreach_readiness: string; created_at: string;
-      }> = investorsResult.data || [];
-      const emails: Array<{ id: string; direction: string; status: string; created_at: string }> = emailResult.data || [];
-      const campaigns: Array<{ id: string; status: string }> = campaignResult.data || [];
+      }> = json.investors || [];
+      const emails: Array<{ id: string; direction: string; status: string; created_at: string }> = json.emails || [];
+      const campaigns: Array<{ id: string; status: string }> = json.campaigns || [];
 
       const totalInvestors = investors.length;
       const investorsWithEmail = investors.filter((i) => i.email).length;
@@ -137,7 +126,7 @@ export default function AnalyticsPage() {
         .map(([stage, count]) => ({ stage, count }))
         .sort((a, b) => b.count - a.count);
 
-      // Weekly trend (last 8 weeks)
+      // Weekly trend
       const weeklyMap: Record<string, number> = {};
       for (let i = 7; i >= 0; i--) {
         const d = new Date();
@@ -163,7 +152,7 @@ export default function AnalyticsPage() {
         investorsWithEmail,
         highFitInvestors,
         verifiedInvestors,
-        pendingDuplicates: duplicateResult.data?.length || 0,
+        pendingDuplicates: json.pendingDuplicates || 0,
         emailsSent,
         emailsReplied,
         activeCampaigns,
@@ -213,7 +202,6 @@ export default function AnalyticsPage() {
 
   const replyRate = d.emailsSent > 0 ? Math.round((d.emailsReplied / d.emailsSent) * 100) : 0;
 
-  // Outreach funnel data
   const funnelData = [
     { stage: "Total Investors", count: d.totalInvestors, color: "#9ca3af" },
     { stage: "With Email", count: d.investorsWithEmail, color: "#3b82f6" },
@@ -229,7 +217,6 @@ export default function AnalyticsPage() {
     <div>
       <PageHeader title="Analytics" description="Track your fundraising performance and metrics." />
 
-      {/* Primary Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
         {[
           { label: "Total Investors", value: d.totalInvestors.toLocaleString(), icon: "ri-team-line", color: "bg-lime-100 dark:bg-lime-900/20 text-lime-600" },
@@ -253,7 +240,6 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      {/* Secondary Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
         {[
           { label: "Emails Sent", value: d.emailsSent, icon: "ri-send-plane-line", color: "text-blue-600" },
@@ -271,9 +257,7 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      {/* Charts Row 1: Investor Growth + Fit Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[20px] mb-[20px]">
-        {/* Weekly Investor Growth */}
         <Card>
           <CardBody>
             <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[16px]">
@@ -291,14 +275,7 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="week" tick={{ fontSize: 12, fill: "#9ca3af" }} />
                   <YAxis tick={{ fontSize: 12, fill: "#9ca3af" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                    }}
-                  />
+                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "13px" }} />
                   <Area type="monotone" dataKey="count" stroke="#84cc16" fill="url(#growthGradient)" strokeWidth={2} name="Investors" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -306,7 +283,6 @@ export default function AnalyticsPage() {
           </CardBody>
         </Card>
 
-        {/* Fit Score Distribution */}
         <Card>
           <CardBody>
             <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[16px]">
@@ -318,14 +294,7 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="range" tick={{ fontSize: 12, fill: "#9ca3af" }} />
                   <YAxis tick={{ fontSize: 12, fill: "#9ca3af" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                    }}
-                  />
+                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "13px" }} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Investors">
                     {d.fitDistribution.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
@@ -338,9 +307,7 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Charts Row 2: Sectors + Investor Types */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[20px] mb-[20px]">
-        {/* Top Sectors */}
         <Card>
           <CardBody>
             <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[16px]">
@@ -352,14 +319,7 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis type="number" tick={{ fontSize: 12, fill: "#9ca3af" }} />
                   <YAxis type="category" dataKey="sector" tick={{ fontSize: 12, fill: "#9ca3af" }} width={100} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                    }}
-                  />
+                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "13px" }} />
                   <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Investors">
                     {d.topSectors.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
@@ -371,7 +331,6 @@ export default function AnalyticsPage() {
           </CardBody>
         </Card>
 
-        {/* Investor Types Pie Chart */}
         <Card>
           <CardBody>
             <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[16px]">
@@ -380,32 +339,13 @@ export default function AnalyticsPage() {
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={d.investorTypes}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="count"
-                    nameKey="type"
-                  >
+                  <Pie data={d.investorTypes} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="count" nameKey="type">
                     {d.investorTypes.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                    }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: "12px" }}
-                    formatter={(value: string) => value.length > 15 ? `${value.slice(0, 15)}...` : value}
-                  />
+                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "13px" }} />
+                  <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(value: string) => value.length > 15 ? `${value.slice(0, 15)}...` : value} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -413,9 +353,7 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Charts Row 3: Outreach Funnel + Pipeline */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[20px] mb-[20px]">
-        {/* Outreach Funnel */}
         <Card>
           <CardBody>
             <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[16px]">
@@ -431,13 +369,7 @@ export default function AnalyticsPage() {
                     </span>
                   </div>
                   <div className="w-full h-[24px] bg-gray-100 dark:bg-gray-800 rounded-[6px] overflow-hidden">
-                    <div
-                      className="h-full rounded-[6px] transition-all duration-700 flex items-center justify-end pr-[8px]"
-                      style={{
-                        width: `${Math.max((item.count / maxFunnel) * 100, 2)}%`,
-                        backgroundColor: item.color,
-                      }}
-                    >
+                    <div className="h-full rounded-[6px] transition-all duration-700 flex items-center justify-end pr-[8px]" style={{ width: `${Math.max((item.count / maxFunnel) * 100, 2)}%`, backgroundColor: item.color }}>
                       {item.count > 0 && (
                         <span className="text-[11px] font-bold text-white">
                           {item.count > 1000 ? `${(item.count / 1000).toFixed(1)}k` : item.count}
@@ -451,7 +383,6 @@ export default function AnalyticsPage() {
           </CardBody>
         </Card>
 
-        {/* Pipeline Breakdown */}
         <Card>
           <CardBody>
             <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[16px]">
@@ -461,22 +392,9 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={d.readinessBreakdown}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="stage"
-                    tick={{ fontSize: 11, fill: "#9ca3af" }}
-                    tickFormatter={(val: string) => val.replace(/_/g, " ")}
-                  />
+                  <XAxis dataKey="stage" tick={{ fontSize: 11, fill: "#9ca3af" }} tickFormatter={(val: string) => val.replace(/_/g, " ")} />
                   <YAxis tick={{ fontSize: 12, fill: "#9ca3af" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                    }}
-                    formatter={(value) => [Number(value).toLocaleString(), "Investors"]}
-                    labelFormatter={(label) => String(label).replace(/_/g, " ")}
-                  />
+                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [Number(value).toLocaleString(), "Investors"]} labelFormatter={(label) => String(label).replace(/_/g, " ")} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Investors">
                     {d.readinessBreakdown.map((entry) => (
                       <Cell key={`cell-${entry.stage}`} fill={READINESS_COLORS[entry.stage] || "#9ca3af"} />
@@ -489,9 +407,7 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Charts Row 4: Countries + Data Quality */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[20px]">
-        {/* Top Countries */}
         <Card>
           <CardBody>
             <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[16px]">
@@ -503,14 +419,7 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="country" tick={{ fontSize: 11, fill: "#9ca3af" }} />
                   <YAxis tick={{ fontSize: 12, fill: "#9ca3af" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                    }}
-                  />
+                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "13px" }} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Investors">
                     {d.topCountries.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
@@ -522,7 +431,6 @@ export default function AnalyticsPage() {
           </CardBody>
         </Card>
 
-        {/* Data Quality */}
         <Card>
           <CardBody>
             <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[16px]">
@@ -546,10 +454,7 @@ export default function AnalyticsPage() {
                       </span>
                     </div>
                     <div className="w-full h-[8px] bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${item.color} rounded-full transition-all duration-700`}
-                        style={{ width: `${pct}%` }}
-                      ></div>
+                      <div className={`h-full ${item.color} rounded-full transition-all duration-700`} style={{ width: `${pct}%` }}></div>
                     </div>
                   </div>
                 );

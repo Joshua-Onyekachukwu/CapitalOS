@@ -57,75 +57,14 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
 
   const fetchData = useCallback(async () => {
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
+      const res = await fetch(`/api/dashboard/campaigns/${id}`);
+      const data = await res.json();
 
-      // Fetch campaign
-      const { data: job } = await supabase
-        .from("data_acquisition_jobs")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (job) {
-        setCampaign({
-          id: job.id,
-          name: job.filters?.name || "Untitled Campaign",
-          description: job.filters?.description || "",
-          status: job.status === "pending" ? "draft" : job.status === "running" ? "active" : job.status === "completed" ? "completed" : "paused",
-          investor_count: job.found_count || 0,
-          emails_sent: job.processed_count || 0,
-          responses: job.validated_count || 0,
-          created_at: job.created_at,
-          sector: job.filters?.sector,
-          stage: job.filters?.stage,
-        });
+      if (data.campaign) {
+        setCampaign(data.campaign);
       }
-
-      // Fetch campaign investors from email_messages
-      const { data: emails } = await supabase
-        .from("email_messages")
-        .select(`
-          id,
-          investor_id,
-          subject,
-          body_text,
-          status,
-          sent_at,
-          ai_generated
-        `)
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id || "")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (emails && emails.length > 0) {
-        const investorIds = [...new Set(emails.map((e) => e.investor_id).filter(Boolean))];
-        if (investorIds.length > 0) {
-          const { data: invs } = await supabase
-            .from("investors")
-            .select("id, first_name, last_name, email, fit_score")
-            .in("id", investorIds);
-
-          const invMap = new Map((invs || []).map((i: any) => [i.id, i]));
-          const campaignInvestors: CampaignInvestor[] = emails
-            .filter((e) => e.investor_id)
-            .map((e) => {
-              const inv = invMap.get(e.investor_id);
-              return {
-                id: e.id,
-                investor_id: e.investor_id,
-                first_name: inv?.first_name || "",
-                last_name: inv?.last_name || "",
-                firm_name: "",
-                email: inv?.email || null,
-                fit_score: inv?.fit_score || 0,
-                status: e.status === "sent" ? "sent" : e.status === "draft" ? "drafted" : "pending",
-                subject: e.subject,
-                body: e.body_text,
-              };
-            });
-          setInvestors(campaignInvestors);
-        }
+      if (data.investors) {
+        setInvestors(data.investors);
       }
     } catch (err) {
       console.error("Failed to load campaign:", err);
@@ -139,10 +78,11 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   }, [fetchData]);
 
   const handleStatusChange = async (newStatus: "active" | "paused" | "completed") => {
-    const dbStatus = newStatus === "active" ? "running" : newStatus;
-    const { createClient } = await import("@/lib/supabase/client");
-    const supabase = createClient();
-    await supabase.from("data_acquisition_jobs").update({ status: dbStatus }).eq("id", id);
+    await fetch(`/api/dashboard/campaigns/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
     setCampaign((prev) => (prev ? { ...prev, status: newStatus } : prev));
   };
 

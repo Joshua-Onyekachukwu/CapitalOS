@@ -4,8 +4,9 @@
 // Runs automatically on new investor imports.
 // Computes data_quality_score, outreach_readiness,
 // logs provenance, and links firms.
+// Uses CockroachDB for data.
 
-import { createClient } from "@supabase/supabase-js";
+import { query } from "@/lib/db";
 
 // =============================================
 // Types
@@ -84,12 +85,9 @@ async function logProvenance(
   sourceId: string | null,
   fields: Record<string, unknown>
 ) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const entries: Record<string, unknown>[] = [];
+  const entries: string[] = [];
+  const params: any[] = [];
+  let paramIdx = 1;
 
   const fieldMap: Record<string, string> = {
     email: "email",
@@ -103,21 +101,28 @@ async function logProvenance(
     investment_sectors: "investment_sectors",
   };
 
-  for (const [dbField, _] of Object.entries(fieldMap)) {
+  for (const [dbField] of Object.entries(fieldMap)) {
     if (fields[dbField]) {
-      entries.push({
-        investor_id: investorId,
-        field_name: dbField,
-        source_type: "provider",
-        source_provider: source,
-        source_value: typeof fields[dbField] === "string" ? fields[dbField] : JSON.stringify(fields[dbField]),
-        confidence: 0.7,
-      });
+      entries.push(
+        `($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++})`
+      );
+      params.push(
+        investorId,
+        dbField,
+        "provider",
+        source,
+        typeof fields[dbField] === "string" ? fields[dbField] : JSON.stringify(fields[dbField]),
+        0.7
+      );
     }
   }
 
   if (entries.length > 0) {
-    await supabase.from("investor_data_sources").insert(entries);
+    await query(
+      `INSERT INTO investor_data_sources (investor_id, field_name, source_type, source_provider, source_value, confidence)
+       VALUES ${entries.join(", ")}`,
+      params
+    );
   }
 }
 
@@ -126,18 +131,13 @@ async function logProvenance(
 // =============================================
 
 export async function enrichInvestor(investorId: string): Promise<EnrichmentResult | null> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const investors = await query<any>(
+    `SELECT * FROM investors WHERE id = $1`,
+    [investorId]
   );
 
-  const { data: investor } = await supabase
-    .from("investors")
-    .select("*")
-    .eq("id", investorId)
-    .single();
-
-  if (!investor) return null;
+  if (!investors.length) return null;
+  const investor = investors[0];
 
   const dataQualityScore = computeDataQuality(investor);
   const outreachReadiness = computeOutreachReadiness(investor);
@@ -151,14 +151,10 @@ export async function enrichInvestor(investorId: string): Promise<EnrichmentResu
   const fieldsMissing = criticalFields.filter((f) => !fieldsPopulated.includes(f));
 
   // Update investor record
-  await supabase
-    .from("investors")
-    .update({
-      data_quality_score: dataQualityScore,
-      outreach_readiness: outreachReadiness,
-      last_enriched_at: new Date().toISOString(),
-    })
-    .eq("id", investorId);
+  await query(
+    `UPDATE investors SET data_quality_score = $1, outreach_readiness = $2, last_enriched_at = NOW() WHERE id = $3`,
+    [dataQualityScore, outreachReadiness, investorId]
+  );
 
   // Log provenance for key fields
   await logProvenance(investorId, investor.source || "unknown", investor.source_id || null, investor);
@@ -180,23 +176,17 @@ export async function enrichInvestor(investorId: string): Promise<EnrichmentResu
 export async function enrichBatch(
   limit: number = 500
 ): Promise<{ enriched: number; skipped: number; errors: number }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  // Fetch investors not yet enriched (no last_enriched_at or enriched > 7 days ago)
+  // Fetch investors not yet enriched
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: investors } = await supabase
-    .from("investors")
-    .select("id")
-    .eq("is_active", true)
-    .or(`last_enriched_at.is.null,last_enriched_at.lt.${sevenDaysAgo}`)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const investors = await query<{ id: string }>(
+    `SELECT id FROM investors WHERE is_active = true
+     AND (last_enriched_at IS NULL OR last_enriched_at < $1)
+     ORDER BY created_at DESC LIMIT $2`,
+    [sevenDaysAgo, limit]
+  );
 
-  if (!investors || investors.length === 0) {
+  if (!investors.length) {
     return { enriched: 0, skipped: 0, errors: 0 };
   }
 
@@ -204,33 +194,28 @@ export async function enrichBatch(
   let skipped = 0;
   let errors = 0;
 
-  // Process in batches to avoid Supabase limits
+  // Process in batches
   const BATCH = 50;
   for (let i = 0; i < investors.length; i += BATCH) {
     const batch = investors.slice(i, i + BATCH);
     const batchIds = batch.map((inv) => inv.id);
 
-    // Bulk compute data quality scores
-    const { data: invData } = await supabase
-      .from("investors")
-      .select("*")
-      .in("id", batchIds);
-
-    if (!invData) { errors += batch.length; continue; }
+    // Bulk fetch data
+    const placeholders = batchIds.map((_, j) => `$${j + 1}`).join(", ");
+    const invData = await query<any>(
+      `SELECT * FROM investors WHERE id IN (${placeholders})`,
+      batchIds
+    );
 
     for (const inv of invData) {
       try {
         const score = computeDataQuality(inv);
         const readiness = computeOutreachReadiness(inv);
 
-        await supabase
-          .from("investors")
-          .update({
-            data_quality_score: score,
-            outreach_readiness: readiness,
-            last_enriched_at: new Date().toISOString(),
-          })
-          .eq("id", inv.id);
+        await query(
+          `UPDATE investors SET data_quality_score = $1, outreach_readiness = $2, last_enriched_at = NOW() WHERE id = $3`,
+          [score, readiness, inv.id]
+        );
 
         enriched++;
       } catch {

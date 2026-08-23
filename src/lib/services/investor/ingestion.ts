@@ -2,14 +2,14 @@
 // Investor Ingestion Pipeline
 // =============================================
 // Takes raw CSV/API data → raw_records → normalized → matched → canonical
+// Uses CockroachDB for data.
 
-import { createClient } from "@supabase/supabase-js";
+import { query } from "@/lib/db";
 import {
   normalizeInvestor,
-  generateDeduplicationKeys,
   type NormalizedInvestor,
 } from "./normalization";
-import { findMatchingInvestor, type MatchResult } from "./matching";
+import { findMatchingInvestor } from "./matching";
 import { mapColumns } from "./columns";
 
 // =============================================
@@ -33,8 +33,6 @@ export interface IngestionResult {
   errors: number;
   errorMessages: string[];
 }
-
-// Column mapping imported from shared module
 
 // =============================================
 // CSV Parsing
@@ -101,31 +99,38 @@ export async function stageRecords(
   source: string,
   importJobId?: string
 ): Promise<string[]> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   const staged: string[] = [];
   const BATCH_SIZE = 500;
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE);
-    const insertData = batch.map((row) => ({
-      raw_data: row,
-      source_type: "provider" as const,
-      source_provider: source,
-      import_job_id: importJobId || null,
-      status: "pending",
-    }));
+    const valuePlaceholders: string[] = [];
+    const params: any[] = [];
+    let paramIdx = 1;
 
-    const { data, error } = await supabase
-      .from("raw_records")
-      .insert(insertData)
-      .select("id");
+    for (const row of batch) {
+      valuePlaceholders.push(
+        `($${paramIdx++}::jsonb, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++})`
+      );
+      params.push(
+        JSON.stringify(row),
+        "provider",
+        source,
+        importJobId || null,
+        "pending"
+      );
+    }
 
-    if (!error && data) {
-      staged.push(...data.map((d) => d.id));
+    try {
+      const rows = await query<{ id: string }>(
+        `INSERT INTO raw_records (raw_data, source_type, source_provider, import_job_id, status)
+         VALUES ${valuePlaceholders.join(", ")}
+         RETURNING id`,
+        params
+      );
+      staged.push(...rows.map((r) => r.id));
+    } catch {
+      // Continue with other batches
     }
   }
 
@@ -139,11 +144,6 @@ export async function stageRecords(
 export async function processRawRecords(
   batchSize = 100
 ): Promise<IngestionResult> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   const result: IngestionResult = {
     totalRecords: 0,
     staged: 0,
@@ -154,28 +154,20 @@ export async function processRawRecords(
     errorMessages: [],
   };
 
-  // Fetch pending records
-  const { data: pendingRecords, error: fetchError } = await supabase
-    .from("raw_records")
-    .select("*")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(batchSize);
-
-  if (fetchError || !pendingRecords) {
-    result.errorMessages.push(`Failed to fetch pending records: ${fetchError?.message}`);
-    return result;
-  }
+  const pendingRecords = await query<any>(
+    `SELECT * FROM raw_records WHERE status = 'pending' ORDER BY created_at ASC LIMIT $1`,
+    [batchSize]
+  );
 
   result.totalRecords = pendingRecords.length;
 
   for (const record of pendingRecords) {
     try {
       // Mark as processing
-      await supabase
-        .from("raw_records")
-        .update({ status: "processing" })
-        .eq("id", record.id);
+      await query(
+        `UPDATE raw_records SET status = 'processing' WHERE id = $1`,
+        [record.id]
+      );
 
       // Normalize the raw data
       const raw = record.raw_data as Record<string, string>;
@@ -209,77 +201,55 @@ export async function processRawRecords(
       const normalized = normalizeInvestor(providerResult);
 
       // Update raw record with normalized data
-      await supabase
-        .from("raw_records")
-        .update({ normalized_data: normalized, parsed_data: providerResult })
-        .eq("id", record.id);
+      await query(
+        `UPDATE raw_records SET normalized_data = $1::jsonb, parsed_data = $2::jsonb WHERE id = $3`,
+        [JSON.stringify(normalized), JSON.stringify(providerResult), record.id]
+      );
 
       // Try to match against existing investors
       const matchResult = await findMatchingInvestor(normalized);
 
       if (matchResult) {
-        // Match found
         if (matchResult.confidence >= 0.95) {
-          // High confidence — auto-link
-          await supabase
-            .from("raw_records")
-            .update({
-              status: "matched",
-              matched_investor_id: matchResult.investorId,
-              match_confidence: matchResult.confidence,
-              processed_at: new Date().toISOString(),
-            })
-            .eq("id", record.id);
+          await query(
+            `UPDATE raw_records SET status = 'matched', matched_investor_id = $1, match_confidence = $2, processed_at = NOW() WHERE id = $3`,
+            [matchResult.investorId, matchResult.confidence, record.id]
+          );
           result.matched++;
         } else if (matchResult.confidence >= 0.70) {
-          // Medium confidence — mark as duplicate candidate
-          await supabase
-            .from("raw_records")
-            .update({
-              status: "duplicate",
-              matched_investor_id: matchResult.investorId,
-              match_confidence: matchResult.confidence,
-              processed_at: new Date().toISOString(),
-            })
-            .eq("id", record.id);
+          await query(
+            `UPDATE raw_records SET status = 'duplicate', matched_investor_id = $1, match_confidence = $2, processed_at = NOW() WHERE id = $3`,
+            [matchResult.investorId, matchResult.confidence, record.id]
+          );
 
-          // Create duplicate candidate
-          await supabase.from("duplicate_candidates").insert({
-            investor_a_id: matchResult.investorId,
-            investor_b_id: null, // Will be linked when new record is created
-            confidence: matchResult.confidence,
-            match_signals: matchResult.signals,
-            status: "pending",
-          });
+          await query(
+            `INSERT INTO duplicate_candidates (investor_a_id, investor_b_id, confidence, match_signals, status)
+             VALUES ($1, NULL, $2, $3::jsonb, 'pending')`,
+            [matchResult.investorId, matchResult.confidence, JSON.stringify(matchResult.signals)]
+          );
           result.duplicates++;
         } else {
-          // Low confidence — treat as new
-          await supabase
-            .from("raw_records")
-            .update({ status: "new", processed_at: new Date().toISOString() })
-            .eq("id", record.id);
+          await query(
+            `UPDATE raw_records SET status = 'new', processed_at = NOW() WHERE id = $1`,
+            [record.id]
+          );
           result.newRecords++;
         }
       } else {
-        // No match — new record
-        await supabase
-          .from("raw_records")
-          .update({ status: "new", processed_at: new Date().toISOString() })
-          .eq("id", record.id);
+        await query(
+          `UPDATE raw_records SET status = 'new', processed_at = NOW() WHERE id = $1`,
+          [record.id]
+        );
         result.newRecords++;
       }
     } catch (err) {
       result.errors++;
       result.errorMessages.push(`Record ${record.id}: ${err}`);
 
-      await supabase
-        .from("raw_records")
-        .update({
-          status: "error",
-          error_message: String(err),
-          processed_at: new Date().toISOString(),
-        })
-        .eq("id", record.id);
+      await query(
+        `UPDATE raw_records SET status = 'error', error_message = $1, processed_at = NOW() WHERE id = $2`,
+        [String(err), record.id]
+      );
     }
   }
 
@@ -293,22 +263,13 @@ export async function processRawRecords(
 export async function promoteNewRecords(
   batchSize = 100
 ): Promise<{ promoted: number; errors: number }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   let promoted = 0;
   let errors = 0;
 
-  const { data: newRecords } = await supabase
-    .from("raw_records")
-    .select("*")
-    .eq("status", "new")
-    .order("created_at", { ascending: true })
-    .limit(batchSize);
-
-  if (!newRecords) return { promoted, errors };
+  const newRecords = await query<any>(
+    `SELECT * FROM raw_records WHERE status = 'new' ORDER BY created_at ASC LIMIT $1`,
+    [batchSize]
+  );
 
   for (const record of newRecords) {
     try {
@@ -316,80 +277,50 @@ export async function promoteNewRecords(
       if (!norm || !norm.fullName) continue;
 
       // Insert as canonical investor
-      const { data: investor, error } = await supabase
-        .from("investors")
-        .insert({
-          full_name: norm.fullName,
-          first_name: norm.firstName,
-          last_name: norm.lastName,
-          email: norm.email,
-          phone: norm.phone,
-          linkedin_url: norm.linkedinUrl,
-          job_title: norm.jobTitle,
-          bio: norm.bio,
-          location: norm.location,
-          country: norm.country,
-          city: norm.city,
-          investor_type: norm.investorType,
-          investment_stages: norm.investmentStages,
-          investment_sectors: norm.investmentSectors,
-          investment_geographies: norm.investmentGeographies,
-          min_check_size: norm.minCheckSize,
-          max_check_size: norm.maxCheckSize,
-          currency: norm.currency,
-          portfolio_count: norm.portfolioCount,
-          website_url: norm.websiteUrl,
-          avatar_url: norm.avatarUrl,
-          source: norm.source,
-          source_id: norm.sourceId,
-          source_provider: norm.source,
-          data_quality_score: norm.email ? 50 : 20,
-          outreach_readiness: "not_ready",
-          is_active: true,
-        })
-        .select("id")
-        .single();
+      const rows = await query<{ id: string }>(
+        `INSERT INTO investors (full_name, first_name, last_name, email, phone, linkedin_url, job_title, bio, location, country, city, investor_type, investment_stages, investment_sectors, investment_geographies, min_check_size, max_check_size, currency, portfolio_count, website_url, avatar_url, source, source_id, source_provider, data_quality_score, outreach_readiness, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+         RETURNING id`,
+        [
+          norm.fullName, norm.firstName, norm.lastName, norm.email, norm.phone,
+          norm.linkedinUrl, norm.jobTitle, norm.bio, norm.location, norm.country,
+          norm.city, norm.investorType, norm.investmentStages, norm.investmentSectors,
+          norm.investmentGeographies, norm.minCheckSize, norm.maxCheckSize, norm.currency,
+          norm.portfolioCount, norm.websiteUrl, norm.avatarUrl, norm.source, norm.sourceId,
+          norm.source, norm.email ? 50 : 20, "not_ready", true,
+        ]
+      );
 
-      if (error) throw error;
+      if (!rows.length) throw new Error("Insert failed");
 
-      // Auto-enrich: compute data quality + outreach readiness + provenance
+      // Auto-enrich
       try {
         const { enrichInvestor } = await import("./enrichment");
-        await enrichInvestor(investor.id);
+        await enrichInvestor(rows[0].id);
       } catch {
-        // Enrichment is non-critical — don't fail the pipeline
+        // Enrichment is non-critical
       }
 
       // Log creation
-      await supabase.rpc("log_data_change", {
-        p_investor_id: investor.id,
-        p_field_name: "_created",
-        p_old_value: null,
-        p_new_value: norm.fullName,
-        p_source_type: "provider",
-        p_source_provider: norm.source,
-        p_confidence: 1.0,
-        p_change_type: "create",
-        p_detected_by: "ingestion_pipeline",
-      });
+      await query(
+        `INSERT INTO data_change_log (investor_id, field_name, old_value, new_value, source_type, source_provider, confidence, change_type, detected_by)
+         VALUES ($1, '_created', NULL, $2, 'provider', $3, 1.0, 'create', 'ingestion_pipeline')`,
+        [rows[0].id, norm.fullName, norm.source]
+      );
 
       // Mark raw record as matched
-      await supabase
-        .from("raw_records")
-        .update({
-          status: "matched",
-          matched_investor_id: investor.id,
-          match_confidence: 1.0,
-        })
-        .eq("id", record.id);
+      await query(
+        `UPDATE raw_records SET status = 'matched', matched_investor_id = $1, match_confidence = 1.0 WHERE id = $2`,
+        [rows[0].id, record.id]
+      );
 
       promoted++;
     } catch (err) {
       errors++;
-      await supabase
-        .from("raw_records")
-        .update({ status: "error", error_message: String(err) })
-        .eq("id", record.id);
+      await query(
+        `UPDATE raw_records SET status = 'error', error_message = $1 WHERE id = $2`,
+        [String(err), record.id]
+      );
     }
   }
 
@@ -404,16 +335,9 @@ export async function runFullPipeline(
   csvContent: string,
   source: string = "csv_import"
 ): Promise<IngestionResult> {
-  // 1. Parse CSV
   const rows = parseCsv(csvContent);
-
-  // 2. Stage raw records
   const stagedIds = await stageRecords(rows, source);
-
-  // 3. Process (normalize + match)
   const result = await processRawRecords(stagedIds.length);
-
-  // 4. Promote new records
   const promoted = await promoteNewRecords(result.newRecords);
   result.matched += promoted.promoted;
   result.errors += promoted.errors;

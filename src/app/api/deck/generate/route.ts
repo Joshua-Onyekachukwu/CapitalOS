@@ -3,12 +3,18 @@
 // =============================================
 // Generates a company-specific investor pitch deck.
 // Server-side only — AI client never exposed to browser bundle.
+// Uses CockroachDB for data, Supabase Storage for file uploads.
 
 import { NextRequest, NextResponse } from "next/server";
 import { generatePitchDeck } from "@/lib/services/deck/generator";
+import { query } from "@/lib/db";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const body = await request.json();
     const { userId, style, slideCount } = body;
@@ -17,29 +23,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
-    // Fetch company profile
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    // Fetch company profile from CockroachDB
+    const profiles = await query<any>(
+      "SELECT * FROM company_profiles WHERE user_id = $1 LIMIT 1",
+      [userId]
     );
 
-    const { data: profile } = await supabase
-      .from("company_profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
-    if (!profile) {
+    if (!profiles.length) {
       return NextResponse.json({ error: "Complete onboarding first" }, { status: 400 });
     }
 
-    // Fetch team members
-    const { data: teamData } = await supabase
-      .from("company_team_members")
-      .select("name, title, is_founder")
-      .eq("company_id", profile.id);
+    const profile = profiles[0];
 
-    const teamMembers = (teamData || []).map((m) => ({
+    // Fetch team members from CockroachDB
+    const teamData = await query<any>(
+      "SELECT name, title, is_founder FROM company_team_members WHERE company_id = $1",
+      [profile.id]
+    );
+
+    const teamMembers = (teamData || []).map((m: any) => ({
       name: m.name,
       title: m.title || "Team Member",
       isFounder: m.is_founder,
@@ -67,7 +69,12 @@ export async function POST(request: NextRequest) {
       slideCount: slideCount || 10,
     });
 
-    // Store PPTX in Supabase Storage
+    // Store files in Supabase Storage (keeps file upload working)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const pptxFileName = `${userId}/${Date.now()}-pitch-deck.pptx`;
     const { error: pptxError } = await supabase.storage
       .from("company-documents")
@@ -83,7 +90,6 @@ export async function POST(request: NextRequest) {
       pptxUrl = urlData.publicUrl;
     }
 
-    // Store PDF
     const pdfFileName = `${userId}/${Date.now()}-pitch-deck.pdf`;
     const { error: pdfError } = await supabase.storage
       .from("company-documents")
@@ -99,40 +105,26 @@ export async function POST(request: NextRequest) {
       pdfUrl = urlData.publicUrl;
     }
 
-    // Save document records
-    const { data: companyProfile } = await supabase
-      .from("company_profiles")
-      .select("id")
-      .eq("user_id", userId)
-      .single();
-
+    // Save document records in CockroachDB
     const deckName = `${profile.company_name || "Company"} — ${result.style || "Investor"} Pitch Deck`;
 
-    if (companyProfile) {
-      // Save PPTX record
-      await supabase.from("company_documents").insert({
-        company_id: companyProfile.id,
-        document_type: "pitch_deck",
-        file_name: `${deckName}.pptx`,
-        file_url: pptxUrl,
-        file_size: result.pptxBuffer.length,
-      });
+    await query(
+      `INSERT INTO company_documents (company_id, document_type, file_name, file_url, file_size)
+       VALUES ($1, 'pitch_deck', $2, $3, $4)`,
+      [profile.id, `${deckName}.pptx`, pptxUrl, result.pptxBuffer.length]
+    );
 
-      // Save PDF record
-      await supabase.from("company_documents").insert({
-        company_id: companyProfile.id,
-        document_type: "pitch_deck",
-        file_name: `${deckName}.pdf`,
-        file_url: pdfUrl,
-        file_size: result.pdfBuffer.length,
-      });
+    await query(
+      `INSERT INTO company_documents (company_id, document_type, file_name, file_url, file_size)
+       VALUES ($1, 'pitch_deck', $2, $3, $4)`,
+      [profile.id, `${deckName}.pdf`, pdfUrl, result.pdfBuffer.length]
+    );
 
-      // Update has_pitch_deck
-      await supabase
-        .from("company_profiles")
-        .update({ has_pitch_deck: true })
-        .eq("user_id", userId);
-    }
+    // Update has_pitch_deck
+    await query(
+      `UPDATE company_profiles SET has_pitch_deck = true WHERE user_id = $1`,
+      [userId]
+    );
 
     return NextResponse.json({
       success: true,

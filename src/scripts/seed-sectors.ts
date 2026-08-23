@@ -1,10 +1,4 @@
-import "./load-env";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { query, closePool } from "./db";
 
 const sectors = [
   { name: "Artificial Intelligence", slug: "ai" },
@@ -36,18 +30,22 @@ const sectors = [
 async function main() {
   console.log("🌱 Seeding investor sectors...\n");
 
-  const { data, error } = await supabase
-    .from("investor_sectors")
-    .upsert(sectors, { onConflict: "name" })
-    .select();
-
-  if (error) {
-    console.error("❌ Error:", error.message);
-    process.exit(1);
+  let inserted = 0;
+  for (const sector of sectors) {
+    try {
+      await query(
+        `INSERT INTO investor_sectors (name, slug) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING`,
+        [sector.name, sector.slug]
+      );
+      inserted++;
+      console.log(`   - ${sector.name} (${sector.slug})`);
+    } catch (err: any) {
+      console.error(`   ❌ ${sector.name}: ${err.message}`);
+    }
   }
 
-  console.log(`✅ ${data?.length || 0} sectors seeded successfully\n`);
-  data?.forEach((s) => console.log(`   - ${s.name} (${s.slug})`));
+  console.log(`\n✅ ${inserted} sectors seeded successfully`);
+  await closePool();
 }
 
 main();

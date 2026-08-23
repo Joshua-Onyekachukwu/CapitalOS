@@ -1,6 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth";
+import { query } from "@/lib/db";
 
 // =============================================
 // Types
@@ -23,24 +24,28 @@ export interface Campaign {
 // =============================================
 
 export async function getCampaigns(): Promise<Campaign[]> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  const user = await requireUser();
 
   // Campaigns are stored as acquisition jobs with job_type = 'campaign'
-  const { data, error } = await supabase
-    .from("data_acquisition_jobs")
-    .select("*")
-    .eq("job_type", "campaign")
-    .eq("created_by", user.id)
-    .order("created_at", { ascending: false });
+  const rows = await query<any>(
+    `SELECT * FROM data_acquisition_jobs
+     WHERE job_type = $1 AND created_by = $2
+     ORDER BY created_at DESC`,
+    ["campaign", user.id]
+  );
 
-  if (error) return [];
-  return (data || []).map((job) => ({
+  return rows.map((job) => ({
     id: job.id,
     name: job.filters?.name || "Untitled Campaign",
     description: job.filters?.description || "",
-    status: job.status === "pending" ? "draft" : job.status === "running" ? "active" : job.status === "completed" ? "completed" : "paused",
+    status:
+      job.status === "pending"
+        ? "draft"
+        : job.status === "running"
+          ? "active"
+          : job.status === "completed"
+            ? "completed"
+            : "paused",
     investor_count: job.found_count || 0,
     emails_sent: job.processed_count || 0,
     responses: job.validated_count || 0,
@@ -60,29 +65,26 @@ export async function createCampaign(data: {
   stage?: string;
   geography?: string;
 }): Promise<Campaign | null> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const user = await requireUser();
 
-  const { data: job, error } = await supabase
-    .from("data_acquisition_jobs")
-    .insert({
-      job_type: "campaign",
-      filters: {
-        name: data.name,
-        description: data.description,
-        sector: data.sector,
-        stage: data.stage,
-        geography: data.geography,
-      },
-      status: "pending",
-      created_by: user.id,
-    })
-    .select()
-    .single();
+  const filters = JSON.stringify({
+    name: data.name,
+    description: data.description,
+    sector: data.sector,
+    stage: data.stage,
+    geography: data.geography,
+  });
 
-  if (error || !job) return null;
+  const rows = await query<any>(
+    `INSERT INTO data_acquisition_jobs (job_type, filters, status, created_by)
+     VALUES ('campaign', $1::jsonb, 'pending', $2)
+     RETURNING *`,
+    [filters, user.id]
+  );
 
+  if (!rows || rows.length === 0) return null;
+
+  const job = rows[0];
   return {
     id: job.id,
     name: data.name,
@@ -104,15 +106,19 @@ export async function updateCampaignStatus(
   campaignId: string,
   status: "draft" | "active" | "paused" | "completed"
 ): Promise<boolean> {
-  const supabase = await createClient();
-  const dbStatus = status === "draft" ? "pending" : status === "active" ? "running" : status;
+  const dbStatus =
+    status === "draft"
+      ? "pending"
+      : status === "active"
+        ? "running"
+        : status;
 
-  const { error } = await supabase
-    .from("data_acquisition_jobs")
-    .update({ status: dbStatus })
-    .eq("id", campaignId);
+  await query(
+    `UPDATE data_acquisition_jobs SET status = $1 WHERE id = $2`,
+    [dbStatus, campaignId]
+  );
 
-  return !error;
+  return true;
 }
 
 // =============================================
@@ -123,14 +129,11 @@ export async function updateInvestorPipelineStage(
   investorId: string,
   stage: "not_ready" | "needs_verification" | "ready" | "contacted" | "do_not_contact"
 ): Promise<boolean> {
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("investors")
-    .update({ outreach_readiness: stage })
-    .eq("id", investorId);
-
-  return !error;
+  await query(
+    `UPDATE investors SET outreach_readiness = $1 WHERE id = $2`,
+    [stage, investorId]
+  );
+  return true;
 }
 
 // =============================================
@@ -141,16 +144,18 @@ export async function bulkUpdatePipelineStage(
   investorIds: string[],
   stage: "not_ready" | "needs_verification" | "ready" | "contacted" | "do_not_contact"
 ): Promise<number> {
-  const supabase = await createClient();
+  if (investorIds.length === 0) return 0;
 
-  const { data, error } = await supabase
-    .from("investors")
-    .update({ outreach_readiness: stage })
-    .in("id", investorIds)
-    .select("id");
+  // Build parameterized IN clause
+  const placeholders = investorIds.map((_, i) => `$${i + 1}`).join(", ");
+  const result = await query<{ id: string }>(
+    `UPDATE investors SET outreach_readiness = $${investorIds.length + 1}
+     WHERE id IN (${placeholders})
+     RETURNING id`,
+    [...investorIds, stage]
+  );
 
-  if (error) return 0;
-  return data?.length || 0;
+  return result.length;
 }
 
 // =============================================
@@ -158,12 +163,9 @@ export async function bulkUpdatePipelineStage(
 // =============================================
 
 export async function deleteCampaign(campaignId: string): Promise<boolean> {
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("data_acquisition_jobs")
-    .delete()
-    .eq("id", campaignId);
-
-  return !error;
+  await query(
+    `DELETE FROM data_acquisition_jobs WHERE id = $1`,
+    [campaignId]
+  );
+  return true;
 }

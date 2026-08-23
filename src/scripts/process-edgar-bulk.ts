@@ -1,16 +1,7 @@
 // Fast bulk processor for EDGAR records
 // Normalizes fund names directly into investor_firms + investors tables
 // Bypasses the slow per-record matching pipeline
-import { config } from "dotenv";
-import { resolve } from "path";
-config({ path: resolve(__dirname, "../../.env.local") });
-
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { query, closePool } from "./db";
 
 // State code to location mapping
 const STATE_MAP: Record<string, { country: string; city: string }> = {
@@ -67,16 +58,15 @@ async function main() {
   console.log("=== EDGAR Bulk Processor ===");
 
   // Fetch all pending EDGAR raw records
-  const { data: records, error } = await supabase
-    .from("raw_records")
-    .select("id, raw_data, source_provider")
-    .eq("status", "pending")
-    .eq("source_provider", "sec_edgar")
-    .order("created_at", { ascending: true })
-    .limit(5000);
+  const records = await query<{ id: string; raw_data: any; source_provider: string }>(
+    `SELECT id, raw_data, source_provider FROM raw_records 
+     WHERE status = 'pending' AND source_provider = 'sec_edgar'
+     ORDER BY created_at ASC LIMIT 5000`
+  );
 
-  if (error || !records || records.length === 0) {
+  if (records.length === 0) {
     console.log("No pending EDGAR records found.");
+    await closePool();
     return;
   }
 
@@ -97,9 +87,6 @@ async function main() {
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE);
-    const firmInserts: Record<string, unknown>[] = [];
-    const investorInserts: Record<string, unknown>[] = [];
-    const recordUpdates: { id: string; status: string; investorId?: string }[] = [];
 
     for (const record of batch) {
       try {
@@ -111,7 +98,7 @@ async function main() {
         const investorType = raw.investorType || "venture_capital";
 
         if (!name || name.length < 3) {
-          recordUpdates.push({ id: record.id, status: "error" });
+          await query(`UPDATE raw_records SET status = 'error', processed_at = $1 WHERE id = $2`, [new Date().toISOString(), record.id]);
           errors++;
           continue;
         }
@@ -121,79 +108,41 @@ async function main() {
 
         if (!firmId) {
           const geo = STATE_MAP[state] || { country: state || "Unknown", city: "" };
-          firmInserts.push({
-            name, normalized_name: normalized, firm_type: investorType,
-            country: geo.country || "Unknown", headquarters: location || null,
-            source: "sec_edgar", source_id: raw.sourceId || null, data_quality_score: 30,
-          });
-          // Use a temp ID — will be resolved after batch insert
-          firmId = `pending-${normalized}`;
-          firmCache.set(normalized, firmId);
-          firmsCreated++;
+
+          // Insert firm
+          const firms = await query<{ id: string }>(
+            `INSERT INTO investor_firms (name, normalized_name, firm_type, country, headquarters, source, source_id, data_quality_score) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+            [name, normalized, investorType, geo.country || "Unknown", location || null, "sec_edgar", raw.sourceId || null, 30]
+          );
+          firmId = firms[0]?.id;
+          if (firmId) {
+            firmCache.set(normalized, firmId);
+            firmsCreated++;
+          }
         } else {
           firmsUpdated++;
         }
 
+        // Insert investor
         const geo = STATE_MAP[state] || { country: state || "Unknown", city: "" };
-        investorInserts.push({
-          full_name: name, investor_type: investorType, current_firm_id: firmId.startsWith("pending-") ? null : firmId,
-          country: geo.country || "Unknown", city: city || null, location: location || null,
-          source: "sec_edgar", source_id: raw.sourceId || null, source_provider: "sec_edgar",
-          data_quality_score: 25, outreach_readiness: "not_ready", is_active: true,
-        });
-        recordUpdates.push({ id: record.id, status: "new" });
+        await query(
+          `INSERT INTO investors (full_name, investor_type, current_firm_id, country, city, location, source, source_id, source_provider, data_quality_score, outreach_readiness, is_active) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          [name, investorType, firmId || null, geo.country || "Unknown", city || null, location || null, "sec_edgar", raw.sourceId || null, "sec_edgar", 25, "not_ready", true]
+        );
+        investorsCreated++;
+
+        // Mark record as processed
+        await query(`UPDATE raw_records SET status = 'new', processed_at = $1 WHERE id = $2`, [new Date().toISOString(), record.id]);
       } catch (err) {
-        recordUpdates.push({ id: record.id, status: "error" });
+        await query(`UPDATE raw_records SET status = 'error', processed_at = $1 WHERE id = $2`, [new Date().toISOString(), record.id]);
         errors++;
       }
     }
 
-    // Batch insert firms
-    if (firmInserts.length > 0) {
-      const { data: insertedFirms } = await supabase
-        .from("investor_firms")
-        .insert(firmInserts)
-        .select("id, normalized_name");
-
-      if (insertedFirms) {
-        for (const firm of insertedFirms) {
-          if (firm.normalized_name) {
-            firmCache.set(firm.normalized_name, firm.id);
-          }
-        }
-        firmsCreated = firmCache.size;
-      }
-    }
-
-    // Resolve firm IDs in investor inserts
-    for (const inv of investorInserts) {
-      if (inv.current_firm_id === null) {
-        // Find the firm by matching normalized name from the raw record
-        // This is a best-effort — we'll link after insert
-      }
-    }
-
-    // Batch insert investors (skip those with null firm_id for now)
-    const validInvestors = investorInserts.filter((inv) => inv.current_firm_id !== null);
-    if (validInvestors.length > 0) {
-      const { data: inserted } = await supabase
-        .from("investors")
-        .insert(validInvestors)
-        .select("id");
-
-      investorsCreated += inserted?.length || 0;
-    }
-
-    // Mark records as processed
-    for (const update of recordUpdates) {
-      await supabase
-        .from("raw_records")
-        .update({ status: update.status, processed_at: new Date().toISOString() })
-        .eq("id", update.id);
-    }
-
     const processed = Math.min(i + BATCH_SIZE, records.length);
-    console.log(`  Progress: ${processed}/${records.length} (firms: ${firmCache.size}, investors: +${validInvestors.length}, errors: ${errors})`);
+    console.log(`  Progress: ${processed}/${records.length} (firms: ${firmCache.size}, investors: +${BATCH_SIZE}, errors: ${errors})`);
   }
 
   console.log("");
@@ -203,8 +152,8 @@ async function main() {
   console.log(`Investors created: ${investorsCreated}`);
   console.log(`Investors skipped (duplicate): ${investorsSkipped}`);
   console.log(`Errors: ${errors}`);
-}
 
-// markProcessed is done inline via batch updates
+  await closePool();
+}
 
 main().catch(console.error);

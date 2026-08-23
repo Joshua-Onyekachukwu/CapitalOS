@@ -25,28 +25,11 @@ export default function MeetingsPage() {
   const loadMeetings = useCallback(async () => {
     setLoading(true);
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
+      const res = await fetch("/api/dashboard/meetings");
+      const data = await res.json();
 
-      // Get investors in "meeting" or "interested" pipeline stage
-      const { data } = await supabase
-        .from("v_investors_with_firms")
-        .select("id, full_name, firm_name, investor_type, fit_score, outreach_readiness, email")
-        .in("outreach_readiness", ["contacted", "ready"])
-        .order("fit_score", { ascending: false })
-        .limit(50);
-
-      if (data) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setInvestors(data.map((inv: any) => ({
-          id: inv.id,
-          full_name: inv.full_name,
-          firm_name: inv.firm_name,
-          investor_type: inv.investor_type,
-          fit_score: inv.fit_score,
-          outreach_readiness: inv.outreach_readiness,
-          email: inv.email,
-        })));
+      if (data.investors) {
+        setInvestors(data.investors);
       }
     } catch {
       // Data may not be available

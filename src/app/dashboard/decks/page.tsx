@@ -67,10 +67,9 @@ export default function DecksPage() {
 
   const saveRename = async (deckId: string) => {
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+      const { renameCompanyDocument } = await import("@/lib/actions/company");
       const ext = decks.find((d) => d.id === deckId)?.fileName.endsWith(".pdf") ? ".pdf" : ".pptx";
-      await supabase.from("company_documents").update({ file_name: `${renameValue}${ext}` }).eq("id", deckId);
+      await renameCompanyDocument(deckId, `${renameValue}${ext}`);
       setDecks((prev) => prev.map((d) => d.id === deckId ? { ...d, fileName: `${renameValue}${ext}` } : d));
     } catch { /* non-critical */ }
     setRenamingId(null);
@@ -78,9 +77,8 @@ export default function DecksPage() {
 
   const deleteDeck = async (deckId: string) => {
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-      await supabase.from("company_documents").delete().eq("id", deckId);
+      const { deleteCompanyDocument } = await import("@/lib/actions/company");
+      await deleteCompanyDocument(deckId);
       setDecks((prev) => prev.filter((d) => d.id !== deckId));
     } catch { /* non-critical */ }
     setDeletingId(null);

@@ -1,15 +1,9 @@
 // =============================================
 // Scheduled Deduplication Service
 // =============================================
-// Scans the investor database for duplicates using
-// multi-signal matching (email, LinkedIn, name, firm).
-// More thorough than the batch detectDuplicates().
+// Uses CockroachDB for data.
 
-import { createClient } from "@supabase/supabase-js";
-
-// =============================================
-// Types
-// =============================================
+import { query } from "@/lib/db";
 
 interface DedupResult {
   scanned: number;
@@ -18,10 +12,6 @@ interface DedupResult {
   queuedForReview: number;
   errors: number;
 }
-
-// =============================================
-// Name Similarity (Levenshtein)
-// =============================================
 
 function levenshtein(a: string, b: string): number {
   const m = a.length, n = b.length;
@@ -44,33 +34,17 @@ function nameSimilarity(a: string, b: string): number {
   return Math.max(0, 1 - levenshtein(ca, cb) / Math.max(ca.length, cb.length));
 }
 
-// =============================================
-// Multi-Signal Duplicate Detection
-// =============================================
-
-export async function runScheduledDedup(
-  limit: number = 500,
-  batchSize: number = 50
-): Promise<DedupResult> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
+export async function runScheduledDedup(limit: number = 500, batchSize: number = 50): Promise<DedupResult> {
   const result: DedupResult = { scanned: 0, candidatesFound: 0, autoMerged: 0, queuedForReview: 0, errors: 0 };
 
-  // Fetch investors to scan (most recent first, skip already-deduped)
-  const { data: investors } = await supabase
-    .from("investors")
-    .select("id, full_name, email, linkedin_url, first_name, last_name, current_firm_id, job_title, city, country")
-    .eq("is_active", true)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const investors = await query<any>(
+    `SELECT id, full_name, email, linkedin_url, first_name, last_name, current_firm_id, job_title, city, country
+     FROM investors WHERE is_active = true ORDER BY created_at DESC LIMIT $1`,
+    [limit]
+  );
 
-  if (!investors) return result;
   result.scanned = investors.length;
 
-  // Process in batches
   for (let i = 0; i < investors.length; i += batchSize) {
     const batch = investors.slice(i, i + batchSize);
 
@@ -80,74 +54,50 @@ export async function runScheduledDedup(
 
         // Signal 1: Email exact match
         if (investor.email) {
-          const { data: emailMatches } = await supabase
-            .from("investors")
-            .select("id, full_name, linkedin_url, first_name, last_name, current_firm_id, job_title, city, country")
-            .eq("email", investor.email.toLowerCase().trim())
-            .eq("is_active", true)
-            .neq("id", investor.id)
-            .limit(5);
-
-          if (emailMatches) {
-            for (const match of emailMatches) {
-              candidates.push({ id: match.id, confidence: 0.99, signals: { email: 1.0 } });
-            }
+          const emailMatches = await query<any>(
+            `SELECT id FROM investors WHERE email = $1 AND is_active = true AND id != $2 LIMIT 5`,
+            [investor.email.toLowerCase().trim(), investor.id]
+          );
+          for (const match of emailMatches) {
+            candidates.push({ id: match.id, confidence: 0.99, signals: { email: 1.0 } });
           }
         }
 
         // Signal 2: LinkedIn exact match
         if (investor.linkedin_url && candidates.length === 0) {
-          const { data: linkedinMatches } = await supabase
-            .from("investors")
-            .select("id, full_name, email, first_name, last_name, current_firm_id, job_title, city, country")
-            .eq("linkedin_url", investor.linkedin_url)
-            .eq("is_active", true)
-            .neq("id", investor.id)
-            .limit(5);
-
-          if (linkedinMatches) {
-            for (const match of linkedinMatches) {
-              candidates.push({ id: match.id, confidence: 0.95, signals: { linkedin: 1.0 } });
-            }
+          const linkedinMatches = await query<any>(
+            `SELECT id FROM investors WHERE linkedin_url = $1 AND is_active = true AND id != $2 LIMIT 5`,
+            [investor.linkedin_url, investor.id]
+          );
+          for (const match of linkedinMatches) {
+            candidates.push({ id: match.id, confidence: 0.95, signals: { linkedin: 1.0 } });
           }
         }
 
-        // Signal 3: Fuzzy name match (last name + first initial)
+        // Signal 3: Fuzzy name match
         if (candidates.length === 0 && investor.last_name) {
-          const { data: nameMatches } = await supabase
-            .from("investors")
-            .select("id, full_name, email, first_name, last_name, current_firm_id")
-            .ilike("last_name", `%${investor.last_name.toLowerCase()}%`)
-            .eq("is_active", true)
-            .neq("id", investor.id)
-            .limit(10);
-
-          if (nameMatches) {
-            for (const match of nameMatches) {
-              const fullSim = nameSimilarity(investor.full_name, match.full_name);
-              if (fullSim >= 0.85) {
-                candidates.push({ id: match.id, confidence: fullSim * 0.8, signals: { fullName: fullSim } });
-              }
+          const nameMatches = await query<any>(
+            `SELECT id, full_name FROM investors WHERE last_name ILIKE $1 AND is_active = true AND id != $2 LIMIT 10`,
+            [`%${investor.last_name.toLowerCase()}%`, investor.id]
+          );
+          for (const match of nameMatches) {
+            const fullSim = nameSimilarity(investor.full_name, match.full_name);
+            if (fullSim >= 0.85) {
+              candidates.push({ id: match.id, confidence: fullSim * 0.8, signals: { fullName: fullSim } });
             }
           }
         }
 
         // Signal 4: Same firm + similar name
         if (candidates.length === 0 && investor.current_firm_id && investor.last_name) {
-          const { data: firmPeers } = await supabase
-            .from("investors")
-            .select("id, full_name, email, first_name, last_name, linkedin_url")
-            .eq("current_firm_id", investor.current_firm_id)
-            .eq("is_active", true)
-            .neq("id", investor.id)
-            .limit(20);
-
-          if (firmPeers) {
-            for (const peer of firmPeers) {
-              const sim = nameSimilarity(investor.full_name, peer.full_name);
-              if (sim >= 0.80) {
-                candidates.push({ id: peer.id, confidence: sim * 0.7, signals: { fullName: sim, firm: 1.0 } });
-              }
+          const firmPeers = await query<any>(
+            `SELECT id, full_name FROM investors WHERE current_firm_id = $1 AND is_active = true AND id != $2 LIMIT 20`,
+            [investor.current_firm_id, investor.id]
+          );
+          for (const peer of firmPeers) {
+            const sim = nameSimilarity(investor.full_name, peer.full_name);
+            if (sim >= 0.80) {
+              candidates.push({ id: peer.id, confidence: sim * 0.7, signals: { fullName: sim, firm: 1.0 } });
             }
           }
         }
@@ -158,36 +108,27 @@ export async function runScheduledDedup(
           if (seen.has(cand.id)) continue;
           seen.add(cand.id);
 
-          // Check if pair already exists
           const a_id = investor.id < cand.id ? investor.id : cand.id;
           const b_id = investor.id < cand.id ? cand.id : investor.id;
 
-          const { data: existingPair } = await supabase
-            .from("duplicate_candidates")
-            .select("id")
-            .eq("investor_a_id", a_id)
-            .eq("investor_b_id", b_id)
-            .limit(1);
+          const existingPair = await query<any>(
+            `SELECT id FROM duplicate_candidates WHERE investor_a_id = $1 AND investor_b_id = $2 LIMIT 1`,
+            [a_id, b_id]
+          );
 
-          if (existingPair && existingPair.length > 0) continue;
+          if (existingPair.length > 0) continue;
 
-          // Insert duplicate candidate
-          await supabase.from("duplicate_candidates").insert({
-            investor_a_id: a_id,
-            investor_b_id: b_id,
-            confidence: cand.confidence,
-            match_signals: cand.signals,
-            status: cand.confidence >= 0.95 ? "auto_resolved" : "pending",
-          });
+          await query(
+            `INSERT INTO duplicate_candidates (investor_a_id, investor_b_id, confidence, match_signals, status)
+             VALUES ($1, $2, $3, $4::jsonb, $5)`,
+            [a_id, b_id, cand.confidence, JSON.stringify(cand.signals), cand.confidence >= 0.95 ? "auto_resolved" : "pending"]
+          );
 
           result.candidatesFound++;
-          if (cand.confidence >= 0.95) {
-            result.autoMerged++;
-          } else {
-            result.queuedForReview++;
-          }
+          if (cand.confidence >= 0.95) result.autoMerged++;
+          else result.queuedForReview++;
         }
-      } catch (err) {
+      } catch {
         result.errors++;
       }
     }
@@ -196,113 +137,72 @@ export async function runScheduledDedup(
   return result;
 }
 
-// =============================================
-// Merge Duplicate Records
-// =============================================
-
-export async function mergeInvestors(
-  keepId: string,
-  mergeId: string
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
+export async function mergeInvestors(keepId: string, mergeId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    // Get both records
     const [keepResult, mergeResult] = await Promise.all([
-      supabase.from("investors").select("*").eq("id", keepId).single(),
-      supabase.from("investors").select("*").eq("id", mergeId).single(),
+      query<any>(`SELECT * FROM investors WHERE id = $1`, [keepId]),
+      query<any>(`SELECT * FROM investors WHERE id = $1`, [mergeId]),
     ]);
 
-    if (!keepResult.data || !mergeResult.data) {
+    if (!keepResult.length || !mergeResult.length) {
       return { success: false, error: "One or both investors not found" };
     }
 
-    const keep = keepResult.data;
-    const merge = mergeResult.data;
+    const keep = keepResult[0];
+    const merge = mergeResult[0];
 
-    // Merge fields: prefer non-null values from the record being merged
     const updates: Record<string, unknown> = {};
-
-    const mergeFields = [
-      "email", "phone", "linkedin_url", "job_title", "bio",
-      "country", "city", "location", "website_url", "avatar_url",
-    ];
+    const mergeFields = ["email", "phone", "linkedin_url", "job_title", "bio", "country", "city", "location", "website_url", "avatar_url"];
 
     for (const field of mergeFields) {
-      if (!keep[field] && merge[field]) {
-        updates[field] = merge[field];
-      }
+      if (!keep[field] && merge[field]) updates[field] = merge[field];
     }
 
-    // Merge arrays: combine unique values
     const arrayFields = ["investment_stages", "investment_sectors", "investment_geographies"];
     for (const field of arrayFields) {
       const keepArr = keep[field] || [];
       const mergeArr = merge[field] || [];
       const combined = [...new Set([...keepArr, ...mergeArr])];
-      if (combined.length > keepArr.length) {
-        updates[field] = combined;
-      }
+      if (combined.length > keepArr.length) updates[field] = combined;
     }
 
-    // Merge check sizes
     if (!keep.min_check_size && merge.min_check_size) updates.min_check_size = merge.min_check_size;
     if (!keep.max_check_size && merge.max_check_size) updates.max_check_size = merge.max_check_size;
     if (!keep.portfolio_count && merge.portfolio_count) updates.portfolio_count = merge.portfolio_count;
 
-    // Log the merge
-    updates.merged_into_id = null;
-    updates.merge_history = [...(keep.merge_history || []), {
-      mergedFrom: mergeId,
-      mergedAt: new Date().toISOString(),
-      mergedName: merge.full_name,
-    }];
+    updates.merge_history = [...(keep.merge_history || []), { mergedFrom: mergeId, mergedAt: new Date().toISOString(), mergedName: merge.full_name }];
 
-    // Apply updates to the kept record
-    await supabase.from("investors").update(updates).eq("id", keepId);
+    // Apply updates
+    const setClauses: string[] = [];
+    const params: any[] = [];
+    let paramIdx = 1;
+    for (const [key, value] of Object.entries(updates)) {
+      setClauses.push(`${key} = $${paramIdx++}`);
+      params.push(value);
+    }
+    params.push(keepId);
+    await query(`UPDATE investors SET ${setClauses.join(", ")} WHERE id = $${paramIdx}`, params);
 
-    // Transfer employment history
-    await supabase
-      .from("investor_employment_history")
-      .update({ investor_id: keepId })
-      .eq("investor_id", mergeId);
+    // Transfer related data
+    await query(`UPDATE investor_employment_history SET investor_id = $1 WHERE investor_id = $2`, [keepId, mergeId]);
+    await query(`UPDATE saved_investors SET investor_id = $1 WHERE investor_id = $2`, [keepId, mergeId]);
 
-    // Transfer saved investors (ignore unique constraint errors)
-    const { error: savedErr } = await supabase
-      .from("saved_investors")
-      .update({ investor_id: keepId })
-      .eq("investor_id", mergeId);
-    // Unique constraint errors are expected — ignore them
+    // Soft-delete
+    await query(`UPDATE investors SET is_active = false, merged_into_id = $1 WHERE id = $2`, [keepId, mergeId]);
 
-    // Soft-delete the merged record
-    await supabase
-      .from("investors")
-      .update({
-        is_active: false,
-        merged_into_id: keepId,
-      })
-      .eq("id", mergeId);
+    // Update duplicate candidates
+    await query(
+      `UPDATE duplicate_candidates SET status = 'approved', merge_into_id = $1, reviewed_at = NOW()
+       WHERE investor_a_id = $2 OR investor_b_id = $2`,
+      [keepId, mergeId]
+    );
 
-    // Update duplicate candidate status
-    await supabase
-      .from("duplicate_candidates")
-      .update({ status: "approved", merge_into_id: keepId, reviewed_at: new Date().toISOString() })
-      .or(`and(investor_a_id.eq.${mergeId}),and(investor_b_id.eq.${mergeId})`);
-
-    // Log the merge in data_change_log
-    await supabase.rpc("log_data_change", {
-      p_investor_id: keepId,
-      p_field_name: "_merge",
-      p_old_value: mergeId,
-      p_new_value: merge.full_name,
-      p_source_type: "manual_entry",
-      p_confidence: 1.0,
-      p_change_type: "merge",
-      p_detected_by: "dedup_merge",
-    });
+    // Log merge
+    await query(
+      `INSERT INTO data_change_log (investor_id, field_name, old_value, new_value, source_type, confidence, change_type, detected_by)
+       VALUES ($1, '_merge', $2, $3, 'manual_entry', 1.0, 'merge', 'dedup_merge')`,
+      [keepId, mergeId, merge.full_name]
+    );
 
     return { success: true };
   } catch (err) {

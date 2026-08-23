@@ -11,12 +11,7 @@
 // Default: 200000
 // =============================================
 
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { query, closePool } from "./db";
 
 // =============================================
 // REAL VC / FIRM NAMES
@@ -446,29 +441,28 @@ async function main() {
       source_id: `firm_${i}`,
     }));
 
-    const { data, error } = await supabase
-      .from("investor_firms")
-      .insert(batch)
-      .select("id");
-
-    if (data) {
-      firmsInserted += data.length;
-      firmIds.push(...data.map((d) => d.id));
+    // Build multi-row INSERT for firms
+    const firmValues: string[] = [];
+    const firmParams: any[] = [];
+    let firmParamIdx = 1;
+    for (const firm of batch) {
+      firmValues.push(`($${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++}, $${firmParamIdx++})`);
+      firmParams.push(
+        firm.name, firm.domain || null, firm.firm_type, firm.headquarters || null,
+        firm.country, firm.region || null, firm.investment_stages || [], firm.investment_sectors || [],
+        firm.investment_geographies || [], firm.min_check_size || null, firm.max_check_size || null,
+        firm.fund_size || null, firm.founded_year || null, firm.source || "generated"
+      );
     }
-
-    if (error) {
+    try {
+      const insertedFirms = await query(
+        `INSERT INTO investor_firms (name, domain, firm_type, headquarters, country, region, investment_stages, investment_sectors, investment_geographies, min_check_size, max_check_size, fund_size, founded_year, source) VALUES ${firmValues.join(", ")} RETURNING id, normalized_name`,
+        firmParams
+      );
+      firmsInserted += insertedFirms.length;
+      firmIds.push(...insertedFirms.map((d: any) => d.id));
+    } catch (error: any) {
       console.error(`  ⚠️  Firm batch error: ${error.message}`);
-      // Fallback: insert one by one
-      for (const firm of batch) {
-        const { data: single, error: singleErr } = await supabase
-          .from("investor_firms")
-          .insert(firm)
-          .select("id");
-        if (single && single.length > 0) {
-          firmsInserted++;
-          firmIds.push(single[0].id);
-        }
-      }
     }
 
     if ((i + BATCH_SIZE) % 500 === 0 || i + BATCH_SIZE >= allFirms.length) {
@@ -546,40 +540,66 @@ async function main() {
     }
 
     // Batch insert investors
-    const { data, error } = await supabase
-      .from("investors")
-      .insert(investors)
-      .select("id");
+    const invValues: string[] = [];
+    const invParams: any[] = [];
+    let invParamIdx = 1;
+    for (const inv of investors) {
+      invValues.push(`($${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++}, $${invParamIdx++})`);
+      invParams.push(
+        inv.full_name, inv.first_name, inv.last_name, inv.email, inv.linkedin_url,
+        inv.job_title, inv.investor_type, inv.investment_stages, inv.investment_sectors,
+        inv.investment_geographies, inv.country, inv.city, inv.min_check_size, inv.max_check_size,
+        inv.currency, inv.portfolio_count, inv.bio, inv.is_active, inv.is_verified,
+        inv.data_quality_score, inv.outreach_readiness, inv.current_firm_id, inv.source, inv.source_id
+      );
+    }
+    try {
+      const insertedInvestors = await query(
+        `INSERT INTO investors (full_name, first_name, last_name, email, linkedin_url, job_title, investor_type, investment_stages, investment_sectors, investment_geographies, country, city, min_check_size, max_check_size, currency, portfolio_count, bio, is_active, is_verified, data_quality_score, outreach_readiness, current_firm_id, source, source_id) VALUES ${invValues.join(", ")} RETURNING id`,
+        invParams
+      );
+      investorsInserted += insertedInvestors.length;
 
-    if (error) {
+      // Generate employment history for investors with firms
+      const withFirms = investors.filter(inv => inv.current_firm_id);
+      if (withFirms.length > 0 && insertedInvestors.length > 0) {
+        const empValues: string[] = [];
+        const empParams: any[] = [];
+        let empParamIdx = 1;
+        for (let idx = 0; idx < Math.min(withFirms.length, insertedInvestors.length); idx++) {
+          const inv = withFirms[idx];
+          const empId = insertedInvestors[idx]?.id;
+          if (!empId) continue;
+          empValues.push(`($${empParamIdx++}, $${empParamIdx++}, $${empParamIdx++}, $${empParamIdx++}, $${empParamIdx++})`);
+          empParams.push(empId, inv.current_firm_id, inv.job_title, `${randomInt(2010, 2024)}-${String(randomInt(1, 12)).padStart(2, "0")}-01`, true);
+        }
+        if (empValues.length > 0) {
+          try {
+            await query(`INSERT INTO investor_employment_history (investor_id, firm_id, title, start_date, is_current) VALUES ${empValues.join(", ")}`, empParams);
+            employmentInserted += empValues.length;
+          } catch {
+            // Non-critical
+          }
+        }
+      }
+    } catch (err) {
       // Fallback: half-batch
       if (investors.length > 1) {
         const mid = Math.floor(investors.length / 2);
-        const left = investors.slice(0, mid);
-        const right = investors.slice(mid);
-        await supabase.from("investors").insert(left);
-        await supabase.from("investors").insert(right);
-        investorsInserted += investors.length;
-      }
-    } else if (data) {
-      investorsInserted += data.length;
-
-      // Generate employment history for ~60% of investors with firms
-      const withFirms = investors.filter(inv => inv.current_firm_id && data[investors.indexOf(inv)]);
-      if (withFirms.length > 0) {
-        const employmentRecords = withFirms.map((inv, idx) => ({
-          investor_id: data[investors.indexOf(inv)].id,
-          firm_id: inv.current_firm_id,
-          title: inv.job_title,
-          start_date: `${randomInt(2010, 2024)}-${String(randomInt(1, 12)).padStart(2, "0")}-01`,
-          is_current: true,
-        }));
-
-        const { error: empError } = await supabase
-          .from("investor_employment_history")
-          .insert(employmentRecords);
-
-        if (!empError) employmentInserted += employmentRecords.length;
+        try {
+          const left = investors.slice(0, mid);
+          const right = investors.slice(mid);
+          // Try simple inserts without RETURNING
+          for (const inv of left) {
+            await query(`INSERT INTO investors (full_name, first_name, last_name, email, investor_type, country, city, source, source_id, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, [inv.full_name, inv.first_name, inv.last_name, inv.email, inv.investor_type, inv.country, inv.city, inv.source, inv.source_id, inv.is_active]);
+          }
+          for (const inv of right) {
+            await query(`INSERT INTO investors (full_name, first_name, last_name, email, investor_type, country, city, source, source_id, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, [inv.full_name, inv.first_name, inv.last_name, inv.email, inv.investor_type, inv.country, inv.city, inv.source, inv.source_id, inv.is_active]);
+          }
+          investorsInserted += investors.length;
+        } catch {
+          // Ignore
+        }
       }
     }
 
@@ -598,23 +618,20 @@ async function main() {
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
   // Final count
-  const { count: totalCount } = await supabase
-    .from("investors")
-    .select("id", { count: "exact", head: true });
-
-  const { count: firmCount } = await supabase
-    .from("investor_firms")
-    .select("id", { count: "exact", head: true });
+  const [totalCountResult] = await query<{ count: string }>(`SELECT count(*) as count FROM investors`);
+  const [firmCountResult] = await query<{ count: string }>(`SELECT count(*) as count FROM investor_firms`);
 
   console.log(`\n✅ Dataset generation complete!`);
-  console.log(`   Firms:       ${firmCount?.toLocaleString() || "unknown"}`);
-  console.log(`   Investors:   ${totalCount?.toLocaleString() || "unknown"}`);
+  console.log(`   Firms:       ${parseInt(firmCountResult?.count || "0").toLocaleString()}`);
+  console.log(`   Investors:   ${parseInt(totalCountResult?.count || "0").toLocaleString()}`);
   console.log(`   Employment:  ${employmentInserted.toLocaleString()} records`);
   console.log(`   Time:        ${elapsed}s`);
   console.log(`   Rate:        ${Math.round(investorsInserted / (Date.now() - startTime) * 1000)}/s\n`);
 }
 
-main().catch((err) => {
-  console.error("Fatal error:", err);
-  process.exit(1);
-});
+main()
+  .then(() => closePool())
+  .catch((err) => {
+    console.error("Fatal error:", err);
+    process.exit(1);
+  });

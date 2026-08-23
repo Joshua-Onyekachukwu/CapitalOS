@@ -1,15 +1,7 @@
 // Fast CSV import using the batch pipeline
-import { config } from "dotenv";
-import { resolve } from "path";
-config({ path: resolve(__dirname, "../../.env.local") });
-
-import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { resolve } from "path";
+import { query, closePool } from "./db";
 
 async function main() {
   const csvPath = resolve(__dirname, "../../test-data/apollo-investor-export.csv");
@@ -22,11 +14,11 @@ async function main() {
   console.log("");
 
   // Step 1: Count before
-  const { count: beforeCount } = await supabase
-    .from("investors")
-    .select("id", { count: "exact", head: true });
+  const [beforeCount] = await query<{ count: string }>(
+    `SELECT count(*) as count FROM investors`
+  );
 
-  console.log(`Step 1 — Investors before import: ${beforeCount?.toLocaleString() || 0}`);
+  console.log(`Step 1 — Investors before import: ${parseInt(beforeCount?.count || "0").toLocaleString()}`);
 
   // Step 2: Run the import
   console.log("\nStep 2 — Running CSV import pipeline...");
@@ -46,30 +38,29 @@ async function main() {
   console.log(`  Failed:       ${result.failed}`);
   if (result.errors.length > 0) {
     console.log(`  Errors:       ${result.errors.length}`);
-    result.errors.slice(0, 5).forEach((e) => console.log(`    - ${e}`));
+    result.errors.slice(0, 5).forEach((e: string) => console.log(`    - ${e}`));
   }
 
   // Step 3: Count after
-  const { count: afterCount } = await supabase
-    .from("investors")
-    .select("id", { count: "exact", head: true });
+  const [afterCount] = await query<{ count: string }>(
+    `SELECT count(*) as count FROM investors`
+  );
 
-  console.log(`\nStep 3 — Investors after import: ${afterCount?.toLocaleString() || 0}`);
-  console.log(`  New investors added: ${(afterCount || 0) - (beforeCount || 0)}`);
+  console.log(`\nStep 3 — Investors after import: ${parseInt(afterCount?.count || "0").toLocaleString()}`);
+  console.log(`  New investors added: ${parseInt(afterCount?.count || "0") - parseInt(beforeCount?.count || "0")}`);
 
   // Step 4: Verify data quality
   console.log("\nStep 4 — Verifying imported data...");
 
-  const { data: sample } = await supabase
-    .from("investors")
-    .select("id, full_name, email, investor_type, country, data_quality_score, outreach_readiness, investment_stages, investment_sectors, source_provider")
-    .eq("source_provider", "apollo_csv_import")
-    .order("created_at", { ascending: false })
-    .limit(10);
+  const sample = await query<any>(
+    `SELECT id, full_name, email, investor_type, country, data_quality_score, outreach_readiness, investment_stages, investment_sectors, source_provider
+     FROM investors WHERE source_provider = 'apollo_csv_import'
+     ORDER BY created_at DESC LIMIT 10`
+  );
 
-  if (sample && sample.length > 0) {
+  if (sample.length > 0) {
     console.log(`\n  Sample records (${sample.length} shown):`);
-    sample.forEach((inv, i) => {
+    sample.forEach((inv: any, i: number) => {
       console.log(`  ${i + 1}. ${inv.full_name} (${inv.email || "no email"})`);
       console.log(`     Type: ${inv.investor_type} | Country: ${inv.country || "?"} | Quality: ${inv.data_quality_score}% | Readiness: ${inv.outreach_readiness}`);
       console.log(`     Stages: ${(inv.investment_stages || []).join(", ") || "none"}`);
@@ -80,13 +71,12 @@ async function main() {
   // Step 5: Verify enrichment
   console.log("\nStep 5 — Checking auto-enrichment results...");
 
-  const { data: enriched } = await supabase
-    .from("investors")
-    .select("data_quality_score, outreach_readiness")
-    .eq("source_provider", "apollo_csv_import");
+  const enriched = await query<{ data_quality_score: number; outreach_readiness: string }>(
+    `SELECT data_quality_score, outreach_readiness FROM investors WHERE source_provider = 'apollo_csv_import'`
+  );
 
   let avgQuality = 0;
-  if (enriched && enriched.length > 0) {
+  if (enriched.length > 0) {
     avgQuality = Math.round(enriched.reduce((sum, inv) => sum + (inv.data_quality_score || 0), 0) / enriched.length);
     const readinessCounts: Record<string, number> = {};
     enriched.forEach((inv) => {
@@ -140,7 +130,9 @@ async function main() {
   console.log(`Imported: ${result.inserted} investors in ${elapsed}s`);
   console.log(`Dedup: ${reimportResult.duplicates} duplicates correctly detected`);
   console.log(`Enrichment: ${avgQuality}% avg quality score`);
-  console.log(`Total investors in DB: ${afterCount?.toLocaleString()}`);
+  console.log(`Total investors in DB: ${parseInt(afterCount?.count || "0").toLocaleString()}`);
+
+  await closePool();
 }
 
 main().catch(console.error);

@@ -1,14 +1,9 @@
 // =============================================
 // Email Tracking Service
 // =============================================
-// Generates tracking IDs, injects pixels/links,
-// and records open/click events.
+// Uses CockroachDB for data.
 
-import { createClient } from "@supabase/supabase-js";
-
-// =============================================
-// Types
-// =============================================
+import { query } from "@/lib/db";
 
 export interface TrackingEvent {
   emailId: string;
@@ -27,10 +22,6 @@ export interface EmailStats {
   avgOpens: number;
 }
 
-// =============================================
-// Generate Tracking ID
-// =============================================
-
 export function generateTrackingId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let id = "";
@@ -40,32 +31,18 @@ export function generateTrackingId(): string {
   return id;
 }
 
-// =============================================
-// Get Tracking Base URL
-// =============================================
-
 function getTrackingBaseUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }
 
-// =============================================
-// Inject Tracking into HTML
-// =============================================
-
-export function injectTracking(
-  html: string,
-  trackingId: string,
-  trackingEnabled: boolean
-): string {
+export function injectTracking(html: string, trackingId: string, trackingEnabled: boolean): string {
   if (!trackingEnabled || !trackingId) return html;
 
   const baseUrl = getTrackingBaseUrl();
 
-  // 1. Inject tracking pixel (1x1 transparent GIF)
   const pixelUrl = `${baseUrl}/api/track/open/${trackingId}`;
   const pixel = `<img src="${pixelUrl}" width="1" height="1" style="display:none!important;visibility:hidden!important;position:absolute!important;left:-9999px!important;" alt="" />`;
 
-  // Insert pixel before </body> or at end
   let tracked = html;
   if (tracked.toLowerCase().includes("</body>")) {
     tracked = tracked.replace(/<\/body>/i, `${pixel}</body>`);
@@ -73,14 +50,10 @@ export function injectTracking(
     tracked += pixel;
   }
 
-  // 2. Rewrite links to go through click tracker
   const linkRegex = /href="(https?:\/\/[^"]+)"/gi;
   tracked = tracked.replace(linkRegex, (match, url) => {
-    // Skip tracking pixel and already-tracked links
     if (url.includes("/api/track/")) return match;
-    // Skip mailto: and tel: links
     if (url.startsWith("mailto:") || url.startsWith("tel:")) return match;
-    // Skip anchor links
     if (url.startsWith("#")) return match;
 
     const encodedUrl = encodeURIComponent(url);
@@ -91,145 +64,79 @@ export function injectTracking(
   return tracked;
 }
 
-// =============================================
-// Record Open Event
-// =============================================
-
-export async function recordOpen(
-  trackingId: string,
-  userAgent?: string,
-  ipAddress?: string
-): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+export async function recordOpen(trackingId: string, userAgent?: string, ipAddress?: string): Promise<void> {
+  const emails = await query<any>(
+    `SELECT id, user_id, investor_id, opened_at, open_count FROM email_messages WHERE tracking_id = $1`,
+    [trackingId]
   );
 
-  // Find the email by tracking_id
-  const { data: email } = await supabase
-    .from("email_messages")
-    .select("id, user_id, investor_id, opened_at, open_count")
-    .eq("tracking_id", trackingId)
-    .single();
+  if (!emails.length) return;
+  const email = emails[0];
 
-  if (!email) return;
-
-  // Update email_messages
   const now = new Date().toISOString();
   const isFirstOpen = !email.opened_at;
 
-  await supabase
-    .from("email_messages")
-    .update({
-      opened_at: email.opened_at || now,
-      open_count: (email.open_count || 0) + 1,
-      status: "opened",
-      ...(isFirstOpen && ipAddress ? { first_open_ip: ipAddress } : {}),
-    })
-    .eq("id", email.id);
+  await query(
+    `UPDATE email_messages SET opened_at = $1, open_count = $2, status = 'opened'${isFirstOpen && ipAddress ? ", first_open_ip = '" + ipAddress + "'" : ""} WHERE id = $3`,
+    [email.opened_at || now, (email.open_count || 0) + 1, email.id]
+  );
 
-  // Parse user agent for device/client info
   const deviceType = parseDeviceType(userAgent);
   const emailClient = parseEmailClient(userAgent);
 
-  // Log the event
-  await supabase.from("email_tracking_events").insert({
-    email_id: email.id,
-    user_id: email.user_id,
-    investor_id: email.investor_id,
-    event_type: "open",
-    user_agent: userAgent || null,
-    ip_address: ipAddress || null,
-    device_type: deviceType,
-    email_client: emailClient,
-  });
+  await query(
+    `INSERT INTO email_tracking_events (email_id, user_id, investor_id, event_type, user_agent, ip_address, device_type, email_client)
+     VALUES ($1, $2, $3, 'open', $4, $5, $6, $7)`,
+    [email.id, email.user_id, email.investor_id, userAgent || null, ipAddress || null, deviceType, emailClient]
+  );
 }
 
-// =============================================
-// Record Click Event
-// =============================================
-
-export async function recordClick(
-  trackingId: string,
-  url: string,
-  userAgent?: string,
-  ipAddress?: string
-): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+export async function recordClick(trackingId: string, url: string, userAgent?: string, ipAddress?: string): Promise<void> {
+  const emails = await query<any>(
+    `SELECT id, user_id, investor_id, clicked_at, click_count FROM email_messages WHERE tracking_id = $1`,
+    [trackingId]
   );
 
-  const { data: email } = await supabase
-    .from("email_messages")
-    .select("id, user_id, investor_id, clicked_at, click_count")
-    .eq("tracking_id", trackingId)
-    .single();
-
-  if (!email) return;
+  if (!emails.length) return;
+  const email = emails[0];
 
   const now = new Date().toISOString();
   const isFirstClick = !email.clicked_at;
 
-  await supabase
-    .from("email_messages")
-    .update({
-      clicked_at: email.clicked_at || now,
-      click_count: (email.click_count || 0) + 1,
-      status: "clicked",
-      ...(isFirstClick && ipAddress ? { first_click_ip: ipAddress } : {}),
-    })
-    .eq("id", email.id);
+  await query(
+    `UPDATE email_messages SET clicked_at = $1, click_count = $2, status = 'clicked'${isFirstClick && ipAddress ? ", first_click_ip = '" + ipAddress + "'" : ""} WHERE id = $3`,
+    [email.clicked_at || now, (email.click_count || 0) + 1, email.id]
+  );
 
   const deviceType = parseDeviceType(userAgent);
   const emailClient = parseEmailClient(userAgent);
 
-  await supabase.from("email_tracking_events").insert({
-    email_id: email.id,
-    user_id: email.user_id,
-    investor_id: email.investor_id,
-    event_type: "click",
-    url,
-    user_agent: userAgent || null,
-    ip_address: ipAddress || null,
-    device_type: deviceType,
-    email_client: emailClient,
-  });
+  await query(
+    `INSERT INTO email_tracking_events (email_id, user_id, investor_id, event_type, url, user_agent, ip_address, device_type, email_client)
+     VALUES ($1, $2, $3, 'click', $4, $5, $6, $7, $8)`,
+    [email.id, email.user_id, email.investor_id, url, userAgent || null, ipAddress || null, deviceType, emailClient]
+  );
 }
 
-// =============================================
-// Get Email Stats
-// =============================================
-
-export async function getEmailStats(
-  userId: string,
-  investorId?: string
-): Promise<EmailStats> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  let query = supabase
-    .from("email_messages")
-    .select("id, status, open_count, click_count, opened_at, clicked_at")
-    .eq("user_id", userId)
-    .eq("direction", "outbound");
+export async function getEmailStats(userId: string, investorId?: string): Promise<EmailStats> {
+  let sql = `SELECT id, status, open_count, click_count, opened_at, clicked_at FROM email_messages WHERE user_id = $1 AND direction = 'outbound'`;
+  const params: any[] = [userId];
 
   if (investorId) {
-    query = query.eq("investor_id", investorId);
+    params.push(investorId);
+    sql += ` AND investor_id = $${params.length}`;
   }
 
-  const { data: emails } = await query;
+  const emails = await query<any>(sql, params);
 
-  if (!emails || emails.length === 0) {
+  if (!emails.length) {
     return { totalSent: 0, totalOpened: 0, totalClicked: 0, openRate: 0, clickRate: 0, avgOpens: 0 };
   }
 
   const totalSent = emails.length;
   const totalOpened = emails.filter((e) => e.opened_at).length;
-  const totalClicked = emails.filter((e) => (e as any).clicked_at).length;
-  const totalOpenCount = emails.reduce((sum, e) => sum + ((e as any).open_count || 0), 0);
+  const totalClicked = emails.filter((e) => e.clicked_at).length;
+  const totalOpenCount = emails.reduce((sum, e) => sum + (e.open_count || 0), 0);
 
   return {
     totalSent,
@@ -241,13 +148,7 @@ export async function getEmailStats(
   };
 }
 
-// =============================================
-// Get Tracking Events
-// =============================================
-
-export async function getTrackingEvents(
-  emailId: string
-): Promise<Array<{
+export async function getTrackingEvents(emailId: string): Promise<Array<{
   event_type: string;
   url?: string;
   device_type?: string;
@@ -255,23 +156,12 @@ export async function getTrackingEvents(
   country?: string;
   created_at: string;
 }>> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  return query<any>(
+    `SELECT event_type, url, device_type, email_client, country, created_at
+     FROM email_tracking_events WHERE email_id = $1 ORDER BY created_at DESC`,
+    [emailId]
   );
-
-  const { data: events } = await supabase
-    .from("email_tracking_events")
-    .select("event_type, url, device_type, email_client, country, created_at")
-    .eq("email_id", emailId)
-    .order("created_at", { ascending: false });
-
-  return events || [];
 }
-
-// =============================================
-// Device/Client Detection
-// =============================================
 
 function parseDeviceType(userAgent?: string): string {
   if (!userAgent) return "unknown";

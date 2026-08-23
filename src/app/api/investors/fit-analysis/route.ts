@@ -5,15 +5,9 @@
 // Actions: batch_score, individual_score, ai_analysis
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { query } from "@/lib/db";
 import { chatCompletion } from "@/lib/ai";
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 // =============================================
 // Deterministic Scoring (same as qualification.ts but inline for API use)
@@ -228,22 +222,20 @@ Be specific and reference actual data points. Do not fabricate information.`;
 // =============================================
 
 export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const body = await request.json();
     const { action, investorId } = body;
 
     if (action === "batch_score") {
-      // Batch score all investors
-      const supabase = getSupabase();
+      // Get startup profile from CockroachDB
+      const profiles = await query<any>(
+        "SELECT * FROM company_profiles ORDER BY created_at DESC LIMIT 1"
+      );
 
-      // Get startup profile
-      const { data: profiles } = await supabase
-        .from("company_profiles")
-        .select("*")
-        .limit(1)
-        .order("created_at", { ascending: false });
-
-      if (!profiles || profiles.length === 0) {
+      if (!profiles.length) {
         return NextResponse.json({ error: "No company profile found. Complete onboarding first." }, { status: 400 });
       }
 
@@ -254,15 +246,12 @@ export async function POST(request: NextRequest) {
         geography: profile.location || "",
       };
 
-      // Get all investors
-      const { data: investors } = await supabase
-        .from("investors")
-        .select("*")
-        .eq("is_active", true)
-        .order("created_at")
-        .limit(5000);
+      // Get all active investors from CockroachDB
+      const investors = await query<any>(
+        "SELECT * FROM investors WHERE is_active = true ORDER BY created_at LIMIT 5000"
+      );
 
-      if (!investors) return NextResponse.json({ error: "No investors found" }, { status: 404 });
+      if (!investors.length) return NextResponse.json({ error: "No investors found" }, { status: 404 });
 
       let scored = 0;
       let ready = 0;
@@ -270,19 +259,21 @@ export async function POST(request: NextRequest) {
       for (const investor of investors) {
         const result = computeFitScore(investor, startup);
 
-        await supabase
-          .from("investors")
-          .update({
-            fit_score: result.overallScore,
-            fit_score_breakdown: {
-              factors: result.factors,
-              confidence: result.confidence,
-              dataQuality: result.dataQuality,
-            },
-            data_quality_score: result.dataQuality,
-            outreach_readiness: result.outreachReadiness,
-          })
-          .eq("id", investor.id);
+        await query(
+          `UPDATE investors SET
+            fit_score = $1,
+            fit_score_breakdown = $2::jsonb,
+            data_quality_score = $3,
+            outreach_readiness = $4
+           WHERE id = $5`,
+          [
+            result.overallScore,
+            JSON.stringify({ factors: result.factors, confidence: result.confidence, dataQuality: result.dataQuality }),
+            result.dataQuality,
+            result.outreachReadiness,
+            investor.id,
+          ]
+        );
 
         scored++;
         if (result.outreachReadiness === "ready") ready++;
@@ -294,25 +285,21 @@ export async function POST(request: NextRequest) {
     if (action === "individual_score" || action === "ai_analysis") {
       if (!investorId) return NextResponse.json({ error: "investorId required" }, { status: 400 });
 
-      const supabase = getSupabase();
+      // Get investor from CockroachDB
+      const investors = await query<any>(
+        "SELECT * FROM investors WHERE id = $1",
+        [investorId]
+      );
 
-      // Get investor
-      const { data: investor } = await supabase
-        .from("investors")
-        .select("*")
-        .eq("id", investorId)
-        .single();
+      if (!investors.length) return NextResponse.json({ error: "Investor not found" }, { status: 404 });
+      const investor = investors[0];
 
-      if (!investor) return NextResponse.json({ error: "Investor not found" }, { status: 404 });
+      // Get startup profile from CockroachDB
+      const profiles = await query<any>(
+        "SELECT * FROM company_profiles ORDER BY created_at DESC LIMIT 1"
+      );
 
-      // Get startup profile
-      const { data: profiles } = await supabase
-        .from("company_profiles")
-        .select("*")
-        .limit(1)
-        .order("created_at", { ascending: false });
-
-      if (!profiles || profiles.length === 0) {
+      if (!profiles.length) {
         return NextResponse.json({ error: "No company profile found" }, { status: 400 });
       }
 
@@ -325,20 +312,22 @@ export async function POST(request: NextRequest) {
 
       const fitResult = computeFitScore(investor, startup);
 
-      // Update investor record
-      await supabase
-        .from("investors")
-        .update({
-          fit_score: fitResult.overallScore,
-          fit_score_breakdown: {
-            factors: fitResult.factors,
-            confidence: fitResult.confidence,
-            dataQuality: fitResult.dataQuality,
-          },
-          data_quality_score: fitResult.dataQuality,
-          outreach_readiness: fitResult.outreachReadiness,
-        })
-        .eq("id", investorId);
+      // Update investor record in CockroachDB
+      await query(
+        `UPDATE investors SET
+          fit_score = $1,
+          fit_score_breakdown = $2::jsonb,
+          data_quality_score = $3,
+          outreach_readiness = $4
+         WHERE id = $5`,
+        [
+          fitResult.overallScore,
+          JSON.stringify({ factors: fitResult.factors, confidence: fitResult.confidence, dataQuality: fitResult.dataQuality }),
+          fitResult.dataQuality,
+          fitResult.outreachReadiness,
+          investorId,
+        ]
+      );
 
       let aiAnalysis = "";
       if (action === "ai_analysis") {

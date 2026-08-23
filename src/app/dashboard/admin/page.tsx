@@ -111,77 +111,45 @@ export default function AdminPage() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
+      const res = await fetch("/api/dashboard/admin");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load admin data");
 
-      // Parallel queries
-      const [
-        healthResult,
-        jobsResult,
-        rawRecordsResult,
-        sourcesResult,
-        duplicatesPendingResult,
-        duplicatesAutoResult,
-        duplicatesApprovedResult,
-        duplicatesRejectedResult,
-        recentPendingResult,
-        changesResult,
-        auditResult,
-      ] = await Promise.all([
-        // Data health view
-        supabase.from("v_data_health").select("*").single(),
-        // Acquisition jobs
-        supabase.from("data_acquisition_jobs").select("*").order("created_at", { ascending: false }).limit(20),
-        // Raw records aggregation
-        supabase.from("raw_records").select("id, status, source_provider, created_at"),
-        // Data sources
-        supabase.from("investor_data_sources").select("field_name, source_type, source_provider, created_at").order("created_at", { ascending: false }).limit(1000),
-        // Duplicate candidates
-        supabase.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "auto_resolved"),
-        supabase.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "approved"),
-        supabase.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "rejected"),
-        // Recent pending duplicates with names
-        supabase.from("v_pending_duplicates").select("*").limit(10),
-        // Recent changes
-        supabase.from("data_change_log").select("*").order("created_at", { ascending: false }).limit(20),
-        // Audit log
-        supabase.from("admin_audit_log").select("*").order("created_at", { ascending: false }).limit(20),
-      ]);
-
-      // Process health
-      if (healthResult.data) {
-        setHealth(healthResult.data);
-      }
+      const dh = data.dataHealth;
+      setHealth({
+        totalInvestors: dh.total_investors,
+        withEmail: dh.with_email,
+        withLinkedin: dh.with_linkedin,
+        verified: dh.verified,
+        highQuality: dh.high_quality,
+        highFit: dh.high_fit,
+        pendingDuplicates: dh.pending_duplicates,
+        pendingRawRecords: dh.pending_raw_records ?? 0,
+      });
 
       // Process jobs
-      const jobs = jobsResult.data || [];
-      const rawRecords = rawRecordsResult.data || [];
-
-      const statusCounts: Record<string, number> = {};
-      rawRecords.forEach((r) => {
-        statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
-      });
+      const jobs = data.recentJobs || [];
+      const rawRecords = data.rawRecords || [];
 
       setIngestion({
         totalJobs: jobs.length,
-        completedJobs: jobs.filter((j) => j.status === "completed").length,
-        runningJobs: jobs.filter((j) => j.status === "running").length,
-        failedJobs: jobs.filter((j) => j.status === "failed").length,
+        completedJobs: jobs.filter((j: any) => j.status === "completed").length,
+        runningJobs: jobs.filter((j: any) => j.status === "running").length,
+        failedJobs: jobs.filter((j: any) => j.status === "failed").length,
         totalRecordsIngested: rawRecords.length,
-        totalRecordsProcessed: rawRecords.filter((r) => r.status !== "pending").length,
-        totalRecordsMatched: rawRecords.filter((r) => r.status === "matched").length,
-        totalRecordsNew: rawRecords.filter((r) => r.status === "new").length,
-        totalRecordsDuplicate: rawRecords.filter((r) => r.status === "duplicate").length,
-        totalRecordsError: rawRecords.filter((r) => r.status === "error").length,
+        totalRecordsProcessed: rawRecords.filter((r: any) => r.status !== "pending").length,
+        totalRecordsMatched: rawRecords.filter((r: any) => r.status === "matched").length,
+        totalRecordsNew: rawRecords.filter((r: any) => r.status === "new").length,
+        totalRecordsDuplicate: rawRecords.filter((r: any) => r.status === "duplicate").length,
+        totalRecordsError: rawRecords.filter((r: any) => r.status === "error").length,
         recentJobs: jobs.slice(0, 10),
       });
 
       // Process sources
-      const sources = sourcesResult.data || [];
+      const sources = data.dataSources || [];
       const sourceTypeMap: Record<string, number> = {};
       const sourceProviderMap: Record<string, number> = {};
-      sources.forEach((s) => {
+      sources.forEach((s: any) => {
         sourceTypeMap[s.source_type] = (sourceTypeMap[s.source_type] || 0) + 1;
         if (s.source_provider) {
           sourceProviderMap[s.source_provider] = (sourceProviderMap[s.source_provider] || 0) + 1;
@@ -196,20 +164,21 @@ export default function AdminPage() {
           .map(([provider, count]) => ({ provider, count }))
           .sort((a, b) => b.count - a.count)
           .slice(0, 8),
-        recentChanges: (changesResult.data || []) as SourceAnalytics["recentChanges"],
+        recentChanges: (data.recentChanges || []) as SourceAnalytics["recentChanges"],
       });
 
       // Process duplicates
+      const ds = data.duplicateStats || {};
       setDuplicates({
-        pending: duplicatesPendingResult.count || 0,
-        autoResolved: duplicatesAutoResult.count || 0,
-        approved: duplicatesApprovedResult.count || 0,
-        rejected: duplicatesRejectedResult.count || 0,
-        recentPending: (recentPendingResult.data || []) as DuplicateQueue["recentPending"],
+        pending: ds.pending || 0,
+        autoResolved: ds.autoResolved || 0,
+        approved: ds.approved || 0,
+        rejected: ds.rejected || 0,
+        recentPending: (data.pendingDuplicatesList || []) as DuplicateQueue["recentPending"],
       });
 
       // Process audit log
-      setAuditLog((auditResult.data || []) as AuditEntry[]);
+      setAuditLog((data.recentAudit || []) as AuditEntry[]);
     } catch (err) {
       console.error("Failed to load admin data:", err);
     } finally {

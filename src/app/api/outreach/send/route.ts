@@ -6,10 +6,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/services/email/sender";
-import { createClient } from "@supabase/supabase-js";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { query } from "@/lib/db";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.email);
     if (rateLimitResponse) {
@@ -25,48 +29,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch the investor's email
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    // Fetch the investor's email from CockroachDB
+    const investors = await query<{ email: string }>(
+      "SELECT email FROM investors WHERE id = $1",
+      [investorId]
     );
 
-    const { data: investor } = await supabase
-      .from("investors")
-      .select("email")
-      .eq("id", investorId)
-      .single();
-
-    if (!investor?.email) {
+    if (!investors.length || !investors[0].email) {
       return NextResponse.json(
         { error: "No email address found for this investor" },
         { status: 404 }
       );
     }
 
+    const investorEmail = investors[0].email;
+
     // Send the email
     const result = await sendEmail({
       userId,
-      to: investor.email,
+      to: investorEmail,
       subject,
       bodyHtml,
       bodyText: bodyText || bodyHtml.replace(/<[^>]*>/g, ""),
     });
 
     if (result.success) {
-      // Log the email in email_messages
-      await supabase.from("email_messages").insert({
-        user_id: userId,
-        investor_id: investorId,
-        direction: "outbound",
-        subject,
-        body_html: bodyHtml,
-        body_text: bodyText || bodyHtml.replace(/<[^>]*>/g, ""),
-        to_address: investor.email,
-        status: "sent",
-        sent_at: new Date().toISOString(),
-        ai_generated: true,
-      });
+      // Log the email in email_messages via CockroachDB
+      await query(
+        `INSERT INTO email_messages (user_id, investor_id, direction, subject, body_html, body_text, to_address, status, sent_at, ai_generated)
+         VALUES ($1, $2, 'outbound', $3, $4, $5, $6, 'sent', NOW(), true)`,
+        [userId, investorId, subject, bodyHtml, bodyText || bodyHtml.replace(/<[^>]*>/g, ""), investorEmail]
+      );
 
       return NextResponse.json({ success: true, messageId: result.messageId });
     } else {
