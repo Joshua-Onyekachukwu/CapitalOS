@@ -31,6 +31,7 @@ const navSections: NavSection[] = [
       { label: "Edit Profile", href: "/dashboard/startup/edit", icon: "ri-edit-line" },
       { label: "Onboarding", href: "/onboarding", icon: "ri-flask-line" },
       { label: "Documents", href: "/dashboard/documents", icon: "ri-file-text-line" },
+      { label: "Pitch Decks", href: "/dashboard/decks", icon: "ri-file-ppt-2-line" },
     ],
   },
   {
