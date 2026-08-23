@@ -4,17 +4,18 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function GET(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
-    const user = await requireUser();
-
     // Get saved investor records
     const saved = await query<any>(
       `SELECT id, investor_id, created_at
@@ -68,13 +69,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
 
-    const user = await requireUser();
     const { investorId, notes } = await request.json();
 
     if (!investorId) {
@@ -99,13 +102,15 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
 
-    const user = await requireUser();
     const { savedId } = await request.json();
 
     if (!savedId) {

@@ -8,14 +8,20 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { getJob, cancelJob, retryJob } from "@/lib/jobs/runner";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireAuth(_request);
+  const user = await requireAuth(request);
   if (user instanceof NextResponse) return user;
+
+  const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+  if (rateLimitResponse) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+  }
 
   try {
     const { id } = await params;
@@ -38,6 +44,11 @@ export async function DELETE(
 ) {
   const user = await requireAuth(request);
   if (user instanceof NextResponse) return user;
+
+  const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+  if (rateLimitResponse) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+  }
 
   try {
     const { id } = await params;
@@ -63,6 +74,11 @@ export async function POST(
 ) {
   const user = await requireAuth(request);
   if (user instanceof NextResponse) return user;
+
+  const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+  if (rateLimitResponse) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+  }
 
   try {
     const { id } = await params;

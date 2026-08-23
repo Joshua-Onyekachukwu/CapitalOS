@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/middleware/api-auth";
 import { cache } from "@/lib/cache";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 // =============================================
 // Cache Metrics & Management API
@@ -13,6 +14,11 @@ import { cache } from "@/lib/cache";
 export async function GET(request: NextRequest) {
   const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
+
+  const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+  if (rateLimitResponse) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+  }
 
   const metrics = cache.getMetrics();
 
@@ -32,6 +38,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
+
+  const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+  if (rateLimitResponse) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+  }
 
   try {
     const body = await request.json();

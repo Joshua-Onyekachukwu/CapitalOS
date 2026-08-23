@@ -4,17 +4,18 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function GET(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
-    const user = await requireUser();
-
     // Get profile from CockroachDB
     const profiles = await query<any>(
       `SELECT full_name FROM profiles WHERE id = $1`,
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({
-      full_name: profiles[0]?.full_name ?? user.user_metadata?.full_name ?? "",
+      full_name: profiles[0]?.full_name ?? "",
       email: user.email ?? "",
     });
   } catch (err) {
@@ -35,13 +36,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const user = await requireAuth(request);
+  if (user instanceof NextResponse) return user;
+
   try {
     const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
 
-    const user = await requireUser();
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) return user;
     const { full_name } = await request.json();
 
     // Upsert profile in CockroachDB
