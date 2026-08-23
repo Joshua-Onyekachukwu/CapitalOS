@@ -65,6 +65,12 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: "System",
+    items: [
+      { label: "Data Health", href: "/dashboard/admin", icon: "ri-heart-pulse-line" },
+    ],
+  },
+  {
     items: [
       { label: "Settings", href: "/dashboard/settings", icon: "ri-settings-3-line" },
     ],
