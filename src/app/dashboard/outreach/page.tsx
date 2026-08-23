@@ -360,6 +360,12 @@ export default function OutreachPage() {
         description="AI-powered investor email drafting and management."
         actions={
           <div className="flex items-center gap-[10px]">
+            <a href="/dashboard/outreach/metrics">
+              <Button variant="outline">
+                <i className="ri-bar-chart-line text-[16px] mr-[6px]"></i>
+                Metrics
+              </Button>
+            </a>
             <Button
               variant="outline"
               onClick={handleBulkGenerate}

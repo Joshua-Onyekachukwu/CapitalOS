@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { DataHistory } from "@/components/Dashboard/DataHistory";
+import { CommunicationTimeline } from "@/components/Outreach/CommunicationTimeline";
 
 interface InvestorData {
   id: string;
@@ -450,6 +451,13 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
             </CardHeader>
             <CardBody className="pt-0">
               <DataHistory investorId={investorId} />
+            </CardBody>
+          </Card>
+
+          {/* Communication Timeline */}
+          <Card>
+            <CardBody>
+              <CommunicationTimeline investorId={investorId} />
             </CardBody>
           </Card>
         </div>
