@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import React, { useState, useEffect, useCallback } from "react";import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -32,9 +32,11 @@ const statusConfig: Record<CampaignStatus, { label: string; variant: "success" |
 };
 
 export default function CampaignsPage() {
+  const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | CampaignStatus>("all");
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
@@ -69,7 +71,7 @@ export default function CampaignsPage() {
         title="Campaigns"
         description="Manage your fundraising campaigns and outreach sequences."
         actions={
-          <Button>
+          <Button onClick={() => router.push("/dashboard/campaigns/new")}>
             <i className="ri-add-line text-[18px]"></i>
             New Campaign
           </Button>
@@ -211,6 +213,23 @@ export default function CampaignsPage() {
                           View
                         </Button>
                       </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          if (confirm("Delete this campaign?")) {
+                            setDeleting(campaign.id);
+                            const { deleteCampaign } = await import("@/lib/actions/campaigns");
+                            await deleteCampaign(campaign.id);
+                            setCampaigns((prev) => prev.filter((c) => c.id !== campaign.id));
+                            setDeleting(null);
+                          }
+                        }}
+                        loading={deleting === campaign.id}
+                      >
+                        <i className="ri-delete-bin-line text-[14px]"></i>
+                      </Button>
                     </div>
                   </div>
                 </CardBody>
