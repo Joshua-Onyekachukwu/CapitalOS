@@ -309,9 +309,16 @@ async function compact() {
 }
 
 // Run
-if (action === "audit") await audit();
-else if (action === "clean") await clean();
-else if (action === "compact") await compact();
-else {
-  console.log("Usage: npx tsx src/scripts/cleanup-db.ts [audit|clean|compact]");
+async function main() {
+  if (action === "audit") await audit();
+  else if (action === "clean") await clean();
+  else if (action === "compact") await compact();
+  else {
+    console.log("Usage: npx tsx src/scripts/cleanup-db.ts [audit|clean|compact]");
+  }
 }
+
+main().catch((err) => {
+  console.error("❌ Fatal error:", err.message);
+  process.exit(1);
+});
