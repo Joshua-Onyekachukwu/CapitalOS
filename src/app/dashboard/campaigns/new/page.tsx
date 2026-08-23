@@ -18,9 +18,21 @@ interface InvestorCandidate {
   country: string | null;
   investment_sectors: string[] | null;
   investment_stages: string[] | null;
-}
+}  type Step = "details" | "investors" | "emails" | "sequence" | "launch";
 
-type Step = "details" | "investors" | "emails" | "launch";
+  // Follow-up sequence state
+  const [sequenceName, setSequenceName] = useState("");
+  const [sequenceSteps, setSequenceSteps] = useState<Array<{
+    step_type: string;
+    subject_template: string;
+    body_template: string;
+    delay_days: number;
+    tone: string;
+  }>>([
+    { step_type: "initial", subject_template: "", body_template: "", delay_days: 0, tone: "professional" },
+  ]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [stopOnReply, setStopOnReply] = useState(true);
 
 export default function NewCampaignPage() {
   const router = useRouter();
@@ -49,6 +61,7 @@ export default function NewCampaignPage() {
     { id: "details", label: "Campaign Details", icon: "ri-edit-line" },
     { id: "investors", label: "Select Investors", icon: "ri-team-line" },
     { id: "emails", label: "Generate Emails", icon: "ri-mail-line" },
+    { id: "sequence", label: "Follow-ups", icon: "ri-loop-right-line" },
     { id: "launch", label: "Launch", icon: "ri-rocket-line" },
   ];
 
@@ -121,6 +134,33 @@ export default function NewCampaignPage() {
       });
 
       if (campaign) {
+        // Save follow-up sequence if configured
+        if (sequenceName && sequenceSteps.length > 0 && sequenceSteps.some(s => s.subject_template)) {
+          try {
+            const { createSequence } = await import("@/lib/services/campaigns/sequence");
+            const { createClient } = await import("@supabase/supabase-js");
+            const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await createSequence(campaign.id, user.id, {
+                name: sequenceName,
+                steps: sequenceSteps.map((s, i) => ({
+                  step_number: i + 1,
+                  step_type: s.step_type as any,
+                  subject_template: s.subject_template,
+                  body_template: s.body_template,
+                  delay_days: s.delay_days,
+                  delay_hours: 0,
+                  tone: s.tone,
+                  is_active: true,
+                })),
+                stop_on_reply: stopOnReply,
+              });
+            }
+          } catch (seqErr) {
+            console.error("Failed to save sequence:", seqErr);
+          }
+        }
         router.push(`/dashboard/campaigns/${campaign.id}`);
       }
     } catch (err) {
@@ -466,8 +506,8 @@ export default function NewCampaignPage() {
                 <i className="ri-arrow-left-line text-[16px]"></i>
                 Back
               </Button>
-              <Button onClick={() => setStep("launch")} disabled={generatedCount === 0 && !generatingEmails}>
-                Next: Launch Campaign
+              <Button onClick={() => setStep("sequence")}>
+                Next: Follow-up Sequence
                 <i className="ri-arrow-right-line text-[16px]"></i>
               </Button>
             </div>
@@ -475,7 +515,259 @@ export default function NewCampaignPage() {
         </Card>
       )}
 
-      {/* Step 4: Launch */}
+      {/* Step 4: Follow-up Sequence */}
+      {step === "sequence" && (
+        <div className="space-y-[20px]">
+          {/* Template Picker */}
+          <Card>
+            <CardBody>
+              <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[4px]">
+                <i className="ri-loop-right-line text-lime-500 mr-[6px]"></i> Follow-up Sequence
+              </h3>
+              <p className="text-[13px] text-gray-400 !mb-[16px]">
+                Set up automated follow-up emails. If an investor doesn&apos;t reply, they&apos;ll receive the next step automatically.
+              </p>
+
+              {/* Quick Templates */}
+              <div className="mb-[16px]">
+                <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-[8px]">Quick Start Templates</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-[10px]">
+                  {[
+                    { id: "standard3", name: "Standard 3-Touch", desc: "Intro + 2 follow-ups over 7 days", steps: 3 },
+                    { id: "warm4", name: "Warm Introduction", desc: "Gentle 4-touch over 14 days", steps: 4 },
+                    { id: "direct2", name: "Direct & Bold", desc: "Short 2-touch sequence", steps: 2 },
+                    { id: "custom", name: "Custom Sequence", desc: "Build your own from scratch", steps: null },
+                  ].map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      onClick={() => {
+                        setSelectedTemplate(tpl.id);
+                        if (tpl.id === "standard3") {
+                          setSequenceName("Standard 3-Touch Sequence");
+                          setSequenceSteps([
+                            { step_type: "initial", subject_template: "Introduction — " + name, body_template: "Hi {{investor_name}},\n\nI'm reaching out because I believe " + name + " would be a great fit for your investment thesis.\n\n{{personal_note}}\n\nI'd love to share more about what we're building. Would you be open to a brief conversation?\n\nBest,\n{{sender_name}}", delay_days: 0, tone: "professional" },
+                            { step_type: "follow_up", subject_template: "Following up", body_template: "Hi {{investor_name}},\n\nJust following up on my previous email. I understand you're busy, so I'll keep this brief.\n\n{{follow_up_note}}\n\nHappy to send over our deck if you're interested.\n\nBest,\n{{sender_name}}", delay_days: 3, tone: "friendly" },
+                            { step_type: "breakup", subject_template: "Last note", body_template: "Hi {{investor_name}},\n\nI know things get busy, so this will be my last email on this.\n\nIf the timing isn't right, no worries at all. I'll keep you updated on our progress.\n\nAll the best,\n{{sender_name}}", delay_days: 4, tone: "casual" },
+                          ]);
+                        } else if (tpl.id === "warm4") {
+                          setSequenceName("Warm Introduction Sequence");
+                          setSequenceSteps([
+                            { step_type: "initial", subject_template: name + " — thought you'd be interested", body_template: "Hi {{investor_name}},\n\nI came across your work and thought " + name + " might be interesting to you.\n\n{{personal_note}}\n\nWould you be open to learning more?\n\nCheers,\n{{sender_name}}", delay_days: 0, tone: "warm" },
+                            { step_type: "follow_up", subject_template: "Quick update", body_template: "Hi {{investor_name}},\n\nWanted to share a quick update on what we've been building.\n\n{{follow_up_note}}\n\nLet me know if you'd like to chat.\n\nBest,\n{{sender_name}}", delay_days: 4, tone: "professional" },
+                            { step_type: "follow_up", subject_template: "Traction update", body_template: "Hi {{investor_name}},\n\nQuick traction update:\n\n{{traction_bullets}}\n\nHappy to dive deeper if you're interested.\n\nBest,\n{{sender_name}}", delay_days: 5, tone: "professional" },
+                            { step_type: "breakup", subject_template: "Closing the loop", body_template: "Hi {{investor_name}},\n\nI don't want to take up more of your time, so this will be my last note.\n\nIf the timing changes, I'd love to reconnect.\n\nAll the best,\n{{sender_name}}", delay_days: 5, tone: "casual" },
+                          ]);
+                        } else if (tpl.id === "direct2") {
+                          setSequenceName("Direct & Bold Sequence");
+                          setSequenceSteps([
+                            { step_type: "initial", subject_template: name, body_template: "Hi {{investor_name}},\n\n{{one_liner}}\n\n{{personal_note}}\n\nWorth a 15-minute call?\n\n{{sender_name}}", delay_days: 0, tone: "bold" },
+                            { step_type: "follow_up", subject_template: "Re: " + name, body_template: "Hi {{investor_name}},\n\nBumping this up. We're {{traction_highlight}} and looking for the right partner.\n\n15 minutes — that's all I ask.\n\n{{sender_name}}", delay_days: 5, tone: "bold" },
+                          ]);
+                        } else {
+                          setSequenceName("");
+                          setSequenceSteps([
+                            { step_type: "initial", subject_template: "", body_template: "", delay_days: 0, tone: "professional" },
+                          ]);
+                        }
+                      }}
+                      className={`text-left p-[14px] rounded-[10px] border-2 transition-all ${
+                        selectedTemplate === tpl.id
+                          ? "border-lime-500 bg-lime-50/50 dark:bg-lime-900/10"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                      }`}
+                    >
+                      <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">{tpl.name}</p>
+                      <p className="text-[12px] text-gray-400 !mb-0">{tpl.desc}</p>
+                      {tpl.steps && <p className="text-[11px] text-lime-600 !mb-0 mt-[4px]">{tpl.steps} steps</p>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sequence Name */}
+              <div className="mb-[16px]">
+                <label className="block text-[13px] font-medium text-[#06201b] dark:text-white mb-[6px]">Sequence Name</label>
+                <input
+                  type="text"
+                  value={sequenceName}
+                  onChange={(e) => setSequenceName(e.target.value)}
+                  placeholder="e.g., Seed Round Follow-up"
+                  className="w-full px-[14px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[10px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                />
+              </div>
+
+              {/* Stop on Reply Toggle */}
+              <div className="flex items-center justify-between p-[14px] bg-gray-50 dark:bg-gray-800/30 rounded-[10px] mb-[16px]">
+                <div>
+                  <p className="text-[14px] font-medium text-[#06201b] dark:text-white !mb-[2px]">Stop sequence on reply</p>
+                  <p className="text-[12px] text-gray-400 !mb-0">If an investor replies, stop sending follow-ups</p>
+                </div>
+                <button
+                  onClick={() => setStopOnReply(!stopOnReply)}
+                  className={`relative w-[44px] h-[24px] rounded-full transition-colors ${stopOnReply ? "bg-lime-500" : "bg-gray-300 dark:bg-gray-600"}`}
+                >
+                  <div className={`absolute top-[2px] w-[20px] h-[20px] rounded-full bg-white transition-transform ${stopOnReply ? "left-[22px]" : "left-[2px]"}`}></div>
+                </button>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Sequence Steps */}
+          <div className="space-y-[12px]">
+            {sequenceSteps.map((seqStep, idx) => (
+              <Card key={idx}>
+                <CardBody>
+                  <div className="flex items-center justify-between mb-[14px]">
+                    <div className="flex items-center gap-[10px]">
+                      <div className={`w-[32px] h-[32px] rounded-full flex items-center justify-center text-[13px] font-bold flex-none ${
+                        seqStep.step_type === "initial" ? "bg-blue-100 text-blue-600" :
+                        seqStep.step_type === "breakup" ? "bg-amber-100 text-amber-600" :
+                        "bg-lime-100 text-lime-600"
+                      }`}>
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0">
+                          Step {idx + 1}: {seqStep.step_type === "initial" ? "Initial Email" : seqStep.step_type === "breakup" ? "Breakup Email" : "Follow-up"}
+                        </p>
+                        <p className="text-[12px] text-gray-400 !mb-0">
+                          {idx === 0 ? "Sent immediately" : `Sent ${seqStep.delay_days} day${seqStep.delay_days !== 1 ? "s" : ""} after previous step`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-[8px]">
+                      {idx > 0 && (
+                        <button
+                          onClick={() => {
+                            const updated = [...sequenceSteps];
+                            updated.splice(idx, 1);
+                            setSequenceSteps(updated);
+                          }}
+                          className="text-[12px] text-red-400 hover:text-red-600"
+                        >
+                          <i className="ri-delete-bin-line"></i>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-[12px]">
+                    {/* Delay */}
+                    {idx > 0 && (
+                      <div className="flex items-center gap-[10px]">
+                        <label className="text-[12px] text-gray-400 whitespace-nowrap">Wait</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={30}
+                          value={seqStep.delay_days}
+                          onChange={(e) => {
+                            const updated = [...sequenceSteps];
+                            updated[idx] = { ...updated[idx], delay_days: parseInt(e.target.value) || 0 };
+                            setSequenceSteps(updated);
+                          }}
+                          className="w-[60px] px-[8px] py-[6px] border border-gray-200 dark:border-gray-700 rounded-[6px] text-[13px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-lime-500"
+                        />
+                        <label className="text-[12px] text-gray-400">days</label>
+                      </div>
+                    )}
+
+                    {/* Subject */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-400 uppercase mb-[4px]">Subject</label>
+                      <input
+                        type="text"
+                        value={seqStep.subject_template}
+                        onChange={(e) => {
+                          const updated = [...sequenceSteps];
+                          updated[idx] = { ...updated[idx], subject_template: e.target.value };
+                          setSequenceSteps(updated);
+                        }}
+                        placeholder="Use {{investor_name}}, {{company_name}}"
+                        className="w-full px-[12px] py-[8px] border border-gray-200 dark:border-gray-700 rounded-[8px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                      />
+                    </div>
+
+                    {/* Body */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-400 uppercase mb-[4px]">Body</label>
+                      <textarea
+                        value={seqStep.body_template}
+                        onChange={(e) => {
+                          const updated = [...sequenceSteps];
+                          updated[idx] = { ...updated[idx], body_template: e.target.value };
+                          setSequenceSteps(updated);
+                        }}
+                        rows={5}
+                        placeholder="Use {{investor_name}}, {{company_name}}, {{sender_name}}, {{personal_note}}, {{one_liner}}"
+                        className="w-full px-[12px] py-[8px] border border-gray-200 dark:border-gray-700 rounded-[8px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500 resize-none leading-relaxed"
+                      />
+                    </div>
+
+                    {/* Tone */}
+                    <div className="flex items-center gap-[10px]">
+                      <label className="text-[12px] text-gray-400">Tone:</label>
+                      <div className="flex gap-[6px]">
+                        {["professional", "warm", "friendly", "casual", "bold"].map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => {
+                              const updated = [...sequenceSteps];
+                              updated[idx] = { ...updated[idx], tone: t };
+                              setSequenceSteps(updated);
+                            }}
+                            className={`px-[10px] py-[4px] rounded-full text-[11px] font-medium transition-all ${
+                              seqStep.tone === t
+                                ? "bg-lime-500 text-black"
+                                : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200"
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
+
+            {/* Add Step Button */}
+            <button
+              onClick={() => {
+                setSequenceSteps([
+                  ...sequenceSteps,
+                  {
+                    step_type: "follow_up",
+                    subject_template: "",
+                    body_template: "",
+                    delay_days: 3,
+                    tone: "professional",
+                  },
+                ]);
+              }}
+              className="w-full p-[14px] border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[12px] text-[14px] text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all flex items-center justify-center gap-[8px]"
+            >
+              <i className="ri-add-line text-[18px]"></i>
+              Add Follow-up Step
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center gap-[10px]">
+            <Button variant="outline" onClick={() => setStep("emails")}>
+              <i className="ri-arrow-left-line text-[16px]"></i>
+              Back
+            </Button>
+            <Button onClick={() => setStep("launch")}>
+              Next: Launch Campaign
+              <i className="ri-arrow-right-line text-[16px]"></i>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 5: Launch */}
       {step === "launch" && (
         <Card>
           <CardHeader>
