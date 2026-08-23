@@ -110,10 +110,10 @@ export default async function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">
         {[
-          { label: "Investors in Database", value: stats.totalInvestors.toLocaleString(), icon: "ri-database-2-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
-          { label: "Investor Firms", value: stats.totalFirms.toLocaleString(), icon: "ri-building-2-line", color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600" },
+          { label: "Total Investors", value: stats.totalInvestors.toLocaleString(), icon: "ri-database-2-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
           { label: "High-Fit Investors", value: stats.highFitInvestors.toLocaleString(), icon: "ri-star-line", color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600" },
-          { label: "Added This Week", value: stats.investorsThisWeek.toLocaleString(), icon: "ri-add-circle-line", color: "bg-amber-50 dark:bg-amber-900/20", iconColor: "text-amber-600" },
+          { label: "Avg Fit Score", value: `${stats.avgFitScore}%`, icon: "ri-percent-line", color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600" },
+          { label: "Ready for Outreach", value: stats.readyInvestors.toLocaleString(), icon: "ri-send-plane-line", color: "bg-green-50 dark:bg-green-900/20", iconColor: "text-green-600" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="flex items-center gap-[15px]">
@@ -123,6 +123,26 @@ export default async function DashboardPage() {
               <div>
                 <p className="text-[12px] md:text-[13px] text-gray-400 !mb-[2px]">{stat.label}</p>
                 <p className="text-[20px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+              </div>
+            </CardBody>
+          </Card>
+        ))}
+      </div>
+
+      {/* Email & Campaign Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-[15px] mb-[25px] md:mb-[30px]">
+        {[
+          { label: "Emails Sent", value: stats.emailsSent.toLocaleString(), icon: "ri-mail-send-line", color: "text-blue-600" },
+          { label: "Replies Received", value: stats.emailsReplied.toLocaleString(), icon: "ri-reply-line", color: "text-green-600" },
+          { label: "Active Campaigns", value: stats.activeCampaigns.toLocaleString(), icon: "ri-megaphone-line", color: "text-purple-600" },
+          { label: "Credits Used", value: stats.totalCreditsUsed.toLocaleString(), icon: "ri-vip-diamond-line", color: "text-amber-600" },
+        ].map((stat) => (
+          <Card key={stat.label}>
+            <CardBody className="flex items-center gap-[12px]">
+              <i className={`${stat.icon} ${stat.color} text-[20px]`}></i>
+              <div>
+                <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+                <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
               </div>
             </CardBody>
           </Card>

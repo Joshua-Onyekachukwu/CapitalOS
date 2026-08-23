@@ -11,18 +11,24 @@ export interface DashboardStats {
   totalFirms: number;
   activeCampaigns: number;
   emailsSent: number;
+  emailsReplied: number;
   meetingsScheduled: number;
   highFitInvestors: number;
   investorsThisWeek: number;
+  readyInvestors: number;
+  avgFitScore: number;
+  totalCreditsUsed: number;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = await createClient();
 
-  const [investorsResult, firmsResult, jobsResult] = await Promise.all([
+  const [investorsResult, firmsResult, jobsResult, emailResult, creditsResult] = await Promise.all([
     supabase.from("investors").select("id", { count: "exact", head: true }),
     supabase.from("investor_firms").select("id", { count: "exact", head: true }),
     supabase.from("data_acquisition_jobs").select("id, status, created_at, found_count"),
+    supabase.from("email_messages").select("id, direction, status"),
+    supabase.from("credit_ledger").select("id, credits_used"),
   ]);
 
   const totalInvestors = investorsResult.count || 0;
@@ -30,13 +36,25 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
   const jobs = jobsResult.data || [];
   const activeCampaigns = jobs.filter((j) => j.status === "running" || j.status === "pending").length;
-  const emailsSent = jobs.filter((j) => j.status === "completed").reduce((sum, j) => sum + (j.found_count || 0), 0);
+
+  const emails = emailResult.data || [];
+  const emailsSent = emails.filter((e) => e.direction === "outbound" && e.status === "sent").length;
+  const emailsReplied = emails.filter((e) => e.direction === "inbound").length;
+
+  const credits = creditsResult.data || [];
+  const totalCreditsUsed = credits.reduce((sum, c) => sum + (c.credits_used || 0), 0);
 
   // High-fit investors (fit_score >= 80)
   const { count: highFit } = await supabase
     .from("investors")
     .select("id", { count: "exact", head: true })
     .gte("fit_score", 80);
+
+  // Ready for outreach
+  const { count: readyCount } = await supabase
+    .from("investors")
+    .select("id", { count: "exact", head: true })
+    .eq("outreach_readiness", "ready");
 
   // Investors added this week
   const weekAgo = new Date();
@@ -46,14 +64,29 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .select("id", { count: "exact", head: true })
     .gte("created_at", weekAgo.toISOString());
 
+  // Average fit score (sample for performance)
+  const { data: fitSample } = await supabase
+    .from("investors")
+    .select("fit_score")
+    .gt("fit_score", 0)
+    .limit(1000);
+
+  const avgFitScore = fitSample && fitSample.length > 0
+    ? Math.round(fitSample.reduce((sum, i) => sum + (i.fit_score || 0), 0) / fitSample.length)
+    : 0;
+
   return {
     totalInvestors,
     totalFirms,
     activeCampaigns,
     emailsSent,
-    meetingsScheduled: 0, // Will be connected when meetings table exists
+    emailsReplied,
+    meetingsScheduled: 0,
     highFitInvestors: highFit || 0,
     investorsThisWeek: thisWeek || 0,
+    readyInvestors: readyCount || 0,
+    avgFitScore,
+    totalCreditsUsed,
   };
 }
 
