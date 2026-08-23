@@ -11,7 +11,7 @@ import { createClient } from "@supabase/supabase-js";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId } = body;
+    const { userId, style, slideCount } = body;
 
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       isFounder: m.is_founder,
     }));
 
-    // Generate the deck
+    // Generate the deck with style and slide count
     const result = await generatePitchDeck({
       companyName: profile.company_name || "Our Company",
       oneLiner: profile.one_liner || "",
@@ -63,38 +63,68 @@ export async function POST(request: NextRequest) {
       growthRate: profile.growth_rate || "",
       milestones: profile.milestones || [],
       teamMembers,
+      style: style || "investor",
+      slideCount: slideCount || 10,
     });
 
-    // Store the deck in Supabase Storage
-    const fileName = `${userId}/${Date.now()}-pitch-deck.pptx`;
-    const { error: uploadError } = await supabase.storage
+    // Store PPTX in Supabase Storage
+    const pptxFileName = `${userId}/${Date.now()}-pitch-deck.pptx`;
+    const { error: pptxError } = await supabase.storage
       .from("company-documents")
-      .upload(fileName, result.pptxBuffer, {
+      .upload(pptxFileName, result.pptxBuffer, {
         contentType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
       });
 
-    let fileUrl = null;
-    if (!uploadError) {
+    let pptxUrl = null;
+    if (!pptxError) {
       const { data: urlData } = supabase.storage
         .from("company-documents")
-        .getPublicUrl(fileName);
-      fileUrl = urlData.publicUrl;
+        .getPublicUrl(pptxFileName);
+      pptxUrl = urlData.publicUrl;
     }
 
-    // Save document record
+    // Store PDF
+    const pdfFileName = `${userId}/${Date.now()}-pitch-deck.pdf`;
+    const { error: pdfError } = await supabase.storage
+      .from("company-documents")
+      .upload(pdfFileName, result.pdfBuffer, {
+        contentType: "application/pdf",
+      });
+
+    let pdfUrl = null;
+    if (!pdfError) {
+      const { data: urlData } = supabase.storage
+        .from("company-documents")
+        .getPublicUrl(pdfFileName);
+      pdfUrl = urlData.publicUrl;
+    }
+
+    // Save document records
     const { data: companyProfile } = await supabase
       .from("company_profiles")
       .select("id")
       .eq("user_id", userId)
       .single();
 
+    const deckName = `${profile.company_name || "Company"} — ${result.style || "Investor"} Pitch Deck`;
+
     if (companyProfile) {
+      // Save PPTX record
       await supabase.from("company_documents").insert({
         company_id: companyProfile.id,
         document_type: "pitch_deck",
-        file_name: `${profile.company_name || "Company"} — Investor Pitch Deck.pptx`,
-        file_url: fileUrl,
+        file_name: `${deckName}.pptx`,
+        file_url: pptxUrl,
         file_size: result.pptxBuffer.length,
+      });
+
+      // Save PDF record
+      await supabase.from("company_documents").insert({
+        company_id: companyProfile.id,
+        document_type: "pitch_deck",
+        file_name: `${deckName}.pdf`,
+        file_url: pdfUrl,
+        file_size: result.pdfBuffer.length,
       });
 
       // Update has_pitch_deck
@@ -108,8 +138,11 @@ export async function POST(request: NextRequest) {
       success: true,
       slides: result.slides,
       designDirection: result.designDirection,
-      fileUrl,
-      fileName: `${profile.company_name || "Company"} — Investor Pitch Deck.pptx`,
+      style: result.style,
+      pptxUrl,
+      pdfUrl,
+      pptxFileName: `${deckName}.pptx`,
+      pdfFileName: `${deckName}.pdf`,
       slideCount: result.slides.length,
     });
   } catch (err) {

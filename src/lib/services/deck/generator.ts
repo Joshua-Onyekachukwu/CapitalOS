@@ -1,10 +1,12 @@
 // =============================================
-// Pitch Deck Generator
+// Pitch Deck Generator — Full Engine
 // =============================================
 // Generates company-specific investor pitch decks using AI content + PptxGenJS.
+// Supports 5 composable design styles, PPTX and PDF export.
 // Server-side only — never exposed to client bundle.
 
 import PptxGenJS from "pptxgenjs";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { chatCompletion } from "@/lib/ai";
 
 // =============================================
@@ -20,16 +22,21 @@ export interface DeckSlide {
   notes?: string;
 }
 
+export interface DesignDirection {
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  textColor: string;
+  fontHeading?: string;
+  fontBody?: string;
+}
+
 export interface DeckPlan {
   companyName: string;
   slides: DeckSlide[];
-  designDirection: {
-    primaryColor: string;
-    secondaryColor: string;
-    accentColor: string;
-    backgroundColor: string;
-    textColor: string;
-  };
+  designDirection: DesignDirection;
+  style: string;
 }
 
 export interface DeckInput {
@@ -49,28 +56,88 @@ export interface DeckInput {
   growthRate: string;
   milestones: string[];
   teamMembers: Array<{ name: string; title: string; isFounder: boolean }>;
+  style?: string;
+  slideCount?: number;
 }
 
 // =============================================
-// Design Direction by Industry
+// 5 Composable Design Styles
 // =============================================
 
-const DESIGN_DIRECTIONS: Record<string, DeckPlan["designDirection"]> = {
-  fintech: { primaryColor: "1B5E20", secondaryColor: "2E7D32", accentColor: "4CAF50", backgroundColor: "FFFFFF", textColor: "212121" },
-  healthtech: { primaryColor: "0D47A1", secondaryColor: "1565C0", accentColor: "42A5F5", backgroundColor: "FFFFFF", textColor: "212121" },
-  ai: { primaryColor: "4A148C", secondaryColor: "6A1B9A", accentColor: "AB47BC", backgroundColor: "FFFFFF", textColor: "212121" },
-  saas: { primaryColor: "E65100", secondaryColor: "F57C00", accentColor: "FFB74D", backgroundColor: "FFFFFF", textColor: "212121" },
-  enterprise: { primaryColor: "263238", secondaryColor: "37474F", accentColor: "607D8B", backgroundColor: "FFFFFF", textColor: "212121" },
-  consumer: { primaryColor: "880E4F", secondaryColor: "AD1457", accentColor: "EC407A", backgroundColor: "FFFFFF", textColor: "212121" },
-  default: { primaryColor: "1A237E", secondaryColor: "283593", accentColor: "5C6BC0", backgroundColor: "FFFFFF", textColor: "212121" },
+const STYLE_DESIGNS: Record<string, DesignDirection> = {
+  investor: {
+    primaryColor: "1A237E",
+    secondaryColor: "283593",
+    accentColor: "5C6BC0",
+    backgroundColor: "FFFFFF",
+    textColor: "212121",
+    fontHeading: "Arial",
+    fontBody: "Arial",
+  },
+  minimal: {
+    primaryColor: "37474F",
+    secondaryColor: "546E7A",
+    accentColor: "90A4AE",
+    backgroundColor: "FFFFFF",
+    textColor: "263238",
+    fontHeading: "Helvetica Neue",
+    fontBody: "Helvetica Neue",
+  },
+  bold: {
+    primaryColor: "B71C1C",
+    secondaryColor: "C62828",
+    accentColor: "EF5350",
+    backgroundColor: "FAFAFA",
+    textColor: "212121",
+    fontHeading: "Arial Black",
+    fontBody: "Arial",
+  },
+  corporate: {
+    primaryColor: "0D47A1",
+    secondaryColor: "1565C0",
+    accentColor: "42A5F5",
+    backgroundColor: "FFFFFF",
+    textColor: "1B5E20",
+    fontHeading: "Calibri",
+    fontBody: "Calibri",
+  },
+  modern: {
+    primaryColor: "6A1B9A",
+    secondaryColor: "8E24AA",
+    accentColor: "CE93D8",
+    backgroundColor: "FAFAFA",
+    textColor: "212121",
+    fontHeading: "Poppins",
+    fontBody: "Inter",
+  },
 };
 
-function getDesignDirection(industry: string): DeckPlan["designDirection"] {
+// Industry-specific accent overrides (blended with style)
+const INDUSTRY_ACCENTS: Record<string, { primaryColor?: string; accentColor?: string }> = {
+  fintech: { primaryColor: "1B5E20", accentColor: "4CAF50" },
+  healthtech: { primaryColor: "0D47A1", accentColor: "42A5F5" },
+  ai: { primaryColor: "4A148C", accentColor: "AB47BC" },
+  saas: { primaryColor: "E65100", accentColor: "FFB74D" },
+  enterprise: { primaryColor: "263238", accentColor: "607D8B" },
+  consumer: { primaryColor: "880E4F", accentColor: "EC407A" },
+  climatetech: { primaryColor: "1B5E20", accentColor: "66BB6A" },
+  deeptech: { primaryColor: "311B92", accentColor: "7C4DFF" },
+};
+
+function getDesignDirection(style: string, industry: string): DesignDirection {
+  const base = { ...(STYLE_DESIGNS[style] || STYLE_DESIGNS.investor) };
+
+  // Blend in industry accent if available
   const lower = industry?.toLowerCase() || "";
-  for (const [key, direction] of Object.entries(DESIGN_DIRECTIONS)) {
-    if (lower.includes(key)) return direction;
+  for (const [key, accent] of Object.entries(INDUSTRY_ACCENTS)) {
+    if (lower.includes(key)) {
+      if (accent.primaryColor) base.primaryColor = accent.primaryColor;
+      if (accent.accentColor) base.accentColor = accent.accentColor;
+      break;
+    }
   }
-  return DESIGN_DIRECTIONS.default;
+
+  return base;
 }
 
 // =============================================
@@ -78,6 +145,7 @@ function getDesignDirection(industry: string): DeckPlan["designDirection"] {
 // =============================================
 
 async function generateNarrative(input: DeckInput): Promise<DeckSlide[]> {
+  const slideCount = input.slideCount || 10;
   const prompt = `You are an expert pitch deck writer for startup founders. Generate a complete pitch deck narrative for this company.
 
 COMPANY: ${input.companyName}
@@ -93,7 +161,7 @@ ${input.growthRate ? `GROWTH: ${input.growthRate}` : ""}
 ${input.milestones.length > 0 ? `MILESTONES: ${input.milestones.join(", ")}` : ""}
 TEAM: ${input.teamMembers.map((m) => `${m.name} (${m.title})`).join(", ")}
 
-Generate a JSON array of slides. Each slide must have:
+Generate EXACTLY ${slideCount} slides as a JSON array. Each slide must have:
 - type: one of "cover", "problem", "solution", "market", "product", "traction", "business_model", "competition", "team", "ask", "vision"
 - title: slide title (short, punchy)
 - content: 1-2 sentence main message
@@ -105,24 +173,25 @@ Return ONLY the JSON array, no markdown, no code blocks.
 IMPORTANT: Use only the real data provided above. Do NOT invent revenue, customers, partnerships, or metrics that were not provided. If data is missing for a slide type, note that in the content field.`;
 
   const response = await chatCompletion({
-    task: "email_drafting", // Uses higher temperature for creative content
+    task: "email_drafting",
     messages: [{ role: "user", content: prompt }],
   });
 
   try {
     const jsonMatch = response.content.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const slides = JSON.parse(jsonMatch[0]);
+      // Trim to requested count
+      return slides.slice(0, slideCount);
     }
   } catch {
     // Parse failed
   }
 
-  // Fallback: generate basic slides from input
-  return generateFallbackSlides(input);
+  return generateFallbackSlides(input, slideCount);
 }
 
-function generateFallbackSlides(input: DeckInput): DeckSlide[] {
+function generateFallbackSlides(input: DeckInput, slideCount: number): DeckSlide[] {
   const slides: DeckSlide[] = [
     { type: "cover", title: input.companyName, content: input.oneLiner },
     { type: "problem", title: "The Problem", content: `${input.targetCustomer} struggle with a problem that ${input.companyName} solves.` },
@@ -163,7 +232,7 @@ function generateFallbackSlides(input: DeckInput): DeckSlide[] {
 
   slides.push({ type: "vision", title: "Vision", content: `Building the future of ${input.industry || "our industry"}.` });
 
-  return slides;
+  return slides.slice(0, slideCount);
 }
 
 // =============================================
@@ -173,35 +242,25 @@ function generateFallbackSlides(input: DeckInput): DeckSlide[] {
 async function generatePptx(plan: DeckPlan): Promise<Buffer> {
   const pptx = new PptxGenJS();
 
-  // Set presentation metadata
   pptx.author = plan.companyName;
   pptx.subject = `${plan.companyName} — Investor Pitch Deck`;
   pptx.title = `${plan.companyName} Pitch Deck`;
+  pptx.layout = "LAYOUT_WIDE";
 
-  const { primaryColor, secondaryColor, accentColor, backgroundColor, textColor } = plan.designDirection;
+  const d = plan.designDirection;
+  const fontH = d.fontHeading || "Arial";
+  const fontB = d.fontBody || "Arial";
 
   for (const slide of plan.slides) {
-    const pptxSlide = pptx.addSlide();
-
-    // Background
-    pptxSlide.background = { color: backgroundColor };
+    const s = pptx.addSlide();
+    s.background = { color: d.backgroundColor };
 
     switch (slide.type) {
-      case "cover":
-        renderCoverSlide(pptxSlide, slide, plan, primaryColor);
-        break;
-      case "team":
-        renderTeamSlide(pptxSlide, slide, primaryColor, textColor);
-        break;
-      case "traction":
-        renderMetricSlide(pptxSlide, slide, primaryColor, accentColor, textColor);
-        break;
-      case "ask":
-        renderAskSlide(pptxSlide, slide, primaryColor, accentColor);
-        break;
-      default:
-        renderStandardSlide(pptxSlide, slide, primaryColor, secondaryColor, textColor);
-        break;
+      case "cover": renderCoverPptx(s, slide, plan, d, fontH); break;
+      case "team": renderTeamPptx(s, slide, d, fontH, fontB); break;
+      case "traction": renderMetricPptx(s, slide, d, fontH, fontB); break;
+      case "ask": renderAskPptx(s, slide, d, fontH, fontB); break;
+      default: renderStandardPptx(s, slide, d, fontH, fontB); break;
     }
   }
 
@@ -209,158 +268,332 @@ async function generatePptx(plan: DeckPlan): Promise<Buffer> {
   return buffer as Buffer;
 }
 
-function renderCoverSlide(slide: any, data: DeckSlide, plan: DeckPlan, primaryColor: string) {
-  // Left panel with color
-  slide.addShape("rect", { x: 0, y: 0, w: 4.5, h: 7.5, fill: { color: primaryColor } });
+function renderCoverPptx(s: any, data: DeckSlide, plan: DeckPlan, d: DesignDirection, fontH: string) {
+  // Left panel
+  s.addShape("rect", { x: 0, y: 0, w: 5.0, h: 7.5, fill: { color: d.primaryColor } });
+  // Subtle accent stripe
+  s.addShape("rect", { x: 0, y: 3.2, w: 5.0, h: 0.06, fill: { color: d.accentColor } });
 
-  // Company name
-  slide.addText(plan.companyName, {
-    x: 0.5, y: 2.0, w: 3.5, h: 1.5,
-    fontSize: 36, fontFace: "Arial", color: "FFFFFF", bold: true,
+  s.addText(plan.companyName, {
+    x: 0.6, y: 1.8, w: 3.8, h: 1.5,
+    fontSize: 38, fontFace: fontH, color: "FFFFFF", bold: true,
   });
 
-  // Tagline
-  slide.addText(data.content, {
-    x: 0.5, y: 3.5, w: 3.5, h: 1.0,
-    fontSize: 16, fontFace: "Arial", color: "FFFFFF", italic: true,
+  s.addText(data.content, {
+    x: 0.6, y: 3.5, w: 3.8, h: 1.0,
+    fontSize: 16, fontFace: fontH, color: "FFFFFF", italic: true,
   });
 
-  // Right side — "Investor Pitch Deck"
-  slide.addText("Investor Pitch Deck", {
-    x: 5.0, y: 3.0, w: 4.5, h: 1.0,
-    fontSize: 14, fontFace: "Arial", color: "999999", align: "center",
+  // Right side
+  s.addText("Investor Pitch Deck", {
+    x: 5.5, y: 3.0, w: 4.0, h: 1.0,
+    fontSize: 14, fontFace: fontH, color: "999999", align: "center",
+  });
+
+  // Decorative circle
+  s.addShape("ellipse", {
+    x: 7.0, y: 4.5, w: 2.0, h: 2.0,
+    fill: { color: d.accentColor, transparency: 85 },
   });
 }
 
-function renderStandardSlide(slide: any, data: DeckSlide, primaryColor: string, secondaryColor: string, textColor: string) {
-  // Accent bar at top
-  slide.addShape("rect", { x: 0, y: 0, w: 10, h: 0.08, fill: { color: primaryColor } });
+function renderStandardPptx(s: any, data: DeckSlide, d: DesignDirection, fontH: string, fontB: string) {
+  // Top accent bar
+  s.addShape("rect", { x: 0, y: 0, w: 13.33, h: 0.06, fill: { color: d.primaryColor } });
 
-  // Slide number area
-  slide.addText("", { x: 9.0, y: 7.0, w: 0.8, h: 0.3, fontSize: 10, color: "999999", align: "right" });
+  // Side accent
+  s.addShape("rect", { x: 0, y: 0.8, w: 0.08, h: 1.0, fill: { color: d.accentColor } });
 
   // Title
-  slide.addText(data.title, {
-    x: 0.6, y: 0.4, w: 8.8, h: 0.8,
-    fontSize: 28, fontFace: "Arial", color: primaryColor, bold: true,
+  s.addText(data.title, {
+    x: 0.6, y: 0.5, w: 12.0, h: 0.9,
+    fontSize: 30, fontFace: fontH, color: d.primaryColor, bold: true,
   });
 
   // Content
-  slide.addText(data.content, {
-    x: 0.6, y: 1.4, w: 8.8, h: 1.5,
-    fontSize: 16, fontFace: "Arial", color: textColor, lineSpacingMultiple: 1.3,
+  s.addText(data.content, {
+    x: 0.6, y: 1.6, w: 12.0, h: 1.8,
+    fontSize: 16, fontFace: fontB, color: d.textColor, lineSpacingMultiple: 1.3,
   });
 
   // Bullets
   if (data.bullets && data.bullets.length > 0) {
-    const bulletText = data.bullets.map((b) => ({ text: b, options: { bullet: true, fontSize: 14, color: textColor, breakType: "none" } }));
-    slide.addText(bulletText, {
-      x: 0.6, y: 3.2, w: 8.8, h: 3.5,
-      fontFace: "Arial", lineSpacingMultiple: 1.5, valign: "top",
+    const bulletText = data.bullets.map((b) => ({
+      text: b,
+      options: { bullet: true, fontSize: 14, color: d.textColor, breakType: "none" },
+    }));
+    s.addText(bulletText, {
+      x: 0.6, y: 3.6, w: 12.0, h: 3.5,
+      fontFace: fontB, lineSpacingMultiple: 1.5, valign: "top",
     });
   }
 }
 
-function renderMetricSlide(slide: any, data: DeckSlide, primaryColor: string, accentColor: string, textColor: string) {
-  slide.addShape("rect", { x: 0, y: 0, w: 10, h: 0.08, fill: { color: primaryColor } });
+function renderMetricPptx(s: any, data: DeckSlide, d: DesignDirection, fontH: string, fontB: string) {
+  s.addShape("rect", { x: 0, y: 0, w: 13.33, h: 0.06, fill: { color: d.primaryColor } });
 
-  slide.addText(data.title, {
-    x: 0.6, y: 0.4, w: 8.8, h: 0.8,
-    fontSize: 28, fontFace: "Arial", color: primaryColor, bold: true,
+  s.addText(data.title, {
+    x: 0.6, y: 0.4, w: 12.0, h: 0.9,
+    fontSize: 30, fontFace: fontH, color: d.primaryColor, bold: true,
   });
 
-  slide.addText(data.content, {
-    x: 0.6, y: 1.3, w: 8.8, h: 0.8,
-    fontSize: 16, fontFace: "Arial", color: textColor,
+  s.addText(data.content, {
+    x: 0.6, y: 1.4, w: 12.0, h: 0.8,
+    fontSize: 16, fontFace: fontB, color: d.textColor,
   });
 
   if (data.metrics && data.metrics.length > 0) {
-    const metricWidth = Math.min(2.8, 8.8 / data.metrics.length);
-    const startX = (10 - metricWidth * data.metrics.length) / 2;
+    const count = data.metrics.length;
+    const metricWidth = Math.min(3.5, 12.0 / count);
+    const startX = (13.33 - metricWidth * count) / 2;
 
     data.metrics.forEach((metric, i) => {
       const x = startX + i * metricWidth;
-      // Metric card background
-      slide.addShape("rect", {
-        x, y: 2.8, w: metricWidth - 0.2, h: 2.5,
+      // Card background
+      s.addShape("rect", {
+        x, y: 2.8, w: metricWidth - 0.2, h: 3.0,
         fill: { color: "F5F5F5" }, rectRadius: 0.1,
       });
-      // Metric value
-      slide.addText(metric.value, {
-        x, y: 3.2, w: metricWidth - 0.2, h: 1.2,
-        fontSize: 32, fontFace: "Arial", color: primaryColor, bold: true, align: "center",
+      // Accent top line on card
+      s.addShape("rect", {
+        x: x + 0.3, y: 2.8, w: metricWidth - 0.8, h: 0.04,
+        fill: { color: d.accentColor },
       });
-      // Metric label
-      slide.addText(metric.label, {
-        x, y: 4.3, w: metricWidth - 0.2, h: 0.6,
-        fontSize: 12, fontFace: "Arial", color: "666666", align: "center",
+      // Value
+      s.addText(metric.value, {
+        x, y: 3.3, w: metricWidth - 0.2, h: 1.4,
+        fontSize: 36, fontFace: fontH, color: d.primaryColor, bold: true, align: "center",
+      });
+      // Label
+      s.addText(metric.label, {
+        x, y: 4.7, w: metricWidth - 0.2, h: 0.6,
+        fontSize: 13, fontFace: fontB, color: "666666", align: "center",
       });
     });
   }
 }
 
-function renderTeamSlide(slide: any, data: DeckSlide, primaryColor: string, textColor: string) {
-  slide.addShape("rect", { x: 0, y: 0, w: 10, h: 0.08, fill: { color: primaryColor } });
+function renderTeamPptx(s: any, data: DeckSlide, d: DesignDirection, fontH: string, fontB: string) {
+  s.addShape("rect", { x: 0, y: 0, w: 13.33, h: 0.06, fill: { color: d.primaryColor } });
 
-  slide.addText(data.title, {
-    x: 0.6, y: 0.4, w: 8.8, h: 0.8,
-    fontSize: 28, fontFace: "Arial", color: primaryColor, bold: true,
+  s.addText(data.title, {
+    x: 0.6, y: 0.4, w: 12.0, h: 0.9,
+    fontSize: 30, fontFace: fontH, color: d.primaryColor, bold: true,
   });
 
   if (data.bullets && data.bullets.length > 0) {
-    const memberWidth = Math.min(2.5, 8.8 / data.bullets.length);
-    const startX = (10 - memberWidth * data.bullets.length) / 2;
+    const count = data.bullets.length;
+    const memberWidth = Math.min(3.0, 12.0 / count);
+    const startX = (13.33 - memberWidth * count) / 2;
 
     data.bullets.forEach((member, i) => {
       const x = startX + i * memberWidth;
       // Avatar circle
-      slide.addShape("ellipse", {
-        x: x + (memberWidth - 1.2) / 2, y: 1.8, w: 1.2, h: 1.2,
+      s.addShape("ellipse", {
+        x: x + (memberWidth - 1.4) / 2, y: 1.8, w: 1.4, h: 1.4,
         fill: { color: "E8EAF6" },
       });
       // Initials
       const initials = member.split(" — ")[0]?.split(" ").map((n) => n[0]).join("").slice(0, 2) || "??";
-      slide.addText(initials, {
-        x: x + (memberWidth - 1.2) / 2, y: 2.1, w: 1.2, h: 0.6,
-        fontSize: 20, fontFace: "Arial", color: primaryColor, bold: true, align: "center", valign: "middle",
+      s.addText(initials, {
+        x: x + (memberWidth - 1.4) / 2, y: 2.1, w: 1.4, h: 0.7,
+        fontSize: 22, fontFace: fontH, color: d.primaryColor, bold: true, align: "center", valign: "middle",
       });
-      // Name and title
+      // Name
       const parts = member.split(" — ");
-      slide.addText(parts[0] || member, {
-        x, y: 3.2, w: memberWidth, h: 0.5,
-        fontSize: 13, fontFace: "Arial", color: textColor, bold: true, align: "center",
+      s.addText(parts[0] || member, {
+        x, y: 3.4, w: memberWidth, h: 0.5,
+        fontSize: 14, fontFace: fontB, color: d.textColor, bold: true, align: "center",
       });
       if (parts[1]) {
-        slide.addText(parts[1], {
-          x, y: 3.6, w: memberWidth, h: 0.4,
-          fontSize: 11, fontFace: "Arial", color: "666666", align: "center",
+        s.addText(parts[1], {
+          x, y: 3.8, w: memberWidth, h: 0.4,
+          fontSize: 12, fontFace: fontB, color: "666666", align: "center",
         });
       }
     });
   }
 }
 
-function renderAskSlide(slide: any, data: DeckSlide, primaryColor: string, accentColor: string) {
+function renderAskPptx(s: any, data: DeckSlide, d: DesignDirection, fontH: string, fontB: string) {
   // Full background
-  slide.addShape("rect", { x: 0, y: 0, w: 10, h: 7.5, fill: { color: primaryColor } });
+  s.addShape("rect", { x: 0, y: 0, w: 13.33, h: 7.5, fill: { color: d.primaryColor } });
 
-  slide.addText(data.title, {
-    x: 0.6, y: 1.5, w: 8.8, h: 1.0,
-    fontSize: 36, fontFace: "Arial", color: "FFFFFF", bold: true, align: "center",
+  // Accent line
+  s.addShape("rect", { x: 4.0, y: 2.2, w: 5.33, h: 0.04, fill: { color: d.accentColor } });
+
+  s.addText(data.title, {
+    x: 1.0, y: 2.5, w: 11.33, h: 1.2,
+    fontSize: 40, fontFace: fontH, color: "FFFFFF", bold: true, align: "center",
   });
 
-  slide.addText(data.content, {
-    x: 1.0, y: 2.8, w: 8.0, h: 1.2,
-    fontSize: 20, fontFace: "Arial", color: "FFFFFF", align: "center",
+  s.addText(data.content, {
+    x: 1.5, y: 3.8, w: 10.33, h: 1.2,
+    fontSize: 20, fontFace: fontB, color: "FFFFFF", align: "center",
   });
 
   if (data.bullets && data.bullets.length > 0) {
-    const bulletText = data.bullets.map((b) => ({ text: b, options: { bullet: true, fontSize: 16, color: "FFFFFF" } }));
-    slide.addText(bulletText, {
-      x: 2.0, y: 4.2, w: 6.0, h: 2.5,
-      fontFace: "Arial", lineSpacingMultiple: 1.5, align: "center",
+    const bulletText = data.bullets.map((b) => ({
+      text: b,
+      options: { bullet: true, fontSize: 16, color: "FFFFFF" },
+    }));
+    s.addText(bulletText, {
+      x: 3.0, y: 5.2, w: 7.33, h: 2.0,
+      fontFace: fontB, lineSpacingMultiple: 1.5, align: "center",
     });
   }
+}
+
+// =============================================
+// PDF Generation
+// =============================================
+
+async function generatePdf(plan: DeckPlan): Promise<Buffer> {
+  const pdfDoc = await PDFDocument.create();
+  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const d = plan.designDirection;
+  // Parse hex color to RGB
+  const parseHex = (hex: string) => {
+    const h = hex.replace("#", "");
+    return rgb(
+      parseInt(h.substring(0, 2), 16) / 255,
+      parseInt(h.substring(2, 4), 16) / 255,
+      parseInt(h.substring(4, 6), 16) / 255
+    );
+  };
+
+  const primaryRgb = parseHex(d.primaryColor);
+  const textRgb = parseHex(d.textColor);
+  const accentRgb = parseHex(d.accentColor);
+
+  for (const slide of plan.slides) {
+    const page = pdfDoc.addPage([1333, 750]); // Widescreen
+
+    switch (slide.type) {
+      case "cover": {
+        // Left panel
+        page.drawRectangle({
+          x: 0, y: 0, width: 500, height: 750,
+          color: primaryRgb,
+        });
+        // Company name
+        page.drawText(plan.companyName, {
+          x: 60, y: 500, size: 38, font: helveticaBold, color: rgb(1, 1, 1),
+        });
+        // Tagline
+        page.drawText(slide.content, {
+          x: 60, y: 450, size: 16, font: helvetica, color: rgb(1, 1, 1),
+          maxWidth: 380,
+        });
+        // Right side text
+        page.drawText("Investor Pitch Deck", {
+          x: 600, y: 350, size: 14, font: helvetica, color: parseHex("999999"),
+        });
+        break;
+      }
+      case "ask": {
+        // Full background
+        page.drawRectangle({
+          x: 0, y: 0, width: 1333, height: 750,
+          color: primaryRgb,
+        });
+        page.drawText(slide.title, {
+          x: 100, y: 400, size: 40, font: helveticaBold, color: rgb(1, 1, 1),
+        });
+        page.drawText(slide.content, {
+          x: 150, y: 340, size: 20, font: helvetica, color: rgb(1, 1, 1),
+          maxWidth: 1000,
+        });
+        if (slide.bullets) {
+          slide.bullets.forEach((b, i) => {
+            page.drawText(`•  ${b}`, {
+              x: 300, y: 280 - i * 35, size: 16, font: helvetica, color: rgb(1, 1, 1),
+              maxWidth: 700,
+            });
+          });
+        }
+        break;
+      }
+      default: {
+        // Top accent bar
+        page.drawRectangle({
+          x: 0, y: 740, width: 1333, height: 10,
+          color: primaryRgb,
+        });
+        // Title
+        page.drawText(slide.title, {
+          x: 60, y: 660, size: 30, font: helveticaBold, color: primaryRgb,
+        });
+        // Content
+        page.drawText(slide.content, {
+          x: 60, y: 600, size: 16, font: helvetica, color: textRgb,
+          maxWidth: 1200,
+        });
+        // Bullets
+        if (slide.bullets) {
+          slide.bullets.forEach((b, i) => {
+            page.drawText(`•  ${b}`, {
+              x: 80, y: 540 - i * 40, size: 14, font: helvetica, color: textRgb,
+              maxWidth: 1100,
+            });
+          });
+        }
+        // Metrics
+        if (slide.metrics && slide.metrics.length > 0) {
+          const mw = Math.min(300, 1100 / slide.metrics.length);
+          const sx = (1333 - mw * slide.metrics.length) / 2;
+          slide.metrics.forEach((m, i) => {
+            const mx = sx + i * mw;
+            // Card background
+            page.drawRectangle({
+              x: mx, y: 300, width: mw - 20, height: 180,
+              color: parseHex("F5F5F5"),
+              borderColor: parseHex("E0E0E0"),
+              borderWidth: 1,
+            });
+            // Value
+            page.drawText(m.value, {
+              x: mx + 10, y: 400, size: 32, font: helveticaBold, color: primaryRgb,
+            });
+            // Label
+            page.drawText(m.label, {
+              x: mx + 10, y: 340, size: 12, font: helvetica, color: parseHex("666666"),
+            });
+          });
+        }
+        // Team avatars
+        if (slide.type === "team" && slide.bullets) {
+          const count = slide.bullets.length;
+          const mw = Math.min(250, 1100 / count);
+          const sx = (1333 - mw * count) / 2;
+          slide.bullets.forEach((member, i) => {
+            const mx = sx + i * mw;
+            const parts = member.split(" — ");
+            // Circle
+            page.drawCircle({
+              x: mx + mw / 2, y: 450, size: 30,
+              color: parseHex("E8EAF6"),
+            });
+            // Name
+            page.drawText(parts[0] || member, {
+              x: mx, y: 390, size: 13, font: helveticaBold, color: textRgb,
+            });
+            if (parts[1]) {
+              page.drawText(parts[1], {
+                x: mx, y: 370, size: 11, font: helvetica, color: parseHex("666666"),
+              });
+            }
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
 }
 
 // =============================================
@@ -369,24 +602,31 @@ function renderAskSlide(slide: any, data: DeckSlide, primaryColor: string, accen
 
 export async function generatePitchDeck(input: DeckInput): Promise<{
   pptxBuffer: Buffer;
+  pdfBuffer: Buffer;
   slides: DeckSlide[];
-  designDirection: DeckPlan["designDirection"];
+  designDirection: DesignDirection;
+  style: string;
 }> {
   // 1. Generate narrative with AI
   const slides = await generateNarrative(input);
 
-  // 2. Determine design direction
-  const designDirection = getDesignDirection(input.industry);
+  // 2. Determine design direction from style + industry
+  const style = input.style || "investor";
+  const designDirection = getDesignDirection(style, input.industry);
 
   // 3. Create deck plan
   const plan: DeckPlan = {
     companyName: input.companyName,
     slides,
     designDirection,
+    style,
   };
 
-  // 4. Generate PPTX
-  const pptxBuffer = await generatePptx(plan);
+  // 4. Generate both PPTX and PDF
+  const [pptxBuffer, pdfBuffer] = await Promise.all([
+    generatePptx(plan),
+    generatePdf(plan),
+  ]);
 
-  return { pptxBuffer, slides, designDirection };
+  return { pptxBuffer, pdfBuffer, slides, designDirection, style };
 }
