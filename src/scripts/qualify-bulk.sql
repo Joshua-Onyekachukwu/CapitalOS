@@ -54,10 +54,10 @@ SET
 
     -- Stage match (20%) — check if includes seed
     (CASE
-      WHEN investment_stages @> ARRAY['seed'] THEN 100
-      WHEN investment_stages && ARRAY['pre_seed'] THEN 75
-      WHEN investment_stages && ARRAY['series_a'] THEN 75
-      WHEN investment_stages && ARRAY['series_b'] THEN 40
+      WHEN investment_stages @> ARRAY['seed']::investment_stage[] THEN 100
+      WHEN investment_stages && ARRAY['pre_seed']::investment_stage[] THEN 75
+      WHEN investment_stages && ARRAY['series_a']::investment_stage[] THEN 75
+      WHEN investment_stages && ARRAY['series_b']::investment_stage[] THEN 40
       WHEN investment_stages IS NOT NULL AND array_length(investment_stages, 1) > 0 THEN 50
       ELSE 40
     END * 0.20) +
