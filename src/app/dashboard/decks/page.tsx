@@ -12,6 +12,7 @@ interface DeckDocument {
   fileName: string;
   fileSize: number | null;
   createdAt: string;
+  fileUrl: string | null;
 }
 
 export default function DecksPage() {
@@ -29,6 +30,7 @@ export default function DecksPage() {
           fileName: d.fileName,
           fileSize: d.fileSize,
           createdAt: d.createdAt,
+          fileUrl: d.fileUrl,
         }));
       setDecks(pitchDecks);
     } catch {
@@ -49,7 +51,13 @@ export default function DecksPage() {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
+      month: "short", day: "numeric", year: "numeric",
+    });
+  };
+
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleTimeString("en-US", {
+      hour: "2-digit", minute: "2-digit",
     });
   };
 
@@ -112,15 +120,22 @@ export default function DecksPage() {
                     <i className="ri-file-ppt-2-line text-red-500 text-[20px]"></i>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
+                    <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px] truncate">
                       {deck.fileName}
                     </p>
                     <p className="text-[12px] text-gray-400 !mb-0">
-                      {formatFileSize(deck.fileSize)} · {formatDate(deck.createdAt)}
+                      {formatFileSize(deck.fileSize)} · {formatDate(deck.createdAt)} at {formatTime(deck.createdAt)}
                     </p>
                   </div>
                   <div className="flex items-center gap-[8px] flex-none">
                     <Badge variant="success" size="sm">Generated</Badge>
+                    {deck.fileUrl && (
+                      <a href={deck.fileUrl} download target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm">
+                          <i className="ri-download-line text-[14px]"></i>
+                        </Button>
+                      </a>
+                    )}
                   </div>
                 </div>
               </CardBody>

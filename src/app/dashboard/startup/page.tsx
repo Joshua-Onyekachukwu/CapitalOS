@@ -166,6 +166,33 @@ export default function StartupPage() {
         </CardBody>
       </Card>
 
+      {/* Pitch Deck CTA */}
+      {!profile.hasPitchDeck && (
+        <Card className="mb-[20px]">
+          <CardBody className="p-[20px]">
+            <div className="flex items-center gap-[16px]">
+              <div className="w-[48px] h-[48px] rounded-[12px] bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center flex-none">
+                <i className="ri-magic-line text-lime-600 text-[22px]"></i>
+              </div>
+              <div className="flex-1">
+                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">
+                  Generate Your Pitch Deck
+                </p>
+                <p className="text-[12px] text-gray-400 !mb-0">
+                  AI creates a complete investor pitch deck from your company profile in under 30 seconds.
+                </p>
+              </div>
+              <Link href="/dashboard/decks/new">
+                <Button size="sm">
+                  <i className="ri-magic-line text-[14px] mr-[4px]"></i>
+                  Generate Deck
+                </Button>
+              </Link>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[20px]">
         {/* Company Info */}
         <Card>

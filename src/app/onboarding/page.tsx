@@ -29,6 +29,7 @@ interface OnboardingData {
   roundType: string;
   targetInvestorGeographies: string[];
   hasPitchDeck: boolean;
+  pitchDeckStyle: string;
   // Step 4 — Traction
   mrr: string;
   arr: string;
@@ -58,12 +59,17 @@ const INDUSTRIES = [
 ];
 
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B", "Series C", "Growth"];
-
 const BUSINESS_MODELS = ["SaaS", "Marketplace", "Hardware", "Services", "Consumer", "Other"];
-
 const ROUND_TYPES = ["Pre-Seed", "Seed", "Series A", "Series B", "Series C", "Growth"];
-
 const GEOGRAPHIES = ["United States", "Europe", "United Kingdom", "Asia", "Africa", "Latin America", "Middle East", "Global"];
+
+const PITCH_DECK_STYLES = [
+  { id: "minimal", name: "Minimal", desc: "Clean lines, lots of white space, focused content", preview: "bg-white border-2 border-gray-200", icon: "ri-layout-line" },
+  { id: "bold", name: "Bold", desc: "Strong colors, large type, high contrast", preview: "bg-[#06201b] text-white", icon: "ri-fire-line" },
+  { id: "corporate", name: "Corporate", desc: "Professional, structured, trustworthy", preview: "bg-blue-50 border border-blue-200", icon: "ri-briefline" },
+  { id: "modern", name: "Modern", desc: "Gradient accents, smooth transitions", preview: "bg-gradient-to-br from-purple-50 to-blue-50", icon: "ri-sparkling-2-line" },
+  { id: "investor", name: "Investor-First", desc: "Data-heavy, metrics-focused, no fluff", preview: "bg-gray-50 border border-gray-300", icon: "ri-line-chart-line" },
+];
 
 // =============================================
 // Onboarding Page
@@ -90,6 +96,7 @@ export default function OnboardingPage() {
     roundType: "",
     targetInvestorGeographies: [],
     hasPitchDeck: false,
+    pitchDeckStyle: "investor",
     mrr: "",
     arr: "",
     customerCount: "",
@@ -104,9 +111,21 @@ export default function OnboardingPage() {
     async function loadProfile() {
       setLoading(true);
       try {
-        const { getOrCreateCompanyProfile } = await import("@/lib/actions/company");
-        const profile = await getOrCreateCompanyProfile();
+        const { getOrCreateCompanyProfile, getTeamMembers } = await import("@/lib/actions/company");
+        const [profile, teamMembers] = await Promise.all([
+          getOrCreateCompanyProfile(),
+          getTeamMembers(),
+        ]);
         if (profile) {
+          const mappedTeam = teamMembers.length > 0
+            ? teamMembers.map((m) => ({
+                name: m.name,
+                title: m.title || "",
+                linkedinUrl: m.linkedinUrl || "",
+                isFounder: m.isFounder,
+              }))
+            : [{ name: "", title: "Founder & CEO", linkedinUrl: "", isFounder: true }];
+
           setData({
             companyName: profile.companyName || "",
             websiteUrl: profile.websiteUrl || "",
@@ -123,13 +142,14 @@ export default function OnboardingPage() {
             roundType: profile.roundType || "",
             targetInvestorGeographies: profile.targetInvestorGeographies || [],
             hasPitchDeck: profile.hasPitchDeck,
+            pitchDeckStyle: "investor",
             mrr: profile.mrr ? String(profile.mrr) : "",
             arr: profile.arr ? String(profile.arr) : "",
             customerCount: profile.customerCount ? String(profile.customerCount) : "",
             growthRate: profile.growthRate || "",
             milestones: (profile.milestones || []).join(", "),
             employeeCount: profile.employeeCount ? String(profile.employeeCount) : "",
-            teamMembers: [{ name: "", title: "Founder & CEO", linkedinUrl: "", isFounder: true }],
+            teamMembers: mappedTeam,
           });
           if (profile.onboardingStep > 0) {
             setStep(Math.min(profile.onboardingStep + 1, 7));
@@ -187,8 +207,40 @@ export default function OnboardingPage() {
     }
   }, [data]);
 
+  const saveTeamMembers = useCallback(async () => {
+    try {
+      const { addTeamMember, getTeamMembers, removeTeamMember } = await import("@/lib/actions/company");
+      // Get existing team members
+      const existing = await getTeamMembers();
+      const existingIds = existing.map((m) => m.id);
+
+      // Remove old team members that are no longer in the list
+      for (const id of existingIds) {
+        await removeTeamMember(id);
+      }
+
+      // Add all current team members
+      for (const member of data.teamMembers) {
+        if (member.name.trim()) {
+          await addTeamMember({
+            name: member.name.trim(),
+            title: member.title.trim() || undefined,
+            linkedinUrl: member.linkedinUrl.trim() || undefined,
+            isFounder: member.isFounder,
+          });
+        }
+      }
+    } catch {
+      // Non-critical — team members can be added later
+    }
+  }, [data.teamMembers]);
+
   const handleNext = async () => {
     await saveProgress(step);
+    if (step === 5) {
+      // Save team members when leaving the Team step
+      await saveTeamMembers();
+    }
     if (step < 7) {
       setStep(step + 1);
       window.scrollTo(0, 0);
@@ -205,6 +257,9 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     setSaving(true);
     try {
+      // Save team members first
+      await saveTeamMembers();
+
       const { updateCompanyProfile } = await import("@/lib/actions/company");
       await updateCompanyProfile({
         companyName: data.companyName || undefined,
@@ -445,7 +500,7 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Step 3 — Fundraising */}
+            {/* Step 3 — Fundraising + Pitch Deck Style */}
             {step === 3 && (
               <div className="space-y-[20px]">
                 <div>
@@ -517,29 +572,59 @@ export default function OnboardingPage() {
                     </div>
                   </>
                 )}
-                <div>
-                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Do you have a pitch deck?</label>
-                  <div className="flex gap-[10px]">
-                    {["Yes", "No"].map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => update("hasPitchDeck", opt === "Yes")}
-                        className={`px-[16px] py-[8px] rounded-[8px] text-[13px] font-medium transition-all ${
-                          (opt === "Yes" && data.hasPitchDeck) || (opt === "No" && !data.hasPitchDeck)
-                            ? "bg-[#06201b] text-white dark:bg-lime-500 dark:text-black"
-                            : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200"
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
+
+                {/* Pitch Deck Section */}
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-[20px]">
+                  <div className="mb-[12px]">
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Do you have a pitch deck?</label>
+                    <div className="flex gap-[10px]">
+                      {["Yes", "No"].map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => update("hasPitchDeck", opt === "Yes")}
+                          className={`px-[16px] py-[8px] rounded-[8px] text-[13px] font-medium transition-all ${
+                            (opt === "Yes" && data.hasPitchDeck) || (opt === "No" && !data.hasPitchDeck)
+                              ? "bg-[#06201b] text-white dark:bg-lime-500 dark:text-black"
+                              : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200"
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  {!data.hasPitchDeck && (
-                    <p className="text-[12px] text-lime-600 mt-[8px] !mb-0">
-                      <i className="ri-sparkling-2-line mr-[4px]"></i>
-                      We can help you create one after onboarding!
-                    </p>
-                  )}
+
+                  {/* Pitch Deck Style Picker */}
+                  <div>
+                    <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[8px]">
+                      <i className="ri-sparkling-2-line text-lime-500 mr-[4px]"></i>
+                      Choose a pitch deck style
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
+                      {PITCH_DECK_STYLES.map((style) => (
+                        <button
+                          key={style.id}
+                          onClick={() => update("pitchDeckStyle", style.id)}
+                          className={`text-left p-[14px] rounded-[10px] border-2 transition-all ${
+                            data.pitchDeckStyle === style.id
+                              ? "border-lime-500 bg-lime-50/50 dark:bg-lime-900/10"
+                              : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                          }`}
+                        >
+                          <div className="flex items-center gap-[10px] mb-[6px]">
+                            <div className={`w-[32px] h-[24px] rounded-[4px] ${style.preview} flex items-center justify-center`}>
+                              <i className={`${style.icon} text-[12px] ${style.id === "bold" ? "text-white" : "text-gray-500"}`}></i>
+                            </div>
+                            <span className="text-[13px] font-semibold text-[#06201b] dark:text-white">{style.name}</span>
+                            {data.pitchDeckStyle === style.id && (
+                              <i className="ri-check-line text-lime-500 text-[14px] ml-auto"></i>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-400 !mb-0">{style.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -752,6 +837,8 @@ export default function OnboardingPage() {
                     { label: "Raising", value: data.currentlyRaising ? `Yes — ${data.roundType || "Round"} $${data.fundingAmount || "?"}` : "Not currently raising" },
                     { label: "MRR", value: data.mrr ? `$${Number(data.mrr).toLocaleString()}` : "Not set" },
                     { label: "Customers", value: data.customerCount || "Not set" },
+                    { label: "Team", value: data.teamMembers.filter((m) => m.name.trim()).map((m) => m.name).join(", ") || "Not set" },
+                    { label: "Deck Style", value: PITCH_DECK_STYLES.find((s) => s.id === data.pitchDeckStyle)?.name || "Investor-First" },
                   ].map((item) => (
                     <div key={item.label} className="flex items-center justify-between py-[8px] border-b border-gray-100 dark:border-gray-800 last:border-0">
                       <span className="text-[13px] text-gray-400">{item.label}</span>
@@ -761,6 +848,15 @@ export default function OnboardingPage() {
                     </div>
                   ))}
                 </div>
+
+                {!data.hasPitchDeck && (
+                  <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-[10px] p-[14px] border border-blue-100 dark:border-blue-800/30">
+                    <p className="text-[13px] text-gray-600 dark:text-gray-400 !mb-0">
+                      <i className="ri-magic-line text-blue-500 mr-[4px]"></i>
+                      <strong>Next step:</strong> After launching, go to <strong>Pitch Decks</strong> to generate your {PITCH_DECK_STYLES.find((s) => s.id === data.pitchDeckStyle)?.name || "Investor-First"} style deck with one click.
+                    </p>
+                  </div>
+                )}
 
                 <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-[10px] p-[14px] border border-amber-100 dark:border-amber-800/30">
                   <p className="text-[13px] text-gray-600 dark:text-gray-400 !mb-0">
