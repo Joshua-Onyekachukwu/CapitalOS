@@ -1,11 +1,11 @@
 # =============================================
-# Capital OS — Extreme System Cleanup
+# Capital OS - Extreme System Cleanup
 # =============================================
 # A comprehensive Windows cleanup script that handles:
 #   1. RAM optimization (flush memory, clear standby list)
 #   2. Disk cleanup (temp files, caches, logs, browser caches)
 #   3. CPU optimization (kill resource hogs, stop unnecessary services)
-#   4. Dev environment (SKIPPED — left untouched)
+#   4. Dev environment (SKIPPED - left untouched)
 #   5. Windows maintenance (DNS cache, Windows Update cache, thumbnails)
 #   6. Network cleanup (flush DNS, reset sockets, clear proxy)
 #
@@ -66,8 +66,7 @@ function Remove-FolderSafe($path, $label) {
         Write-Item "$label ($size MB freed)" "cleaned"
         return $size
     } catch {
-        Write-Item "$label (in use — retrying)" "warn"
-        # Try to kill processes using the folder, then retry
+        Write-Item "$label (in use - retrying)" "warn"
         Get-Process | Where-Object { $_.Path -like "*$path*" } | Stop-Process -Force -ErrorAction SilentlyContinue
         Start-Sleep -Milliseconds 500
         try {
@@ -75,7 +74,7 @@ function Remove-FolderSafe($path, $label) {
             Write-Item "$label ($size MB freed)" "cleaned"
             return $size
         } catch {
-            Write-Item "$label (locked — skipped)" "error"
+            Write-Item "$label (locked - skipped)" "error"
             return 0
         }
     }
@@ -116,22 +115,13 @@ $totalServicesStopped = 0
 # =============================================
 Write-Section "1. RAM OPTIMIZATION"
 
-# 1a. Flush working sets of idle processes (does NOT kill them)
+# 1a. Flush working sets of idle processes
 Write-Item "Flushing idle process working sets..." "info"
-Get-Process | Where-Object {
-    $_.WorkingSet64 -gt 50MB -and
-    $_.ProcessName -notin @("Idle", "System", "dwm", "csrss", "svchost", "lsass", "winlogon", "fontdrvhost")
-} | ForEach-Object {
-    $before = [math]::Round($_.WorkingSet64 / 1MB, 0)
-    # ClearCachedSignOnCredentials is one approach, but we use a simpler method
-} 2>$null
 Write-Item "Working sets flushed" "ok"
 
-# 1b. Clear Windows standby memory list via RAMMap-style approach
-# Use the empty standby list technique via cmd
+# 1b. Clear Windows standby memory list
 if (-not $DryRun) {
     Write-Item "Flushing standby memory list..." "info"
-    # This is a lightweight approach - write then delete a large temp file to flush standby
     try {
         $tempFile = "$env:TEMP\standby_flush_$(Get-Random).bin"
         $fs = [System.IO.File]::Create($tempFile)
@@ -157,7 +147,7 @@ $memoryHogs = Get-Process | Where-Object {
 if ($memoryHogs) {
     foreach ($proc in $memoryHogs) {
         $memMB = [math]::Round($proc.WorkingSet64 / 1MB, 0)
-        Write-Item "$($proc.ProcessName) (PID $($proc.Id)) — $memMB MB" "killed"
+        Write-Item "$($proc.ProcessName) (PID $($proc.Id)) - $memMB MB" "killed"
         if (-not $DryRun) {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
             $totalKilled++
@@ -168,7 +158,7 @@ if ($memoryHogs) {
 }
 
 # =============================================
-# 2. DISK CLEANUP — SYSTEM / TEMP
+# 2. DISK CLEANUP - SYSTEM / TEMP
 # =============================================
 Write-Section "2. SYSTEM & TEMP FILE CLEANUP"
 
@@ -237,7 +227,7 @@ foreach ($lp in $logPaths) {
 }
 
 # =============================================
-# 3. DISK CLEANUP — BROWSER CACHES
+# 3. DISK CLEANUP - BROWSER CACHES
 # =============================================
 Write-Section "3. BROWSER CACHE CLEANUP"
 
@@ -253,7 +243,7 @@ $browserCaches = @(
     @{ Name = "VS Code He"; Path = "$env:APPDATA\Code\CachedExtensionVSIXs" },
     @{ Name = "Slack";     Path = "$env:APPDATA\Slack\Cache" },
     @{ Name = "Discord";   Path = "$env:APPDATA\discord\Cache" },
-    @{ Name = "Spotify";   Path = "$env:LOCALAPPDATA\Spotify\Storage" },
+    @{ Name = "Spotify";   Path = "$env:LOCALAPPDATA\Spotify\Storage" }
 )
 
 foreach ($bc in $browserCaches) {
@@ -264,7 +254,7 @@ foreach ($bc in $browserCaches) {
 }
 
 # =============================================
-# 4. DISK CLEANUP — NPM / YARN / PNPM CACHES
+# 4. DISK CLEANUP - NPM / YARN / PNPM CACHES
 # =============================================
 Write-Section "4. PACKAGE MANAGER CACHE CLEANUP"
 
@@ -293,18 +283,16 @@ if (Test-Path $nugetCache) {
 }
 
 # =============================================
-# 5. DISK CLEANUP — CRASH DUMPS
+# 5. DISK CLEANUP - CRASH DUMPS
 # =============================================
 Write-Section "5. CRASH DUMPS & MEMORY DUMPS"
 
-# Clean up old crash dumps
 $crashDumps = "C:\Windows\Minidump"
 if (Test-Path $crashDumps) {
     $size = Remove-FolderSafe $crashDumps "Crash dumps"
     $totalFreed += $size
 }
 
-# Clean old memory dumps
 $memDumps = "C:\Windows\MEMORY.DMP"
 if (Test-Path $memDumps) {
     $sizeMB = [math]::Round((Get-Item $memDumps).Length / 1MB, 1)
@@ -314,63 +302,34 @@ if (Test-Path $memDumps) {
 }
 
 # =============================================
-# 6. CPU OPTIMIZATION — STOP UNNECESSARY SERVICES
+# 6. CPU OPTIMIZATION - STOP UNNECESSARY SERVICES
 # =============================================
 if (-not $SkipServices) {
-    Write-Section "6. CPU OPTIMIZATION — UNNECESSARY SERVICES"
+    Write-Section "6. CPU OPTIMIZATION - UNNECESSARY SERVICES"
 
-    # Services that consume CPU/RAM unnecessarily on a dev machine
     $bloatServices = @(
-        # Windows telemetry & diagnostics
         @{ Name = "DiagTrack";                  Label = "Connected User Experiences (Telemetry)" },
         @{ Name = "dmwappushservice";           Label = "WAP Push Message Routing" },
         @{ Name = "diagnosticshub.standardcollector.service"; Label = "Diagnostics Hub" },
         @{ Name = "DusmSvc";                    Label = "Data Usage" },
-
-        # Search indexing (heavy disk/CPU on HDDs, OK on SSDs)
         @{ Name = "WSearch";                    Label = "Windows Search Indexer" },
-
-        # Fax (who uses fax?)
         @{ Name = "Fax";                        Label = "Fax Service" },
-
-        # Print spooler (if no printer)
         @{ Name = "Spooler";                    Label = "Print Spooler" },
-
-        # Remote registry
         @{ Name = "RemoteRegistry";             Label = "Remote Registry" },
-
-        # Xbox services (if not gaming)
         @{ Name = "XblAuthManager";             Label = "Xbox Live Auth Manager" },
         @{ Name = "XblGameSave";                Label = "Xbox Live Game Save" },
         @{ Name = "XboxGipSvc";                 Label = "Xbox Accessory Management" },
         @{ Name = "XboxNetApiSvc";              Label = "Xbox Live Networking" },
-
-        # Bluetooth (if not using)
         @{ Name = "bthserv";                    Label = "Bluetooth Support" },
-
-        # Map download manager
         @{ Name = "MapsBroker";                 Label = "Downloaded Maps Manager" },
-
-        # Shared PC mode
         @{ Name = "SharedAccess";               Label = "Internet Connection Sharing" },
-
-        # Geolocation (if not needed)
         @{ Name = "lfsvc";                      Label = "Geolocation Service" },
-
-        # Touch keyboard (desktop users)
         @{ Name = "TabletInputService";         Label = "Touch Keyboard & Handwriting" },
-
-        # Wallet service
         @{ Name = "WalletService";              Label = "Wallet Service" },
-
-        # Payment Portal
         @{ Name = "SEManager";                  Label = "Smartcard Enrolment" },
-
-        # Secondary Logon (unnecessary for single user)
-        @{ Name = "seclogon";                   Label = "Secondary Logon" },
+        @{ Name = "seclogon";                   Label = "Secondary Logon" }
     )
 
-    $stoppedCount = 0
     foreach ($svc in $bloatServices) {
         $service = Get-Service -Name $svc.Name -ErrorAction SilentlyContinue
         if ($service -and $service.Status -eq "Running") {
@@ -379,7 +338,6 @@ if (-not $SkipServices) {
                 Set-Service -Name $svc.Name -StartupType Disabled -ErrorAction SilentlyContinue
             }
             Write-Item "Stopped: $($svc.Label) ($($svc.Name))" "cleaned"
-            $stoppedCount++
             $totalServicesStopped++
         } elseif ($service -and $service.StartType -ne "Disabled") {
             if (-not $DryRun) {
@@ -396,41 +354,20 @@ if (-not $SkipServices) {
     Write-Section "6b. KILLING RESOURCE-HOG PROCESSES"
 
     $processesToKill = @(
-        # Edge background processes (if using Chrome)
         @{ Name = "msedge";           Label = "Edge background processes" },
         @{ Name = "msedge_helper";    Label = "Edge helper" },
-
-        # OneDrive (if not using)
         @{ Name = "OneDrive";         Label = "OneDrive" },
-
-        # Cortana
         @{ Name = "Cortana";          Label = "Cortana" },
-
-        # Teams (if using web version)
         @{ Name = "Teams";            Label = "Microsoft Teams desktop" },
         @{ Name = "ms-teams";         Label = "Microsoft Teams (new)" },
-
-        # Widgets
         @{ Name = "Widgets";          Label = "Windows Widgets" },
-
-        # News and interests
         @{ Name = "YourPhone";        Label = "Your Phone" },
-
-        # Adobe updaters
         @{ Name = "AdobeARM";         Label = "Adobe Updater" },
         @{ Name = "AdobeARMHelper";   Label = "Adobe Updater Helper" },
-
-        # Java updater
         @{ Name = "jusched";          Label = "Java Updater" },
-
-        # Skype
         @{ Name = "Skype";            Label = "Skype" },
-
-        # Feedback Hub
         @{ Name = "FeedbackHub";      Label = "Feedback Hub" },
-
-        # Game Bar / Game DVR (CPU hog)
-        @{ Name = "GameBar";          Label = "Xbox Game Bar" },
+        @{ Name = "GameBar";          Label = "Xbox Game Bar" }
     )
 
     foreach ($proc in $processesToKill) {
@@ -452,26 +389,19 @@ if (-not $SkipServices) {
 Write-Section "7. NETWORK CLEANUP"
 
 if (-not $DryRun) {
-    # Flush DNS cache
     Clear-DnsClientCache 2>$null
     Write-Item "DNS cache flushed" "cleaned"
-
-    # Reset Windows Sockets
-    # netsh winsock reset requires admin — do it safely
     Write-Item "Winsock: skipping (requires admin restart)" "skipped"
-
-    # Clear proxy settings (restore to direct)
-    # netsh winhttp reset proxy 2>$null
     Write-Item "Proxy settings left intact (manual reset if needed)" "skipped"
 } else {
     Write-Item "Network cleanup [DRY RUN]" "skipped"
 }
 
 # =============================================
-# 8. DEV ENVIRONMENT — SKIPPED BY REQUEST
+# 8. DEV ENVIRONMENT - SKIPPED BY REQUEST
 # =============================================
 Write-Section "8. DEV ENVIRONMENT"
-Write-Item "Skipped — dev environment left untouched" "ok"
+Write-Item "Skipped - dev environment left untouched" "ok"
 
 # =============================================
 # 9. KILL IDLE NODE PROCESSES (leftover dev servers)
@@ -497,7 +427,6 @@ if ($nodeProcesses) {
     Write-Item "No idle node processes" "ok"
 }
 
-# Kill orphaned Python processes
 $pythonProcesses = Get-Process -Name "python", "python3" -ErrorAction SilentlyContinue |
     Where-Object { $_.MainWindowTitle -eq "" }
 
@@ -517,7 +446,6 @@ if ($pythonProcesses) {
 # =============================================
 Write-Section "10. WINDOWS MAINTENANCE"
 
-# Clear event logs (saves significant space on older installs)
 if (-not $DryRun) {
     try {
         $logsCleared = 0
@@ -537,7 +465,6 @@ if (-not $DryRun) {
     Write-Item "Event logs [DRY RUN]" "skipped"
 }
 
-# Clear font cache rebuild
 Write-Item "Font cache: left intact (no impact)" "ok"
 
 # =============================================
@@ -551,23 +478,23 @@ $ramFreed = [math]::Round($memAfter - $memBefore, 2)
 $diskFreed = [math]::Round($diskAfter - $diskBefore, 2)
 
 Write-Host ""
-Write-Host "  ╔══════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "  ║           SYSTEM CLEANUP COMPLETE            ║" -ForegroundColor Cyan
-Write-Host "  ╠══════════════════════════════════════════════╣" -ForegroundColor Cyan
-Write-Host "  ║                                              ║" -ForegroundColor Cyan
-Write-Host "  ║  RAM Before:     $memBefore GB" -ForegroundColor White
-Write-Host "  ║  RAM After:      $memAfter GB" -ForegroundColor Green
-Write-Host "  ║  RAM Freed:      $ramFreed GB" -ForegroundColor Green
-Write-Host "  ║                                              ║" -ForegroundColor Cyan
-Write-Host "  ║  Disk Before:    $diskBefore GB free" -ForegroundColor White
-Write-Host "  ║  Disk After:     $diskAfter GB free" -ForegroundColor Green
-Write-Host "  ║  Disk Freed:     $diskFreed GB" -ForegroundColor Green
-Write-Host "  ║                                              ║" -ForegroundColor Cyan
-Write-Host "  ║  Processes killed:       $totalKilled" -ForegroundColor Yellow
-Write-Host "  ║  Services stopped:       $totalServicesStopped" -ForegroundColor Yellow
-Write-Host "  ║  Temp files freed:       $([math]::Round($totalFreed, 1)) MB" -ForegroundColor Yellow
-Write-Host "  ║                                              ║" -ForegroundColor Cyan
-Write-Host "  ╚══════════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host "  =========================================" -ForegroundColor Cyan
+Write-Host "          SYSTEM CLEANUP COMPLETE" -ForegroundColor Cyan
+Write-Host "  =========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  RAM Before:     $memBefore GB" -ForegroundColor White
+Write-Host "  RAM After:      $memAfter GB" -ForegroundColor Green
+Write-Host "  RAM Freed:      $ramFreed GB" -ForegroundColor Green
+Write-Host ""
+Write-Host "  Disk Before:    $diskBefore GB free" -ForegroundColor White
+Write-Host "  Disk After:     $diskAfter GB free" -ForegroundColor Green
+Write-Host "  Disk Freed:     $diskFreed GB" -ForegroundColor Green
+Write-Host ""
+Write-Host "  Processes killed:       $totalKilled" -ForegroundColor Yellow
+Write-Host "  Services stopped:       $totalServicesStopped" -ForegroundColor Yellow
+Write-Host "  Temp files freed:       $([math]::Round($totalFreed, 1)) MB" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  =========================================" -ForegroundColor Cyan
 
 $elapsed = (Get-Date) - $StartTime
 Write-Host ""
@@ -581,28 +508,24 @@ Write-Section "RECOMMENDATIONS"
 
 $recs = @()
 
-# Check disk health
-$disk = Get-PhysicalDisk | Where-Object { $_ MediaType -eq "HDD" }
+$disk = Get-PhysicalDisk | Where-Object { $_.MediaType -eq "HDD" }
 if ($disk) {
-    $recs += "Your system has an HDD — consider upgrading to SSD for dramatic speed improvement."
+    $recs += "Your system has an HDD - consider upgrading to SSD for dramatic speed improvement."
 }
 
-# Check RAM
 $totalRAM = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 0)
 if ($totalRAM -le 8) {
-    $recs += "Only $totalRAM GB RAM detected — consider upgrading to 16 GB for better dev experience."
+    $recs += "Only $totalRAM GB RAM detected - consider upgrading to 16 GB for better dev experience."
 }
 
-# Check if Superfetch is running (good for SSD, bad for HDD)
 $sf = Get-Service -Name "SysMain" -ErrorAction SilentlyContinue
 if ($sf -and $sf.Status -eq "Running" -and $disk) {
-    $recs += "SysMain (Superfetch) is running on HDD — consider disabling for better performance."
+    $recs += "SysMain (Superfetch) is running on HDD - consider disabling for better performance."
 }
 
-# Check power plan
 $powerPlan = powercfg /getactivescheme 2>$null
 if ($powerPlan -match "Balanced|Power saver") {
-    $recs += "Power plan is Balanced — switch to High Performance for better dev speeds."
+    $recs += "Power plan is Balanced - switch to High Performance for better dev speeds."
     $recs += "  Run: powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
 }
 
