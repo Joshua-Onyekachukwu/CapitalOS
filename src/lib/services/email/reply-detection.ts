@@ -37,7 +37,7 @@ export interface ThreadSummary {
 // Sentiment Analysis (lightweight — no LLM needed)
 // =============================================
 
-function analyzeSentiment(subject: string, body: string): ReplyDetectionResult["sentiment"] {
+export function analyzeSentiment(subject: string, body: string): ReplyDetectionResult["sentiment"] {
   const text = `${subject} ${body}`.toLowerCase();
 
   // Meeting / positive signals

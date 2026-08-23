@@ -352,6 +352,14 @@ export async function promoteNewRecords(
 
       if (error) throw error;
 
+      // Auto-enrich: compute data quality + outreach readiness + provenance
+      try {
+        const { enrichInvestor } = await import("./enrichment");
+        await enrichInvestor(investor.id);
+      } catch {
+        // Enrichment is non-critical — don't fail the pipeline
+      }
+
       // Log creation
       await supabase.rpc("log_data_change", {
         p_investor_id: investor.id,
