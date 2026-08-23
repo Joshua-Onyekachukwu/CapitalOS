@@ -44,8 +44,8 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected routes
-  const protectedPaths = ["/dashboard", "/startup", "/investors", "/campaigns", "/outreach", "/analytics", "/settings"];
+  // Protected routes — all app pages + admin require authentication
+  const protectedPaths = ["/dashboard", "/admin", "/startup", "/investors", "/campaigns", "/outreach", "/analytics", "/settings"];
   const isProtected = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path));
 
   if (isProtected && !user) {

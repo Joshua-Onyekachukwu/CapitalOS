@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryAs, query } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    if (rateLimitResponse) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+    }
+
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

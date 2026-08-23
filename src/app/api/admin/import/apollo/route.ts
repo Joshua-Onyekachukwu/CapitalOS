@@ -6,7 +6,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { normalizeInvestor, generateDeduplicationKeys } from "@/lib/services/investor/normalization";
-import { requireAuth } from "@/lib/middleware/api-auth";
+import { requireAdmin } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { cache } from "@/lib/cache";
 
 const APOLLO_BASE_URL = process.env.APOLLO_BASE_URL || "https://api.apollo.io/v1";
 const APOLLO_API_KEY = process.env.APOLLO_API_KEY;
@@ -72,7 +74,7 @@ function mapApolloPerson(person: Record<string, unknown>) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await requireAuth(request);
+  const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
 
   if (!APOLLO_API_KEY) {
@@ -200,6 +202,12 @@ export async function POST(request: NextRequest) {
 
     progress.phase = "complete";
 
+    // Invalidate facets + cockpit caches (new investors added)
+    if (progress.inserted > 0) {
+      cache.invalidatePrefix("facets:");
+      cache.invalidatePrefix("cockpit:");
+    }
+
     return NextResponse.json({
       success: true,
       ...progress,
@@ -207,7 +215,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Apollo import failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

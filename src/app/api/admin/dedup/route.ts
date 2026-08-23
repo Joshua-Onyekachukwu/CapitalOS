@@ -1,10 +1,11 @@
 // API Route: Scheduled Deduplication
 import { NextRequest, NextResponse } from "next/server";
 import { runScheduledDedup } from "@/lib/services/investor/scheduled-dedup";
-import { requireAuth } from "@/lib/middleware/api-auth";
+import { requireAdmin } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function POST(request: NextRequest) {
-  const user = await requireAuth(request);
+  const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
 
   try {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, ...result });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Dedup failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

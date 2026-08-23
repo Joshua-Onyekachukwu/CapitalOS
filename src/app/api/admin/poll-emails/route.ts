@@ -1,10 +1,11 @@
 // API Route: Email Reply Polling
 import { NextRequest, NextResponse } from "next/server";
 import { pollEmailAccounts } from "@/lib/services/email/reply-poller";
-import { requireAuth } from "@/lib/middleware/api-auth";
+import { requireAdmin } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function POST(request: NextRequest) {
-  const user = await requireAuth(request);
+  const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
 
   try {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Email polling failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

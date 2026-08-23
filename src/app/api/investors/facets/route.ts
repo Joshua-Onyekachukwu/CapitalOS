@@ -25,6 +25,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { cache, cacheKey, CACHE_TTL } from "@/lib/cache";
 
 export async function GET(request: NextRequest) {
   const user = await requireAuth(request);
@@ -33,6 +35,22 @@ export async function GET(request: NextRequest) {
   try {
     const sp = request.nextUrl.searchParams;
 
+    // ── Check cache first ──
+    const key = cacheKey(request.url, "facets");
+    const cached = await cache.getOrSet(
+      key,
+      () => computeFacets(sp),
+      { ttlMs: CACHE_TTL.facets }
+    );
+    return NextResponse.json(cached);
+  } catch (err) {
+    console.error("Facets API error:", err);
+    return NextResponse.json({ error: "Failed to load facets" }, { status: 500 });
+  }
+}
+
+// ── Separated computation function (cached) ──
+async function computeFacets(sp: URLSearchParams) {
     // ── Parse filter params (same as /api/investors) ──
     const search = sp.get("search") || "";
     const type = sp.get("type") || "";
@@ -59,15 +77,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      const idx = addParam(`%${search.toLowerCase()}%`);
+      const term = `%${search.toLowerCase()}%`;
+      const idx = addParam(term);
+      // Use ILIKE for case-insensitive search — GIN trigram indexes optimize this
       conditions.push(`(
-        LOWER(i.full_name) LIKE $${idx}
-        OR LOWER(i.email) LIKE $${idx}
-        OR LOWER(i.first_name) LIKE $${idx}
-        OR LOWER(i.last_name) LIKE $${idx}
-        OR LOWER(i.bio) LIKE $${idx}
-        OR LOWER(i.job_title) LIKE $${idx}
-        OR LOWER(f.name) LIKE $${idx}
+        i.full_name ILIKE $${idx}
+        OR i.email ILIKE $${idx}
+        OR i.first_name ILIKE $${idx}
+        OR i.last_name ILIKE $${idx}
+        OR i.job_title ILIKE $${idx}
+        OR f.name ILIKE $${idx}
       )`);
     }
 
@@ -265,7 +284,7 @@ export async function GET(request: NextRequest) {
     const linkedinStats = linkedinResult[0] || { has_linkedin: 0, no_linkedin: 0 };
     const verifiedStats = verifiedResult[0] || { verified: 0, unverified: 0 };
 
-    return NextResponse.json({
+    return {
       total: totalResult[0]?.count || 0,
 
       types: typesResult.map((r) => ({
@@ -324,9 +343,5 @@ export async function GET(request: NextRequest) {
         search, type, sector, stage, country, city, readiness,
         verified, minScore, maxScore, minQuality, hasEmail, hasLinkedin, firmId,
       },
-    });
-  } catch (err) {
-    console.error("Facets API error:", err);
-    return NextResponse.json({ error: "Failed to load facets" }, { status: 500 });
-  }
+    };
 }

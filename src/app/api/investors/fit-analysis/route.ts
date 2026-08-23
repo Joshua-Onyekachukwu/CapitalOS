@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { chatCompletion } from "@/lib/ai";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { cache, cacheKey, userCacheKey } from "@/lib/cache";
 
 // =============================================
 // Deterministic Scoring (same as qualification.ts but inline for API use)
@@ -279,6 +281,10 @@ export async function POST(request: NextRequest) {
         if (result.outreachReadiness === "ready") ready++;
       }
 
+      // Invalidate facets + cockpit caches (investor scores changed)
+      cache.invalidatePrefix("facets:");
+      cache.invalidate(userCacheKey(user.id, "cockpit"));
+
       return NextResponse.json({ success: true, scored, ready, total: investors.length });
     }
 
@@ -338,6 +344,10 @@ export async function POST(request: NextRequest) {
           console.error("AI analysis error:", err);
         }
       }
+
+      // Invalidate facets + cockpit caches (investor score changed)
+      cache.invalidatePrefix("facets:");
+      cache.invalidate(userCacheKey(user.id, "cockpit"));
 
       return NextResponse.json({
         success: true,

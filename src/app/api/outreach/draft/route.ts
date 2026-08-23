@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Email draft error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Draft generation failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

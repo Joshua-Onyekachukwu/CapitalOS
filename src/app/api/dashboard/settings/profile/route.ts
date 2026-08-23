@@ -5,9 +5,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    if (rateLimitResponse) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+    }
     const user = await requireUser();
 
     // Get profile from CockroachDB
@@ -31,6 +36,11 @@ export async function GET(_request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    if (rateLimitResponse) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+    }
+
     const user = await requireUser();
     const { full_name } = await request.json();
 

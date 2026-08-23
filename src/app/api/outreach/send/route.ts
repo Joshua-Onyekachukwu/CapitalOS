@@ -9,6 +9,8 @@ import { sendEmail } from "@/lib/services/email/sender";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { cache, userCacheKey } from "@/lib/cache";
+import { validateBodyAsync, sendEmailSchema } from "@/lib/validate";
 
 export async function POST(request: NextRequest) {
   const user = await requireAuth(request);
@@ -18,16 +20,14 @@ export async function POST(request: NextRequest) {
     const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.email);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
-    }
-    const body = await request.json();
-    const { userId, investorId, subject, bodyHtml, bodyText } = body;
+    }    // Validate input
+    const validated = await validateBodyAsync(request, sendEmailSchema);
+    if (validated instanceof NextResponse) return validated;
 
-    if (!userId || !investorId || !subject || !bodyHtml) {
-      return NextResponse.json(
-        { error: "userId, investorId, subject, and bodyHtml are required" },
-        { status: 400 }
-      );
-    }
+    const { investorId, subject, bodyHtml, bodyText } = validated;
+
+    // SECURITY: Use authenticated user ID — never trust client-supplied userId
+    const userId = user.id;
 
     // Fetch the investor's email from CockroachDB
     const investors = await query<{ email: string }>(
@@ -36,10 +36,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!investors.length || !investors[0].email) {
-      return NextResponse.json(
-        { error: "No email address found for this investor" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "No email address found for this investor" }, { status: 404 });
     }
 
     const investorEmail = investors[0].email;
@@ -61,6 +58,9 @@ export async function POST(request: NextRequest) {
         [userId, investorId, subject, bodyHtml, bodyText || bodyHtml.replace(/<[^>]*>/g, ""), investorEmail]
       );
 
+      // Invalidate cockpit cache (email stats changed)
+      cache.invalidate(userCacheKey(userId, "cockpit"));
+
       return NextResponse.json({ success: true, messageId: result.messageId });
     } else {
       return NextResponse.json(
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Email send error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Email send failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

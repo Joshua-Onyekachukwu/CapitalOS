@@ -71,16 +71,34 @@ export async function optionalAuth(): Promise<AuthUser | null> {
 
 /**
  * Require admin role — returns 403 if not admin.
- * NOTE: Implement proper role checking when user roles are added to the schema.
- * For now, this is a placeholder that checks auth only.
+ * Checks Supabase app_metadata.role or user_metadata.role for admin status.
+ * Falls back to checking COCKROACH_ADMIN_EMAILS env var for allowlist.
  */
-export async function requireAdmin(): Promise<AuthUser | NextResponse> {
-  const user = await requireAuth();
-  if (user instanceof NextResponse) return user;
-  
-  // TODO: Check user role from database when admin roles are implemented
-  // For now, all authenticated users are treated as regular users
-  // Admin routes should be gated by a proper role check
-  
-  return user;
+export async function requireAdmin(request?: NextRequest): Promise<AuthUser | NextResponse> {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
+  // Check 1: Supabase user metadata for admin role
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const isAdminMeta = user.app_metadata?.role === "admin" || user.user_metadata?.role === "admin";
+      if (isAdminMeta) return authUser;
+    }
+  } catch {
+    // Fall through to env check
+  }
+
+  // Check 2: Email allowlist via COCKROACH_ADMIN_EMAILS env var
+  const adminEmails = process.env.COCKROACH_ADMIN_EMAILS?.split(",").map(e => e.trim().toLowerCase()) || [];
+  if (adminEmails.includes(authUser.email.toLowerCase())) {
+    return authUser;
+  }
+
+  // Not admin
+  return NextResponse.json(
+    { error: "Forbidden — admin access required" },
+    { status: 403 }
+  );
 }

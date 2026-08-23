@@ -1,8 +1,19 @@
 import { type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { securityMiddleware, applySecurityHeaders, logRequest } from "@/lib/middleware/security";
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+  // 1. Security middleware (CORS, CSRF)
+  const securityResponse = securityMiddleware(request);
+  if (securityResponse) return securityResponse;
+
+  // 2. Auth session management
+  const response = await updateSession(request);
+
+  // 3. Apply security headers to all responses
+  applySecurityHeaders(response);
+
+  return response;
 }
 
 export const config = {

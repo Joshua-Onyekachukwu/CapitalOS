@@ -6,8 +6,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { generateEmailSequence } from "@/lib/actions/email-sequences";
+import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
   try {
     const body = await request.json();
     const { investorId, founderName, companyName, companyDescription, roundType, raiseAmount, tone } = body;
@@ -38,7 +43,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Email sequence error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Sequence generation failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

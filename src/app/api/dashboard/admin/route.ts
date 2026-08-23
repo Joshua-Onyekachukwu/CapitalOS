@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function GET(_request: NextRequest) {
   const user = await requireAuth(_request);

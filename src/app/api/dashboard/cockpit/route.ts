@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { cache, userCacheKey, CACHE_TTL } from "@/lib/cache";
 
 // =============================================
 // Dashboard Cockpit API Route
@@ -17,6 +19,22 @@ export async function GET(request: NextRequest) {
   if (user instanceof NextResponse) return user;
 
   try {
+    // ── Check cache first (user-scoped, 30s TTL) ──
+    const key = userCacheKey(user.id, "cockpit");
+    const cached = await cache.getOrSet(
+      key,
+      () => computeCockpit(),
+      { ttlMs: CACHE_TTL.cockpit }
+    );
+    return NextResponse.json(cached);
+  } catch (err) {
+    console.error("Cockpit API error:", err);
+    return NextResponse.json({ error: "Failed to load dashboard data" }, { status: 500 });
+  }
+}
+
+// ── Separated computation function (cached) ──
+async function computeCockpit() {
     const [
       investorStats,
       firmStats,
@@ -140,7 +158,7 @@ export async function GET(request: NextRequest) {
       count: row.count,
     }));
 
-    return NextResponse.json({
+    return {
       stats: {
         totalInvestors,
         totalFirms,
@@ -169,9 +187,5 @@ export async function GET(request: NextRequest) {
         sector: s.sector,
         count: s.count,
       })),
-    });
-  } catch (err) {
-    console.error("Cockpit API error:", err);
-    return NextResponse.json({ error: "Failed to load dashboard data" }, { status: 500 });
-  }
+    };
 }

@@ -9,6 +9,7 @@ import { getPendingSends, executeSend } from "@/lib/services/campaigns/sequence"
 import { chatCompletion } from "@/lib/ai";
 import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function POST(request: NextRequest) {
   const user = await requireAuth(request);
@@ -16,11 +17,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const { userId, dryRun = false } = body;
+    const { dryRun = false } = body;
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId required" }, { status: 400 });
-    }
+    // SECURITY: Use authenticated user ID — never trust client-supplied userId
+    const userId = user.id;
 
     // Get pending sends
     const pending = await getPendingSends(20);
@@ -157,7 +157,7 @@ Return JSON:
   } catch (err) {
     console.error("Sequence execution error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Execution failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateInvestorResearch } from "@/lib/actions/investor-research";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function POST(
   request: NextRequest,
@@ -27,7 +28,7 @@ export async function POST(
   } catch (err) {
     console.error("Research error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Research failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

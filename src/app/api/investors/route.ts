@@ -26,22 +26,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { validateQuery, investorFiltersSchema } from "@/lib/validate";
 
 export async function GET(request: NextRequest) {
   const user = await requireAuth(request);
   if (user instanceof NextResponse) return user;
 
+  // Validate query parameters
+  const validated = validateQuery(request, investorFiltersSchema);
+  if (validated instanceof NextResponse) return validated;
+
   try {
     const sp = request.nextUrl.searchParams;
 
     // ── Pagination ──
-    const page = Math.max(1, parseInt(sp.get("page") || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(sp.get("limit") || "50")));
+    const page = validated.page || 1;
+    const limit = validated.limit || 50;
     const offset = (page - 1) * limit;
 
     // ── Filters ──
-    const search = sp.get("search") || "";
-    const type = sp.get("type") || "";
+    const search = validated.search || "";
+    const type = validated.type || "";
     const sector = sp.get("sector") || "";
     const stage = sp.get("stage") || "";
     const country = sp.get("country") || "";
@@ -72,15 +78,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      const idx = addParam(`%${search.toLowerCase()}%`);
+      const term = `%${search.toLowerCase()}%`;
+      const idx = addParam(term);
+      // Use ILIKE for case-insensitive search — GIN trigram indexes optimize this
       conditions.push(`(
-        LOWER(i.full_name) LIKE $${idx}
-        OR LOWER(i.email) LIKE $${idx}
-        OR LOWER(i.first_name) LIKE $${idx}
-        OR LOWER(i.last_name) LIKE $${idx}
-        OR LOWER(i.bio) LIKE $${idx}
-        OR LOWER(i.job_title) LIKE $${idx}
-        OR LOWER(f.name) LIKE $${idx}
+        i.full_name ILIKE $${idx}
+        OR i.email ILIKE $${idx}
+        OR i.first_name ILIKE $${idx}
+        OR i.last_name ILIKE $${idx}
+        OR i.job_title ILIKE $${idx}
+        OR f.name ILIKE $${idx}
       )`);
     }
 

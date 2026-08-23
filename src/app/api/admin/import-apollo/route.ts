@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { importCsvToSupabase } from "@/lib/services/investor/csv-import";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { requireAuth } from "@/lib/middleware/api-auth";
+import { requireAdmin } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 export async function GET(request: NextRequest) {
-  const user = await requireAuth(request);
+  const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
   try {
     // Read the bundled Apollo CSV
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Apollo import failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

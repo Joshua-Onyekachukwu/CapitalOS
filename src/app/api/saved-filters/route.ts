@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 // =============================================
 // Saved Filters API Route
@@ -12,6 +13,10 @@ import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    if (rateLimitResponse) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+    }
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -46,17 +51,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    if (rateLimitResponse) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+    }
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { name, filters, sortBy, pageName = "investors" } = body;
+    // Validate input
+    const { validateBodyAsync, savedFilterSchema } = await import("@/lib/validate");
+    const validated = await validateBodyAsync(request, savedFilterSchema);
+    if (validated instanceof NextResponse) return validated;
 
-    if (!name || !filters) {
-      return NextResponse.json({ error: "Name and filters are required" }, { status: 400 });
-    }
+    const { name, filters, sortBy, pageName } = validated;
 
     // Generate a stable key from the filters for dedup
     const filterKey = JSON.stringify(filters);
@@ -90,6 +99,10 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    if (rateLimitResponse) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
+    }
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

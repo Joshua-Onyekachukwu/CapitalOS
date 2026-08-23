@@ -10,18 +10,22 @@ import { generatePitchDeck } from "@/lib/services/deck/generator";
 import { query } from "@/lib/db";
 import { createClient } from "@supabase/supabase-js";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { validateBodyAsync, generateDeckSchema } from "@/lib/validate";
 
 export async function POST(request: NextRequest) {
   const user = await requireAuth(request);
   if (user instanceof NextResponse) return user;
 
   try {
-    const body = await request.json();
-    const { userId, style, slideCount } = body;
+    // Validate input
+    const validated = await validateBodyAsync(request, generateDeckSchema);
+    if (validated instanceof NextResponse) return validated;
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
-    }
+    const { style, slideCount } = validated;
+
+    // SECURITY: Use authenticated user ID — never trust client-supplied userId
+    const userId = user.id;
 
     // Fetch company profile from CockroachDB
     const profiles = await query<any>(
@@ -140,7 +144,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Deck generation error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Deck generation failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -296,6 +296,9 @@ export default function InvestorsPage() {
         stage: Object.fromEntries(data.stages?.map((s: any) => [s.value, s.count]) || []),
         country: Object.fromEntries(data.countries?.map((c: any) => [c.value, c.count]) || []),
         readiness: Object.fromEntries(data.readiness?.map((r: any) => [r.value, r.count]) || []),
+        email: data.emailStats || { with: 0, without: 0 },
+        linkedin: data.linkedinStats || { with: 0, without: 0 },
+        verified: data.verifiedStats || { yes: 0, no: 0 },
       });
     } catch {
       // Non-critical
@@ -379,13 +382,15 @@ export default function InvestorsPage() {
     }
   };
 
-  // Compute current page stats from results
-  const highFitCount = investors.filter((i) => i.fit_score >= 80).length;
-  const readyCount = investors.filter((i) => i.outreach_readiness === "ready").length;
-  const verifiedCount = investors.filter((i) => i.is_verified).length;
-  const avgQuality = investors.length
-    ? Math.round(investors.reduce((s, i) => s + (i.data_quality_score || 0), 0) / investors.length)
-    : 0;
+  // Compute stats from facets (full database counts, not just current page)
+  const readyCount = facets.readiness?.ready || 0;
+  const needsVerificationCount = facets.readiness?.needs_verification || 0;
+  const notReadyCount = facets.readiness?.not_ready || 0;
+  const verifiedCount = facets.verified?.yes || 0;
+  const unverifiedCount = facets.verified?.no || 0;
+  const withEmailCount = facets.email?.with || 0;
+  const withoutEmailCount = facets.email?.without || 0;
+  const withLinkedinCount = facets.linkedin?.with || 0;
 
   return (
     <div>
@@ -402,25 +407,29 @@ export default function InvestorsPage() {
         }
       />
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-[12px] mb-[16px]">
+      {/* Stats row — from facets (full database, not just current page) */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-[12px] mb-[16px]">
         {[
-          { label: "Total", value: total.toLocaleString(), icon: "ri-team-line", color: "text-blue-600" },
-          { label: "High Fit (80+)", value: highFitCount, icon: "ri-star-line", color: "text-green-600" },
-          { label: "Ready to Outreach", value: readyCount, icon: "ri-check-double-line", color: "text-lime-600" },
-          { label: "Verified", value: verifiedCount, icon: "ri-shield-check-line", color: "text-purple-600" },
+          { label: "Total Investors", value: total.toLocaleString(), icon: "ri-team-line", color: "text-blue-600" },
+          { label: "Ready to Outreach", value: readyCount.toLocaleString(), icon: "ri-check-double-line", color: "text-lime-600", sub: needsVerificationCount > 0 ? `${needsVerificationCount.toLocaleString()} need verification` : undefined },
+          { label: "Verified", value: verifiedCount.toLocaleString(), icon: "ri-shield-check-line", color: "text-purple-600", sub: `${unverifiedCount.toLocaleString()} unverified` },
+          { label: "Has Email", value: withEmailCount.toLocaleString(), icon: "ri-mail-line", color: "text-emerald-600", sub: `${withoutEmailCount.toLocaleString()} missing` },
+          { label: "Has LinkedIn", value: withLinkedinCount.toLocaleString(), icon: "ri-linkedin-box-line", color: "text-sky-600" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[14px]">
               <div className="flex items-center gap-[10px]">
-                <div className={`w-[36px] h-[36px] rounded-[10px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center`}>
+                <div className={`w-[36px] h-[36px] rounded-[10px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center flex-none`}>
                   <i className={`${stat.icon} ${stat.color} text-[18px]`}></i>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">
                     {stat.value}
                   </p>
-                  <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
+                  <p className="text-[11px] text-gray-400 !mb-0 truncate">{stat.label}</p>
+                  {stat.sub && (
+                    <p className="text-[10px] text-gray-300 !mb-0 truncate">{stat.sub}</p>
+                  )}
                 </div>
               </div>
             </CardBody>
