@@ -6,6 +6,76 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+function SortableSlideItem({
+  slide,
+  index,
+  isSelected,
+  onSelect,
+}: {
+  slide: Slide;
+  index: number;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `slide-${index}`,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : "auto" as const,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <button
+        onClick={onSelect}
+        className={`w-full text-left p-[12px] rounded-[10px] transition-all ${
+          isSelected
+            ? "bg-lime-50 dark:bg-lime-900/20 border border-lime-200 dark:border-lime-800"
+            : "bg-gray-50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800/50"
+        } ${isDragging ? "shadow-lg ring-2 ring-lime-400" : ""}`}
+      >
+        <div className="flex items-center gap-[10px]">
+          {/* Drag handle */}
+          <div
+            {...listeners}
+            className="w-[20px] h-[20px] rounded flex items-center justify-center flex-none cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500"
+          >
+            <i className="ri-draggable text-[16px]"></i>
+          </div>
+          <div className={`w-[28px] h-[28px] rounded-full flex items-center justify-center flex-none text-[11px] font-bold ${
+            isSelected ? "bg-lime-500 text-black" : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+          }`}>{index + 1}</div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0 truncate">{slide.title}</p>
+            <p className="text-[11px] text-gray-400 !mb-0">{SLIDE_TYPE_LABELS[slide.type] || slide.type}</p>
+          </div>
+          <i className={`${SLIDE_TYPE_ICONS[slide.type] || "ri-file-line"} text-[14px] ${
+            isSelected ? "text-lime-500" : "text-gray-300"
+          }`}></i>
+        </div>
+      </button>
+    </div>
+  );
+}
 
 interface Slide {
   type: string;
@@ -61,6 +131,33 @@ export default function NewDeckPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [editBullets, setEditBullets] = useState("");
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const activeIdx = parseInt(String(active.id).replace("slide-", ""));
+    const overIdx = parseInt(String(over.id).replace("slide-", ""));
+    if (activeIdx === overIdx) return;
+
+    const updated = [...slides];
+    const [moved] = updated.splice(activeIdx, 1);
+    updated.splice(overIdx, 0, moved);
+    setSlides(updated);
+
+    // Keep selected slide in sync
+    if (selectedSlide === activeIdx) {
+      setSelectedSlide(overIdx);
+    } else if (activeIdx < selectedSlide && overIdx >= selectedSlide) {
+      setSelectedSlide((s) => s - 1);
+    } else if (activeIdx > selectedSlide && overIdx <= selectedSlide) {
+      setSelectedSlide((s) => s + 1);
+    }
+  };
 
   const checkProfile = useCallback(async () => {
     try {
@@ -298,30 +395,27 @@ export default function NewDeckPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-[20px]">
-            {/* Slide List */}
+            {/* Slide List with Drag-and-Drop */}
             <div className="lg:col-span-1 space-y-[6px]">
-              <h3 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-[10px]">{slides.length} Slides</h3>
-              {slides.map((slide, index) => (
-                <button key={index} onClick={() => setSelectedSlide(index)}
-                  className={`w-full text-left p-[12px] rounded-[10px] transition-all ${
-                    selectedSlide === index
-                      ? "bg-lime-50 dark:bg-lime-900/20 border border-lime-200 dark:border-lime-800"
-                      : "bg-gray-50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800/50"
-                  }`}>
-                  <div className="flex items-center gap-[10px]">
-                    <div className={`w-[28px] h-[28px] rounded-full flex items-center justify-center flex-none text-[11px] font-bold ${
-                      selectedSlide === index ? "bg-lime-500 text-black" : "bg-gray-200 dark:bg-gray-700 text-gray-500"
-                    }`}>{index + 1}</div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0 truncate">{slide.title}</p>
-                      <p className="text-[11px] text-gray-400 !mb-0">{SLIDE_TYPE_LABELS[slide.type] || slide.type}</p>
-                    </div>
-                    <i className={`${SLIDE_TYPE_ICONS[slide.type] || "ri-file-line"} text-[14px] ${
-                      selectedSlide === index ? "text-lime-500" : "text-gray-300"
-                    }`}></i>
-                  </div>
-                </button>
-              ))}
+              <div className="flex items-center justify-between mb-[10px]">
+                <h3 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider">{slides.length} Slides</h3>
+                <span className="text-[11px] text-gray-300 flex items-center gap-[4px]">
+                  <i className="ri-draggable text-[12px]"></i> Drag to reorder
+                </span>
+              </div>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={slides.map((_, i) => `slide-${i}`)} strategy={verticalListSortingStrategy}>
+                  {slides.map((slide, index) => (
+                    <SortableSlideItem
+                      key={`slide-${index}-${slide.title}`}
+                      slide={slide}
+                      index={index}
+                      isSelected={selectedSlide === index}
+                      onSelect={() => setSelectedSlide(index)}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
 
             {/* Slide Preview */}
