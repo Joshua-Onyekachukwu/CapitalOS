@@ -175,20 +175,41 @@ export async function importCsvToSupabase(
     result.normalized = normalized.length;
 
     // 3. Deduplicate against existing data
+    // Collect all emails and linkedins from the CSV for targeted lookup
+    const csvEmails = normalized
+      .map((inv) => inv.email?.toLowerCase().trim())
+      .filter((e): e is string => !!e);
+    const csvLinkedins = normalized
+      .map((inv) => inv.linkedinUrl?.toLowerCase().trim().replace(/\/+$/, ""))
+      .filter((l): l is string => !!l);
+
+    // Targeted lookup — check for specific emails/linkedins in batches of 100
     const existingEmails = new Set<string>();
     const existingLinkedins = new Set<string>();
 
-    // Fetch existing emails and linkedins in batches
-    const { data: existingInvestors } = await supabase
-      .from("investors")
-      .select("email, linkedin_url")
-      .not("email", "is", null)
-      .limit(50000);
+    // Batch query emails (Supabase in-queries max ~100 per call)
+    for (let i = 0; i < csvEmails.length; i += 100) {
+      const batch = csvEmails.slice(i, i + 100);
+      const { data } = await supabase
+        .from("investors")
+        .select("email")
+        .in("email", batch);
+      (data || []).forEach((inv) => {
+        if (inv.email) existingEmails.add(inv.email.toLowerCase());
+      });
+    }
 
-    (existingInvestors || []).forEach((inv) => {
-      if (inv.email) existingEmails.add(inv.email.toLowerCase());
-      if (inv.linkedin_url) existingLinkedins.add(inv.linkedin_url.toLowerCase().replace(/\/+$/, ""));
-    });
+    // Batch query linkedins
+    for (let i = 0; i < csvLinkedins.length; i += 100) {
+      const batch = csvLinkedins.slice(i, i + 100);
+      const { data } = await supabase
+        .from("investors")
+        .select("linkedin_url")
+        .in("linkedin_url", batch);
+      (data || []).forEach((inv) => {
+        if (inv.linkedin_url) existingLinkedins.add(inv.linkedin_url.toLowerCase().replace(/\/+$/, ""));
+      });
+    }
 
     // Filter duplicates
     const unique: NormalizedInvestor[] = [];
@@ -255,6 +276,38 @@ export async function importCsvToSupabase(
         result.failed += batch.length;
       } else {
         result.inserted += (data?.length || batch.length);
+      }
+    }
+
+    // 5. Post-import enrichment — enrich the records we just inserted
+    if (result.inserted > 0) {
+      try {
+        const { enrichInvestor } = await import("./enrichment");
+        // Enrich the latest batch of inserted records
+        const { data: latestRecords } = await supabase
+          .from("investors")
+          .select("id")
+          .eq("source_provider", source)
+          .is("last_enriched_at", null)
+          .order("created_at", { ascending: false })
+          .limit(Math.min(result.inserted, 200));
+
+        if (latestRecords) {
+          let enriched = 0;
+          for (const rec of latestRecords) {
+            try {
+              await enrichInvestor(rec.id);
+              enriched++;
+            } catch {
+              // Non-critical
+            }
+          }
+          if (enriched > 0) {
+            result.errors.push(`Enriched ${enriched} records`);
+          }
+        }
+      } catch {
+        // Non-critical — enrichment can be run separately
       }
     }
 
