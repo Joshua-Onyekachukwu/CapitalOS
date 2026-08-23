@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import DataVizChart from "./DataVizChart";
 
 const About: React.FC = () => {
   const capabilities = [
@@ -59,14 +60,7 @@ const About: React.FC = () => {
               />
             </div>
             <div className="max-w-[140px] md:max-w-[210px] absolute top-[110px] md:top-[120px] ltr:left-[20px] rtl:right-[20px] ltr:md:left-[70px] rtl:md:right-[70px] ltr:xl:left-[140px] rtl:xl:right-[140px]">
-              <Image
-                src="/images/real-estate-agent/about3.jpg"
-                className="rounded-[10px] inline-block"
-                alt="about-image"
-                width={210}
-                height={260}
-                style={{ boxShadow: "0 4px 60px 0 rgba(204, 141, 96, 0.15)" }}
-              />
+              <DataVizChart />
             </div>
           </div>
           <div>

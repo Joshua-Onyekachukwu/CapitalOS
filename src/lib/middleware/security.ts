@@ -17,11 +17,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 // ── Configuration ──
 
+// Build allowed origins from environment + known deployments
 const ALLOWED_ORIGINS = [
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  // Vercel preview deployments
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  // Production domains
   "https://capital-os.vercel.app",
   "https://www.capital-os.com",
-];
+  "https://capital-os.com",
+].filter(Boolean) as string[];
 
 const ALLOWED_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 const ALLOWED_HEADERS = "Content-Type, Authorization, X-CSRF-Token, X-Requested-With";
@@ -168,7 +173,8 @@ export function getRequestLogs(limit = 100): RequestLog[] {
 /**
  * Apply security middleware to a request.
  * Returns NextResponse if request should be blocked (CORS, CSRF).
- * Returns null if request should proceed.
+ * Returns NextResponse with CORS headers for preflight.
+ * Returns null if request should proceed (CORS headers added later).
  */
 export function securityMiddleware(
   request: NextRequest
@@ -176,7 +182,7 @@ export function securityMiddleware(
   const origin = request.headers.get("origin");
   const pathname = request.nextUrl.pathname;
 
-  // 1. Handle CORS preflight
+  // 1. Handle CORS preflight — return immediately with headers
   if (request.method === "OPTIONS") {
     const corsHeaders = getCorsHeaders(origin);
     return new NextResponse(null, { status: 204, headers: corsHeaders });
@@ -193,22 +199,32 @@ export function securityMiddleware(
     );
   }
 
-  // 3. CORS check for API routes
-  if (pathname.startsWith("/api/")) {
-    const corsHeaders = getCorsHeaders(origin);
+  // 3. Block disallowed origins on API routes
+  if (pathname.startsWith("/api/") && origin) {
+    const isAllowed = ALLOWED_ORIGINS.some((allowed) => origin.startsWith(allowed));
+    const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
-    // Check if origin is allowed for non-preflight requests
-    if (origin && !ALLOWED_ORIGINS.some((allowed) => origin.startsWith(allowed))) {
-      // For same-origin requests (no origin header), allow
-      // For cross-origin requests, block
-      if (!PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-        // Allow — auth middleware will handle unauthorized access
-        // CORS headers will be added to response
-      }
+    if (!isAllowed && !isPublic) {
+      console.warn(
+        `[security] CORS blocked: ${request.method} ${pathname} from ${origin}`
+      );
+      return NextResponse.json(
+        { error: "Origin not allowed" },
+        { status: 403 }
+      );
     }
   }
 
+  // 4. Proceed — CORS headers will be added to the response
   return null;
+}
+
+/**
+ * Get CORS headers for a given origin.
+ * Used to add CORS headers to the final response.
+ */
+export function getCorsHeadersForResponse(origin: string | null): Record<string, string> {
+  return getCorsHeaders(origin);
 }
 
 /**

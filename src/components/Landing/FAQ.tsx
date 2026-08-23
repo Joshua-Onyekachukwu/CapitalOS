@@ -50,23 +50,31 @@ const FAQ: React.FC = () => {
           <div className="relative ltr:xl:pr-[15px] rtl:xl:pl-[15px]">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-[25px]">
               <div>
-                <Image
-                  src="/images/real-estate-agent/faq.jpg"
-                  className="inline-block rounded-[10px]"
-                  alt="faq-image"
-                  width={300}
-                  height={350}
-                />
+                <div className="relative rounded-[10px] overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                  <Image
+                    src="/images/real-estate-agent/faq.jpg"
+                    className="object-cover w-full h-full"
+                    alt="faq-image"
+                    fill
+                    sizes="(max-width: 639px) 100vw, 50vw"
+                  />
+                  {/* Subtle data-inspired overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#06201b]/30 to-transparent pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-lime-500/40 to-transparent" />
+                </div>
               </div>
               <div>
-                <div className="lg:mt-[110px]">
+                <div className="lg:mt-[110px] relative rounded-[10px] overflow-hidden" style={{ aspectRatio: "3/4" }}>
                   <Image
                     src="/images/real-estate-agent/faq2.jpg"
-                    className="inline-block rounded-[10px]"
+                    className="object-cover w-full h-full"
                     alt="faq-image"
-                    width={300}
-                    height={350}
+                    fill
+                    sizes="(max-width: 639px) 100vw, 50vw"
                   />
+                  {/* Subtle data-inspired overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#06201b]/30 to-transparent pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#D15616]/40 to-transparent" />
                 </div>
               </div>
             </div>

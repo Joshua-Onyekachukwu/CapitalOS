@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
+import PricingIcon from "./PricingIcon";
 
 const plans = [
   {
@@ -79,13 +79,7 @@ const Pricing: React.FC = () => {
                 </Link>
               </div>
               <div className="text-center flex-none mt-[20px] md:mt-0 lg:mt-[25px] xl:mt-0">
-                <Image
-                  src={plans[0].image}
-                  className="inline-block"
-                  alt="starter-plan"
-                  width={120}
-                  height={120}
-                />
+                <PricingIcon plan="starter" />
               </div>
             </div>
           </div>
@@ -130,13 +124,7 @@ const Pricing: React.FC = () => {
                 </Link>
               </div>
               <div className="text-center flex-none mt-[20px] md:mt-0 lg:mt-[25px] xl:mt-0">
-                <Image
-                  src={plans[1].image}
-                  className="inline-block"
-                  alt="professional-plan"
-                  width={120}
-                  height={120}
-                />
+                <PricingIcon plan="professional" />
               </div>
             </div>
           </div>

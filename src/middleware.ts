@@ -1,9 +1,9 @@
 import { type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { securityMiddleware, applySecurityHeaders, logRequest } from "@/lib/middleware/security";
+import { securityMiddleware, applySecurityHeaders, getCorsHeadersForResponse } from "@/lib/middleware/security";
 
 export async function middleware(request: NextRequest) {
-  // 1. Security middleware (CORS, CSRF)
+  // 1. Security middleware (CORS, CSRF) — handles preflight and blocks
   const securityResponse = securityMiddleware(request);
   if (securityResponse) return securityResponse;
 
@@ -12,6 +12,15 @@ export async function middleware(request: NextRequest) {
 
   // 3. Apply security headers to all responses
   applySecurityHeaders(response);
+
+  // 4. Apply CORS headers to API responses
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    const origin = request.headers.get("origin");
+    const corsHeaders = getCorsHeadersForResponse(origin);
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      response.headers.set(key, value);
+    }
+  }
 
   return response;
 }

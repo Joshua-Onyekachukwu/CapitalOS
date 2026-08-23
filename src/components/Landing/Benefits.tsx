@@ -79,13 +79,20 @@ const Benefits: React.FC = () => {
                 </p>
               </div>
               <div className="text-center">
-                <Image
-                  src={benefit.image}
-                  className={`inline-block ltr:rounded-br-[20px] rtl:rounded-bl-[20px] ltr:rounded-bl-[20px] rtl:rounded-br-[20px] ltr:lg:rounded-bl-none rtl:lg:rounded-br-none`}
-                  alt="benefit-image"
-                  width={500}
-                  height={350}
-                />
+                <div className="relative inline-block">
+                  {/* Subtle frame border */}
+                  <div className="absolute -inset-[6px] rounded-[24px] border border-white/10 dark:border-white/5 pointer-events-none" />
+                  {/* Decorative corner accent */}
+                  <div className="absolute -top-[3px] -left-[3px] w-[24px] h-[24px] border-t-2 border-l-2 border-lime-500/40 rounded-tl-[10px] pointer-events-none z-10" />
+                  <div className="absolute -bottom-[3px] -right-[3px] w-[24px] h-[24px] border-b-2 border-r-2 border-[#D15616]/40 rounded-br-[10px] pointer-events-none z-10" />
+                  <Image
+                    src={benefit.image}
+                    className={`inline-block ltr:rounded-br-[20px] rtl:rounded-bl-[20px] ltr:rounded-bl-[20px] rtl:rounded-br-[20px] ltr:lg:rounded-bl-none rtl:lg:rounded-br-none relative z-[1]`}
+                    alt="benefit-image"
+                    width={500}
+                    height={350}
+                  />
+                </div>
               </div>
             </div>
           </div>
