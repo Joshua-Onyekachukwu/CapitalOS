@@ -96,6 +96,17 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [runningDedup, setRunningDedup] = useState(false);
   const [runningScore, setRunningScore] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    totalRows: number;
+    parsed: number;
+    normalized: number;
+    duplicates: number;
+    inserted: number;
+    failed: number;
+    errors: string[];
+  } | null>(null);
+  const [importProgress, setImportProgress] = useState("");
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -224,6 +235,65 @@ export default function AdminPage() {
     }
   };
 
+  const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith(".csv")) {
+      alert("Please select a CSV file");
+      return;
+    }
+    setImporting(true);
+    setImportResult(null);
+    setImportProgress("Reading file...");
+    try {
+      const csvContent = await file.text();
+      setImportProgress(`Importing ${csvContent.split("\n").length - 1} rows...`);
+      const response = await fetch("/api/admin/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csvContent, source: "csv_import" }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        setImportResult(result);
+        setImportProgress("");
+        loadAll();
+      } else {
+        setImportProgress("");
+        alert(`Import failed: ${result.error}`);
+      }
+    } catch (err) {
+      setImportProgress("");
+      alert(`Import failed: ${String(err)}`);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleApolloImport = async () => {
+    setImporting(true);
+    setImportResult(null);
+    setImportProgress("Running Apollo CSV import script...");
+    try {
+      // Read the Apollo CSV from the test-data folder
+      const response = await fetch("/api/admin/import-apollo");
+      const result = await response.json();
+      if (response.ok) {
+        setImportResult(result);
+        setImportProgress("");
+        loadAll();
+      } else {
+        setImportProgress("");
+        alert(`Apollo import failed: ${result.error}`);
+      }
+    } catch (err) {
+      setImportProgress("");
+      alert(`Apollo import failed: ${String(err)}`);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleRunScore = async () => {
     setRunningScore(true);
     try {
@@ -328,6 +398,101 @@ export default function AdminPage() {
           </div>
         }
       />
+
+      {/* Data Import Section */}
+      <Card className="mb-[20px]">
+        <CardBody>
+          <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[16px]">
+            <i className="ri-upload-2-line mr-[6px]"></i>
+            Data Import
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[20px]">
+            {/* CSV Upload */}
+            <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[12px] p-[20px] text-center hover:border-lime-400 transition-colors">
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleCsvUpload}
+                className="hidden"
+                id="csv-upload"
+                disabled={importing}
+              />
+              <label htmlFor="csv-upload" className="cursor-pointer">
+                <div className="w-[48px] h-[48px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center mx-auto mb-[12px]">
+                  <i className="ri-file-upload-line text-[22px] text-lime-600"></i>
+                </div>
+                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[4px]">
+                  {importing ? "Importing..." : "Upload CSV File"}
+                </p>
+                <p className="text-[12px] text-gray-400 !mb-0">
+                  Drag & drop or click to select. Supports Apollo, LinkedIn, and generic CSV formats.
+                </p>
+              </label>
+              {importProgress && (
+                <div className="mt-[12px]">
+                  <div className="flex items-center gap-[8px] justify-center">
+                    <div className="w-[16px] h-[16px] border-2 border-lime-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-[12px] text-lime-600 font-medium">{importProgress}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Apollo Import */}
+            <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[12px] p-[20px] text-center hover:border-blue-400 transition-colors">
+              <div className="w-[48px] h-[48px] rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-[12px]">
+                <i className="ri-database-2-line text-[22px] text-blue-600"></i>
+              </div>
+              <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[4px]">
+                Apollo Bulk Import
+              </p>
+              <p className="text-[12px] text-gray-400 !mb-[12px]">
+                Import the bundled Apollo investor dataset (100 records) through the full pipeline.
+              </p>
+              <Button onClick={handleApolloImport} loading={importing} variant="outline" size="sm">
+                <i className="ri-download-2-line text-[14px]"></i>
+                Run Apollo Import
+              </Button>
+            </div>
+          </div>
+          {/* Import Results */}
+          {importResult && (
+            <div className="mt-[16px] p-[16px] bg-gray-50 dark:bg-gray-800/50 rounded-[12px]">
+              <h4 className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[12px]">
+                <i className="ri-check-double-line text-green-500 mr-[6px]"></i>
+                Import Complete
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-[12px]">
+                {[
+                  { label: "Total Rows", value: importResult.totalRows, color: "text-gray-600" },
+                  { label: "Parsed", value: importResult.parsed, color: "text-blue-600" },
+                  { label: "Inserted", value: importResult.inserted, color: "text-green-600" },
+                  { label: "Duplicates", value: importResult.duplicates, color: "text-amber-600" },
+                  { label: "Failed", value: importResult.failed, color: "text-red-600" },
+                  { label: "Errors", value: importResult.errors.length, color: "text-red-500" },
+                ].map((stat) => (
+                  <div key={stat.label} className="text-center">
+                    <p className={`text-[20px] font-bold ${stat.color} !mb-0`}>{stat.value.toLocaleString()}</p>
+                    <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+              {importResult.errors.length > 0 && (
+                <div className="mt-[12px]">
+                  <p className="text-[12px] text-red-500 font-medium !mb-[4px]">Errors:</p>
+                  <div className="max-h-[100px] overflow-y-auto text-[11px] text-red-400 font-mono">
+                    {importResult.errors.slice(0, 10).map((err, i) => (
+                      <p key={i} className="!mb-[2px]">• {err}</p>
+                    ))}
+                    {importResult.errors.length > 10 && (
+                      <p className="!mb-0">... and {importResult.errors.length - 10} more</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       {/* Primary Health Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
