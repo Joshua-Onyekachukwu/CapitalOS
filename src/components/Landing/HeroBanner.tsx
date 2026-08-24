@@ -60,7 +60,7 @@ const HeroBanner: React.FC = () => {
               src="/images/real-estate-agent/hero-main.png"
               alt="Capital OS Dashboard"
               fill
-              className="object-contain object-bottom"
+              className="object-cover object-bottom"
               sizes="58vw"
               priority
             />
