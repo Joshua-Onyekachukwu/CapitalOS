@@ -8,7 +8,7 @@ const HeroBanner: React.FC = () => {
   return (
     <>
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] pt-[40px] pb-0 px-[20px] md:py-[50px] md:px-[40px] lg:py-[60px] lg:px-[50px] xl:py-[50px] xl:px-[80px] overflow-hidden xl:pb-0 min-h-[520px] lg:min-h-[580px] xl:min-h-[620px]">
+        <div className="bg-[#06201b] rounded-[20px] md:rounded-[30px] pt-[50px] pb-0 px-[20px] md:py-[60px] md:px-[40px] lg:py-[70px] lg:px-[50px] xl:py-[60px] xl:px-[80px] overflow-hidden xl:pb-0 min-h-[520px] lg:min-h-[580px] xl:min-h-[620px]">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] lg:gap-[20px] items-end">
             {/* Left: Copy */}
             <div className="pb-[20px] md:pb-0 lg:pb-[20px]">
@@ -56,7 +56,7 @@ const HeroBanner: React.FC = () => {
             </div>
 
             {/* Right: Hero Image — big, bottom-aligned, no gap at bottom */}
-            <div className="relative flex items-end justify-center lg:justify-end">
+            <div className="relative flex items-end justify-center lg:justify-end -mb-[1px]">
               <Image
                 src="/images/real-estate-agent/hero-main.png"
                 alt="Capital OS Dashboard"

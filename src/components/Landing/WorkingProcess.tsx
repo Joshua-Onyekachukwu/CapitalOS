@@ -27,7 +27,7 @@ const WorkingProcess: React.FC = () => {
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-[25px]">
           <div>
-            <div className="text-center ltr:xl:-mr-[5px] rtl:xl:-ml-[5px] lg:sticky xl:relative top-0 relative">
+            <div className="text-center ltr:xl:-mr-[5px] rtl:xl:-ml-[5px] lg:sticky xl:relative top-0">
               <Image
                 src="/images/real-estate-agent/working-process-new.png"
                 className="inline-block rtl:-scale-x-100"
@@ -35,35 +35,7 @@ const WorkingProcess: React.FC = () => {
                 width={500}
                 height={500}
               />
-              {/* Stats overlay on top of image */}
-              <div className="absolute bottom-[15px] md:bottom-[25px] left-[10px] right-[10px] md:left-[30px] md:right-[30px]">
-                <div className="grid grid-cols-3 gap-[8px] md:gap-[12px]">
-                  <div className="bg-[#06201b]/80 backdrop-blur-sm rounded-[10px] py-[10px] md:py-[14px] px-[8px] md:px-[12px] text-center">
-                    <div className="font-bold text-lime-500 text-[14px] md:text-[20px] lg:text-[24px] leading-none">
-                      16K+
-                    </div>
-                    <div className="text-white/60 text-[8px] md:text-[10px] lg:text-[11px] mt-[4px] uppercase tracking-wider font-medium">
-                      Investors
-                    </div>
-                  </div>
-                  <div className="bg-[#06201b]/80 backdrop-blur-sm rounded-[10px] py-[10px] md:py-[14px] px-[8px] md:px-[12px] text-center">
-                    <div className="font-bold text-[#D15616] text-[14px] md:text-[20px] lg:text-[24px] leading-none">
-                      3
-                    </div>
-                    <div className="text-white/60 text-[8px] md:text-[10px] lg:text-[11px] mt-[4px] uppercase tracking-wider font-medium">
-                      Simple Steps
-                    </div>
-                  </div>
-                  <div className="bg-[#06201b]/80 backdrop-blur-sm rounded-[10px] py-[10px] md:py-[14px] px-[8px] md:px-[12px] text-center">
-                    <div className="font-bold text-lime-500 text-[14px] md:text-[20px] lg:text-[24px] leading-none">
-                      10m
-                    </div>
-                    <div className="text-white/60 text-[8px] md:text-[10px] lg:text-[11px] mt-[4px] uppercase tracking-wider font-medium">
-                      Setup Time
-                    </div>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
           <div className="ltr:xl:pl-[30px] rtl:xl:pr-[30px]">
