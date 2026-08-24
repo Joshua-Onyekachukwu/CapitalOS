@@ -1,0 +1,13 @@
+{
+  "NEXT_PUBLIC_APP_URL": "https://capital-os.vercel.app",
+  "NODE_ENV": "production",
+  "NEXT_PUBLIC_SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY": "YOUR_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY": "YOUR_SERVICE_ROLE_KEY",
+  "NEXT_PUBLIC_CONVEX_URL": "https://YOUR_DEPLOYMENT.convex.cloud",
+  "CONVEX_DEPLOY_KEY": "dev:YOUR_DEPLOYMENT|YOUR_KEY",
+  "DATABASE_URL": "postgresql://USER:PASS@HOST:26257/defaultdb?sslmode=verify-full",
+  "COCKROACH_ADMIN_EMAILS": "your@email.com",
+  "AI_MOCK_MODE": "true",
+  "ALLOWED_ORIGINS": "https://capital-os.vercel.app"
+}
