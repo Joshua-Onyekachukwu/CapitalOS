@@ -26,11 +26,14 @@ interface OnboardingData {
   // Step 3 — Fundraising
   currentlyRaising: boolean;
   fundingAmount: string;
+  fundingUnit: string; // K, M, B
   roundType: string;
   targetInvestorGeographies: string[];
   hasPitchDeck: boolean;
   pitchDeckStyle: string;
+  pitchDeckNeeds: string; // what they want in their deck if they dont have one
   // Step 4 — Traction
+  tractionStage: string;
   mrr: string;
   arr: string;
   customerCount: string;
@@ -63,6 +66,16 @@ const BUSINESS_MODELS = ["SaaS", "Marketplace", "Hardware", "Services", "Consume
 const ROUND_TYPES = ["Pre-Seed", "Seed", "Series A", "Series B", "Series C", "Growth"];
 const GEOGRAPHIES = ["United States", "Europe", "United Kingdom", "Asia", "Africa", "Latin America", "Middle East", "Global"];
 
+const TRACTION_STAGES = [
+  { id: "idea", name: "Idea Phase", desc: "Just an idea, no product yet" },
+  { id: "pre_product", name: "Pre-Product", desc: "Building MVP, no users yet" },
+  { id: "mvp", name: "MVP / Beta", desc: "Early users testing the product" },
+  { id: "pre_revenue", name: "Pre-Revenue", desc: "Users but not monetizing yet" },
+  { id: "early_revenue", name: "Early Revenue", desc: "First paying customers" },
+  { id: "growth", name: "Growth", desc: "Growing revenue and users" },
+  { id: "scale", name: "Scale", desc: "Proven model, scaling fast" },
+];
+
 const PITCH_DECK_STYLES = [
   { id: "minimal", name: "Minimal", desc: "Clean lines, lots of white space, focused content", preview: "bg-white border-2 border-gray-200", icon: "ri-layout-line" },
   { id: "bold", name: "Bold", desc: "Strong colors, large type, high contrast", preview: "bg-[#06201b] text-white", icon: "ri-fire-line" },
@@ -93,10 +106,13 @@ export default function OnboardingPage() {
     targetCustomer: "",
     currentlyRaising: false,
     fundingAmount: "",
+    fundingUnit: "M",
     roundType: "",
     targetInvestorGeographies: [],
     hasPitchDeck: false,
     pitchDeckStyle: "investor",
+    pitchDeckNeeds: "",
+    tractionStage: "",
     mrr: "",
     arr: "",
     customerCount: "",
@@ -188,10 +204,12 @@ export default function OnboardingPage() {
         differentiator: data.differentiator || undefined,
         targetCustomer: data.targetCustomer || undefined,
         currentlyRaising: data.currentlyRaising,
-        fundingAmount: data.fundingAmount ? Number(data.fundingAmount) : undefined,
+        fundingAmount: data.fundingAmount ? Number(data.fundingAmount) * (data.fundingUnit === "K" ? 1000 : data.fundingUnit === "M" ? 1000000 : 1000000000) : undefined,
         roundType: data.roundType || undefined,
         targetInvestorGeographies: data.targetInvestorGeographies,
         hasPitchDeck: data.hasPitchDeck,
+        pitchDeckNeeds: data.pitchDeckNeeds || undefined,
+        tractionStage: data.tractionStage || undefined,
         mrr: data.mrr ? Number(data.mrr) : undefined,
         arr: data.arr ? Number(data.arr) : undefined,
         customerCount: data.customerCount ? Number(data.customerCount) : undefined,
@@ -273,10 +291,12 @@ export default function OnboardingPage() {
         differentiator: data.differentiator || undefined,
         targetCustomer: data.targetCustomer || undefined,
         currentlyRaising: data.currentlyRaising,
-        fundingAmount: data.fundingAmount ? Number(data.fundingAmount) : undefined,
+        fundingAmount: data.fundingAmount ? Number(data.fundingAmount) * (data.fundingUnit === "K" ? 1000 : data.fundingUnit === "M" ? 1000000 : 1000000000) : undefined,
         roundType: data.roundType || undefined,
         targetInvestorGeographies: data.targetInvestorGeographies,
         hasPitchDeck: data.hasPitchDeck,
+        pitchDeckNeeds: data.pitchDeckNeeds || undefined,
+        tractionStage: data.tractionStage || undefined,
         mrr: data.mrr ? Number(data.mrr) : undefined,
         arr: data.arr ? Number(data.arr) : undefined,
         customerCount: data.customerCount ? Number(data.customerCount) : undefined,
@@ -523,28 +543,49 @@ export default function OnboardingPage() {
                 </div>
                 {data.currentlyRaising && (
                   <>
-                    <div className="grid grid-cols-2 gap-[16px]">
-                      <div>
-                        <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Funding Amount</label>
-                        <input
-                          type="text"
-                          value={data.fundingAmount}
-                          onChange={(e) => update("fundingAmount", e.target.value)}
-                          placeholder="e.g., 1000000"
-                          className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Round Type</label>
+                    <div>
+                      <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Funding Amount</label>
+                      <div className="flex gap-[8px]">
+                        <div className="relative flex-1">
+                          <span className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[14px] text-gray-400">$</span>
+                          <input
+                            type="text"
+                            value={data.fundingAmount}
+                            onChange={(e) => {
+                              // Only allow numbers and dots
+                              const val = e.target.value.replace(/[^0-9.]/g, "");
+                              update("fundingAmount", val);
+                            }}
+                            placeholder="e.g., 500"
+                            className="w-full py-[10px] pl-[24px] pr-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                          />
+                        </div>
                         <select
-                          value={data.roundType}
-                          onChange={(e) => update("roundType", e.target.value)}
-                          className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+                          value={data.fundingUnit}
+                          onChange={(e) => update("fundingUnit", e.target.value)}
+                          className="py-[10px] px-[12px] text-[14px] font-medium bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 min-w-[70px]"
                         >
-                          <option value="">Select round</option>
-                          {ROUND_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
+                          <option value="K">K (thousand)</option>
+                          <option value="M">M (million)</option>
+                          <option value="B">B (billion)</option>
                         </select>
                       </div>
+                      {data.fundingAmount && (
+                        <p className="text-[12px] text-gray-400 mt-[4px] !mb-0">
+                          = ${Number(data.fundingAmount).toLocaleString()}{data.fundingUnit === "K" ? ",000" : data.fundingUnit === "M" ? ",000,000" : ",000,000,000"}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Round Type</label>
+                      <select
+                        value={data.roundType}
+                        onChange={(e) => update("roundType", e.target.value)}
+                        className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+                      >
+                        <option value="">Select round</option>
+                        {ROUND_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Target Investor Geographies</label>
@@ -594,7 +635,30 @@ export default function OnboardingPage() {
                     </div>
                   </div>
 
-                  {/* Pitch Deck Style Picker */}
+                  {/* If NO pitch deck — show what they want in one */}
+                  {!data.hasPitchDeck && (
+                    <div className="space-y-[16px]">
+                      <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-[10px] p-[16px] border border-blue-100 dark:border-blue-800/30">
+                        <p className="text-[13px] text-gray-600 dark:text-gray-400 !mb-[8px]">
+                          <i className="ri-magic-line text-blue-500 mr-[4px]"></i>
+                          <strong>No problem!</strong> We can help you create a pitch deck after onboarding.
+                        </p>
+                        <p className="text-[12px] text-gray-400 !mb-0">Tell us what you want your deck to cover:</p>
+                      </div>
+                      <div>
+                        <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">What should your pitch deck include?</label>
+                        <textarea
+                          value={data.pitchDeckNeeds}
+                          onChange={(e) => update("pitchDeckNeeds", e.target.value)}
+                          placeholder="e.g., Problem, Solution, Market Size, Business Model, Traction, Team, Financials, Ask..."
+                          rows={3}
+                          className="w-full py-[10px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 resize-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pitch Deck Style Picker — always visible */}
                   <div>
                     <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[8px]">
                       <i className="ri-sparkling-2-line text-lime-500 mr-[4px]"></i>
@@ -635,6 +699,25 @@ export default function OnboardingPage() {
                 <p className="text-[13px] text-gray-400 !mb-0">
                   This information helps us match you with the right investors. All fields are optional.
                 </p>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Traction Stage</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-[8px]">
+                    {TRACTION_STAGES.map((stage) => (
+                      <button
+                        key={stage.id}
+                        onClick={() => update("tractionStage", stage.id)}
+                        className={`text-left p-[10px] rounded-[8px] border-2 transition-all ${
+                          data.tractionStage === stage.id
+                            ? "border-lime-500 bg-lime-50/50 dark:bg-lime-900/10"
+                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="text-[12px] font-semibold text-[#06201b] dark:text-white block">{stage.name}</span>
+                        <span className="text-[10px] text-gray-400 block mt-[2px]">{stage.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-[16px]">
                   <div>
                     <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Monthly Revenue (MRR)</label>
@@ -834,7 +917,8 @@ export default function OnboardingPage() {
                     { label: "Description", value: data.oneLiner || "Not set" },
                     { label: "Differentiator", value: data.differentiator || "Not set" },
                     { label: "Target Customer", value: data.targetCustomer || "Not set" },
-                    { label: "Raising", value: data.currentlyRaising ? `Yes — ${data.roundType || "Round"} $${data.fundingAmount || "?"}` : "Not currently raising" },
+                    { label: "Raising", value: data.currentlyRaising ? `Yes — ${data.roundType || "Round"} $${data.fundingAmount || "?"}${data.fundingUnit || ""}` : "Not currently raising" },
+                    { label: "Traction", value: TRACTION_STAGES.find((s) => s.id === data.tractionStage)?.name || "Not set" },
                     { label: "MRR", value: data.mrr ? `$${Number(data.mrr).toLocaleString()}` : "Not set" },
                     { label: "Customers", value: data.customerCount || "Not set" },
                     { label: "Team", value: data.teamMembers.filter((m) => m.name.trim()).map((m) => m.name).join(", ") || "Not set" },
