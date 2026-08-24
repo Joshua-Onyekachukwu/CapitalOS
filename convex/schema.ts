@@ -2,25 +2,92 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 /**
- * CONVEX = Application / Realtime Layer ONLY
+ * CONVEX = Full Investor Archive + App State
  * 
- * DO NOT store investor data here.
- * Supabase is the source of truth for all permanent data.
- * Convex handles: jobs, live state, notifications, temporary workflow state.
+ * Strategy:
+ * - Supabase: Hot data (50K most-searched, active investors)
+ * - Convex: Full archive (all investors, 1M+ when needed)
  * 
- * Storage budget: ~500MB-1GB of app state (well within 3GB limit)
+ * When user searches:
+ * 1. Search Supabase first (fast, <50ms)
+ * 2. If not found, search Convex (slower, but complete)
+ * 
+ * Background jobs keep both in sync.
  */
 
 export default defineSchema({
   // ════════════════════════════════════════════════════════════════
-  // RESEARCH JOBS — Real-time progress tracking
+  // FULL INVESTOR ARCHIVE (1M+ records)
+  // Every investor ever scraped, with all details.
   // ════════════════════════════════════════════════════════════════
+
+  investors: defineTable({
+    // ── Identity ──
+    fullName: v.string(),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    jobTitle: v.optional(v.string()),
+    investorType: v.string(),
+    
+    // ── Company ──
+    companyName: v.optional(v.string()),
+    companyWebsite: v.optional(v.string()),
+    linkedinUrl: v.optional(v.string()),
+    
+    // ── Location ──
+    country: v.optional(v.string()),
+    city: v.optional(v.string()),
+    
+    // ── Contact ──
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    
+    // ── Investment ──
+    minCheckSize: v.optional(v.number()),
+    maxCheckSize: v.optional(v.number()),
+    fundSize: v.optional(v.number()),
+    aum: v.optional(v.number()),
+    investmentStages: v.optional(v.array(v.string())),
+    investmentSectors: v.optional(v.array(v.string())),
+    investmentGeographies: v.optional(v.array(v.string())),
+    
+    // ── History ──
+    numberOfInvestments: v.optional(v.number()),
+    numberOfExits: v.optional(v.number()),
+    lastInvestmentDate: v.optional(v.string()),
+    
+    // ── Scores ──
+    fitScore: v.optional(v.number()),
+    dataQualityScore: v.optional(v.number()),
+    
+    // ── Status ──
+    outreachReadiness: v.optional(v.string()),
+    
+    // ── Source ──
+    source: v.string(),
+    sourceId: v.optional(v.string()),
+    
+    // ── Sync ──
+    inSupabase: v.boolean(), // true = also in Supabase hot data
+    
+    // ── Timestamps ──
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_investorType", ["investorType"])
+    .index("by_country", ["country"])
+    .index("by_source", ["source"])
+    .index("by_score", ["fitScore"])
+    .index("by_supabase", ["inSupabase"])
+    .index("by_created", ["createdAt"]),
+
+  // ════════════════════════════════════════════════════════════════
+  // APP STATE (jobs, metrics, notifications)
+  // ════════════════════════════════════════════════════════════════
+
   researchJobs: defineTable({
-    // Reference to Supabase investor (external ID)
     supabaseInvestorId: v.string(),
     investorName: v.string(),
-    
-    // Job state
     status: v.union(
       v.literal("queued"),
       v.literal("scraping"),
@@ -29,33 +96,18 @@ export default defineSchema({
       v.literal("completed"),
       v.literal("failed")
     ),
-    progress: v.number(), // 0-100
-    
-    // Steps completed
+    progress: v.number(),
     steps: v.array(v.object({
       name: v.string(),
       status: v.union(v.literal("pending"), v.literal("running"), v.literal("done"), v.literal("failed")),
-      startedAt: v.optional(v.number()),
-      completedAt: v.optional(v.number()),
-      error: v.optional(v.string()),
     })),
-    
-    // Results
-    resultData: v.optional(v.any()),
-    errorMessage: v.optional(v.string()),
-    
-    // Metadata
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_status", ["status"])
-    .index("by_investor", ["supabaseInvestorId"])
     .index("by_created", ["createdAt"]),
 
-  // ════════════════════════════════════════════════════════════════
-  // DASHBOARD METRICS — Live metrics (no polling)
-  // ════════════════════════════════════════════════════════════════
   dashboardMetrics: defineTable({
     key: v.string(),
     value: v.number(),
@@ -64,30 +116,16 @@ export default defineSchema({
   })
     .index("by_key", ["key"]),
 
-  // ════════════════════════════════════════════════════════════════
-  // NOTIFICATIONS — Real-time alerts
-  // ════════════════════════════════════════════════════════════════
   notifications: defineTable({
     userId: v.string(),
-    type: v.union(
-      v.literal("job_complete"),
-      v.literal("job_failed"),
-      v.literal("new_investor"),
-      v.literal("campaign_update"),
-      v.literal("system")
-    ),
+    type: v.string(),
     title: v.string(),
     message: v.string(),
     read: v.boolean(),
-    data: v.optional(v.any()),
     createdAt: v.number(),
   })
-    .index("by_user", ["userId", "read"])
-    .index("by_created", ["createdAt"]),
+    .index("by_user", ["userId", "read"]),
 
-  // ════════════════════════════════════════════════════════════════
-  // SCRAPING JOBS — Track background scraping progress
-  // ════════════════════════════════════════════════════════════════
   scrapingJobs: defineTable({
     source: v.string(),
     status: v.union(
@@ -99,56 +137,8 @@ export default defineSchema({
     totalRecords: v.number(),
     processedRecords: v.number(),
     insertedRecords: v.number(),
-    failedRecords: v.number(),
-    backupPath: v.optional(v.string()),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
-    error: v.optional(v.string()),
-  })
-    .index("by_status", ["status"])
-    .index("by_source", ["source"]),
-
-  // ════════════════════════════════════════════════════════════════
-  // CAMPAIGN STATE — Live email campaign tracking
-  // ════════════════════════════════════════════════════════════════
-  campaignState: defineTable({
-    campaignId: v.string(),
-    status: v.union(
-      v.literal("draft"),
-      v.literal("sending"),
-      v.literal("active"),
-      v.literal("paused"),
-      v.literal("completed")
-    ),
-    totalRecipients: v.number(),
-    sentCount: v.number(),
-    openedCount: v.number(),
-    repliedCount: v.number(),
-    bouncedCount: v.number(),
-    lastSentAt: v.optional(v.number()),
-    updatedAt: v.number(),
-  })
-    .index("by_campaign", ["campaignId"])
-    .index("by_status", ["status"]),
-
-  // ════════════════════════════════════════════════════════════════
-  // WORKFLOW STATE — Temporary processing state
-  // ════════════════════════════════════════════════════════════════
-  workflowState: defineTable({
-    workflowId: v.string(),
-    type: v.string(), // "import", "enrichment", "scoring", etc.
-    status: v.union(
-      v.literal("pending"),
-      v.literal("running"),
-      v.literal("completed"),
-      v.literal("failed")
-    ),
-    progress: v.number(),
-    currentStep: v.optional(v.string()),
-    metadata: v.optional(v.any()),
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
   })
-    .index("by_workflow", ["workflowId"])
     .index("by_status", ["status"]),
 });
