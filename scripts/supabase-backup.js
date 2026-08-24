@@ -13,8 +13,8 @@ const { Client } = require("pg");
 const fs = require("fs");
 const path = require("path");
 
-const PASSWORD = "%2BLyJ.n6AeYnNW%2F";
-const PROJECT_REF = "keepilpdaphpkofqgcae";
+const PASSWORD = encodeURIComponent(process.env.SUPABASE_DB_PASSWORD || "");
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || "wdvhraurmpvncrgnmmbf";
 
 // Try multiple pooler regions
 const POOLER_REGIONS = [
@@ -52,7 +52,7 @@ async function connect() {
       port: 5432,
       database: "postgres",
       user: "postgres",
-      password: "+LyJ.n6AeYnNW/C",
+      password: process.env.SUPABASE_DB_PASSWORD || "",
       ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 15000,
       family: 6,
