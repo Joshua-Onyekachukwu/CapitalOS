@@ -59,8 +59,16 @@ const readinessColors: Record<string, "success" | "warning" | "info" | "danger" 
   do_not_contact: "danger",
 };
 
-export default function InvestorDetailPage({ params }: { params: { id: string } }) {
-  const investorId = params.id;
+export default function InvestorDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // Extract investor ID from URL path to avoid React.use() suspense issues
+  const [investorId, setInvestorId] = useState<string>("");
+
+  useEffect(() => {
+    // Get the ID from the URL path
+    const pathParts = window.location.pathname.split("/");
+    const id = pathParts[pathParts.length - 1];
+    if (id) setInvestorId(id);
+  }, []);
   const [investor, setInvestor] = useState<InvestorData | null>(null);
   const [research, setResearch] = useState<ResearchSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,8 +119,8 @@ export default function InvestorDetailPage({ params }: { params: { id: string } 
   }, [investorId]);
 
   useEffect(() => {
-    fetchInvestor();
-  }, [fetchInvestor]);
+    if (investorId) fetchInvestor();
+  }, [investorId, fetchInvestor]);
 
   const handleGenerateResearch = async () => {
     setResearchLoading(true);

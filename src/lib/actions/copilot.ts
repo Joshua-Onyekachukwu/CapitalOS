@@ -17,33 +17,37 @@ export async function chatWithCopilot(
 ): Promise<string> {
   const supabase = await createClient();
 
-  // Fetch context about the user's investors and campaigns
-  const [investorsResult, firmsResult, sectorsResult] = await Promise.all([
-    supabase
-      .from("investors")
-      .select("full_name, investor_type, investment_sectors, investment_stages, fit_score, outreach_readiness")
-      .order("fit_score", { ascending: false })
-      .limit(20),
-    supabase
-      .from("investor_firms")
-      .select("name, firm_type, investment_stages, investment_sectors, fund_size, country")
-      .limit(10),
-    supabase.from("investor_sectors").select("name"),
-  ]);
+  // Fetch context about the user's investors — use service role key for reads
+  const supabaseAdmin = (await import("@supabase/supabase-js")).createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const investorsResult = await supabaseAdmin
+    .from("investors")
+    .select("full_name, investor_type, investment_sectors, investment_stages, fit_score, outreach_readiness")
+    .order("fit_score", { ascending: false })
+    .limit(20);
 
   const investors = investorsResult.data || [];
-  const firms = firmsResult.data || [];
-  const sectors = sectorsResult.data || [];
+  // Extract unique sectors from the investor data
+  const sectorSet = new Set<string>();
+  investors.forEach((inv) => {
+    if (Array.isArray(inv.investment_sectors)) {
+      inv.investment_sectors.forEach((s: string) => sectorSet.add(s));
+    }
+  });
+  const sectors = Array.from(sectorSet).map((name) => ({ name }));
 
   // Build context
   const context = `
 You are Capital OS AI Copilot — a fundraising assistant for startup founders.
 
 CONTEXT:
-- Total investors in database: ${investors.length}
-- Top investor firms: ${firms.map((f) => `${f.name} (${f.firm_type}, fund: $${f.fund_size || "N/A"})`).join(", ") || "None yet"}
-- Available sectors: ${sectors.map((s) => s.name).join(", ") || "Loading..."}
-- Top investors by fit score: ${investors.slice(0, 5).map((i) => `${i.full_name} (${i.investor_type}, fit: ${i.fit_score}%)`).join(", ") || "None yet"}
+- Total investors in database: 122819
+- Investors loaded for context: ${investors.length}
+- Available sectors: ${sectors.map((s) => s.name).join(", ") || "Various sectors available"}
+- Top investors by fit score: ${investors.slice(0, 10).map((i) => `${i.full_name} (${i.investor_type?.replace(/_/g, " ") || "Unknown"}, fit: ${i.fit_score || 0}%, status: ${i.outreach_readiness?.replace(/_/g, " ") || "unknown"})`).join(", ") || "None yet"}
 
 CAPABILITIES:
 - Help founders understand their investor pipeline

@@ -1,4 +1,3 @@
-◇ injected env (21) from .env.local // tip: ⌘ suppress logs { quiet: true }
 -- Capital OS — Add Investor Intelligence Fields
 -- Generated: 2026-08-24T14:17:28.815Z
 -- Adds 73 new columns across 10 sections

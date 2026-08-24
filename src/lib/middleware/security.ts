@@ -28,6 +28,9 @@ const ALLOWED_ORIGINS = [
   "https://capital-os.com",
 ].filter(Boolean) as string[];
 
+// In development, allow any localhost origin
+const isDev = process.env.NODE_ENV !== "production";
+
 const ALLOWED_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 const ALLOWED_HEADERS = "Content-Type, Authorization, X-CSRF-Token, X-Requested-With";
 const MAX_AGE = "86400"; // 24 hours
@@ -52,7 +55,11 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
   };
 
   // Check if origin is allowed
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+  const isOriginAllowed = origin && (
+    ALLOWED_ORIGINS.includes(origin) ||
+    (isDev && origin.startsWith("http://localhost"))
+  );
+  if (origin && isOriginAllowed) {
     headers["Access-Control-Allow-Origin"] = origin;
     headers["Access-Control-Allow-Credentials"] = "true";
     headers["Vary"] = "Origin";
@@ -103,12 +110,16 @@ function checkCsrf(request: NextRequest): boolean {
   const referer = request.headers.get("referer");
 
   if (origin) {
+    // In development, allow any localhost origin
+    if (isDev && origin.startsWith("http://localhost")) return true;
     return ALLOWED_ORIGINS.some((allowed) => origin.startsWith(allowed));
   }
 
   if (referer) {
     try {
       const refererUrl = new URL(referer);
+      // In development, allow any localhost referer
+      if (isDev && refererUrl.hostname === "localhost") return true;
       return ALLOWED_ORIGINS.some((allowed) => {
         const allowedUrl = new URL(allowed);
         return refererUrl.hostname === allowedUrl.hostname;
@@ -202,9 +213,10 @@ export function securityMiddleware(
   // 3. Block disallowed origins on API routes
   if (pathname.startsWith("/api/") && origin) {
     const isAllowed = ALLOWED_ORIGINS.some((allowed) => origin.startsWith(allowed));
+    const isDevOrigin = isDev && origin.startsWith("http://localhost");
     const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
-    if (!isAllowed && !isPublic) {
+    if (!isAllowed && !isDevOrigin && !isPublic) {
       console.warn(
         `[security] CORS blocked: ${request.method} ${pathname} from ${origin}`
       );

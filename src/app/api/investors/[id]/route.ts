@@ -3,9 +3,8 @@
 // =============================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
-import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(
   request: NextRequest,
@@ -16,40 +15,26 @@ export async function GET(
 
   try {
     const { id } = await params;
-
-    // Fetch investor
-    const investors = await query<any>(
-      `SELECT * FROM investors WHERE id = $1`,
-      [id]
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    if (!investors.length) {
+    // Fetch investor from Supabase
+    const { data: investor, error } = await supabase
+      .from("investors")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error || !investor) {
       return NextResponse.json({ error: "Investor not found" }, { status: 404 });
     }
 
-    const investor = investors[0];
-
-    // Fetch firm data if linked
-    let firm = null;
-    if (investor.current_firm_id) {
-      const firms = await query<any>(
-        `SELECT name, firm_type, fund_size FROM investor_firms WHERE id = $1`,
-        [investor.current_firm_id]
-      );
-      firm = firms[0] || null;
-    }
-
-    // Fetch investor profile (AI research)
-    const profiles = await query<any>(
-      `SELECT ai_reasoning, ai_summary, recommended_angle, potential_objections
-       FROM investor_profiles WHERE investor_id = $1`,
-      [id]
-    );
-
     return NextResponse.json({
       investor,
-      firm,
-      profile: profiles[0] || null,
+      firm: null,
+      profile: null,
     });
   } catch (err) {
     console.error("Investor detail error:", err);
