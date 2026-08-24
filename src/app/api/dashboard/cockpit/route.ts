@@ -3,6 +3,7 @@ import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { cache, userCacheKey, CACHE_TTL } from "@/lib/cache";
+import { createClient } from "@/lib/supabase/server";
 
 // =============================================
 // Dashboard Cockpit API Route
@@ -158,6 +159,37 @@ async function computeCockpit() {
       count: row.count,
     }));
 
+    // ── Fetch company profile from Supabase ──
+    let companyProfile = null;
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("company_profiles")
+          .select("company_name, industry, company_stage, one_liner, currently_raising, funding_amount, round_type, mrr, customer_count, has_pitch_deck, readiness_score")
+          .eq("user_id", user.id)
+          .single();
+        if (profile) {
+          companyProfile = {
+            companyName: profile.company_name,
+            industry: profile.industry,
+            companyStage: profile.company_stage,
+            oneLiner: profile.one_liner,
+            currentlyRaising: profile.currently_raising,
+            fundingAmount: profile.funding_amount,
+            roundType: profile.round_type,
+            mrr: profile.mrr,
+            customerCount: profile.customer_count,
+            hasPitchDeck: profile.has_pitch_deck,
+            readinessScore: profile.readiness_score,
+          };
+        }
+      }
+    } catch {
+      // Non-critical — company profile may not exist yet
+    }
+
     return {
       stats: {
         totalInvestors,
@@ -187,5 +219,6 @@ async function computeCockpit() {
         sector: s.sector,
         count: s.count,
       })),
+      companyProfile,
     };
 }

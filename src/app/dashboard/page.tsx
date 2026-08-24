@@ -37,11 +37,26 @@ interface PipelineStage {
   count: number;
 }
 
+interface CompanyProfile {
+  companyName: string | null;
+  industry: string | null;
+  companyStage: string | null;
+  oneLiner: string | null;
+  currentlyRaising: boolean;
+  fundingAmount: number | null;
+  roundType: string | null;
+  mrr: number | null;
+  customerCount: number | null;
+  hasPitchDeck: boolean;
+  readinessScore: number;
+}
+
 interface CockpitData {
   stats: DashboardStats;
   recentInvestors: RecentInvestor[];
   pipeline: PipelineStage[];
   topSectors: { sector: string; count: number }[];
+  companyProfile?: CompanyProfile | null;
 }
 
 const stageColors: Record<string, string> = {
@@ -59,6 +74,13 @@ const readinessColors: Record<string, "success" | "warning" | "info" | "danger" 
   contacted: "info",
   do_not_contact: "danger",
 };
+
+function formatCurrency(amount: number): string {
+  if (amount >= 1_000_000_000) return `$${(amount / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`;
+  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return `$${amount.toLocaleString()}`;
+}
 
 export default function DashboardPage() {
   const [data, setData] = useState<CockpitData | null>(null);
@@ -166,6 +188,71 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Company Profile Card */}
+      {data?.companyProfile?.companyName && (
+        <Card className="mb-[25px] md:mb-[30px]">
+          <CardBody>
+            <div className="flex items-center justify-between mb-[16px]">
+              <h3 className="!text-[16px] md:!text-lg !font-semibold !mb-0">
+                Company Profile
+              </h3>
+              <Link href="/onboarding" className="text-[13px] text-lime-600 hover:text-lime-700 font-medium">
+                Edit →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-[14px]">
+              <div>
+                <p className="text-[11px] text-gray-400 !mb-[2px]">Company</p>
+                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
+                  {data.companyProfile.companyName}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] text-gray-400 !mb-[2px]">Stage</p>
+                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0">
+                  {data.companyProfile.companyStage || "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] text-gray-400 !mb-[2px]">Industry</p>
+                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
+                  {data.companyProfile.industry || "—"}
+                </p>
+              </div>
+              {data.companyProfile.currentlyRaising && (
+                <>
+                  <div>
+                    <p className="text-[11px] text-gray-400 !mb-[2px]">Raising</p>
+                    <p className="text-[14px] font-bold text-lime-600 !mb-0">
+                      {data.companyProfile.fundingAmount ? formatCurrency(data.companyProfile.fundingAmount) : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-400 !mb-[2px]">Round</p>
+                    <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0">
+                      {data.companyProfile.roundType || "—"}
+                    </p>
+                  </div>
+                </>
+              )}
+              {data.companyProfile.mrr && data.companyProfile.mrr > 0 && (
+                <div>
+                  <p className="text-[11px] text-gray-400 !mb-[2px]">MRR</p>
+                  <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0">
+                    {formatCurrency(data.companyProfile.mrr)}
+                  </p>
+                </div>
+              )}
+            </div>
+            {data.companyProfile.oneLiner && (
+              <p className="text-[13px] text-gray-400 mt-[12px] !mb-0">
+                {data.companyProfile.oneLiner}
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      )}
 
       {/* Quick Actions + Pipeline */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">

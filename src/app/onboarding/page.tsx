@@ -66,6 +66,86 @@ const BUSINESS_MODELS = ["SaaS", "Marketplace", "Hardware", "Services", "Consume
 const ROUND_TYPES = ["Pre-Seed", "Seed", "Series A", "Series B", "Series C", "Growth"];
 const GEOGRAPHIES = ["United States", "Europe", "United Kingdom", "Asia", "Africa", "Latin America", "Middle East", "Global"];
 
+// =============================================
+// Funding Amount Parser
+// =============================================
+// Parses formats like "1.2M", "1200K", "500000", "$1.2M", etc.
+// Returns { amount: number | null, unit: string, display: string, error: string | null }
+
+function parseFundingAmount(raw: string): {
+  amount: number | null;
+  unit: string;
+  display: string;
+  error: string | null;
+} {
+  const cleaned = raw.replace(/[$,\s]/g, "").trim();
+  if (!cleaned) return { amount: null, unit: "M", display: "", error: null };
+
+  // Match: optional number (with optional decimal) + optional suffix (K/M/B)
+  const match = cleaned.match(/^([0-9]*\.?[0-9]+)\s*([kKmMbB]?)$/);
+  if (!match) {
+    return { amount: null, unit: "M", display: "", error: "Invalid format. Use 1.2M, 1200K, or 500000" };
+  }
+
+  const num = parseFloat(match[1]);
+  const suffix = (match[2] || "").toUpperCase();
+
+  if (isNaN(num) || num < 0) {
+    return { amount: null, unit: "M", display: "", error: "Please enter a valid number" };
+  }
+
+  if (num === 0) {
+    return { amount: 0, unit: "M", display: "$0", error: null };
+  }
+
+  let multiplier = 1;
+  let unit = "";
+  if (suffix === "K") { multiplier = 1_000; unit = "K"; }
+  else if (suffix === "M") { multiplier = 1_000_000; unit = "M"; }
+  else if (suffix === "B") { multiplier = 1_000_000_000; unit = "B"; }
+  else {
+    // No suffix — treat raw number as dollars
+    // If < 1000, ambiguous. Default to dollars.
+    if (num >= 1_000_000_000) { multiplier = 1; unit = ""; }
+    else if (num >= 1_000_000) { multiplier = 1; unit = ""; }
+    else if (num >= 1_000) { multiplier = 1; unit = ""; }
+    else { multiplier = 1; unit = ""; }
+  }
+
+  const total = num * multiplier;
+
+  // Format display
+  let display: string;
+  if (unit === "K") display = `$${num}K`;
+  else if (unit === "M") display = `$${num}M`;
+  else if (unit === "B") display = `$${num}B`;
+  else display = `$${total.toLocaleString()}`;
+
+  // Warn if amount seems unreasonable for fundraising
+  if (total < 10_000) {
+    return { amount: total, unit, display, error: "Amount seems very low for fundraising. Did you mean $" + num.toLocaleString() + "K?" };
+  }
+
+  return { amount: total, unit: unit || "", display, error: null };
+}
+
+function formatFundingPreview(total: number): string {
+  if (total >= 1_000_000_000) return `$${(total / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`;
+  if (total >= 1_000_000) return `$${(total / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (total >= 1_000) return `$${(total / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return `$${total.toLocaleString()}`;
+}
+
+// Workspace initialization stages
+const LAUNCH_STAGES = [
+  { msg: "Preparing your workspace", icon: "ri-building-line" },
+  { msg: "Loading company profile", icon: "ri-file-user-line" },
+  { msg: "Preparing fundraising information", icon: "ri-funds-line" },
+  { msg: "Loading investor intelligence", icon: "ri-radar-line" },
+  { msg: "Setting up your dashboard", icon: "ri-dashboard-line" },
+  { msg: "Almost ready...", icon: "ri-check-double-line" },
+];
+
 const TRACTION_STAGES = [
   { id: "idea", name: "Idea Phase", desc: "Just an idea, no product yet" },
   { id: "pre_product", name: "Pre-Product", desc: "Building MVP, no users yet" },
@@ -93,6 +173,9 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [launchStage, setLaunchStage] = useState(-1);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+
   const [data, setData] = useState<OnboardingData>({
     companyName: "",
     websiteUrl: "",
@@ -159,12 +242,15 @@ export default function OnboardingPage() {
             targetInvestorGeographies: profile.targetInvestorGeographies || [],
             hasPitchDeck: profile.hasPitchDeck,
             pitchDeckStyle: "investor",
+            pitchDeckNeeds: "",
+            tractionStage: "",
             mrr: profile.mrr ? String(profile.mrr) : "",
             arr: profile.arr ? String(profile.arr) : "",
             customerCount: profile.customerCount ? String(profile.customerCount) : "",
             growthRate: profile.growthRate || "",
             milestones: (profile.milestones || []).join(", "),
             employeeCount: profile.employeeCount ? String(profile.employeeCount) : "",
+            fundingUnit: "M",
             teamMembers: mappedTeam,
           });
           if (profile.onboardingStep > 0) {
@@ -188,10 +274,17 @@ export default function OnboardingPage() {
     setData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
+  const getFundingAmountTotal = useCallback((): number | null => {
+    if (!data.fundingAmount) return null;
+    const parsed = parseFundingAmount(data.fundingAmount + data.fundingUnit);
+    return parsed.amount;
+  }, [data.fundingAmount, data.fundingUnit]);
+
   const saveProgress = useCallback(async (currentStep: number) => {
     setSaving(true);
     try {
       const { updateCompanyProfile } = await import("@/lib/actions/company");
+      const fundingTotal = getFundingAmountTotal();
       await updateCompanyProfile({
         companyName: data.companyName || undefined,
         websiteUrl: data.websiteUrl || undefined,
@@ -204,12 +297,10 @@ export default function OnboardingPage() {
         differentiator: data.differentiator || undefined,
         targetCustomer: data.targetCustomer || undefined,
         currentlyRaising: data.currentlyRaising,
-        fundingAmount: data.fundingAmount ? Number(data.fundingAmount) * (data.fundingUnit === "K" ? 1000 : data.fundingUnit === "M" ? 1000000 : 1000000000) : undefined,
+        fundingAmount: fundingTotal ?? undefined,
         roundType: data.roundType || undefined,
         targetInvestorGeographies: data.targetInvestorGeographies,
         hasPitchDeck: data.hasPitchDeck,
-        pitchDeckNeeds: data.pitchDeckNeeds || undefined,
-        tractionStage: data.tractionStage || undefined,
         mrr: data.mrr ? Number(data.mrr) : undefined,
         arr: data.arr ? Number(data.arr) : undefined,
         customerCount: data.customerCount ? Number(data.customerCount) : undefined,
@@ -223,7 +314,7 @@ export default function OnboardingPage() {
     } finally {
       setSaving(false);
     }
-  }, [data]);
+  }, [data, getFundingAmountTotal]);
 
   const saveTeamMembers = useCallback(async () => {
     try {
@@ -274,11 +365,17 @@ export default function OnboardingPage() {
 
   const handleComplete = async () => {
     setSaving(true);
+    setLaunchError(null);
     try {
-      // Save team members first
+      // Step 1: Save team members
+      setLaunchStage(0);
       await saveTeamMembers();
+      await new Promise((r) => setTimeout(r, 400));
 
+      // Step 2: Save company profile
+      setLaunchStage(1);
       const { updateCompanyProfile } = await import("@/lib/actions/company");
+      const fundingTotal = getFundingAmountTotal();
       await updateCompanyProfile({
         companyName: data.companyName || undefined,
         websiteUrl: data.websiteUrl || undefined,
@@ -291,12 +388,10 @@ export default function OnboardingPage() {
         differentiator: data.differentiator || undefined,
         targetCustomer: data.targetCustomer || undefined,
         currentlyRaising: data.currentlyRaising,
-        fundingAmount: data.fundingAmount ? Number(data.fundingAmount) * (data.fundingUnit === "K" ? 1000 : data.fundingUnit === "M" ? 1000000 : 1000000000) : undefined,
+        fundingAmount: fundingTotal ?? undefined,
         roundType: data.roundType || undefined,
         targetInvestorGeographies: data.targetInvestorGeographies,
         hasPitchDeck: data.hasPitchDeck,
-        pitchDeckNeeds: data.pitchDeckNeeds || undefined,
-        tractionStage: data.tractionStage || undefined,
         mrr: data.mrr ? Number(data.mrr) : undefined,
         arr: data.arr ? Number(data.arr) : undefined,
         customerCount: data.customerCount ? Number(data.customerCount) : undefined,
@@ -306,9 +401,39 @@ export default function OnboardingPage() {
         onboardingCompleted: true,
         onboardingStep: 7,
       });
+      await new Promise((r) => setTimeout(r, 300));
+
+      // Step 3: Prepare fundraising info
+      setLaunchStage(2);
+      await new Promise((r) => setTimeout(r, 400));
+
+      // Step 4: Load investor intelligence
+      setLaunchStage(3);
+      try {
+        await fetch("/api/dashboard/cockpit");
+      } catch {
+        // Non-critical — dashboard will load this on its own
+      }
+      await new Promise((r) => setTimeout(r, 300));
+
+      // Step 5: Setting up dashboard
+      setLaunchStage(4);
+      await new Promise((r) => setTimeout(r, 300));
+
+      // Step 6: Done
+      setLaunchStage(5);
+      await new Promise((r) => setTimeout(r, 500));
+
+      // Navigate to dashboard
       router.push("/dashboard");
-    } catch {
+    } catch (err) {
+      setLaunchStage(-1);
       setSaving(false);
+      setLaunchError(
+        err instanceof Error
+          ? err.message
+          : "Could not initialize your workspace. Please try again."
+      );
     }
   };
 
@@ -552,11 +677,16 @@ export default function OnboardingPage() {
                             type="text"
                             value={data.fundingAmount}
                             onChange={(e) => {
-                              // Only allow numbers and dots
-                              const val = e.target.value.replace(/[^0-9.]/g, "");
+                              // Allow numbers, dots, and K/M/B suffixes
+                              const val = e.target.value.replace(/[^0-9.kKmMbB]/g, "");
                               update("fundingAmount", val);
+                              // Auto-detect unit from suffix
+                              const suffix = val.match(/[kKmMbB]$/)?.[0]?.toUpperCase();
+                              if (suffix && ["K", "M", "B"].includes(suffix)) {
+                                update("fundingUnit", suffix);
+                              }
                             }}
-                            placeholder="e.g., 500"
+                            placeholder="e.g., 1.2M, 500K, or 1200000"
                             className="w-full py-[10px] pl-[24px] pr-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
                           />
                         </div>
@@ -570,11 +700,21 @@ export default function OnboardingPage() {
                           <option value="B">B (billion)</option>
                         </select>
                       </div>
-                      {data.fundingAmount && (
-                        <p className="text-[12px] text-gray-400 mt-[4px] !mb-0">
-                          = ${Number(data.fundingAmount).toLocaleString()}{data.fundingUnit === "K" ? ",000" : data.fundingUnit === "M" ? ",000,000" : ",000,000,000"}
-                        </p>
-                      )}
+                      {(() => {
+                        const inputHasSuffix = /[kKmMbB]$/.test(data.fundingAmount);
+                        const raw = inputHasSuffix ? data.fundingAmount : data.fundingAmount + data.fundingUnit;
+                        const parsed = parseFundingAmount(raw);
+                        if (parsed.amount !== null && parsed.amount > 0) {
+                          return (
+                            <p className={`text-[12px] mt-[4px] !mb-0 ${parsed.error ? "text-amber-500" : "text-gray-400"}`}>
+                              {parsed.error
+                                ? `⚠ ${parsed.error}`
+                                : `= ${formatFundingPreview(parsed.amount)}`}
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                     <div>
                       <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Round Type</label>
@@ -917,7 +1057,13 @@ export default function OnboardingPage() {
                     { label: "Description", value: data.oneLiner || "Not set" },
                     { label: "Differentiator", value: data.differentiator || "Not set" },
                     { label: "Target Customer", value: data.targetCustomer || "Not set" },
-                    { label: "Raising", value: data.currentlyRaising ? `Yes — ${data.roundType || "Round"} $${data.fundingAmount || "?"}${data.fundingUnit || ""}` : "Not currently raising" },
+                    { label: "Raising", value: (() => {
+                      if (!data.currentlyRaising) return "Not currently raising";
+                      const inputHasSuffix = /[kKmMbB]$/.test(data.fundingAmount);
+                      const raw = inputHasSuffix ? data.fundingAmount : data.fundingAmount + data.fundingUnit;
+                      const parsed = parseFundingAmount(raw);
+                      return `Yes — ${data.roundType || "Round"} ${parsed.display || "$" + (data.fundingAmount || "?")}`;
+                    })() },
                     { label: "Traction", value: TRACTION_STAGES.find((s) => s.id === data.tractionStage)?.name || "Not set" },
                     { label: "MRR", value: data.mrr ? `$${Number(data.mrr).toLocaleString()}` : "Not set" },
                     { label: "Customers", value: data.customerCount || "Not set" },
@@ -989,6 +1135,93 @@ export default function OnboardingPage() {
           </div>
         )}
       </div>
+
+      {/* Workspace Loading Overlay */}
+      {launchStage >= 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 dark:bg-[#0a0e19]/90 backdrop-blur-sm">
+          <div className="text-center max-w-[360px] px-[20px]">
+            {/* Rocket icon with pulse */}
+            <div className="relative mb-[24px]">
+              <div className="w-[72px] h-[72px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center mx-auto">
+                <i className="ri-rocket-2-line text-[32px] text-lime-600 animate-bounce"></i>
+              </div>
+              <div className="absolute -top-[4px] -right-[4px] w-[20px] h-[20px] rounded-full bg-lime-500 flex items-center justify-center">
+                <i className="ri-check-line text-white text-[12px]"></i>
+              </div>
+            </div>
+
+            <h2 className="text-[20px] font-bold text-[#06201b] dark:text-white mb-[8px]">
+              Launching your workspace...
+            </h2>
+
+            {/* Progress steps */}
+            <div className="space-y-[10px] mt-[24px]">
+              {LAUNCH_STAGES.map((stage, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-[10px] px-[14px] py-[8px] rounded-[8px] transition-all duration-300 ${
+                    i < launchStage
+                      ? "bg-lime-50/80 dark:bg-lime-900/10"
+                      : i === launchStage
+                      ? "bg-lime-100/80 dark:bg-lime-900/20 ring-2 ring-lime-500/30"
+                      : "bg-transparent"
+                  }`}
+                >
+                  <div className={`w-[24px] h-[24px] rounded-full flex items-center justify-center flex-none ${
+                    i < launchStage
+                      ? "bg-lime-500 text-white"
+                      : i === launchStage
+                      ? "bg-lime-200 dark:bg-lime-800 text-lime-600"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-300"
+                  }`}>
+                    {i < launchStage ? (
+                      <i className="ri-check-line text-[12px]"></i>
+                    ) : i === launchStage ? (
+                      <div className="w-[6px] h-[6px] rounded-full bg-lime-500 animate-pulse"></div>
+                    ) : (
+                      <div className="w-[6px] h-[6px] rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                    )}
+                  </div>
+                  <span className={`text-[13px] ${
+                    i <= launchStage ? "text-[#06201b] dark:text-white font-medium" : "text-gray-400"
+                  }`}>
+                    {stage.msg}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Overlay */}
+      {launchError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 dark:bg-[#0a0e19]/90 backdrop-blur-sm">
+          <div className="text-center max-w-[380px] px-[20px]">
+            <div className="w-[64px] h-[64px] rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-[16px]">
+              <i className="ri-error-warning-line text-[28px] text-red-500"></i>
+            </div>
+            <h3 className="text-[18px] font-bold text-[#06201b] dark:text-white mb-[8px]">
+              Workspace Initialization Failed
+            </h3>
+            <p className="text-[14px] text-gray-500 mb-[20px]">
+              {launchError}
+            </p>
+            <div className="flex gap-[10px] justify-center">
+              <Button onClick={handleComplete}>
+                <i className="ri-refresh-line text-[16px] mr-[4px]"></i>
+                Retry
+              </Button>
+              <Button variant="outline" onClick={() => { setLaunchError(null); setLaunchStage(-1); }}>
+                Go Back
+              </Button>
+            </div>
+            <p className="text-[12px] text-gray-400 mt-[12px]">
+              Your onboarding data has been saved and will not be lost.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
