@@ -14,7 +14,7 @@
  *  10. Credential Exposure — No secrets in responses
  *
  * Run: npm test -- src/__tests__/security.test.ts
- * Requires: Dev server running on http://localhost:56980
+ * Requires: Dev server running on http://localhost:3456
  */
 
 import { describe, it, expect } from "vitest";
@@ -22,7 +22,7 @@ import { describe, it, expect } from "vitest";
 // Increase timeout for tests that make many sequential HTTP requests
 const TEST_TIMEOUT = 60_000;
 
-const BASE_URL = process.env.TEST_URL || "http://localhost:3000";
+const BASE_URL = process.env.TEST_URL || "http://localhost:3456";
 
 // ── Helpers ──
 

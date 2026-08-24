@@ -29,7 +29,7 @@ const WorkingProcess: React.FC = () => {
           <div>
             <div className="text-center ltr:xl:-mr-[5px] rtl:xl:-ml-[5px] lg:sticky xl:relative top-0 relative">
               <Image
-                src="/images/real-estate-agent/working-process.png"
+                src="/images/real-estate-agent/working-process-new.png"
                 className="inline-block rtl:-scale-x-100"
                 alt="working-process"
                 width={500}

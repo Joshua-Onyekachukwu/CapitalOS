@@ -58,8 +58,8 @@ export default function SettingsPage() {
     async function loadEmails() {
       try {
         const { getConnectedEmails } = await import("@/lib/actions/email");
-        const { getCurrentUser } = await import("@/lib/auth");
-        const authUser = await getCurrentUser();
+        const { getClientUser } = await import("@/lib/client-auth");
+        const authUser = await getClientUser();
         if (!authUser) return;
 
         const result = await getConnectedEmails(authUser.id);
@@ -122,8 +122,8 @@ export default function SettingsPage() {
     setDisconnecting(provider);
     try {
       const { disconnectEmail } = await import("@/lib/actions/email");
-      const { getCurrentUser } = await import("@/lib/auth");
-      const authUser = await getCurrentUser();
+      const { getClientUser } = await import("@/lib/client-auth");
+      const authUser = await getClientUser();
       if (!authUser) return;
 
       const result = await disconnectEmail(authUser.id, provider);

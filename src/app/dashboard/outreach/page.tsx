@@ -109,8 +109,8 @@ export default function OutreachPage() {
   useEffect(() => {
     async function checkEmailAccount() {
       try {
-        const { getCurrentUser } = await import("@/lib/auth");
-        const user = await getCurrentUser();
+        const { getClientUser } = await import("@/lib/client-auth");
+        const user = await getClientUser();
         if (!user) return;
 
         const { getConnectedEmails } = await import("@/lib/actions/email");
@@ -271,8 +271,8 @@ export default function OutreachPage() {
     setSendResult(null);
 
     try {
-      const { getCurrentUser } = await import("@/lib/auth");
-      const user = await getCurrentUser();
+      const { getClientUser } = await import("@/lib/client-auth");
+      const user = await getClientUser();
 
       if (!user) {
         setSendResult({ type: "error", text: "Please sign in to send emails." });

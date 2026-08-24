@@ -177,14 +177,10 @@ export default function NewDeckPage() {
     setError(null);
     const startTime = Date.now();
     try {
-      const { getCurrentUser } = await import("@/lib/auth");
-      const user = await getCurrentUser();
-      if (!user) { setError("Please sign in"); setGenerating(false); return; }
-
       const response = await fetch("/api/deck/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, style: selectedStyle, slideCount }),
+        body: JSON.stringify({ style: selectedStyle, slideCount }),
       });
       const data = await response.json();
       if (!response.ok) { setError(data.error || "Generation failed"); return; }

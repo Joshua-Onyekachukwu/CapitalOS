@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Build allowed origins from environment + known deployments
 const ALLOWED_ORIGINS = [
-  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  process.env.NEXT_PUBLIC_APP_URL || `http://localhost:${process.env.PORT || "3456"}`,
   // Vercel preview deployments
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   // Production domains

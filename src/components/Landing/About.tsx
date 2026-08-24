@@ -3,7 +3,6 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import DataVizChart from "./DataVizChart";
 
 const About: React.FC = () => {
   const capabilities = [
@@ -59,9 +58,7 @@ const About: React.FC = () => {
                 height={220}
               />
             </div>
-            <div className="max-w-[140px] md:max-w-[210px] absolute top-[110px] md:top-[120px] ltr:left-[20px] rtl:right-[20px] ltr:md:left-[70px] rtl:md:right-[70px] ltr:xl:left-[140px] rtl:xl:right-[140px]">
-              <DataVizChart />
-            </div>
+
           </div>
           <div>
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px]">

@@ -20,8 +20,10 @@ export async function register() {
   (global as any).__jobRunnerInitialized = true;
 
   try {
-    const { initializeJobRunner } = await import("@/lib/jobs/handlers");
-    initializeJobRunner();
+    // Dynamic import to avoid bundling Node.js modules (pg, dns, fs, net)
+    // into Edge Runtime bundles during the build
+    const handlers = await import(/* webpackIgnore: true */ "@/lib/jobs/handlers");
+    handlers.initializeJobRunner();
     console.log("[instrumentation] Background job runner initialized");
   } catch (err) {
     console.error("[instrumentation] Failed to initialize job runner:", err);

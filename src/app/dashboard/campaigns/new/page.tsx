@@ -134,14 +134,14 @@ export default function NewCampaignPage() {
       });
 
       if (campaign) {
-        // Save follow-up sequence if configured
+        // Save follow-up sequence if configured (via API to avoid client-side db.ts import)
         if (sequenceName && sequenceSteps.length > 0 && sequenceSteps.some(s => s.subject_template)) {
           try {
-            const { createSequence } = await import("@/lib/services/campaigns/sequence");
-            const { getCurrentUser } = await import("@/lib/auth");
-            const user = await getCurrentUser();
-            if (user) {
-              await createSequence(campaign.id, user.id, {
+            await fetch("/api/campaigns/sequence/create", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                campaignId: campaign.id,
                 name: sequenceName,
                 steps: sequenceSteps.map((s, i) => ({
                   step_number: i + 1,
@@ -153,9 +153,9 @@ export default function NewCampaignPage() {
                   tone: s.tone,
                   is_active: true,
                 })),
-                stop_on_reply: stopOnReply,
-              });
-            }
+                stopOnReply: stopOnReply,
+              }),
+            });
           } catch (seqErr) {
             console.error("Failed to save sequence:", seqErr);
           }
