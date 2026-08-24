@@ -193,8 +193,8 @@ export default function AdminPage() {
   const handleRunDedup = async () => {
     setRunningDedup(true);
     try {
-      const { detectDuplicates } = await import("@/lib/services/investor/matching");
-      const result = await detectDuplicates(500);
+      const res = await fetch("/api/admin/dedup", { method: "POST" });
+      const result = await res.json();
       alert(`Dedup complete: ${result.created} new duplicate candidates found`);
       loadAll();
     } catch (err) {

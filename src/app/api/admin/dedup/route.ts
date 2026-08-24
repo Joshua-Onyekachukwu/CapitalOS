@@ -1,24 +1,18 @@
-// API Route: Scheduled Deduplication
-import { NextRequest, NextResponse } from "next/server";
-import { runScheduledDedup } from "@/lib/services/investor/scheduled-dedup";
-import { requireAdmin } from "@/lib/middleware/api-auth";
-import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
+import { detectDuplicates } from "@/lib/services/investor/matching";
 
-export async function POST(request: NextRequest) {
-  const user = await requireAdmin(request);
-  if (user instanceof NextResponse) return user;
-
+export async function POST() {
   try {
-    const body = await request.json();
-    const { limit, batchSize } = body;
+    const user = await requireAuth();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const result = await runScheduledDedup(limit || 500, batchSize || 50);
-
-    return NextResponse.json({ success: true, ...result });
-  } catch (err) {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    const result = await detectDuplicates(500);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Dedup error:", error);
+    return NextResponse.json({ error: "Dedup failed" }, { status: 500 });
   }
 }
