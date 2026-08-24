@@ -242,7 +242,7 @@ Before using Trezo components, verify:
 
 ```bash
 # Lighthouse audit
-npx lighthouse http://localhost:3000 --only-categories=accessibility
+npx lighthouse http://localhost:3456 --only-categories=accessibility
 
 # ESLint a11y rules (already in eslint config)
 pnpm lint

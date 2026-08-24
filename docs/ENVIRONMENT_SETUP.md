@@ -45,7 +45,7 @@ supabase db reset
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3456](http://localhost:3456).
 
 ---
 
@@ -64,7 +64,7 @@ NVIDIA_API_KEY=<your-nvidia-api-key>
 NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
 
 # App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3456
 
 # AI Mock Mode (set to true to skip NVIDIA API calls)
 AI_MOCK_MODE=true

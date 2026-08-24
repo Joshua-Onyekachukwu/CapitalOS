@@ -288,13 +288,13 @@ describe("4. IDOR PROTECTION — userId from body is not trusted", () => {
 
 describe("5. CORS — Cross-origin requests handled correctly", () => {
   const ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    "http://localhost:3456",
     "https://capital-os.vercel.app",
     "https://capital-os.com",
   ];
 
   it("OPTIONS preflight should return 204 with CORS headers", async () => {
-    const res = await reqWithOrigin("/api/investors", "http://localhost:3000", {
+    const res = await reqWithOrigin("/api/investors", "http://localhost:3456", {
       method: "OPTIONS",
       headers: { "Access-Control-Request-Method": "GET" },
     });
@@ -315,8 +315,8 @@ describe("5. CORS — Cross-origin requests handled correctly", () => {
   });
 
   it("should include CORS headers in API responses", async () => {
-    const res = await reqWithOrigin("/api/investors", "http://localhost:3000");
-    expect(res.headers.get("access-control-allow-origin")).toBe("http://localhost:3000");
+    const res = await reqWithOrigin("/api/investors", "http://localhost:3456");
+    expect(res.headers.get("access-control-allow-origin")).toBe("http://localhost:3456");
     expect(res.headers.get("access-control-allow-credentials")).toBe("true");
     expect(res.headers.get("access-control-allow-methods")).toContain("GET");
   });

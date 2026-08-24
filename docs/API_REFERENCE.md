@@ -10,7 +10,7 @@ Capital-OS uses Next.js Server Actions and API Routes. All data operations go th
 
 ```
 Production: https://capitalos.com
-Local:      http://localhost:3000
+Local:      http://localhost:3456
 ```
 
 ---

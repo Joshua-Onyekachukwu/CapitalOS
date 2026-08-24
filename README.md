@@ -62,7 +62,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3456](http://localhost:3456).
 
 ---
 
@@ -83,7 +83,7 @@ Open [http://localhost:3000](http://localhost:3000).
 |----------|-------------|---------|
 | `NVIDIA_API_KEY` | NVIDIA NIM API key for AI features | — |
 | `AI_MOCK_MODE` | Use mock AI responses (no API calls) | `true` |
-| `NEXT_PUBLIC_APP_URL` | App URL | `http://localhost:3000` |
+| `NEXT_PUBLIC_APP_URL` | App URL | `http://localhost:3456` |
 
 ### Database Setup
 
