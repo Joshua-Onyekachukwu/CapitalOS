@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/services/email/sender";
+import { sendEmailViaSmtp } from "@/lib/services/email/smtp-sender";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
@@ -41,14 +42,24 @@ export async function POST(request: NextRequest) {
 
     const investorEmail = investors[0].email;
 
-    // Send the email
-    const result = await sendEmail({
+    // Send the email — try OAuth first, fall back to SMTP
+    let result = await sendEmail({
       userId,
       to: investorEmail,
       subject,
       bodyHtml,
       bodyText: bodyText || bodyHtml.replace(/<[^>]*>/g, ""),
     });
+
+    // If OAuth failed (no connected account), fall back to Gmail SMTP
+    if (!result.success && result.error?.includes("No email account connected")) {
+      result = await sendEmailViaSmtp({
+        to: investorEmail,
+        subject,
+        bodyHtml,
+        bodyText: bodyText || bodyHtml.replace(/<[^>]*>/g, ""),
+      });
+    }
 
     if (result.success) {
       // Log the email in email_messages via CockroachDB
