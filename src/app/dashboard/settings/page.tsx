@@ -35,6 +35,19 @@ export default function SettingsPage() {
   const [emailLoading, setEmailLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
   const [emailMessage, setEmailMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showSmtpForm, setShowSmtpForm] = useState(false);
+  const [smtpTesting, setSmtpTesting] = useState(false);
+  const [smtpSaving, setSmtpSaving] = useState(false);
+  const [smtpForm, setSmtpForm] = useState({
+    host: "",
+    port: "587",
+    user: "",
+    pass: "",
+    secure: false,
+    fromName: "",
+    fromEmail: "",
+    domain: "",
+  });
 
   useEffect(() => {
     async function loadProfile() {
@@ -140,6 +153,63 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSmtpTest = async () => {
+    setSmtpTesting(true);
+    setEmailMessage(null);
+    try {
+      const res = await fetch("/api/email/smtp/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(smtpForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailMessage({ type: "success", text: `✅ ${data.message}. Check your inbox!` });
+      } else {
+        setEmailMessage({ type: "error", text: data.error || "Test failed" });
+      }
+    } catch {
+      setEmailMessage({ type: "error", text: "Failed to test SMTP connection" });
+    } finally {
+      setSmtpTesting(false);
+    }
+  };
+
+  const handleSmtpSave = async () => {
+    setSmtpSaving(true);
+    setEmailMessage(null);
+    try {
+      const res = await fetch("/api/email/smtp/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: "custom_smtp", ...smtpForm }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailAccounts((prev) => [
+          ...prev,
+          {
+            id: data.account.id,
+            provider: "custom_smtp",
+            email_address: data.account.email_address,
+            display_name: data.account.display_name,
+            is_active: true,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+        setShowSmtpForm(false);
+        setEmailMessage({ type: "success", text: "Custom SMTP account connected!" });
+        setSmtpForm({ host: "", port: "587", user: "", pass: "", secure: false, fromName: "", fromEmail: "", domain: "" });
+      } else {
+        setEmailMessage({ type: "error", text: data.error || "Failed to save" });
+      }
+    } catch {
+      setEmailMessage({ type: "error", text: "Failed to save SMTP settings" });
+    } finally {
+      setSmtpSaving(false);
+    }
+  };
+
   const handleSignOut = async () => {
     setSigningOut(true);
     try {
@@ -235,7 +305,71 @@ export default function SettingsPage() {
                     Connect Microsoft (Outlook)
                   </Button>
                 </a>
+                <Button variant="outline" size="sm" onClick={() => setShowSmtpForm(!showSmtpForm)}>
+                  <i className="ri-mail-settings-line text-[16px] mr-[8px]"></i>
+                  Connect Custom Email (SMTP)
+                </Button>
               </div>
+
+              {showSmtpForm && (
+                <div className="mt-[16px] p-[20px] bg-gray-50 dark:bg-gray-800/30 rounded-[12px] border border-gray-200 dark:border-gray-700">
+                  <h4 className="text-[15px] font-semibold mb-[12px]">Custom SMTP Settings</h4>
+                  <p className="text-[13px] text-gray-400 mb-[16px]">Connect your own domain email. Works with any SMTP server — Gmail, Outlook, Zoho, or your company's mail server.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-500 mb-[4px]">SMTP Host *</label>
+                      <input type="text" placeholder="smtp.gmail.com" value={smtpForm.host} onChange={(e) => setSmtpForm(p => ({...p, host: e.target.value}))} className="w-full px-[12px] py-[8px] text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-500 mb-[4px]">Port *</label>
+                      <input type="text" placeholder="587" value={smtpForm.port} onChange={(e) => setSmtpForm(p => ({...p, port: e.target.value}))} className="w-full px-[12px] py-[8px] text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-500 mb-[4px]">Username / Email *</label>
+                      <input type="text" placeholder="your@email.com" value={smtpForm.user} onChange={(e) => setSmtpForm(p => ({...p, user: e.target.value}))} className="w-full px-[12px] py-[8px] text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-500 mb-[4px]">Password / App Password *</label>
+                      <input type="password" placeholder="••••••••" value={smtpForm.pass} onChange={(e) => setSmtpForm(p => ({...p, pass: e.target.value}))} className="w-full px-[12px] py-[8px] text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-500 mb-[4px]">Sender Name</label>
+                      <input type="text" placeholder="Your Name" value={smtpForm.fromName} onChange={(e) => setSmtpForm(p => ({...p, fromName: e.target.value}))} className="w-full px-[12px] py-[8px] text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-500 mb-[4px]">From Email *</label>
+                      <input type="email" placeholder="you@yourdomain.com" value={smtpForm.fromEmail} onChange={(e) => setSmtpForm(p => ({...p, fromEmail: e.target.value}))} className="w-full px-[12px] py-[8px] text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-[12px] mt-[12px]">
+                    <label className="flex items-center gap-[6px] text-[13px] text-gray-500 cursor-pointer">
+                      <input type="checkbox" checked={smtpForm.secure} onChange={(e) => setSmtpForm(p => ({...p, secure: e.target.checked}))} className="rounded" />
+                      Use TLS/SSL (recommended)
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-[10px] mt-[16px]">
+                    <Button variant="outline" size="sm" loading={smtpTesting} onClick={handleSmtpTest}>
+                      <i className="ri-test-tube-line text-[14px] mr-[4px]"></i>
+                      Test Connection
+                    </Button>
+                    <Button size="sm" loading={smtpSaving} onClick={handleSmtpSave}>
+                      <i className="ri-save-line text-[14px] mr-[4px]"></i>
+                      Save & Connect
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setShowSmtpForm(false)}>Cancel</Button>
+                  </div>
+
+                  <div className="mt-[12px] p-[10px] bg-blue-50 dark:bg-blue-900/20 rounded-[8px]">
+                    <p className="text-[12px] text-blue-600 dark:text-blue-400 !mb-0">
+                      <i className="ri-information-line mr-[4px]"></i>
+                      <strong>Gmail:</strong> Use app password (not your regular password). Go to Google Account → Security → 2FA → App Passwords.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-[12px]">
@@ -251,6 +385,10 @@ export default function SettingsPage() {
                           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                         </svg>
                       </div>
+                    ) : account.provider === "custom_smtp" ? (
+                      <div className="w-[36px] h-[36px] rounded-[8px] bg-lime-50 flex items-center justify-center">
+                        <i className="ri-mail-settings-line text-lime-600 text-[20px]"></i>
+                      </div>
                     ) : (
                       <div className="w-[36px] h-[36px] rounded-[8px] bg-blue-50 flex items-center justify-center">
                         <svg className="w-[20px] h-[20px]" viewBox="0 0 23 23">
@@ -263,7 +401,7 @@ export default function SettingsPage() {
                     )}
                     <div>
                       <p className="text-[14px] font-medium text-[#06201b] dark:text-white !mb-[2px]">{account.display_name || account.email_address}</p>
-                      <p className="text-[12px] text-gray-400 !mb-0">{account.email_address} • {account.provider === "google" ? "Gmail" : "Outlook"}</p>
+                      <p className="text-[12px] text-gray-400 !mb-0">{account.email_address} • {account.provider === "google" ? "Gmail" : account.provider === "custom_smtp" ? "Custom SMTP" : "Outlook"}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-[8px]">
