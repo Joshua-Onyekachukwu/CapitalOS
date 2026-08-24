@@ -115,7 +115,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
                 </div>
 
                 <Link
-                  href="/settings"
+                  href="/dashboard/settings"
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-[10px] px-[14px] py-[8px] text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
