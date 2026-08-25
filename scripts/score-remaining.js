@@ -124,7 +124,7 @@ async function main() {
     const { data: batch, error } = await supabase
       .from("investors")
       .select("id, full_name, job_title, company_name, country, email, email_verified, email_verification_status, linkedin_url, phone, company_website, personal_website, contact_form_url, twitter_url, investment_stages, investment_sectors, investment_geographies, investor_bio, investment_thesis, primary_industry, sector_focus, fund_size, aum, typical_check_size, min_check_size, max_check_size, total_capital_invested, number_of_investments, currently_active, currently_deploying_capital, last_investment_date, investments_last_12_months, investments_last_24_months, available_fund_stage, portfolio_companies, africa_focus, nigeria_focus")
-      .eq("overall_lead_score", 0)
+      .eq("fit_score", 0)
       .range(offset, offset + BATCH - 1);
 
     if (error) { console.error("❌", error.message); break; }
@@ -136,6 +136,7 @@ async function main() {
       const results = chunk.map(inv => {
         const s = calcScores(inv);
         return supabase.from("investors").update({
+          fit_score: s.overall_lead_score,
           overall_lead_score: s.overall_lead_score, investor_rating: s.investor_rating,
           outreach_readiness: s.outreach_readiness, investment_activity_score: s.investment_activity_score,
           funding_capacity_score: s.funding_capacity_score, industry_match_score: s.industry_match_score,
