@@ -8,9 +8,9 @@ const HeroBanner: React.FC = () => {
   return (
     <>
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="relative bg-[#06201b] rounded-[20px] md:rounded-[30px] overflow-hidden min-h-[560px] md:min-h-[620px] lg:min-h-[660px] xl:min-h-[700px]">
+        <div className="relative bg-[#06201b] rounded-[20px] md:rounded-[30px] overflow-hidden min-h-[560px] md:min-h-[650px] lg:min-h-[700px] xl:min-h-[750px]">
           {/* Left: Copy — vertically centered with more top padding */}
-          <div className="relative z-10 pt-[60px] pb-[40px] px-[20px] md:pt-[70px] md:px-[40px] lg:pt-[80px] lg:px-[50px] xl:pt-[90px] xl:px-[80px] lg:absolute lg:inset-y-0 lg:left-0 lg:w-[50%] lg:flex lg:flex-col lg:justify-center">
+          <div className="relative z-10 pt-[60px] pb-[40px] px-[20px] md:pt-[70px] md:px-[40px] lg:pt-[100px] lg:pb-[20px] lg:px-[50px] xl:pt-[120px] xl:px-[80px] lg:absolute lg:inset-y-0 lg:left-0 lg:w-[50%] lg:flex lg:flex-col lg:justify-center">
             <h1 className="!font-medium !text-[#ebebe0] !text-[32px] md:!text-[44px] lg:!text-[50px] xl:!text-[58px] !leading-[1.15] md:-tracking-[1.5px] !mb-[12px] lg:!mb-[16px]">
               Your AI{" "}
               <span className="italic text-lime-500">Fundraising</span>{" "}
@@ -55,7 +55,7 @@ const HeroBanner: React.FC = () => {
           </div>
 
           {/* Right: Hero Image — absolutely positioned to touch bottom edge */}
-          <div className="hidden lg:block absolute right-0 bottom-0 w-[55%] h-full">
+          <div className="hidden lg:block absolute right-0 bottom-0 w-[55%] h-[115%]">
             <Image
               src="/images/real-estate-agent/hero-main.png"
               alt="Capital OS Dashboard"
