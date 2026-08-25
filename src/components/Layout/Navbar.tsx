@@ -68,7 +68,7 @@ const Navbar: React.FC = () => {
   return (
     <>
       <div
-        className="sales-navbar bg-white dark:bg-dark fixed top-0 right-0 left-0 transition-all h-auto z-[5] py-[20px] md:py-[30px] lg:py-[35px]"
+        className="sales-navbar bg-white dark:bg-dark fixed top-0 right-0 left-0 transition-all h-auto z-[999] py-[20px] md:py-[30px] lg:py-[35px]"
         id="navbar"
       >
         <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
@@ -154,7 +154,7 @@ const Navbar: React.FC = () => {
 
             {/* Mobile Navigation */}
             <div
-              className={`bg-white dark:bg-[#0a0e19] rounded-[15px] border border-gray-200 dark:border-[#202c4b] mt-[20px] p-[20px] md:p-[30px] w-full hidden lg:!hidden ${
+              className={`absolute top-full left-0 right-0 bg-white dark:bg-[#0a0e19] border border-gray-200 dark:border-[#202c4b] p-[20px] md:p-[30px] w-full hidden lg:!hidden z-[999] ${
                 isActiveMobileMenu ? "" : "active"
               }`}
               id="navbar-collapse"

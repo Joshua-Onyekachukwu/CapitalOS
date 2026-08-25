@@ -41,7 +41,8 @@ const WhyCapitalOS: React.FC = () => {
     <div className="py-[60px] md:py-[80px] lg:py-[100px] xl:py-[120px]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-[25px]">
-          <div className="ltr:xl:pr-[35px] rtl:xl:pl-[35px]">
+          {/* Text content — second on mobile, first on desktop */}
+          <div className="order-2 lg:order-1 ltr:xl:pr-[35px] rtl:xl:pl-[35px]">
             <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
               WHY CAPITAL OS
             </span>
@@ -78,7 +79,8 @@ const WhyCapitalOS: React.FC = () => {
               ))}
             </div>
           </div>
-          <div>
+          {/* Image — first on mobile, second on desktop */}
+          <div className="order-1 lg:order-2">
             <div className="text-center relative lg:sticky top-[100px] ltr:lg:pl-[50px] rtl:lg:pr-[50px] ltr:xl:pl-[80px] rtl:xl:pr-[80px]">
               <Image
                 src="/images/real-estate-agent/why-trezo.jpg"
