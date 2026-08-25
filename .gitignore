@@ -67,3 +67,6 @@ hero image.png
 hero image tranparent.jpg
 watermarked_img_*.jpg
 backups/
+data-backups/
+*.meta.json
+checkpoint.json
