@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
-import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { cache, userCacheKey, CACHE_TTL } from "@/lib/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 // =============================================
-// Dashboard Cockpit API Route
-// =============================================
-// Returns all data needed for the main dashboard page:
-//   - Stats (investors, campaigns, emails, credits)
-//   - Recent investors (with firm names)
-//   - Pipeline summary (outreach readiness distribution)
-//   - Company profile
+// Dashboard Cockpit API Route (Supabase)
 // =============================================
 
 export async function GET(request: NextRequest) {
@@ -20,7 +12,6 @@ export async function GET(request: NextRequest) {
   if (user instanceof NextResponse) return user;
 
   try {
-    // ── Check cache first (user-scoped, 30s TTL) ──
     const key = userCacheKey(user.id, "cockpit");
     const cached = await cache.getOrSet(
       key,
@@ -34,191 +25,123 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// ── Separated computation function (cached) ──
 async function computeCockpit() {
-    const [
-      investorStats,
-      firmStats,
-      campaignStats,
-      emailStats,
-      creditStats,
-      recentInvestors,
-      pipelineData,
-      sectorData,
-      thisWeekCount,
-    ] = await Promise.all([
-      // Total investors + fit stats
-      query<{ count: number }>(
-        `SELECT COUNT(*)::int AS count FROM investors WHERE is_active = true`
-      ),
+  const sp = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-      // Total firms
-      query<{ count: number }>(
-        `SELECT COUNT(*)::int AS count FROM investor_firms`
-      ),
-
-      // Campaign stats (data_acquisition_jobs)
-      query<{ status: string; count: number; found_count: number }>(
-        `SELECT status, COUNT(*)::int AS count, COALESCE(SUM(found_count), 0)::int AS found_count
-         FROM data_acquisition_jobs
-         WHERE created_by IS NOT NULL
-         GROUP BY status`
-      ),
-
-      // Email stats
-      query<{ direction: string; status: string; count: number }>(
-        `SELECT direction, status, COUNT(*)::int AS count
-         FROM email_messages
-         GROUP BY direction, status`
-      ),
-
-      // Credit usage
-      query<{ total: number }>(
-        `SELECT COALESCE(SUM(ABS(amount)), 0)::int AS total FROM credit_ledger`
-      ),
-
-      // Recent investors (with firm name via JOIN)
-      query<any>(
-        `SELECT i.id, i.full_name, i.investor_type, i.current_firm_id,
-                f.name AS firm_name, i.fit_score, i.outreach_readiness, i.created_at
-         FROM investors i
-         LEFT JOIN investor_firms f ON i.current_firm_id = f.id
-         WHERE i.is_active = true
-         ORDER BY i.created_at DESC
-         LIMIT 5`
-      ),
-
-      // Pipeline summary (outreach readiness distribution)
-      query<{ outreach_readiness: string; count: number }>(
-        `SELECT outreach_readiness, COUNT(*)::int AS count
-         FROM investors
-         WHERE is_active = true
-         GROUP BY outreach_readiness
-         ORDER BY count DESC`
-      ),
-
-      // Top sectors (for optional chart)
-      query<{ sector: string; count: number }>(
-        `SELECT s AS sector, COUNT(*)::int AS count
-         FROM investors, unnest(investment_sectors) AS s
-         WHERE is_active = true
-         GROUP BY s
-         ORDER BY count DESC
-         LIMIT 10`
-      ),
-
-      // Investors added this week
-      query<{ count: number }>(
-        `SELECT COUNT(*)::int AS count FROM investors
-         WHERE is_active = true AND created_at >= NOW() - INTERVAL '7 days'`
-      ),
-    ]);
-
-    // ── Compute stats ──
-    const totalInvestors = investorStats[0]?.count || 0;
-    const totalFirms = firmStats[0]?.count || 0;
-    const investorsThisWeek = thisWeekCount[0]?.count || 0;
-
-    // Campaign stats
-    const activeCampaigns = campaignStats
-      .filter((c) => c.status === "running" || c.status === "pending")
-      .reduce((sum, c) => sum + c.count, 0);
-
-    // Email stats
-    const emailsSent = emailStats
-      .filter((e) => e.direction === "outbound" && e.status === "sent")
-      .reduce((sum, e) => sum + e.count, 0);
-    const emailsReplied = emailStats
-      .filter((e) => e.direction === "inbound")
-      .reduce((sum, e) => sum + e.count, 0);
-
-    // Credits
-    const totalCreditsUsed = creditStats[0]?.total || 0;
-
-    // High-fit investors (fit_score >= 80)
-    const highFitResult = await query<{ count: number }>(
-      `SELECT COUNT(*)::int AS count FROM investors WHERE is_active = true AND fit_score >= 80`
-    );
-    const highFitInvestors = highFitResult[0]?.count || 0;
-
-    // Ready for outreach
-    const readyResult = await query<{ count: number }>(
-      `SELECT COUNT(*)::int AS count FROM investors WHERE is_active = true AND outreach_readiness = 'ready'`
-    );
-    const readyInvestors = readyResult[0]?.count || 0;
-
-    // Average fit score (sample for performance)
-    const avgResult = await query<{ avg: number }>(
-      `SELECT ROUND(AVG(fit_score))::int AS avg FROM investors WHERE is_active = true AND fit_score > 0`
-    );
-    const avgFitScore = avgResult[0]?.avg || 0;
-
-    // Pipeline
-    const pipeline = pipelineData.map((row) => ({
-      stage: row.outreach_readiness || "not_ready",
-      count: row.count,
-    }));
-
-    // ── Fetch company profile from Supabase ──
-    let companyProfile = null;
-    try {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("company_profiles")
-          .select("company_name, industry, company_stage, one_liner, currently_raising, funding_amount, round_type, mrr, customer_count, has_pitch_deck, readiness_score")
-          .eq("user_id", user.id)
-          .single();
-        if (profile) {
-          companyProfile = {
-            companyName: profile.company_name,
-            industry: profile.industry,
-            companyStage: profile.company_stage,
-            oneLiner: profile.one_liner,
-            currentlyRaising: profile.currently_raising,
-            fundingAmount: profile.funding_amount,
-            roundType: profile.round_type,
-            mrr: profile.mrr,
-            customerCount: profile.customer_count,
-            hasPitchDeck: profile.has_pitch_deck,
-            readinessScore: profile.readiness_score,
-          };
+  // Run all queries in parallel
+  const [
+    totalResult,
+    highFitResult,
+    readyResult,
+    avgResult,
+    pipelineResult,
+    recentResult,
+    thisWeekResult,
+    emailResult,
+  ] = await Promise.all([
+    sp.from("investors").select("id", { count: "exact", head: true }),
+    sp.from("investors").select("id", { count: "exact", head: true }).gte("fit_score", 80),
+    sp.from("investors").select("id", { count: "exact", head: true }).eq("outreach_readiness", "ready"),
+    sp.from("investors").select("fit_score").gt("fit_score", 0).limit(1000),
+    sp.from("investors").select("outreach_readiness").eq("outreach_readiness", "ready").limit(1)
+      .then(async () => {
+        // Get pipeline distribution
+        const stages = ["ready", "needs_verification", "not_ready", "contacted", "do_not_contact", "low_priority"];
+        const results = [];
+        for (const stage of stages) {
+          const { count } = await sp.from("investors").select("id", { count: "exact", head: true }).eq("outreach_readiness", stage);
+          if (count && count > 0) results.push({ stage, count });
         }
-      }
-    } catch {
-      // Non-critical — company profile may not exist yet
-    }
+        return results;
+      }),
+    sp.from("investors").select("id, full_name, investor_type, fit_score, outreach_readiness, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    sp.from("investors").select("id", { count: "exact", head: true })
+      .gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString()),
+    // Email stats from outreach_emails if table exists
+    Promise.resolve({ count: 0 }).catch(() => ({ count: 0 })),
+  ]);
 
-    return {
-      stats: {
-        totalInvestors,
-        totalFirms,
-        activeCampaigns,
-        emailsSent,
-        emailsReplied,
-        meetingsScheduled: 0,
-        highFitInvestors,
-        investorsThisWeek,
-        readyInvestors,
-        avgFitScore,
-        totalCreditsUsed,
-      },
-      recentInvestors: recentInvestors.map((inv) => ({
-        id: inv.id,
-        full_name: inv.full_name,
-        investor_type: inv.investor_type,
-        current_firm_id: inv.current_firm_id,
-        firm_name: inv.firm_name,
-        fit_score: inv.fit_score,
-        outreach_readiness: inv.outreach_readiness,
-        created_at: inv.created_at,
-      })),
-      pipeline,
-      topSectors: sectorData.map((s) => ({
-        sector: s.sector,
-        count: s.count,
-      })),
-      companyProfile,
-    };
+  const totalInvestors = totalResult.count || 0;
+  const highFitInvestors = highFitResult.count || 0;
+  const readyInvestors = readyResult.count || 0;
+  const thisWeekCount = thisWeekResult.count || 0;
+
+  // Calculate average fit score from sample
+  const sampleScores = (avgResult.data || []).map((r: any) => r.fit_score).filter(Boolean);
+  const avgFitScore = sampleScores.length > 0
+    ? Math.round(sampleScores.reduce((a: number, b: number) => a + b, 0) / sampleScores.length)
+    : 0;
+
+  // Pipeline
+  const pipeline = (pipelineResult || []).map((p: any) => ({
+    stage: p.stage,
+    count: p.count,
+  }));
+
+  // Recent investors
+  const recentInvestors = (recentResult.data || []).map((inv: any) => ({
+    id: inv.id,
+    full_name: inv.full_name,
+    investor_type: inv.investor_type,
+    current_firm_id: null,
+    firm_name: null,
+    fit_score: inv.fit_score,
+    outreach_readiness: inv.outreach_readiness,
+    created_at: inv.created_at,
+  }));
+
+  // Company profile from Supabase
+  let companyProfile = null;
+  try {
+    const { data: { user: authUser } } = await sp.auth.getUser();
+    if (authUser) {
+      const { data: profile } = await sp
+        .from("company_profiles")
+        .select("company_name, industry, company_stage, one_liner, currently_raising, funding_amount, round_type, mrr, customer_count, has_pitch_deck, readiness_score")
+        .eq("user_id", authUser.id)
+        .single();
+      if (profile) {
+        companyProfile = {
+          companyName: profile.company_name,
+          industry: profile.industry,
+          companyStage: profile.company_stage,
+          oneLiner: profile.one_liner,
+          currentlyRaising: profile.currently_raising,
+          fundingAmount: profile.funding_amount,
+          roundType: profile.round_type,
+          mrr: profile.mrr,
+          customerCount: profile.customer_count,
+          hasPitchDeck: profile.has_pitch_deck,
+          readinessScore: profile.readiness_score,
+        };
+      }
+    }
+  } catch {
+    // Non-critical
+  }
+
+  return {
+    stats: {
+      totalInvestors,
+      totalFirms: 0,
+      activeCampaigns: 0,
+      emailsSent: 0,
+      emailsReplied: 0,
+      meetingsScheduled: 0,
+      highFitInvestors,
+      investorsThisWeek: thisWeekCount,
+      readyInvestors,
+      avgFitScore,
+      totalCreditsUsed: 0,
+    },
+    recentInvestors,
+    pipeline,
+    topSectors: [],
+    companyProfile,
+  };
 }

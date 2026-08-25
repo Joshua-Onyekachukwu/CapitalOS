@@ -65,6 +65,7 @@ const stageColors: Record<string, string> = {
   ready: "bg-lime-500",
   contacted: "bg-blue-500",
   do_not_contact: "bg-red-500",
+  low_priority: "bg-gray-300",
 };
 
 const readinessColors: Record<string, "success" | "warning" | "info" | "danger" | "default"> = {

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { detectDuplicates } from "@/lib/services/investor/matching";
 
 export async function POST() {
   try {
-    const user = await requireAuth();
+    const user = await requireUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
