@@ -81,6 +81,7 @@ const navSections: NavSection[] = [
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  isAdmin?: boolean;
 }
 
 function SidebarNavItem({ item, isActive, onClick }: { item: NavItem; isActive: boolean; onClick: () => void }) {
@@ -111,7 +112,7 @@ function SidebarNavItem({ item, isActive, onClick }: { item: NavItem; isActive: 
   );
 }
 
-function Sidebar({ isOpen, onClose }: SidebarProps) {
+function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
@@ -149,27 +150,67 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto px-[10px] py-[12px]">
-            {navSections.map((section, sectionIndex) => (
-              <div key={sectionIndex} className={section.title ? "mt-[16px]" : sectionIndex > 0 ? "mt-[4px]" : ""}>
-                {section.title && (
-                  <p className="px-[14px] mb-[6px] text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                    {section.title}
-                  </p>
-                )}
-                <ul className="space-y-[2px]">
-                  {section.items.map((item) => (
-                    <li key={item.href}>
-                      <SidebarNavItem
-                        item={item}
-                        isActive={isActive(item.href)}
-                        onClick={onClose}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {navSections
+              .filter((section) => {
+                // Hide admin-only sections from non-admins
+                if (!isAdmin) {
+                  const adminOnlyLabels = ["Data Health"];
+                  const adminOnlyHrefs = ["/dashboard/admin"];
+                  return !section.items.some(
+                    (item) =>
+                      adminOnlyLabels.includes(item.label) ||
+                      adminOnlyHrefs.includes(item.href)
+                  );
+                }
+                return true;
+              })
+              .map((section, sectionIndex) => (
+                <div key={sectionIndex} className={section.title ? "mt-[16px]" : sectionIndex > 0 ? "mt-[4px]" : ""}>
+                  {section.title && (
+                    <p className="px-[14px] mb-[6px] text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                      {section.title}
+                    </p>
+                  )}
+                  <ul className="space-y-[2px]">
+                    {section.items
+                      .filter((item) => {
+                        // Hide individual admin items from non-admins
+                        if (!isAdmin) {
+                          const adminOnlyHrefs = ["/dashboard/admin"];
+                          return !adminOnlyHrefs.includes(item.href);
+                        }
+                        return true;
+                      })
+                      .map((item) => (
+                        <li key={item.href}>
+                          <SidebarNavItem
+                            item={item}
+                            isActive={isActive(item.href)}
+                            onClick={onClose}
+                          />
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
           </nav>
+
+          {/* Admin Link (visible only to admins) */}
+          {isAdmin && (
+            <div className="px-[10px] mt-[8px]">
+              <Link
+                href="/admin"
+                onClick={onClose}
+                className="flex items-center gap-[12px] px-[14px] py-[9px] rounded-[8px] text-[14px] font-medium transition-all duration-150 text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 dark:hover:text-red-400 border border-dashed border-gray-200 dark:border-gray-700"
+              >
+                <i className="ri-admin-line text-[20px] flex-shrink-0 text-gray-400 group-hover:text-red-500"></i>
+                <span className="flex-1 truncate">Admin Panel</span>
+                <span className="text-[9px] font-bold px-[5px] py-[1px] rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                  ADMIN
+                </span>
+              </Link>
+            </div>
+          )}
 
           {/* Bottom help card */}
           <div className="px-[10px] pb-[14px]">

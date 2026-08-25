@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/actions/user";
+import { getCurrentUser } from "@/lib/auth";
+import { getUserRole } from "@/lib/roles";
 import { DashboardShell } from "@/components/Dashboard/DashboardShell";
 
 export default async function DashboardLayout({
@@ -9,17 +10,20 @@ export default async function DashboardLayout({
 }) {
   const user = await getCurrentUser();
 
-  // Middleware should catch this, but double-check
   if (!user) {
     redirect("/login");
   }
 
+  // Check admin role
+  const roleInfo = await getUserRole(user.id, user.email || "");
+
   return (
     <DashboardShell
       user={{
-        name: user.full_name || user.email.split("@")[0],
-        email: user.email,
-        avatar: user.avatar_url ?? undefined,
+        name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+        email: user.email || "",
+        avatar: user.user_metadata?.avatar_url ?? undefined,
+        isAdmin: roleInfo.isAdmin,
       }}
     >
       {children}
