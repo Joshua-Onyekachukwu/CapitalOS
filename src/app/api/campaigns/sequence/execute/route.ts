@@ -1,15 +1,13 @@
 // =============================================
-// Sequence Execution API Route
+// Sequence Execution API Route (Supabase)
 // =============================================
-// Processes pending follow-up emails for active sequences.
-// Called by a cron job or manually triggered.
 
 import { NextRequest, NextResponse } from "next/server";
 import { getPendingSends, executeSend } from "@/lib/services/campaigns/sequence";
 import { chatCompletion } from "@/lib/ai";
-import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(request: NextRequest) {
   const user = await requireAuth(request);
@@ -19,8 +17,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const { dryRun = false } = body;
 
-    // SECURITY: Use authenticated user ID — never trust client-supplied userId
     const userId = user.id;
+
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // Get pending sends
     const pending = await getPendingSends(20);
@@ -33,13 +35,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get company profile from CockroachDB
-    const profiles = await query<any>(
-      "SELECT * FROM company_profiles WHERE user_id = $1 LIMIT 1",
-      [userId]
-    );
+    // Get company profile from Supabase
+    let profile: any = null;
+    try {
+      const { data } = await sp
+        .from("company_profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .limit(1)
+        .single();
+      profile = data;
+    } catch { /* profile may not exist */ }
 
-    const profile = profiles[0] || null;
     const companyName = profile?.company_name || "Our Company";
     const oneLiner = profile?.one_liner || "";
     const senderName = profile?.team_members?.[0]?.name || "The Team";
@@ -50,7 +57,6 @@ export async function POST(request: NextRequest) {
 
     for (const item of pending) {
       try {
-        // Generate personalized email using AI
         const prompt = `You are an expert fundraising email writer. Generate a personalized follow-up email for this investor.
 
 INVESTOR: ${item.investor_name}
@@ -76,7 +82,6 @@ Return JSON:
           messages: [{ role: "user", content: prompt }],
         });
 
-        // Parse response
         let subject = item.step.subject_template;
         let bodyHtml = `<p>${item.step.body_template}</p>`;
 
@@ -88,7 +93,6 @@ Return JSON:
             bodyHtml = parsed.bodyHtml || bodyHtml;
           }
         } catch {
-          // Use template as-is
           subject = subject
             .replace(/\{\{investor_name\}\}/g, item.investor_name)
             .replace(/\{\{company_name\}\}/g, companyName)
@@ -111,7 +115,6 @@ Return JSON:
           continue;
         }
 
-        // Send the email
         const success = await executeSend(
           item.id!,
           item.step,
@@ -124,26 +127,14 @@ Return JSON:
 
         if (success) {
           sent++;
-          results.push({
-            investor: item.investor_name,
-            step: item.step.step_number,
-            status: "sent",
-          });
+          results.push({ investor: item.investor_name, step: item.step.step_number, status: "sent" });
         } else {
           failed++;
-          results.push({
-            investor: item.investor_name,
-            step: item.step.step_number,
-            status: "failed",
-          });
+          results.push({ investor: item.investor_name, step: item.step.step_number, status: "failed" });
         }
-      } catch (err) {
+      } catch {
         failed++;
-        results.push({
-          investor: item.investor_name,
-          step: item.step.step_number,
-          status: "error",
-        });
+        results.push({ investor: item.investor_name, step: item.step.step_number, status: "error" });
       }
     }
 
@@ -156,9 +147,6 @@ Return JSON:
     });
   } catch (err) {
     console.error("Sequence execution error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

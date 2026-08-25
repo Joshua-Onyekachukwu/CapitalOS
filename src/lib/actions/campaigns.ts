@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUser } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
 
 // =============================================
 // Types
@@ -19,22 +19,29 @@ export interface Campaign {
   user_id: string;
 }
 
+function getSp() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
 // =============================================
 // List Campaigns
 // =============================================
 
 export async function getCampaigns(): Promise<Campaign[]> {
   const user = await requireUser();
+  const sp = getSp();
 
-  // Campaigns are stored as acquisition jobs with job_type = 'campaign'
-  const rows = await query<any>(
-    `SELECT * FROM data_acquisition_jobs
-     WHERE job_type = $1 AND created_by = $2
-     ORDER BY created_at DESC`,
-    ["campaign", user.id]
-  );
+  const { data: rows } = await sp
+    .from("data_acquisition_jobs")
+    .select("*")
+    .eq("job_type", "campaign")
+    .eq("created_by", user.id)
+    .order("created_at", { ascending: false });
 
-  return rows.map((job) => ({
+  return (rows || []).map((job: any) => ({
     id: job.id,
     name: job.filters?.name || "Untitled Campaign",
     description: job.filters?.description || "",
@@ -66,25 +73,29 @@ export async function createCampaign(data: {
   geography?: string;
 }): Promise<Campaign | null> {
   const user = await requireUser();
+  const sp = getSp();
 
-  const filters = JSON.stringify({
+  const filters = {
     name: data.name,
     description: data.description,
     sector: data.sector,
     stage: data.stage,
     geography: data.geography,
-  });
+  };
 
-  const rows = await query<any>(
-    `INSERT INTO data_acquisition_jobs (job_type, filters, status, created_by)
-     VALUES ('campaign', $1::jsonb, 'pending', $2)
-     RETURNING *`,
-    [filters, user.id]
-  );
+  const { data: job, error } = await sp
+    .from("data_acquisition_jobs")
+    .insert({
+      job_type: "campaign",
+      filters,
+      status: "pending",
+      created_by: user.id,
+    })
+    .select()
+    .single();
 
-  if (!rows || rows.length === 0) return null;
+  if (error || !job) return null;
 
-  const job = rows[0];
   return {
     id: job.id,
     name: data.name,
@@ -106,6 +117,7 @@ export async function updateCampaignStatus(
   campaignId: string,
   status: "draft" | "active" | "paused" | "completed"
 ): Promise<boolean> {
+  const sp = getSp();
   const dbStatus =
     status === "draft"
       ? "pending"
@@ -113,10 +125,10 @@ export async function updateCampaignStatus(
         ? "running"
         : status;
 
-  await query(
-    `UPDATE data_acquisition_jobs SET status = $1 WHERE id = $2`,
-    [dbStatus, campaignId]
-  );
+  await sp
+    .from("data_acquisition_jobs")
+    .update({ status: dbStatus })
+    .eq("id", campaignId);
 
   return true;
 }
@@ -129,10 +141,11 @@ export async function updateInvestorPipelineStage(
   investorId: string,
   stage: "not_ready" | "needs_verification" | "ready" | "contacted" | "do_not_contact"
 ): Promise<boolean> {
-  await query(
-    `UPDATE investors SET outreach_readiness = $1 WHERE id = $2`,
-    [stage, investorId]
-  );
+  const sp = getSp();
+  await sp
+    .from("investors")
+    .update({ outreach_readiness: stage })
+    .eq("id", investorId);
   return true;
 }
 
@@ -145,17 +158,15 @@ export async function bulkUpdatePipelineStage(
   stage: "not_ready" | "needs_verification" | "ready" | "contacted" | "do_not_contact"
 ): Promise<number> {
   if (investorIds.length === 0) return 0;
+  const sp = getSp();
 
-  // Build parameterized IN clause
-  const placeholders = investorIds.map((_, i) => `$${i + 1}`).join(", ");
-  const result = await query<{ id: string }>(
-    `UPDATE investors SET outreach_readiness = $${investorIds.length + 1}
-     WHERE id IN (${placeholders})
-     RETURNING id`,
-    [...investorIds, stage]
-  );
+  const { data } = await sp
+    .from("investors")
+    .update({ outreach_readiness: stage })
+    .in("id", investorIds)
+    .select("id");
 
-  return result.length;
+  return data?.length || 0;
 }
 
 // =============================================
@@ -163,9 +174,10 @@ export async function bulkUpdatePipelineStage(
 // =============================================
 
 export async function deleteCampaign(campaignId: string): Promise<boolean> {
-  await query(
-    `DELETE FROM data_acquisition_jobs WHERE id = $1`,
-    [campaignId]
-  );
+  const sp = getSp();
+  await sp
+    .from("data_acquisition_jobs")
+    .delete()
+    .eq("id", campaignId);
   return true;
 }

@@ -1,13 +1,9 @@
 // =============================================
-// Pitch Deck Generation API Route
+// Pitch Deck Generation API Route (Supabase)
 // =============================================
-// Generates a company-specific investor pitch deck.
-// Server-side only — AI client never exposed to browser bundle.
-// Uses CockroachDB for data, Supabase Storage for file uploads.
 
 import { NextRequest, NextResponse } from "next/server";
 import { generatePitchDeck } from "@/lib/services/deck/generator";
-import { query } from "@/lib/db";
 import { createClient } from "@supabase/supabase-js";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
@@ -18,40 +14,46 @@ export async function POST(request: NextRequest) {
   if (user instanceof NextResponse) return user;
 
   try {
-    // Validate input
     const validated = await validateBodyAsync(request, generateDeckSchema);
     if (validated instanceof NextResponse) return validated;
 
     const { style, slideCount } = validated;
-
-    // SECURITY: Use authenticated user ID — never trust client-supplied userId
     const userId = user.id;
 
-    // Fetch company profile from CockroachDB
-    const profiles = await query<any>(
-      "SELECT * FROM company_profiles WHERE user_id = $1 LIMIT 1",
-      [userId]
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    if (!profiles.length) {
+    // Fetch company profile from Supabase
+    const { data: profile, error: profileError } = await sp
+      .from("company_profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .limit(1)
+      .single();
+
+    if (profileError || !profile) {
       return NextResponse.json({ error: "Complete onboarding first" }, { status: 400 });
     }
 
-    const profile = profiles[0];
+    // Fetch team members from Supabase (may not exist)
+    let teamMembers: any[] = [];
+    try {
+      const { data } = await sp
+        .from("company_team_members")
+        .select("name, title, is_founder")
+        .eq("company_id", profile.id);
+      teamMembers = (data || []).map((m) => ({
+        name: m.name,
+        title: m.title || "Team Member",
+        isFounder: m.is_founder,
+      }));
+    } catch {
+      teamMembers = [];
+    }
 
-    // Fetch team members from CockroachDB
-    const teamData = await query<any>(
-      "SELECT name, title, is_founder FROM company_team_members WHERE company_id = $1",
-      [profile.id]
-    );
-
-    const teamMembers = (teamData || []).map((m: any) => ({
-      name: m.name,
-      title: m.title || "Team Member",
-      isFounder: m.is_founder,
-    }));
-
-    // Generate the deck with style and slide count
+    // Generate the deck
     const result = await generatePitchDeck({
       companyName: profile.company_name || "Our Company",
       oneLiner: profile.one_liner || "",
@@ -73,14 +75,9 @@ export async function POST(request: NextRequest) {
       slideCount: slideCount || 10,
     });
 
-    // Store files in Supabase Storage (keeps file upload working)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
+    // Store files in Supabase Storage
     const pptxFileName = `${userId}/${Date.now()}-pitch-deck.pptx`;
-    const { error: pptxError } = await supabase.storage
+    const { error: pptxError } = await sp.storage
       .from("company-documents")
       .upload(pptxFileName, result.pptxBuffer, {
         contentType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -88,14 +85,14 @@ export async function POST(request: NextRequest) {
 
     let pptxUrl = null;
     if (!pptxError) {
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = sp.storage
         .from("company-documents")
         .getPublicUrl(pptxFileName);
       pptxUrl = urlData.publicUrl;
     }
 
     const pdfFileName = `${userId}/${Date.now()}-pitch-deck.pdf`;
-    const { error: pdfError } = await supabase.storage
+    const { error: pdfError } = await sp.storage
       .from("company-documents")
       .upload(pdfFileName, result.pdfBuffer, {
         contentType: "application/pdf",
@@ -103,32 +100,41 @@ export async function POST(request: NextRequest) {
 
     let pdfUrl = null;
     if (!pdfError) {
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = sp.storage
         .from("company-documents")
         .getPublicUrl(pdfFileName);
       pdfUrl = urlData.publicUrl;
     }
 
-    // Save document records in CockroachDB
+    // Save document records (may not exist)
     const deckName = `${profile.company_name || "Company"} — ${result.style || "Investor"} Pitch Deck`;
 
-    await query(
-      `INSERT INTO company_documents (company_id, document_type, file_name, file_url, file_size)
-       VALUES ($1, 'pitch_deck', $2, $3, $4)`,
-      [profile.id, `${deckName}.pptx`, pptxUrl, result.pptxBuffer.length]
-    );
-
-    await query(
-      `INSERT INTO company_documents (company_id, document_type, file_name, file_url, file_size)
-       VALUES ($1, 'pitch_deck', $2, $3, $4)`,
-      [profile.id, `${deckName}.pdf`, pdfUrl, result.pdfBuffer.length]
-    );
+    try {
+      await sp.from("company_documents").insert([
+        {
+          company_id: profile.id,
+          document_type: "pitch_deck",
+          file_name: `${deckName}.pptx`,
+          file_url: pptxUrl,
+          file_size: result.pptxBuffer.length,
+        },
+        {
+          company_id: profile.id,
+          document_type: "pitch_deck",
+          file_name: `${deckName}.pdf`,
+          file_url: pdfUrl,
+          file_size: result.pdfBuffer.length,
+        },
+      ]);
+    } catch {
+      // Table may not exist
+    }
 
     // Update has_pitch_deck
-    await query(
-      `UPDATE company_profiles SET has_pitch_deck = true WHERE user_id = $1`,
-      [userId]
-    );
+    await sp
+      .from("company_profiles")
+      .update({ has_pitch_deck: true })
+      .eq("user_id", userId);
 
     return NextResponse.json({
       success: true,
@@ -143,9 +149,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("Deck generation error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

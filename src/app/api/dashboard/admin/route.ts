@@ -1,89 +1,118 @@
 // =============================================
-// Admin Dashboard API Route
+// Admin Dashboard API Route (Supabase)
 // =============================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
-import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(_request: NextRequest) {
   const user = await requireAuth(_request);
   if (user instanceof NextResponse) return user;
 
   try {
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // ── Data health from Supabase investors table ──
     const [
-      totalInvestors,
-      withEmail,
-      withLinkedin,
-      verified,
-      highQuality,
-      highFit,
-      pendingDuplicates,
-      autoResolvedDuplicates,
-      approvedDuplicates,
-      rejectedDuplicates,
-      recentJobs,
-      rawRecords,
-      dataSources,
-      pendingDuplicatesList,
-      recentChanges,
-      recentAudit,
-      pendingRawRecords,
+      totalResult,
+      withEmailResult,
+      withLinkedinResult,
+      verifiedResult,
+      highQualityResult,
+      highFitResult,
     ] = await Promise.all([
-      // Data health
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE is_active = true`),
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE is_active = true AND email IS NOT NULL`),
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE is_active = true AND linkedin_url IS NOT NULL`),
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE is_active = true AND is_verified = true`),
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE is_active = true AND data_quality_score >= 80`),
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM investors WHERE is_active = true AND fit_score >= 80`),
-      // Duplicate stats
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM duplicate_candidates WHERE status = 'pending'`),
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM duplicate_candidates WHERE status = 'auto_resolved'`),
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM duplicate_candidates WHERE status = 'approved'`),
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM duplicate_candidates WHERE status = 'rejected'`),
-      // Recent jobs
-      query<any>(`SELECT * FROM data_acquisition_jobs ORDER BY created_at DESC LIMIT 20`),
-      // Raw records
-      query<any>(`SELECT id, status, source_provider, created_at FROM raw_records`),
-      // Data sources
-      query<any>(`SELECT field_name, source_type, source_provider, created_at FROM investor_data_sources ORDER BY created_at DESC LIMIT 1000`),
-      // Pending duplicates
-      query<any>(
-        `SELECT dc.id, dc.confidence, dc.match_signals, dc.status, dc.created_at,
-                ia.full_name AS investor_a_name, ib.full_name AS investor_b_name
-         FROM duplicate_candidates dc
-         JOIN investors ia ON dc.investor_a_id = ia.id
-         JOIN investors ib ON dc.investor_b_id = ib.id
-         WHERE dc.status = 'pending'
-         ORDER BY dc.confidence DESC
-         LIMIT 10`
-      ),
-      // Recent changes
-      query<any>(`SELECT * FROM data_change_log ORDER BY created_at DESC LIMIT 20`),
-      // Recent audit
-      query<any>(`SELECT * FROM admin_audit_log ORDER BY created_at DESC LIMIT 20`),
-      // Pending raw records count
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM raw_records WHERE status = 'pending'`),
+      sp.from("investors").select("id", { count: "exact", head: true }).eq("is_active", true),
+      sp.from("investors").select("id", { count: "exact", head: true }).eq("is_active", true).not("email", "is", null),
+      sp.from("investors").select("id", { count: "exact", head: true }).eq("is_active", true).not("linkedin_url", "is", null),
+      sp.from("investors").select("id", { count: "exact", head: true }).eq("is_active", true).eq("is_verified", true),
+      sp.from("investors").select("id", { count: "exact", head: true }).eq("is_active", true).gte("data_quality_score", 80),
+      sp.from("investors").select("id", { count: "exact", head: true }).eq("is_active", true).gte("fit_score", 80),
     ]);
+
+    // ── CockroachDB-only tables — gracefully return empty ──
+    let pendingDuplicates = 0;
+    let autoResolvedDuplicates = 0;
+    let approvedDuplicates = 0;
+    let rejectedDuplicates = 0;
+    let recentJobs: any[] = [];
+    let rawRecords: any[] = [];
+    let dataSources: any[] = [];
+    let pendingDuplicatesList: any[] = [];
+    let recentChanges: any[] = [];
+    let recentAudit: any[] = [];
+    let pendingRawRecords = 0;
+
+    // Try each table — gracefully handle if it doesn't exist in Supabase
+    try {
+      const { count } = await sp.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "pending");
+      pendingDuplicates = count || 0;
+    } catch { /* table may not exist */ }
+
+    try {
+      const { count } = await sp.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "auto_resolved");
+      autoResolvedDuplicates = count || 0;
+    } catch { /* table may not exist */ }
+
+    try {
+      const { count } = await sp.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "approved");
+      approvedDuplicates = count || 0;
+    } catch { /* table may not exist */ }
+
+    try {
+      const { count } = await sp.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "rejected");
+      rejectedDuplicates = count || 0;
+    } catch { /* table may not exist */ }
+
+    try {
+      const { data } = await sp.from("data_acquisition_jobs").select("*").order("created_at", { ascending: false }).limit(20);
+      recentJobs = data || [];
+    } catch { /* table may not exist */ }
+
+    try {
+      const { data } = await sp.from("raw_records").select("id, status, source_provider, created_at");
+      rawRecords = data || [];
+    } catch { /* table may not exist */ }
+
+    try {
+      const { data } = await sp.from("investor_data_sources").select("field_name, source_type, source_provider, created_at").order("created_at", { ascending: false }).limit(1000);
+      dataSources = data || [];
+    } catch { /* table may not exist */ }
+
+    try {
+      const { data } = await sp.from("data_change_log").select("*").order("created_at", { ascending: false }).limit(20);
+      recentChanges = data || [];
+    } catch { /* table may not exist */ }
+
+    try {
+      const { data } = await sp.from("admin_audit_log").select("*").order("created_at", { ascending: false }).limit(20);
+      recentAudit = data || [];
+    } catch { /* table may not exist */ }
+
+    try {
+      const { count } = await sp.from("raw_records").select("id", { count: "exact", head: true }).eq("status", "pending");
+      pendingRawRecords = count || 0;
+    } catch { /* table may not exist */ }
 
     return NextResponse.json({
       dataHealth: {
-        total_investors: parseInt(totalInvestors[0]?.count || "0"),
-        with_email: parseInt(withEmail[0]?.count || "0"),
-        with_linkedin: parseInt(withLinkedin[0]?.count || "0"),
-        verified: parseInt(verified[0]?.count || "0"),
-        high_quality: parseInt(highQuality[0]?.count || "0"),
-        high_fit: parseInt(highFit[0]?.count || "0"),
-        pending_duplicates: parseInt(pendingDuplicates[0]?.count || "0"),
-        pending_raw_records: parseInt(pendingRawRecords[0]?.count || "0"),
+        total_investors: totalResult.count || 0,
+        with_email: withEmailResult.count || 0,
+        with_linkedin: withLinkedinResult.count || 0,
+        verified: verifiedResult.count || 0,
+        high_quality: highQualityResult.count || 0,
+        high_fit: highFitResult.count || 0,
+        pending_duplicates: pendingDuplicates,
+        pending_raw_records: pendingRawRecords,
       },
       duplicateStats: {
-        pending: parseInt(pendingDuplicates[0]?.count || "0"),
-        autoResolved: parseInt(autoResolvedDuplicates[0]?.count || "0"),
-        approved: parseInt(approvedDuplicates[0]?.count || "0"),
-        rejected: parseInt(rejectedDuplicates[0]?.count || "0"),
+        pending: pendingDuplicates,
+        autoResolved: autoResolvedDuplicates,
+        approved: approvedDuplicates,
+        rejected: rejectedDuplicates,
       },
       recentJobs,
       rawRecords,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { queryAs, query } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,47 +15,62 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch credit history
-    const ledgerData = await queryAs<any>(
-      user.id,
-      `SELECT * FROM credit_ledger
-       WHERE user_id = $1
-       ORDER BY created_at DESC
-       LIMIT 50`,
-      [user.id]
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Fetch billing info (join subscription + plan)
-    const billingData = await query<any>(
-      `SELECT
-         bp.name AS plan_name,
-         us.credits_remaining,
-         us.credits_used_this_period,
-         bp.included_credits
-       FROM user_subscriptions us
-       JOIN billing_plans bp ON us.plan_id = bp.id
-       WHERE us.user_id = $1
-       LIMIT 1`,
-      [user.id]
-    );
+    // Credit history (may not exist in Supabase)
+    let entries: any[] = [];
+    try {
+      const { data, error } = await sp
+        .from("credit_ledger")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      entries = (data || []).map((r) => ({
+        id: r.id,
+        amount: r.amount,
+        balanceAfter: r.balance_after,
+        operation: r.operation,
+        operationDetail: r.operation_detail || {},
+        modelUsed: r.model_used,
+        tokensUsed: r.tokens_used,
+        createdAt: r.created_at,
+      }));
+    } catch {
+      entries = [];
+    }
 
-    const entries = ledgerData.map((r: any) => ({
-      id: r.id,
-      amount: r.amount,
-      balanceAfter: r.balance_after,
-      operation: r.operation,
-      operationDetail: r.operation_detail || {},
-      modelUsed: r.model_used,
-      tokensUsed: r.tokens_used,
-      createdAt: r.created_at,
-    }));
-
-    const billing = billingData.length > 0 ? {
-      planName: billingData[0].plan_name,
-      creditsRemaining: billingData[0].credits_remaining,
-      creditsUsedThisPeriod: billingData[0].credits_used_this_period,
-      includedCredits: billingData[0].included_credits,
-    } : null;
+    // Billing info (may not exist in Supabase)
+    let billing = null;
+    try {
+      const { data: sub } = await sp
+        .from("user_subscriptions")
+        .select("credits_remaining, credits_used_this_period, plan_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
+      if (sub?.plan_id) {
+        const { data: plan } = await sp
+          .from("billing_plans")
+          .select("name, included_credits")
+          .eq("id", sub.plan_id)
+          .single();
+        if (plan) {
+          billing = {
+            planName: plan.name,
+            creditsRemaining: sub.credits_remaining,
+            creditsUsedThisPeriod: sub.credits_used_this_period,
+            includedCredits: plan.included_credits,
+          };
+        }
+      }
+    } catch {
+      billing = null;
+    }
 
     return NextResponse.json({ entries, billing });
   } catch (err) {

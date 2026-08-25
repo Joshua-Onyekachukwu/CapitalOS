@@ -1,19 +1,26 @@
 // =============================================
-// Email Account — Disconnect Action
+// Email Account — Disconnect Action (Supabase)
 // =============================================
-// Disconnects a user's email account (Google or Microsoft).
-// Uses CockroachDB for data.
 
 "use server";
 
-import { query } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
+
+function getSp() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function disconnectEmail(userId: string, provider: string) {
   try {
-    await query(
-      `UPDATE email_accounts SET is_active = false WHERE user_id = $1 AND provider = $2`,
-      [userId, provider]
-    );
+    const sp = getSp();
+    await sp
+      .from("email_accounts")
+      .update({ is_active: false })
+      .eq("user_id", userId)
+      .eq("provider", provider);
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -22,12 +29,13 @@ export async function disconnectEmail(userId: string, provider: string) {
 
 export async function getConnectedEmails(userId: string) {
   try {
-    const data = await query<any>(
-      `SELECT id, provider, email_address, display_name, is_active, created_at
-       FROM email_accounts WHERE user_id = $1 ORDER BY created_at DESC`,
-      [userId]
-    );
-    return { success: true, data };
+    const sp = getSp();
+    const { data } = await sp
+      .from("email_accounts")
+      .select("id, provider, email_address, display_name, is_active, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    return { success: true, data: data || [] };
   } catch (error: any) {
     return { success: false, error: error.message, data: [] };
   }

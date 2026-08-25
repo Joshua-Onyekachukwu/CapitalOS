@@ -1,11 +1,11 @@
 // =============================================
-// Saved Investors API Route
+// Saved Investors API Route (Supabase)
 // =============================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: NextRequest) {
   const user = await requireAuth(request);
@@ -16,31 +16,34 @@ export async function GET(request: NextRequest) {
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
-    // Get saved investor records
-    const saved = await query<any>(
-      `SELECT id, investor_id, created_at
-       FROM saved_investors WHERE user_id = $1
-       ORDER BY created_at DESC`,
-      [user.id]
+
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    if (!saved.length) {
+    // Get saved investor records
+    const { data: saved, error: savedError } = await sp
+      .from("saved_investors")
+      .select("id, investor_id, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (savedError || !saved?.length) {
       return NextResponse.json({ investors: [] });
     }
 
     // Get investor details
     const investorIds = saved.map((s) => s.investor_id);
-    const placeholders = investorIds.map((_, i) => `$${i + 1}`).join(", ");
-    const investorData = await query<any>(
-      `SELECT id, full_name, email, job_title, investor_type, fit_score, country, city, investment_stages
-       FROM investors WHERE id IN (${placeholders})`,
-      investorIds
-    );
+    const { data: investorData } = await sp
+      .from("investors")
+      .select("id, full_name, email, job_title, investor_type, fit_score, country, city, investment_stages")
+      .in("id", investorIds);
 
-    // Merge saved data with investor data
+    const invMap = new Map((investorData || []).map((i) => [i.id, i]));
     const merged = saved
       .map((s) => {
-        const inv = investorData.find((i) => i.id === s.investor_id);
+        const inv = invMap.get(s.investor_id);
         if (!inv) return null;
         return {
           id: s.id,
@@ -79,17 +82,27 @@ export async function POST(request: NextRequest) {
     }
 
     const { investorId, notes } = await request.json();
-
     if (!investorId) {
       return NextResponse.json({ error: "investorId required" }, { status: 400 });
     }
 
-    await query(
-      `INSERT INTO saved_investors (user_id, investor_id, notes)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id, investor_id) DO NOTHING`,
-      [user.id, investorId, notes || null]
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    const { error } = await sp
+      .from("saved_investors")
+      .upsert(
+        {
+          user_id: user.id,
+          investor_id: investorId,
+          notes: notes || null,
+        },
+        { onConflict: "user_id,investor_id", ignoreDuplicates: true }
+      );
+
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -112,15 +125,22 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { savedId } = await request.json();
-
     if (!savedId) {
       return NextResponse.json({ error: "savedId required" }, { status: 400 });
     }
 
-    await query(
-      `DELETE FROM saved_investors WHERE id = $1 AND user_id = $2`,
-      [savedId, user.id]
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    const { error } = await sp
+      .from("saved_investors")
+      .delete()
+      .eq("id", savedId)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (err) {

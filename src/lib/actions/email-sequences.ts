@@ -1,13 +1,19 @@
 // =============================================
 // Campaign Email Sequence — AI Drafting
 // =============================================
-// Generates personalized email sequences for campaigns.
-// Uses CockroachDB for data.
+// Uses Supabase for data.
 
 "use server";
 
-import { query } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
 import { chatCompletion } from "@/lib/ai";
+
+function getSp() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 interface EmailSequenceStep {
   stepNumber: number;
@@ -34,27 +40,38 @@ export async function generateEmailSequence(params: {
   startupStage: string;
   founderName: string;
 }): Promise<CampaignSequence | null> {
-  // Fetch investor data from CockroachDB
-  const investors = await query<any>(
-    `SELECT * FROM investors WHERE id = $1`,
-    [params.investorId]
-  );
+  const sp = getSp();
 
-  if (!investors.length) return null;
-  const investor = investors[0];
+  // Fetch investor data from Supabase
+  const { data: investor } = await sp
+    .from("investors")
+    .select("*")
+    .eq("id", params.investorId)
+    .single();
+
+  if (!investor) return null;
 
   // Fetch firm data
-  const firms = investor.current_firm_id
-    ? await query<any>(`SELECT * FROM investor_firms WHERE id = $1`, [investor.current_firm_id])
-    : [];
-  const firm = firms[0] || null;
+  let firm: any = null;
+  if (investor.current_firm_id) {
+    const { data } = await sp
+      .from("investor_firms")
+      .select("*")
+      .eq("id", investor.current_firm_id)
+      .single();
+    firm = data;
+  }
 
   // Fetch existing profile
-  const profiles = await query<any>(
-    `SELECT * FROM investor_profiles WHERE investor_id = $1`,
-    [params.investorId]
-  );
-  const profile = profiles[0] || null;
+  let profile: any = null;
+  try {
+    const { data } = await sp
+      .from("investor_profiles")
+      .select("*")
+      .eq("investor_id", params.investorId)
+      .single();
+    profile = data;
+  } catch { /* table may not exist */ }
 
   const prompt = `You are an expert fundraising strategist for startup founders. Generate a 3-step email outreach sequence for the following investor.
 
@@ -146,34 +163,36 @@ export async function generateCampaignSequences(params: {
   founderName: string;
   limit?: number;
 }): Promise<{ generated: number; total: number }> {
-  // Get campaign data from CockroachDB
-  const campaigns = await query<any>(
-    `SELECT * FROM data_acquisition_jobs WHERE id = $1`,
-    [params.campaignId]
-  );
+  const sp = getSp();
 
-  if (!campaigns.length) return { generated: 0, total: 0 };
-  const campaign = campaigns[0];
+  // Get campaign data
+  const { data: campaign } = await sp
+    .from("data_acquisition_jobs")
+    .select("*")
+    .eq("id", params.campaignId)
+    .single();
 
-  // Find investors that match the campaign's filter criteria
-  let sql = `SELECT id FROM investors WHERE email IS NOT NULL AND outreach_readiness = 'ready'`;
-  const params_arr: any[] = [];
+  if (!campaign) return { generated: 0, total: 0 };
+
+  // Find matching investors
+  let query = sp
+    .from("investors")
+    .select("id")
+    .not("email", "is", null)
+    .eq("outreach_readiness", "ready");
 
   if (campaign.filters?.sector) {
-    params_arr.push(campaign.filters.sector);
-    sql += ` AND $${params_arr.length} = ANY(investment_sectors)`;
+    query = query.contains("investment_sectors", [campaign.filters.sector]);
   }
   if (campaign.filters?.stage) {
-    params_arr.push(campaign.filters.stage);
-    sql += ` AND $${params_arr.length} = ANY(investment_stages)`;
+    query = query.contains("investment_stages", [campaign.filters.stage]);
   }
 
-  sql += ` ORDER BY fit_score DESC LIMIT $${params_arr.length + 1}`;
-  params_arr.push(params.limit || 20);
+  const { data: investors } = await query
+    .order("fit_score", { ascending: false })
+    .limit(params.limit || 20);
 
-  const investors = await query<{ id: string }>(sql, params_arr);
-
-  if (!investors.length) return { generated: 0, total: 0 };
+  if (!investors?.length) return { generated: 0, total: 0 };
 
   let generated = 0;
 

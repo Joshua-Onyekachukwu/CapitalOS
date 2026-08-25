@@ -1,16 +1,17 @@
 // =============================================
-// Email Sender Service
+// Email Sender Service (Supabase)
 // =============================================
-// Sends emails via Google Gmail API or Microsoft Graph API.
-// Uses OAuth tokens stored in email_accounts table (CockroachDB).
 
-import { query } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
 import { encryptToken, decryptToken } from "./crypto";
 import { generateTrackingId, injectTracking } from "./tracking";
 
-// =============================================
-// Types
-// =============================================
+function getSp() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 interface SendEmailParams {
   userId: string;
@@ -20,7 +21,7 @@ interface SendEmailParams {
   bodyText?: string;
   cc?: string[];
   attachments?: Array<{ name: string; content: string; mimeType: string }>;
-  enableTracking?: boolean; // default: true
+  enableTracking?: boolean;
 }
 
 interface SendResult {
@@ -28,10 +29,6 @@ interface SendResult {
   messageId?: string;
   error?: string;
 }
-
-// =============================================
-// Google Gmail API
-// =============================================
 
 async function sendViaGmail(
   accessToken: string,
@@ -89,10 +86,6 @@ async function sendViaGmail(
   }
 }
 
-// =============================================
-// Microsoft Graph API
-// =============================================
-
 async function sendViaMicrosoft(
   accessToken: string,
   params: SendEmailParams
@@ -135,10 +128,6 @@ async function sendViaMicrosoft(
   }
 }
 
-// =============================================
-// Token Refresh
-// =============================================
-
 async function refreshGoogleToken(
   refreshToken: string
 ): Promise<{ accessToken: string; expiresIn: number } | null> {
@@ -153,17 +142,10 @@ async function refreshGoogleToken(
         grant_type: "refresh_token",
       }),
     });
-
     if (!response.ok) return null;
-
     const data = await response.json();
-    return {
-      accessToken: data.access_token,
-      expiresIn: data.expires_in,
-    };
-  } catch {
-    return null;
-  }
+    return { accessToken: data.access_token, expiresIn: data.expires_in };
+  } catch { return null; }
 }
 
 async function refreshMicrosoftToken(
@@ -181,37 +163,28 @@ async function refreshMicrosoftToken(
         scope: "Mail.Send Mail.Read offline_access",
       }),
     });
-
     if (!response.ok) return null;
-
     const data = await response.json();
-    return {
-      accessToken: data.access_token,
-      expiresIn: data.expires_in,
-    };
-  } catch {
-    return null;
-  }
+    return { accessToken: data.access_token, expiresIn: data.expires_in };
+  } catch { return null; }
 }
 
-// =============================================
-// Main Send Function
-// =============================================
-
 export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
-  // Get user's email account from CockroachDB
-  const accounts = await query<any>(
-    `SELECT * FROM email_accounts WHERE user_id = $1 AND is_active = true LIMIT 1`,
-    [params.userId]
-  );
+  const sp = getSp();
 
-  if (!accounts.length) {
+  const { data: accounts } = await sp
+    .from("email_accounts")
+    .select("*")
+    .eq("user_id", params.userId)
+    .eq("is_active", true)
+    .limit(1);
+
+  if (!accounts?.length) {
     return { success: false, error: "No email account connected. Please connect one in Settings." };
   }
 
   const account = accounts[0];
 
-  // Check if token needs refresh
   let accessToken = decryptToken(account.access_token);
   const expiresAt = new Date(account.token_expires_at).getTime();
 
@@ -220,26 +193,29 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
 
     if (account.provider === "google") {
       const refreshed = await refreshGoogleToken(refreshToken);
-      if (!refreshed) return { success: false, error: "Failed to refresh Google token. Please reconnect." };
+      if (!refreshed) return { success: false, error: "Failed to refresh Google token." };
       accessToken = refreshed.accessToken;
-
-      await query(
-        `UPDATE email_accounts SET access_token = $1, token_expires_at = $2 WHERE id = $3`,
-        [encryptToken(refreshed.accessToken), new Date(Date.now() + refreshed.expiresIn * 1000).toISOString(), account.id]
-      );
+      await sp
+        .from("email_accounts")
+        .update({
+          access_token: encryptToken(refreshed.accessToken),
+          token_expires_at: new Date(Date.now() + refreshed.expiresIn * 1000).toISOString(),
+        })
+        .eq("id", account.id);
     } else if (account.provider === "microsoft") {
       const refreshed = await refreshMicrosoftToken(refreshToken);
-      if (!refreshed) return { success: false, error: "Failed to refresh Microsoft token. Please reconnect." };
+      if (!refreshed) return { success: false, error: "Failed to refresh Microsoft token." };
       accessToken = refreshed.accessToken;
-
-      await query(
-        `UPDATE email_accounts SET access_token = $1, token_expires_at = $2 WHERE id = $3`,
-        [encryptToken(refreshed.accessToken), new Date(Date.now() + refreshed.expiresIn * 1000).toISOString(), account.id]
-      );
+      await sp
+        .from("email_accounts")
+        .update({
+          access_token: encryptToken(refreshed.accessToken),
+          token_expires_at: new Date(Date.now() + refreshed.expiresIn * 1000).toISOString(),
+        })
+        .eq("id", account.id);
     }
   }
 
-  // Generate tracking ID and inject pixel/rewrite links
   const trackingEnabled = params.enableTracking !== false;
   const trackingId = trackingEnabled ? generateTrackingId() : null;
   let trackedHtml = params.bodyHtml;
@@ -248,7 +224,6 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
     trackedHtml = injectTracking(params.bodyHtml, trackingId, true);
   }
 
-  // Send via provider (use tracked HTML)
   const sendParams = { ...params, bodyHtml: trackedHtml };
   let result: SendResult;
 
@@ -260,24 +235,28 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
     return { success: false, error: `Unsupported provider: ${account.provider}` };
   }
 
-  // Log the email with tracking ID in CockroachDB
   if (result.success) {
-    await query(
-      `INSERT INTO email_messages (user_id, investor_id, direction, subject, body_html, body_text, from_address, to_address, cc_addresses, status, sent_at, message_id, tracking_id, tracking_enabled, open_count, click_count)
-       VALUES ($1, NULL, 'outbound', $2, $3, $4, $5, $6, $7, 'sent', NOW(), $8, $9, $10, 0, 0)`,
-      [
-        params.userId,
-        params.subject,
-        trackedHtml,
-        params.bodyText,
-        account.email_address,
-        params.to,
-        params.cc || [],
-        result.messageId,
-        trackingId,
-        trackingEnabled,
-      ]
-    );
+    try {
+      await sp.from("email_messages").insert({
+        user_id: params.userId,
+        direction: "outbound",
+        subject: params.subject,
+        body_html: trackedHtml,
+        body_text: params.bodyText,
+        from_address: account.email_address,
+        to_address: params.to,
+        cc_addresses: params.cc || [],
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        message_id: result.messageId,
+        tracking_id: trackingId,
+        tracking_enabled: trackingEnabled,
+        open_count: 0,
+        click_count: 0,
+      });
+    } catch {
+      // Non-critical
+    }
   }
 
   return result;

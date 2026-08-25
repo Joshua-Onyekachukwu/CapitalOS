@@ -1,18 +1,16 @@
 // =============================================
-// API: Investor Fit Analysis
+// API: Investor Fit Analysis (Supabase)
 // =============================================
-// POST /api/investors/fit-analysis
-// Actions: batch_score, individual_score, ai_analysis
 
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { chatCompletion } from "@/lib/ai";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { cache, cacheKey, userCacheKey } from "@/lib/cache";
+import { createClient } from "@supabase/supabase-js";
 
 // =============================================
-// Deterministic Scoring (same as qualification.ts but inline for API use)
+// Deterministic Scoring
 // =============================================
 
 function scoreSectorMatch(investorSectors: string[], startupSector: string): { score: number; explanation: string } {
@@ -100,7 +98,6 @@ function computeFitScore(investor: Record<string, unknown>, startup: { sector: s
   const geo = scoreGeographyMatch((investor.investment_geographies as string[]) || [], (investor.country as string) || null, startup.geography);
   factors.push({ factor: "Geography Match", score: geo.score, weight: 0.15, explanation: geo.explanation });
 
-  // Data completeness
   const fields = ["email", "linkedin_url", "job_title", "investment_stages", "investment_sectors"];
   let filled = 0;
   const missing: string[] = [];
@@ -117,7 +114,6 @@ function computeFitScore(investor: Record<string, unknown>, startup: { sector: s
     explanation: missing.length > 0 ? `${filled}/${fields.length} fields. Missing: ${missing.slice(0, 3).join(", ")}` : "All key fields populated",
   });
 
-  // Outreach readiness
   let outreachScore = 0;
   if (investor.email) outreachScore += 30;
   if (investor.linkedin_url) outreachScore += 20;
@@ -129,7 +125,6 @@ function computeFitScore(investor: Record<string, unknown>, startup: { sector: s
     explanation: outreachScore > 0 ? "Has contact information" : "No contact data",
   });
 
-  // Check size
   const hasCheckSize = investor.min_check_size || investor.max_check_size;
   factors.push({
     factor: "Check Size Fit",
@@ -138,7 +133,6 @@ function computeFitScore(investor: Record<string, unknown>, startup: { sector: s
     explanation: hasCheckSize ? "Check size data available" : "Check size not specified",
   });
 
-  // Activity recency
   const lastInvestment = investor.last_investment_date as string | null;
   let activityScore = 50;
   let activityExplanation = "No investment date data";
@@ -150,7 +144,6 @@ function computeFitScore(investor: Record<string, unknown>, startup: { sector: s
   }
   factors.push({ factor: "Recent Activity", score: activityScore, weight: 0.10, explanation: activityExplanation });
 
-  // Bio / description quality
   const hasBio = investor.bio && (investor.bio as string).length > 50;
   factors.push({
     factor: "Profile Depth",
@@ -184,7 +177,7 @@ Analyze this investor-startup fit:
 
 INVESTOR:
 - Name: ${investor.full_name}
-- Firm: ${investor.firm_name || "Unknown"}
+- Firm: ${investor.firm_name || investor.company_name || "Unknown"}
 - Type: ${investor.investor_type}
 - Stages: ${(investor.investment_stages as string[])?.join(", ") || "Unknown"}
 - Sectors: ${(investor.investment_sectors as string[])?.join(", ") || "Unknown"}
@@ -231,13 +224,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, investorId } = body;
 
-    if (action === "batch_score") {
-      // Get startup profile from CockroachDB
-      const profiles = await query<any>(
-        "SELECT * FROM company_profiles ORDER BY created_at DESC LIMIT 1"
-      );
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-      if (!profiles.length) {
+    if (action === "batch_score") {
+      // Get startup profile from Supabase
+      const { data: profiles } = await sp
+        .from("company_profiles")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (!profiles?.length) {
         return NextResponse.json({ error: "No company profile found. Complete onboarding first." }, { status: 400 });
       }
 
@@ -248,40 +248,36 @@ export async function POST(request: NextRequest) {
         geography: profile.location || "",
       };
 
-      // Get all active investors from CockroachDB
-      const investors = await query<any>(
-        "SELECT * FROM investors WHERE is_active = true ORDER BY created_at LIMIT 5000"
-      );
+      // Get active investors from Supabase (paginated)
+      const { data: investors } = await sp
+        .from("investors")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at")
+        .limit(5000);
 
-      if (!investors.length) return NextResponse.json({ error: "No investors found" }, { status: 404 });
+      if (!investors?.length) return NextResponse.json({ error: "No investors found" }, { status: 404 });
 
       let scored = 0;
       let ready = 0;
 
       for (const investor of investors) {
-        const result = computeFitScore(investor, startup);
+        const result = computeFitScore(investor as any, startup);
 
-        await query(
-          `UPDATE investors SET
-            fit_score = $1,
-            fit_score_breakdown = $2::jsonb,
-            data_quality_score = $3,
-            outreach_readiness = $4
-           WHERE id = $5`,
-          [
-            result.overallScore,
-            JSON.stringify({ factors: result.factors, confidence: result.confidence, dataQuality: result.dataQuality }),
-            result.dataQuality,
-            result.outreachReadiness,
-            investor.id,
-          ]
-        );
+        await sp
+          .from("investors")
+          .update({
+            fit_score: result.overallScore,
+            fit_score_breakdown: { factors: result.factors, confidence: result.confidence, dataQuality: result.dataQuality },
+            data_quality_score: result.dataQuality,
+            outreach_readiness: result.outreachReadiness,
+          })
+          .eq("id", investor.id);
 
         scored++;
         if (result.outreachReadiness === "ready") ready++;
       }
 
-      // Invalidate facets + cockpit caches (investor scores changed)
       cache.invalidatePrefix("facets:");
       cache.invalidate(userCacheKey(user.id, "cockpit"));
 
@@ -291,21 +287,23 @@ export async function POST(request: NextRequest) {
     if (action === "individual_score" || action === "ai_analysis") {
       if (!investorId) return NextResponse.json({ error: "investorId required" }, { status: 400 });
 
-      // Get investor from CockroachDB
-      const investors = await query<any>(
-        "SELECT * FROM investors WHERE id = $1",
-        [investorId]
-      );
+      // Get investor from Supabase
+      const { data: investor, error: invError } = await sp
+        .from("investors")
+        .select("*")
+        .eq("id", investorId)
+        .single();
 
-      if (!investors.length) return NextResponse.json({ error: "Investor not found" }, { status: 404 });
-      const investor = investors[0];
+      if (invError || !investor) return NextResponse.json({ error: "Investor not found" }, { status: 404 });
 
-      // Get startup profile from CockroachDB
-      const profiles = await query<any>(
-        "SELECT * FROM company_profiles ORDER BY created_at DESC LIMIT 1"
-      );
+      // Get startup profile from Supabase
+      const { data: profiles } = await sp
+        .from("company_profiles")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1);
 
-      if (!profiles.length) {
+      if (!profiles?.length) {
         return NextResponse.json({ error: "No company profile found" }, { status: 400 });
       }
 
@@ -316,36 +314,29 @@ export async function POST(request: NextRequest) {
         geography: profile.location || "",
       };
 
-      const fitResult = computeFitScore(investor, startup);
+      const fitResult = computeFitScore(investor as any, startup);
 
-      // Update investor record in CockroachDB
-      await query(
-        `UPDATE investors SET
-          fit_score = $1,
-          fit_score_breakdown = $2::jsonb,
-          data_quality_score = $3,
-          outreach_readiness = $4
-         WHERE id = $5`,
-        [
-          fitResult.overallScore,
-          JSON.stringify({ factors: fitResult.factors, confidence: fitResult.confidence, dataQuality: fitResult.dataQuality }),
-          fitResult.dataQuality,
-          fitResult.outreachReadiness,
-          investorId,
-        ]
-      );
+      // Update investor record
+      await sp
+        .from("investors")
+        .update({
+          fit_score: fitResult.overallScore,
+          fit_score_breakdown: { factors: fitResult.factors, confidence: fitResult.confidence, dataQuality: fitResult.dataQuality },
+          data_quality_score: fitResult.dataQuality,
+          outreach_readiness: fitResult.outreachReadiness,
+        })
+        .eq("id", investorId);
 
       let aiAnalysis = "";
       if (action === "ai_analysis") {
         try {
-          aiAnalysis = await generateAIAnalysis(investor, profile);
+          aiAnalysis = await generateAIAnalysis(investor as any, profile as any);
         } catch (err) {
           aiAnalysis = "AI analysis unavailable. Using deterministic scoring.";
           console.error("AI analysis error:", err);
         }
       }
 
-      // Invalidate facets + cockpit caches (investor score changed)
       cache.invalidatePrefix("facets:");
       cache.invalidate(userCacheKey(user.id, "cockpit"));
 

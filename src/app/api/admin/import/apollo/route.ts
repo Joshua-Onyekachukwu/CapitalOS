@@ -1,14 +1,13 @@
 // =============================================
-// Apollo Bulk Import API Route
+// Apollo Bulk Import API Route (Supabase)
 // =============================================
-// Uses CockroachDB for data.
 
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { normalizeInvestor, generateDeduplicationKeys } from "@/lib/services/investor/normalization";
 import { requireAdmin } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { cache } from "@/lib/cache";
+import { createClient } from "@supabase/supabase-js";
 
 const APOLLO_BASE_URL = process.env.APOLLO_BASE_URL || "https://api.apollo.io/v1";
 const APOLLO_API_KEY = process.env.APOLLO_API_KEY;
@@ -97,14 +96,21 @@ export async function POST(request: NextRequest) {
       errorMessages: [],
     };
 
-    // Fetch existing dedup keys from CockroachDB
-    const existingInvestors = await query<{ email: string | null; linkedin_url: string | null }>(
-      `SELECT email, linkedin_url FROM investors WHERE email IS NOT NULL LIMIT 100000`
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    // Fetch existing dedup keys from Supabase
+    const { data: existingInvestors } = await sp
+      .from("investors")
+      .select("email, linkedin_url")
+      .not("email", "is", null)
+      .limit(100000);
 
     const existingEmails = new Set<string>();
     const existingLinkedins = new Set<string>();
-    existingInvestors.forEach((inv) => {
+    (existingInvestors || []).forEach((inv) => {
       if (inv.email) existingEmails.add(inv.email.toLowerCase());
       if (inv.linkedin_url) existingLinkedins.add(inv.linkedin_url.toLowerCase().replace(/\/+$/, ""));
     });
@@ -162,37 +168,46 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Batch insert into CockroachDB (500 at a time)
+    // Batch insert into Supabase (500 at a time)
     progress.phase = "inserting";
     const BATCH_SIZE = 500;
 
     for (let i = 0; i < allNormalized.length; i += BATCH_SIZE) {
       const batch = allNormalized.slice(i, i + BATCH_SIZE);
-      const valuePlaceholders: string[] = [];
-      const params: any[] = [];
-      let paramIdx = 1;
 
-      for (const inv of batch) {
-        valuePlaceholders.push(
-          `($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}::text[], $${paramIdx++}::text[], $${paramIdx++}::text[], $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++})`
-        );
-        params.push(
-          inv.fullName, inv.firstName, inv.lastName, inv.email, inv.phone,
-          inv.linkedinUrl, inv.jobTitle, inv.bio, inv.location, inv.country,
-          inv.city, inv.investorType || "unknown", inv.investmentStages,
-          inv.investmentSectors, inv.investmentGeographies, inv.minCheckSize,
-          inv.maxCheckSize, inv.currency, inv.portfolioCount, inv.websiteUrl,
-          inv.avatarUrl, "apollo", inv.sourceId, "apollo",
-          inv.email ? 50 : 20, "not_ready", true
-        );
-      }
+      const rows = batch.map((inv) => ({
+        full_name: inv.fullName,
+        first_name: inv.firstName,
+        last_name: inv.lastName,
+        email: inv.email,
+        phone: inv.phone,
+        linkedin_url: inv.linkedinUrl,
+        job_title: inv.jobTitle,
+        bio: inv.bio,
+        location: inv.location,
+        country: inv.country,
+        city: inv.city,
+        investor_type: inv.investorType || "unknown",
+        investment_stages: inv.investmentStages,
+        investment_sectors: inv.investmentSectors,
+        investment_geographies: inv.investmentGeographies,
+        min_check_size: inv.minCheckSize,
+        max_check_size: inv.maxCheckSize,
+        currency: inv.currency,
+        portfolio_count: inv.portfolioCount,
+        website_url: inv.websiteUrl,
+        avatar_url: inv.avatarUrl,
+        source: "apollo",
+        source_id: inv.sourceId,
+        source_provider: "apollo",
+        data_quality_score: inv.email ? 50 : 20,
+        outreach_readiness: "not_ready",
+        is_active: true,
+      }));
 
       try {
-        await query(
-          `INSERT INTO investors (full_name, first_name, last_name, email, phone, linkedin_url, job_title, bio, location, country, city, investor_type, investment_stages, investment_sectors, investment_geographies, min_check_size, max_check_size, currency, portfolio_count, website_url, avatar_url, source, source_id, source_provider, data_quality_score, outreach_readiness, is_active)
-           VALUES ${valuePlaceholders.join(", ")}`,
-          params
-        );
+        const { error } = await sp.from("investors").insert(rows);
+        if (error) throw error;
         progress.inserted += batch.length;
       } catch (err: any) {
         progress.errors++;
@@ -202,7 +217,6 @@ export async function POST(request: NextRequest) {
 
     progress.phase = "complete";
 
-    // Invalidate facets + cockpit caches (new investors added)
     if (progress.inserted > 0) {
       cache.invalidatePrefix("facets:");
       cache.invalidatePrefix("cockpit:");

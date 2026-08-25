@@ -1,11 +1,11 @@
 // =============================================
-// Settings Profile API Route
+// Settings Profile API Route (Supabase)
 // =============================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: NextRequest) {
   const user = await requireAuth(request);
@@ -16,14 +16,21 @@ export async function GET(request: NextRequest) {
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
-    // Get profile from CockroachDB
-    const profiles = await query<any>(
-      `SELECT full_name FROM profiles WHERE id = $1`,
-      [user.id]
+
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // Get profile from Supabase (use company_profiles as profile source)
+    const { data: profile } = await sp
+      .from("company_profiles")
+      .select("company_name, user_id")
+      .eq("user_id", user.id)
+      .single();
+
     return NextResponse.json({
-      full_name: profiles[0]?.full_name ?? "",
+      full_name: profile?.company_name ?? user.email?.split("@")[0] ?? "",
       email: user.email ?? "",
     });
   } catch (err) {
@@ -45,17 +52,26 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
 
-    const user = await requireAuth(request);
-    if (user instanceof NextResponse) return user;
     const { full_name } = await request.json();
 
-    // Upsert profile in CockroachDB
-    await query(
-      `INSERT INTO profiles (id, full_name, created_at, updated_at)
-       VALUES ($1, $2, NOW(), NOW())
-       ON CONFLICT (id) DO UPDATE SET full_name = $2, updated_at = NOW()`,
-      [user.id, full_name]
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    // Upsert profile in Supabase
+    const { error } = await sp
+      .from("company_profiles")
+      .upsert(
+        {
+          user_id: user.id,
+          company_name: full_name,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (err) {

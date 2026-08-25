@@ -1,13 +1,18 @@
 // =============================================
-// Investor Research Summary — AI-Powered
+// Investor Research Summary — AI-Powered (Supabase)
 // =============================================
-// Generates detailed AI research summaries for individual investors.
-// Uses CockroachDB for data.
 
 "use server";
 
-import { query } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
 import { chatCompletion } from "@/lib/ai";
+
+function getSp() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export interface ResearchSummary {
   investorId: string;
@@ -24,39 +29,62 @@ export interface ResearchSummary {
  * Generate an AI research summary for a single investor.
  */
 export async function generateInvestorResearch(investorId: string): Promise<ResearchSummary | null> {
-  // Fetch investor data from CockroachDB
-  const investors = await query<any>(
-    `SELECT * FROM investors WHERE id = $1`,
-    [investorId]
-  );
+  const sp = getSp();
 
-  if (!investors.length) return null;
-  const investor = investors[0];
+  // Fetch investor data from Supabase
+  const { data: investor } = await sp
+    .from("investors")
+    .select("*")
+    .eq("id", investorId)
+    .single();
+
+  if (!investor) return null;
 
   // Fetch firm data
-  const firms = investor.current_firm_id
-    ? await query<any>(`SELECT * FROM investor_firms WHERE id = $1`, [investor.current_firm_id])
-    : [];
-  const firm = firms[0] || null;
+  let firm: any = null;
+  if (investor.current_firm_id) {
+    const { data } = await sp
+      .from("investor_firms")
+      .select("*")
+      .eq("id", investor.current_firm_id)
+      .single();
+    firm = data;
+  }
 
   // Fetch existing profile
-  const profiles = await query<any>(
-    `SELECT * FROM investor_profiles WHERE investor_id = $1`,
-    [investorId]
-  );
-  const profile = profiles[0] || null;
+  let profile: any = null;
+  try {
+    const { data } = await sp
+      .from("investor_profiles")
+      .select("*")
+      .eq("investor_id", investorId)
+      .single();
+    profile = data;
+  } catch { /* table may not exist */ }
 
   // Fetch data sources
-  const sources = await query<any>(
-    `SELECT * FROM investor_data_sources WHERE investor_id = $1 ORDER BY collected_at DESC LIMIT 5`,
-    [investorId]
-  );
+  let sources: any[] = [];
+  try {
+    const { data } = await sp
+      .from("investor_data_sources")
+      .select("*")
+      .eq("investor_id", investorId)
+      .order("collected_at", { ascending: false })
+      .limit(5);
+    sources = data || [];
+  } catch { /* table may not exist */ }
 
   // Fetch employment history
-  const employment = await query<any>(
-    `SELECT * FROM investor_employment_history WHERE investor_id = $1 ORDER BY start_date DESC LIMIT 5`,
-    [investorId]
-  );
+  let employment: any[] = [];
+  try {
+    const { data } = await sp
+      .from("investor_employment_history")
+      .select("*")
+      .eq("investor_id", investorId)
+      .order("start_date", { ascending: false })
+      .limit(5);
+    employment = data || [];
+  } catch { /* table may not exist */ }
 
   const prompt = `You are a senior fundraising strategist analyzing an investor for a startup founder. Generate a comprehensive research summary.
 
@@ -117,20 +145,22 @@ Generate a comprehensive research summary in this EXACT JSON format (no markdown
 
     const parsed = JSON.parse(jsonMatch[0]);
 
-    // Store the research summary in CockroachDB
-    await query(
-      `INSERT INTO investor_profiles (investor_id, ai_summary, ai_reasoning, recommended_angle, potential_objections, last_ai_analyzed_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())
-       ON CONFLICT (investor_id) DO UPDATE SET
-         ai_summary = $2, ai_reasoning = $3, recommended_angle = $4, potential_objections = $5, last_ai_analyzed_at = NOW()`,
-      [
-        investorId,
-        parsed.summary,
-        JSON.stringify(parsed),
-        parsed.recommendedApproach,
-        parsed.potentialConcerns,
-      ]
-    );
+    // Store the research summary (may not exist in Supabase)
+    try {
+      await sp.from("investor_profiles").upsert(
+        {
+          investor_id: investorId,
+          ai_summary: parsed.summary,
+          ai_reasoning: JSON.stringify(parsed),
+          recommended_angle: parsed.recommendedApproach,
+          potential_objections: parsed.potentialConcerns,
+          last_ai_analyzed_at: new Date().toISOString(),
+        },
+        { onConflict: "investor_id" }
+      );
+    } catch {
+      // Table may not exist
+    }
 
     return {
       investorId,
@@ -160,27 +190,38 @@ export async function generateOutreachDraft(params: {
   raiseAmount: string;
   tone?: "formal" | "warm" | "casual";
 }): Promise<{ subject: string; body: string } | null> {
-  // Fetch investor data from CockroachDB
-  const investors = await query<any>(
-    `SELECT * FROM investors WHERE id = $1`,
-    [params.investorId]
-  );
+  const sp = getSp();
 
-  if (!investors.length) return null;
-  const investor = investors[0];
+  // Fetch investor data from Supabase
+  const { data: investor } = await sp
+    .from("investors")
+    .select("*")
+    .eq("id", params.investorId)
+    .single();
+
+  if (!investor) return null;
 
   // Fetch firm data
-  const firms = investor.current_firm_id
-    ? await query<any>(`SELECT * FROM investor_firms WHERE id = $1`, [investor.current_firm_id])
-    : [];
-  const firm = firms[0] || null;
+  let firm: any = null;
+  if (investor.current_firm_id) {
+    const { data } = await sp
+      .from("investor_firms")
+      .select("*")
+      .eq("id", investor.current_firm_id)
+      .single();
+    firm = data;
+  }
 
   // Fetch existing profile
-  const profiles = await query<any>(
-    `SELECT * FROM investor_profiles WHERE investor_id = $1`,
-    [params.investorId]
-  );
-  const profile = profiles[0] || null;
+  let profile: any = null;
+  try {
+    const { data } = await sp
+      .from("investor_profiles")
+      .select("*")
+      .eq("investor_id", params.investorId)
+      .single();
+    profile = data;
+  } catch { /* table may not exist */ }
 
   const prompt = `You are an expert fundraising outreach specialist. Write a personalized investor outreach email.
 

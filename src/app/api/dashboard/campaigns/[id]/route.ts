@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query, queryAs } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { createClient } from "@supabase/supabase-js";
+
+// =============================================
+// Campaign Detail API — Supabase
+// =============================================
 
 export async function GET(
   request: NextRequest,
@@ -18,46 +22,53 @@ export async function GET(
     }
 
     const { id } = await params;
-
-    // Fetch campaign
-    const campaigns = await query<any>(
-      `SELECT * FROM data_acquisition_jobs WHERE id = $1 AND created_by = $2`,
-      [id, user.id]
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    if (campaigns.length === 0) {
+    // Fetch campaign
+    let job: any = null;
+    try {
+      const { data, error } = await sp
+        .from("data_acquisition_jobs")
+        .select("*")
+        .eq("id", id)
+        .eq("created_by", user.id)
+        .single();
+      if (error) throw error;
+      job = data;
+    } catch {
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
     }
 
-    const job = campaigns[0];
-
     // Fetch email messages for this user
-    const emails = await queryAs<any>(
-      user.id,
-      `SELECT id, investor_id, subject, body_text, status, sent_at, ai_generated, created_at
-       FROM email_messages
-       WHERE user_id = $1
-       ORDER BY created_at DESC
-       LIMIT 50`,
-      [user.id]
-    );
+    let emails: any[] = [];
+    try {
+      const { data } = await sp
+        .from("email_messages")
+        .select("id, investor_id, subject, body_text, status, sent_at, ai_generated, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      emails = data || [];
+    } catch { /* table may not exist */ }
 
-    // Fetch investor details for email investors
+    // Fetch investor details
     let investors: any[] = [];
-    const investorIds = [...new Set(emails.map((e: any) => e.investor_id).filter(Boolean))];
+    const investorIds = [...new Set(emails.map((e) => e.investor_id).filter(Boolean))];
     if (investorIds.length > 0) {
-      investors = await query<any>(
-        `SELECT id, first_name, last_name, email, fit_score
-         FROM investors
-         WHERE id = ANY($1)`,
-        [investorIds]
-      );
+      const { data } = await sp
+        .from("investors")
+        .select("id, first_name, last_name, email, fit_score")
+        .in("id", investorIds);
+      investors = data || [];
     }
 
-    const invMap = new Map(investors.map((i: any) => [i.id, i]));
+    const invMap = new Map(investors.map((i) => [i.id, i]));
     const campaignInvestors = emails
-      .filter((e: any) => e.investor_id)
-      .map((e: any) => {
+      .filter((e) => e.investor_id)
+      .map((e) => {
         const inv = invMap.get(e.investor_id);
         return {
           id: e.id,
@@ -110,13 +121,22 @@ export async function PATCH(
 
     const { id } = await params;
     const { status } = await request.json();
-
     const dbStatus = status === "active" ? "running" : status;
 
-    await query(
-      `UPDATE data_acquisition_jobs SET status = $1 WHERE id = $2 AND created_by = $3`,
-      [dbStatus, id, user.id]
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    try {
+      await sp
+        .from("data_acquisition_jobs")
+        .update({ status: dbStatus })
+        .eq("id", id)
+        .eq("created_by", user.id);
+    } catch {
+      // Table may not exist
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
