@@ -54,22 +54,22 @@ const HeroBanner: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Hero Image — touches bottom, controlled size */}
-          <div className="hidden lg:block absolute right-0 bottom-0 w-[52%] h-full">
+          {/* Right: Hero Image — touches bottom, slightly larger */}
+          <div className="hidden lg:block absolute right-0 bottom-0 w-[56%] h-full">
             <div className="absolute inset-0 flex items-end justify-end">
               <Image
                 src="/images/real-estate-agent/hero-main.png"
                 alt="Capital OS Dashboard"
-                width={900}
-                height={600}
+                width={1000}
+                height={660}
                 className="block max-w-none object-bottom"
                 style={{
                   objectFit: "contain",
                   objectPosition: "bottom right",
-                  maxHeight: "92%",
+                  maxHeight: "95%",
                   width: "auto",
                 }}
-                sizes="52vw"
+                sizes="56vw"
                 priority
               />
             </div>
@@ -80,13 +80,13 @@ const HeroBanner: React.FC = () => {
             <Image
               src="/images/real-estate-agent/hero-main.png"
               alt="Capital OS Dashboard"
-              width={700}
-              height={450}
+              width={750}
+              height={480}
               className="w-full h-auto block"
               style={{
                 objectFit: "contain",
                 objectPosition: "bottom center",
-                maxHeight: "300px",
+                maxHeight: "320px",
               }}
               sizes="100vw"
               priority
