@@ -10,23 +10,24 @@ Capital OS helps founders discover relevant investors, understand their investme
 
 ## Architecture Overview
 
-Capital OS uses a **hybrid architecture** — Supabase handles authentication while CockroachDB handles all application data.
+Capital OS uses a **hybrid architecture** — Supabase handles auth + investor data (122K+ records) while CockroachDB is kept as a backup data store.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                        Your Browser                              │
-│                   (Next.js 14 App Router)                        │
+│                   (Next.js 15 App Router)                        │
 ├────────────────────────────────┬─────────────────────────────────┤
-│     Supabase (Auth Only)       │      CockroachDB (All Data)     │
+│  Supabase (Auth + Data)        │  CockroachDB (Backup)           │
 │                                │                                 │
-│  • Login / Signup              │  • 5,000+ Investors              │
-│  • Session management          │  • 106 VC/PE Firms               │
-│  • Password reset              │  • 40 Company Profiles           │
-│  • OAuth (Google, Microsoft)   │  • Campaigns & Sequences         │
-│  • Auth middleware             │  • Email Accounts & Messages     │
-│  • User identity               │  • Billing & Credits             │
-│                                │  • Documents & Team Members      │
-│  @supabase/ssr                 │  • 20 RLS-protected tables       │
+│  • Login / Signup              │  • Historical data backup       │
+│  • 122K+ Investors (hot)       │  • 10GB free storage            │
+│  • OAuth (Google, Microsoft)   │  • Restore capability           │
+│  • Campaigns & Sequences       │  • Migration scripts            │
+│  • Email Accounts & Messages   │  • Graceful fallback if down    │
+│  • Documents & Team Members    │                                 │
+│  • AI-powered fit scoring      │  DATABASE_URL not set = skip    │
+│                                │                                 │
+│  @supabase/ssr                 │  pg (node-postgres)             │
 │  @supabase/supabase-js         │                                 │
 │                                │  src/lib/db.ts                  │
 │  NEXT_PUBLIC_SUPABASE_*        │  DATABASE_URL                   │

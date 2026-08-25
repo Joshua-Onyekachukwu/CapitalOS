@@ -246,15 +246,25 @@ export async function query<T = any>(
   text: string,
   params?: any[]
 ): Promise<T[]> {
-  return withRetry(async () => {
-    const client = await getPool().connect();
-    try {
-      const result = await client.query(text, params);
-      return result.rows as T[];
-    } finally {
-      client.release();
-    }
-  });
+  // Graceful fallback: if DATABASE_URL is not set, return empty array
+  if (!process.env.DATABASE_URL) {
+    console.warn("[db] DATABASE_URL not set — CockroachDB unavailable, returning empty results");
+    return [];
+  }
+  try {
+    return await withRetry(async () => {
+      const client = await getPool().connect();
+      try {
+        const result = await client.query(text, params);
+        return result.rows as T[];
+      } finally {
+        client.release();
+      }
+    });
+  } catch (err) {
+    console.error("[db] Query failed (returning empty):", (err as Error).message?.substring(0, 100));
+    return [];
+  }
 }
 
 /**
@@ -278,20 +288,30 @@ export async function queryAs<T = any>(
   text: string,
   params?: any[]
 ): Promise<T[]> {
-  return withRetry(async () => {
-    const client = await getPool().connect();
-    try {
-      // Set session variable for RLS policies (defense-in-depth)
-      await client.query(
-        `SELECT set_config('app.user_id', $1, false)`,
-        [userId]
-      );
-      const result = await client.query(text, params);
-      return result.rows as T[];
-    } finally {
-      client.release();
-    }
-  });
+  // Graceful fallback: if DATABASE_URL is not set, return empty array
+  if (!process.env.DATABASE_URL) {
+    console.warn("[db] DATABASE_URL not set — CockroachDB unavailable, returning empty results");
+    return [];
+  }
+  try {
+    return await withRetry(async () => {
+      const client = await getPool().connect();
+      try {
+        // Set session variable for RLS policies (defense-in-depth)
+        await client.query(
+          `SELECT set_config('app.user_id', $1, false)`,
+          [userId]
+        );
+        const result = await client.query(text, params);
+        return result.rows as T[];
+      } finally {
+        client.release();
+      }
+    });
+  } catch (err) {
+    console.error("[db] queryAs failed (returning empty):", (err as Error).message?.substring(0, 100));
+    return [];
+  }
 }
 
 /**
@@ -340,6 +360,10 @@ export async function raw(sql: string): Promise<any> {
 export async function transaction<T>(
   fn: (tx: TransactionClient) => Promise<T>
 ): Promise<T> {
+  if (!process.env.DATABASE_URL) {
+    console.warn("[db] DATABASE_URL not set — CockroachDB unavailable, skipping transaction");
+    throw new Error("CockroachDB unavailable");
+  }
   return withRetry(async () => {
     const client = await getPool().connect();
     try {
