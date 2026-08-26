@@ -65,7 +65,7 @@ const About: React.FC = () => {
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[20px] lg:mb-[25px]">
               We imagined something different. A platform that feels effortless.
               Where you describe your startup and the right investors appear.
-              Where AI drafts the emails and you just review and send. Where you
+              Where we draft the emails and you just review and send. Where you
               can finally focus on what matters: building your company.
             </p>
             <Link

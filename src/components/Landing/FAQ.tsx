@@ -15,7 +15,7 @@ const faqData = [
       "Not at all. Describe your startup in a few sentences, and Capital OS takes it from there. No spreadsheets, no complicated setup. Just tell us what you're building and we'll find the investors who want to fund it.",
   },
   {
-    question: "How does the AI investor matching work?",
+    question: "How does the investor matching work?",
     answer:
       "We match you against a database of over 1M+ verified investors using multiple factors: your industry, stage, location, check size, and investment history. Every match comes with a score and a clear explanation of why that investor is a good fit.",
   },

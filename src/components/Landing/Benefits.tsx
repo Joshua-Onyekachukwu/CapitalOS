@@ -18,7 +18,7 @@ const benefits = [
   {
     number: "2",
     title: "Send Emails That Actually Get Replies",      description:
-      "No more staring at a blank email wondering what to write. AI drafts messages that speak to each investor's thesis and recent activity. You review, edit if you want, and approve. That's it. Nothing goes out without your say-so.",
+      "No more staring at a blank email wondering what to write. We draft messages that speak to each investor's thesis and recent activity. You review, edit if you want, and approve. That's it. Nothing goes out without your say-so.",
     image: "/images/real-estate-agent/benefits/benefit2.png",
     bgColor: "bg-[#E9DFDA] dark:bg-[#0a0e19]",
     numberBg: "bg-[#D15616]",

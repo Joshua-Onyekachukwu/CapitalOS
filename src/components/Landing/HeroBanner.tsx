@@ -94,23 +94,7 @@ const HeroBanner: React.FC = () => {
         </div>
       </div>
 
-      {/* Trust Bar */}
-      <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px] mt-[20px] md:mt-[40px] lg:mt-[60px]">
-        <div className="flex flex-wrap items-center justify-center gap-[16px] md:gap-[32px] py-[12px] md:py-[16px] text-center">
-          <span className="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400">
-            <i className="ri-check-line text-lime-500 mr-[4px]"></i>
-            1M+ Verified Investors
-          </span>
-          <span className="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400">
-            <i className="ri-check-line text-lime-500 mr-[4px]"></i>
-            AI-Powered Matching
-          </span>
-          <span className="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400">
-            <i className="ri-check-line text-lime-500 mr-[4px]"></i>
-            Personalized Outreach
-          </span>
-        </div>
-      </div>
+
     </>
   );
 };

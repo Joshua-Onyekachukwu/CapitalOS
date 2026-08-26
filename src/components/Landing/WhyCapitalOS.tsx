@@ -10,14 +10,14 @@ const whyItems = [
       "Over 1M+ verified investors sourced from SEC 13F filings, Form D, venture databases, and curated profiles. Each record includes investment history, check sizes, sectors, and portfolio companies.",
   },
   {
-    title: "AI That Scores, Not Just Searches",
+    title: "We Score, Not Just Search",
     description:
-      "Multi-factor scoring across 10+ dimensions: stage match, sector alignment, geography, check size, investment recency, and more. Every score comes with a clear explanation of why.",
+      "We score every investor across 10+ dimensions: stage match, sector alignment, geography, check size, investment recency, and more. Every score comes with a clear explanation of why.",
   },
   {
     title: "Outreach That Actually Gets Replies",
     description:
-      "AI drafts emails that reference each investor's thesis, portfolio, and recent activity. Not generic templates, personalized messages that show you've done your homework.",
+      "We draft emails that reference each investor's thesis, portfolio, and recent activity. Not generic templates, personalized messages that show you've done your homework.",
   },
   {
     title: "One Platform, Not Five Tools",
@@ -27,7 +27,7 @@ const whyItems = [
   {
     title: "You Stay in Control",
     description:
-      "Every AI-generated action requires your review and approval. The AI does the research and writing, you make the decisions. Nothing goes out without your say-so.",
+      "Every action requires your review and approval. We do the research and writing, you make the decisions. Nothing goes out without your say-so.",
   },
   {
     title: "Built for Founders, Not Enterprises",

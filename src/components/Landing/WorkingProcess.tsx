@@ -7,12 +7,12 @@ const steps = [
   {
     number: "1",
     title: "Discover Investors",
-    description: "AI finds and scores investors that match your stage, sector, and geography.",
+    description: "We find and score investors that match your stage, sector, and geography.",
   },
   {
     number: "2",
     title: "Review & Personalize",
-    description: "AI drafts personalized emails. You review, edit, and approve before sending.",
+    description: "We draft personalized emails. You review, edit, and approve before sending.",
   },
   {
     number: "3",
