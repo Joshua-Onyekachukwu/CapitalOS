@@ -1,0 +1,115 @@
+/* =============================================
+   Design Tokens — Capital OS
+   =============================================
+   Standardized scale for typography, spacing,
+   border-radius, buttons, and semantic colors.
+   
+   Use these utility classes instead of arbitrary
+   Tailwind values for visual consistency.
+   ============================================= */
+
+/* ── Typography Scale ── */
+@layer utilities {
+  .text-hero { @apply text-[32px] leading-[1.15] md:text-[44px] lg:text-[50px] xl:text-[58px]; }
+  .text-h1 { @apply text-[24px] leading-tight font-semibold lg:text-[28px]; }
+  .text-h2 { @apply text-[18px] leading-snug font-semibold lg:text-[24px]; }
+  .text-h3 { @apply text-[16px] leading-snug font-medium lg:text-[18px]; }
+  .text-h4 { @apply text-[14px] leading-normal font-semibold; }
+  .text-body { @apply text-[13px] leading-relaxed md:text-[14px]; }
+  .text-small { @apply text-[12px] leading-normal; }
+  .text-caption { @apply text-[11px] leading-normal; }
+  .text-meta { @apply text-[10px] leading-tight uppercase tracking-wider font-semibold; }
+
+  /* ── Spacing Scale (4px base) ── */
+  .space-1 { @apply p-[4px]; }
+  .space-2 { @apply p-[8px]; }
+  .space-3 { @apply p-[12px]; }
+  .space-4 { @apply p-[16px]; }
+  .space-5 { @apply p-[20px]; }
+  .space-6 { @apply p-[24px]; }
+  .space-8 { @apply p-[32px]; }
+  .space-10 { @apply p-[40px]; }
+  .space-12 { @apply p-[48px]; }
+  .space-16 { @apply p-[64px]; }
+  .space-20 { @apply p-[80px]; }
+
+  /* ── Margin Scale ── */
+  .m-1 { @apply m-[4px]; }
+  .m-2 { @apply m-[8px]; }
+  .m-3 { @apply m-[12px]; }
+  .m-4 { @apply m-[16px]; }
+  .m-5 { @apply m-[20px]; }
+  .m-6 { @apply m-[24px]; }
+  .m-8 { @apply m-[32px]; }
+
+  .mb-1 { @apply mb-[4px]; }
+  .mb-2 { @apply mb-[8px]; }
+  .mb-3 { @apply mb-[12px]; }
+  .mb-4 { @apply mb-[16px]; }
+  .mb-5 { @apply mb-[20px]; }
+  .mb-6 { @apply mb-[24px]; }
+  .mb-8 { @apply mb-[32px]; }
+
+  .mt-1 { @apply mt-[4px]; }
+  .mt-2 { @apply mt-[8px]; }
+  .mt-3 { @apply mt-[12px]; }
+  .mt-4 { @apply mt-[16px]; }
+  .mt-5 { @apply mt-[20px]; }
+  .mt-6 { @apply mt-[24px]; }
+  .mt-8 { @apply mt-[32px]; }
+
+  .gap-1 { @apply gap-[4px]; }
+  .gap-2 { @apply gap-[8px]; }
+  .gap-3 { @apply gap-[12px]; }
+  .gap-4 { @apply gap-[16px]; }
+  .gap-5 { @apply gap-[20px]; }
+  .gap-6 { @apply gap-[24px]; }
+  .gap-8 { @apply gap-[32px]; }
+
+  /* ── Border Radius Tokens ── */
+  .radius-sm { @apply rounded-[6px]; }
+  .radius-md { @apply rounded-[8px]; }
+  .radius-lg { @apply rounded-[12px]; }
+  .radius-xl { @apply rounded-[16px]; }
+  .radius-2xl { @apply rounded-[20px]; }
+  .radius-full { @apply rounded-full; }
+
+  /* ── Button Sizes ── */
+  .btn-sm { @apply h-[32px] px-[12px] text-[13px] rounded-[6px] font-medium inline-flex items-center justify-center gap-[6px]; }
+  .btn-md { @apply h-[40px] px-[16px] text-[14px] rounded-[8px] font-medium inline-flex items-center justify-center gap-[8px]; }
+  .btn-lg { @apply h-[48px] px-[24px] text-[15px] rounded-[8px] font-medium inline-flex items-center justify-center gap-[8px]; }
+
+  /* ── Card Tokens ── */
+  .card-default { @apply rounded-[12px] border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#111827]; }
+  .card-interactive { @apply rounded-[12px] border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#111827] hover:shadow-md transition-shadow cursor-pointer; }
+  .card-elevated { @apply rounded-[12px] shadow-sm bg-white dark:bg-[#111827]; }
+  .card-compact { @apply rounded-[12px] border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#111827] p-[16px]; }
+
+  /* ── Semantic Colors ── */
+  .text-success { @apply text-green-600; }
+  .text-warning { @apply text-amber-600; }
+  .text-danger { @apply text-red-600; }
+  .text-info { @apply text-blue-600; }
+  .text-primary { @apply text-lime-600; }
+  .text-muted { @apply text-gray-400; }
+
+  .bg-success { @apply bg-green-50 dark:bg-green-900/10; }
+  .bg-warning { @apply bg-amber-50 dark:bg-amber-900/10; }
+  .bg-danger { @apply bg-red-50 dark:bg-red-900/10; }
+  .bg-info { @apply bg-blue-50 dark:bg-blue-900/10; }
+  .bg-primary { @apply bg-lime-50 dark:bg-lime-900/10; }
+  .bg-muted { @apply bg-gray-50 dark:bg-gray-800/30; }
+
+  .border-success { @apply border-green-200 dark:border-green-800; }
+  .border-warning { @apply border-amber-200 dark:border-amber-800; }
+  .border-danger { @apply border-red-200 dark:border-red-800; }
+  .border-info { @apply border-blue-200 dark:border-blue-800; }
+  .border-primary { @apply border-lime-200 dark:border-lime-800; }
+
+  /* ── Status Badge Colors ── */
+  .badge-success { @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400; }
+  .badge-warning { @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400; }
+  .badge-danger { @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400; }
+  .badge-info { @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400; }
+  .badge-default { @apply bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400; }
+}

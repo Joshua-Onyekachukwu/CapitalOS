@@ -208,3 +208,57 @@ button {
     }
   }
 }
+
+/* =============================================
+   Design Tokens — Capital OS
+   ============================================= */
+@layer utilities {
+  /* Typography Scale */
+  .text-hero { @apply text-[32px] leading-[1.15] md:text-[44px] lg:text-[50px] xl:text-[58px]; }
+  .text-h1 { @apply text-[24px] leading-tight font-semibold lg:text-[28px]; }
+  .text-h2 { @apply text-[18px] leading-snug font-semibold lg:text-[24px]; }
+  .text-h3 { @apply text-[16px] leading-snug font-medium lg:text-[18px]; }
+  .text-h4 { @apply text-[14px] leading-normal font-semibold; }
+  .text-body { @apply text-[13px] leading-relaxed md:text-[14px]; }
+  .text-small { @apply text-[12px] leading-normal; }
+  .text-caption { @apply text-[11px] leading-normal; }
+  .text-meta { @apply text-[10px] leading-tight uppercase tracking-wider font-semibold; }
+
+  /* Border Radius */
+  .radius-sm { @apply rounded-[6px]; }
+  .radius-md { @apply rounded-[8px]; }
+  .radius-lg { @apply rounded-[12px]; }
+  .radius-xl { @apply rounded-[16px]; }
+  .radius-2xl { @apply rounded-[20px]; }
+
+  /* Button Sizes */
+  .btn-sm { @apply h-[32px] px-[12px] text-[13px] rounded-[6px] font-medium inline-flex items-center justify-center gap-[6px]; }
+  .btn-md { @apply h-[40px] px-[16px] text-[14px] rounded-[8px] font-medium inline-flex items-center justify-center gap-[8px]; }
+  .btn-lg { @apply h-[48px] px-[24px] text-[15px] rounded-[8px] font-medium inline-flex items-center justify-center gap-[8px]; }
+
+  /* Card Tokens */
+  .card-default { @apply rounded-[12px] border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#111827]; }
+  .card-interactive { @apply rounded-[12px] border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#111827] hover:shadow-md transition-shadow cursor-pointer; }
+  .card-elevated { @apply rounded-[12px] shadow-sm bg-white dark:bg-[#111827]; }
+
+  /* Semantic Colors */
+  .text-success { @apply text-green-600; }
+  .text-warning { @apply text-amber-600; }
+  .text-danger { @apply text-red-600; }
+  .text-info { @apply text-blue-600; }
+  .text-primary { @apply text-lime-600; }
+  .text-muted { @apply text-gray-400; }
+
+  .bg-success { @apply bg-green-50 dark:bg-green-900/10; }
+  .bg-warning { @apply bg-amber-50 dark:bg-amber-900/10; }
+  .bg-danger { @apply bg-red-50 dark:bg-red-900/10; }
+  .bg-info { @apply bg-blue-50 dark:bg-blue-900/10; }
+  .bg-primary { @apply bg-lime-50 dark:bg-lime-900/10; }
+
+  /* Status Badges */
+  .badge-success { @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400; }
+  .badge-warning { @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400; }
+  .badge-danger { @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400; }
+  .badge-info { @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400; }
+  .badge-default { @apply bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400; }
+}
