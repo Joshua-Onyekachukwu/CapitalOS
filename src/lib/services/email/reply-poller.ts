@@ -6,6 +6,8 @@
 import { query } from "@/lib/db";
 import { decryptToken } from "./crypto";
 import { analyzeSentiment } from "./reply-detection";
+import { handleBounce, handleComplaint } from "./suppression";
+import { logEvent, logBounce } from "./events"
 
 interface PollResult {
   accountId: string;
@@ -94,13 +96,40 @@ async function fetchMicrosoftMessages(accessToken: string, since: Date): Promise
   return emails;
 }
 
-async function processReply(email: IncomingEmail, userId: string, investorId: string | null): Promise<boolean> {
+async function processReply(email: IncomingEmail, userId: string, investorId: string | null, accountId?: string): Promise<boolean> {
   // Check if already processed
   const existing = await query<any>(
     `SELECT id FROM email_messages WHERE message_id = $1 LIMIT 1`,
     [email.messageId]
   );
   if (existing.length > 0) return false;
+
+  // Detect bounce/NDR messages
+  if (isBounceMessage(email)) {
+    const bounceType = isHardBounce(email) ? "hard" : "soft";
+    await handleBounce(userId, extractBouncedAddress(email), bounceType, accountId);
+    await logBounce({
+      userId,
+      accountId,
+      toAddress: extractBouncedAddress(email),
+      bounceType,
+      error: email.bodyPreview.slice(0, 200),
+    });
+    return true;
+  }
+
+  // Detect complaints
+  if (isComplaintMessage(email)) {
+    await handleComplaint(userId, email.from);
+    await logEvent({
+      userId,
+      accountId,
+      eventType: "complaint",
+      severity: "critical",
+      details: { from: email.from, subject: email.subject },
+    });
+    return true;
+  }
 
   let threadId: string | null = null;
   let resolvedInvestorId = investorId;
@@ -178,6 +207,34 @@ export async function pollEmailAccounts(userId?: string): Promise<PollResult[]> 
   const accounts = await query<any>(sql, params);
   if (!accounts.length) return [];
 
+  // Bounce detection helpers
+  function isBounceMessage(email: IncomingEmail): boolean {
+    const text = `${email.subject} ${email.bodyPreview}`.toLowerCase();
+    return text.includes("delivery failed") || text.includes("delivery status notification") ||
+      text.includes("undeliverable") || text.includes("returned mail") ||
+      text.includes("non-delivery report") || text.includes("mail delivery subsystem") ||
+      (email.from.toLowerCase().includes("mailer-daemon") ||
+       email.from.toLowerCase().includes("postmaster"));
+  }
+
+  function isHardBounce(email: IncomingEmail): boolean {
+    const text = `${email.subject} ${email.bodyPreview}`.toLowerCase();
+    return text.includes("mailbox not found") || text.includes("user unknown") ||
+      text.includes("invalid address") || text.includes("does not exist") ||
+      text.includes("no such user") || text.includes("address rejected");
+  }
+
+  function extractBouncedAddress(email: IncomingEmail): string {
+    const match = email.bodyPreview.match(/\b([\w.-]+@[\w.-]+\.\w+)\b/);
+    return match ? match[1] : email.from;
+  }
+
+  function isComplaintMessage(email: IncomingEmail): boolean {
+    const text = `${email.subject} ${email.bodyPreview}`.toLowerCase();
+    return text.includes("spam complaint") || text.includes("abuse report") ||
+      text.includes("unsubscribe request");
+  }
+
   const results: PollResult[] = [];
 
   for (const account of accounts) {
@@ -217,7 +274,7 @@ export async function pollEmailAccounts(userId?: string): Promise<PollResult[]> 
       result.emailsChecked = emails.length;
 
       for (const email of emails) {
-        const wasReply = await processReply(email, account.user_id, null);
+        const wasReply = await processReply(email, account.user_id, null, account.id);
         if (wasReply) result.repliesDetected++;
       }
 

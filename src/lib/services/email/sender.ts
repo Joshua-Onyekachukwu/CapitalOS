@@ -5,6 +5,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { encryptToken, decryptToken } from "./crypto";
 import { generateTrackingId, injectTracking } from "./tracking";
+import { isSuppressed } from "./suppression";
+import { logSend, logEvent } from "./events";
+import { checkBeforeSend } from "./sending-guard"
 
 function getSp() {
   return createClient(
@@ -185,6 +188,18 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
 
   const account = accounts[0];
 
+  // Pre-send health check
+  const preSendCheck = await checkBeforeSend(params.userId, account.id, params.to);
+  if (!preSendCheck.allowed) {
+    return { success: false, error: preSendCheck.reason };
+  }
+
+  // Check suppression list
+  const suppressed = await isSuppressed(params.userId, params.to);
+  if (suppressed) {
+    return { success: false, error: `This email address is on your suppression list and cannot receive emails.` };
+  }
+
   let accessToken = decryptToken(account.access_token);
   const expiresAt = new Date(account.token_expires_at).getTime();
 
@@ -237,7 +252,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
 
   if (result.success) {
     try {
-      await sp.from("email_messages").insert({
+      const { data: msgRecord } = await sp.from("email_messages").insert({
         user_id: params.userId,
         direction: "outbound",
         subject: params.subject,
@@ -246,6 +261,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
         from_address: account.email_address,
         to_address: params.to,
         cc_addresses: params.cc || [],
+        account_id: account.id,
         status: "sent",
         sent_at: new Date().toISOString(),
         message_id: result.messageId,
@@ -253,10 +269,30 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
         tracking_enabled: trackingEnabled,
         open_count: 0,
         click_count: 0,
+      }).select("id").single();
+
+      // Log to sending_log and health events
+      await logSend({
+        userId: params.userId,
+        accountId: account.id,
+        emailMessageId: msgRecord?.id,
+        provider: account.provider,
+        toAddress: params.to,
+        subject: params.subject,
+        trackingId: trackingId || undefined,
       });
     } catch {
       // Non-critical
     }
+  } else {
+    // Log failed send
+    await logEvent({
+      userId: params.userId,
+      accountId: account.id,
+      eventType: "sent",
+      severity: "warning",
+      details: { to: params.to, error: result.error },
+    }).catch(() => {});
   }
 
   return result;
