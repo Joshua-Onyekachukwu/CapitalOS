@@ -7,27 +7,27 @@ import Link from "next/link";
 const features = [
   {
     icon: "ri-radar-line",
-    title: "Investor Discovery",
+    title: "Investor Intelligence Database",
     description:
-      "AI searches across databases, web sources, and public records to find investors that match your stage, sector, and geography.",
+      "57,000+ investors sourced from SEC filings, venture databases, and curated profiles. Filter by stage, sector, geography, check size, and investment activity.",
   },
   {
     icon: "ri-brain-line",
-    title: "AI Matching & Scoring",
+    title: "AI Fit Scoring",
     description:
-      "Multi-layer matching produces ranked investor lists with clear explanations of why each one matters to your startup.",
+      "Multi-factor scoring across 10+ dimensions — stage match, sector alignment, geography, check size, and investment recency. Every score comes with a clear explanation.",
   },
   {
     icon: "ri-mail-star-line",
-    title: "Personalized Outreach",
+    title: "AI-Drafted Outreach",
     description:
-      "AI drafts emails tailored to each investor's thesis, portfolio, and recent activity. You review and approve before anything is sent.",
+      "AI generates personalized emails that reference each investor's thesis, portfolio, and recent activity. You review, edit, and approve before anything is sent.",
   },
   {
     icon: "ri-dashboard-3-line",
     title: "Fundraising Pipeline",
     description:
-      "Visual Kanban board to move investors from discovery through qualification, outreach, meetings, and close — all in one view.",
+      "Visual pipeline to track every investor from discovery through qualification, outreach, meetings, and close — all in one view.",
   },
 ];
 
@@ -37,12 +37,11 @@ const Features: React.FC = () => {
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
         <div className="text-center mx-auto lg:max-w-[900px] mb-[30px] md:mb-[40px] lg:mb-[50px]">
           <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#06201b] mb-[10px]">
-            FEATURES
+            CAPABILITIES
           </span>
           <h2 className="!mb-0 !text-white !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
-            Packed with{" "}
-            <span className="font-semibold italic">Smart Features</span> to
-            Help You Fundraise Smarter & Close More Deals
+            What Capital OS{" "}
+            <span className="font-semibold italic">Actually Does</span>
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px] xl:items-center">
@@ -138,13 +137,13 @@ const Features: React.FC = () => {
         </div>
         <div className="text-center mx-auto max-w-[500px] mt-[25px] xl:mt-[30px]">
           <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
-            Join the growing number of founders who are closing more deals
-            and saving hours every week.{" "}
+            Replace your stack of spreadsheets, PitchBook, and cold email tools
+            with one platform.{" "}
             <Link
               href="/signup"
               className="text-lime-500 font-semibold transition-all hover:underline"
             >
-              Start Your Free Trial <i className="ri-arrow-right-long-line"></i>
+              Start Free <i className="ri-arrow-right-long-line"></i>
             </Link>
           </p>
         </div>

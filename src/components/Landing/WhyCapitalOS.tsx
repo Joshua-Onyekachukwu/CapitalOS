@@ -5,34 +5,34 @@ import Image from "next/image";
 
 const whyItems = [
   {
-    title: "AI-Powered Investor Intelligence",
+    title: "Real Investor Data, Not Just Names",
     description:
-      "Make data-driven decisions with AI that researches, classifies, and scores investors based on your specific startup profile.",
+      "57,000+ investors sourced from SEC 13F filings, Form D, venture databases, and curated profiles. Each record includes investment history, check sizes, sectors, and portfolio companies.",
   },
   {
-    title: "All-in-One Fundraising Platform",
+    title: "AI That Scores, Not Just Searches",
     description:
-      "Manage investor discovery, outreach, pipeline, and meetings — all from one powerful, intuitive dashboard.",
+      "Multi-factor scoring across 10+ dimensions — stage match, sector alignment, geography, check size, investment recency, and more. Every score comes with a clear explanation of why.",
   },
   {
-    title: "Personalized Outreach at Scale",
+    title: "Outreach That Actually Gets Replies",
     description:
-      "Keep every investor interaction organized with AI-drafted, thesis-aligned emails that you review and approve.",
+      "AI drafts emails that reference each investor's thesis, portfolio, and recent activity. Not generic templates — personalized messages that show you've done your homework.",
   },
   {
-    title: "Mobile-Ready, Always Accessible",
+    title: "One Platform, Not Five Tools",
     description:
-      "Whether you're at your desk or in a meeting, Capital OS travels with you — fully responsive and optimized for any device.",
+      "Replace PitchBook for research, Google Sheets for tracking, Apollo.io for outreach, and HubSpot for pipeline. Everything in one place, built specifically for fundraising.",
   },
   {
-    title: "Secure & Scalable",
+    title: "You Stay in Control",
     description:
-      "Bank-level data security with Supabase RLS and a system that grows with your business, from solo founder to full team.",
+      "Every AI-generated action requires your review and approval. The AI does the research and writing — you make the decisions. Nothing goes out without your say-so.",
   },
   {
-    title: "Dedicated Support",
+    title: "Built for Founders, Not Enterprises",
     description:
-      "Our team is here when you need us — with onboarding assistance, live support, and real humans who care about your success.",
+      "Designed for the founder who's raising their first round or their fifth. Simple enough to start in minutes, powerful enough to manage complex multi-round fundraising.",
   },
 ];
 
@@ -47,15 +47,14 @@ const WhyCapitalOS: React.FC = () => {
               WHY CAPITAL OS
             </span>
             <h2 className="!mb-[15px] md:!mb-[20px] lg:!mb-[25px] !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
-              Discover What Makes{" "}
-              <span className="font-semibold italic">Capital OS</span> the
-              Ultimate Fundraising Platform for{" "}
-              <span className="font-semibold italic">Founders</span>
+              What Capital OS Does{" "}
+              <span className="font-semibold italic">That Spreadsheets</span>{" "}
+              Can&apos;t
             </h2>
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px]">
-              Capital OS is not just another tool — we're your partner in
-              fundraising. Designed with input from real founders, investors,
-              and advisors.
+              Most founders use 3-5 different tools to raise capital. Capital OS
+              replaces them all with one platform built specifically for
+              fundraising.
             </p>
             <div className="mt-[25px] lg:mt-[40px] xl:max-w-[545px]">
               {whyItems.map((item, index) => (

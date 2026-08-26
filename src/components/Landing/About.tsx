@@ -5,13 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 const About: React.FC = () => {
-  const capabilities = [
-    "AI-powered investor discovery",
-    "Personalized outreach automation",
-    "Visual fundraising pipeline",
-    "Real-time investor intelligence",
-  ];
-
   return (
     <div className="py-[60px] md:py-[80px] lg:py-[100px] xl:py-[120px] relative z-[1]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
@@ -28,11 +21,10 @@ const About: React.FC = () => {
             </div>
             <div className="md:col-span-3 ltr:xl:-ml-[45px] rtl:xl:-mr-[45px]">
               <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
-                About
+                The Problem
               </span>
               <h2 className="!mb-0 !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px] xl:max-w-[821px]">
-                <span className="font-semibold italic">Our Mission</span> to
-                Simplify Fundraising Workflows Efficiently
+                Fundraising Is Broken. <span className="font-semibold italic">Founders Know It.</span>
               </h2>
               <div className="h-px bg-[#06201b]/5 dark:bg-gray-900 mt-[25px] md:mt-[30px] lg:mt-[40px]"></div>
             </div>
@@ -58,30 +50,22 @@ const About: React.FC = () => {
                 height={220}
               />
             </div>
-
           </div>
           <div>
-            <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px]">
-              We built Capital OS with one goal: to make the fundraising
-              process simpler, faster, and more effective for founders.
-              After talking to hundreds of entrepreneurs, we understood the
-              pain of manual investor research and generic outreach.
+            <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[16px]">
+              Most founders spend <strong>20+ hours per week</strong> on investor
+              research — digging through spreadsheets, scanning PitchBook, copying
+              email addresses, and writing cold emails that get ignored.
             </p>
-            <ul className="my-[20px] lg:my-[25px] text-black dark:text-white text-base md:text-[15px] lg:text-md xl:text-lg -tracking-[0.16px] grid grid-cols-1 sm:grid-cols-2 gap-[12px] lg:gap-[15px]">
-              {capabilities.map((item, index) => (
-                <li key={index} className="flex items-center gap-[10px]">
-                  <div className="w-[45px] h-[36px] flex-none relative z-[1] flex items-center justify-end text-lime-500 text-xl">
-                    <i className="ri-check-double-line rtl:-scale-x-100"></i>
-                    <span className="block absolute top-0 ltr:left-0 rtl:right-0 bottom-0 w-[36px] bg-[#ECE3DE] dark:bg-[#06201b] -z-[1] rounded-full"></span>
-                  </div>
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <p className="text-base md:text-[15px] lg:text-md xl:text-lg -tracking-[0.16px] xl:-tracking-[0.18px]">
-              At the heart of everything we build is a belief: founders
-              should spend more time building relationships, not
-              spreadsheets.
+            <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[16px]">
+              The tools available today are either too expensive (PitchBook at
+              $20K+/year), too generic (CRMs that weren&apos;t built for fundraising),
+              or too manual (Google Sheets with 500 rows of investor data).
+            </p>
+            <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[20px] lg:mb-[25px]">
+              We built Capital OS because <strong>founders deserve better</strong>.
+              A single platform that gives you a real investor database, AI-powered
+              matching, and personalized outreach — without the spreadsheet chaos.
             </p>
             <Link
               href="/signup"

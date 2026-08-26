@@ -1,32 +1,27 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 
-const testimonials = [
+const stats = [
   {
-    name: "Sarah Chen",
-    role: "CEO, TechVenture AI",
-    stars: 5,
-    avatar: "/images/landing/faq/saas-user1.jpg",
-    quote:
-      "Capital OS gave us real-time investor intelligence we never had before. Our team now makes faster, smarter fundraising decisions. It's a total game-changer for startup growth.",
+    value: "57,000+",
+    label: "Investors in Database",
+    description: "Sourced from SEC filings, venture firms, and curated profiles",
   },
   {
-    name: "Marcus Williams",
-    role: "Founder, GreenScale",
-    stars: 5,
-    avatar: "/images/landing/faq/crm-user1.jpg",
-    quote:
-      "As a founder overseeing fundraising across multiple portfolio companies, Capital OS has been a game changer. I can track investor outreach, monitor pipeline, and ensure nothing slips through.",
+    value: "10+",
+    label: "Scoring Dimensions",
+    description: "Stage, sector, geography, check size, recency, and more",
   },
   {
-    name: "Priya Patel",
-    role: "CEO, NeuralPath",
-    stars: 5,
-    avatar: "/images/landing/faq/pm-user1.jpg",
-    quote:
-      "Capital OS completely transformed the way I manage fundraising. I used to juggle multiple spreadsheets for investors, follow-ups, and pipeline tracking. Now everything is in one place.",
+    value: "3-Step",
+    label: "Outreach Process",
+    description: "Discover → Draft → Send, with AI at every step",
+  },
+  {
+    value: "100%",
+    label: "Human Approval",
+    description: "Every AI-generated email requires your review before sending",
   },
 ];
 
@@ -34,58 +29,49 @@ const Testimonials: React.FC = () => {
   return (
     <div className="py-[60px] md:py-[80px] lg:py-[100px] xl:py-[120px]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="lg:max-w-[746px] mb-[30px] md:mb-[40px] lg:mb-[40px] xl:mb-0">
+        <div className="text-center mx-auto lg:max-w-[800px] mb-[30px] md:mb-[40px] lg:mb-[50px]">
           <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
-            TESTIMONIAL
+            By The Numbers
           </span>
-          <h2 className="!mb-[13px] md:!mb-[16px] lg:!mb-[20px] !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
-            <span className="font-semibold italic">Trusted</span> by Founders
-            Who Get Results — See What Professionals Are{" "}
-            <span className="font-semibold italic">Saying</span> About Capital
-            OS
+          <h2 className="!mb-0 !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
+            Real Data.{" "}
+            <span className="font-semibold italic">Real Investors.</span>{" "}
+            Real Platform.
           </h2>
-          <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] md:max-w-[550px]">
-            At Capital OS, we believe the best proof of our platform's value
-            comes from the professionals who use it every day.
+          <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mt-[15px] text-gray-500 dark:text-gray-400">
+            We don&apos;t make claims we can&apos;t back up. Here&apos;s what
+            Capital OS actually contains.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[25px] xl:-mt-[272px]">
-          {testimonials.map((item, index) => (
-            <div key={index}>
-              <div
-                className={`${index === 0 ? "xl:mt-[580px]" : index === 1 ? "xl:mt-[290px]" : ""} bg-[#F4F2F0] dark:bg-[#06201b] rounded-[15px] p-[20px] md:p-[25px] lg:p-[30px] xl:py-[40px] xl:sticky top-[100px]`}
-              >
-                <div className="leading-none mb-[14px] md:mb-[16px] lg:mb-[18px] xl:mb-[22px] flex items-center text-orange-400 text-md lg:text-lg xl:text-[20px] gap-[2px] lg:gap-[4px]">
-                  {Array.from({ length: Math.floor(item.stars) }).map(
-                    (_, i) => (
-                      <i key={i} className="ri-star-fill"></i>
-                    )
-                  )}
-                  {item.stars % 1 !== 0 && (
-                    <i className="ri-star-half-line"></i>
-                  )}
-                </div>
-                <p className="text-black dark:text-white font-light !leading-[1.6] -tracking-[.3px] !text-md md:!text-lg">
-                  {item.quote}
-                </p>
-                <div className="mt-[16px] md:mt-[18px] lg:mt-[22px] xl:mt-[25px] flex items-center gap-[12px]">
-                  <Image
-                    src={item.avatar}
-                    alt={item.name}
-                    width={48}
-                    height={48}
-                    className="rounded-full object-cover w-[48px] h-[48px]"
-                  />
-                  <div>
-                    <span className="block font-bold uppercase text-xs text-black dark:text-white tracking-[1.8px] mb-[2px]">
-                      {item.name}
-                    </span>
-                    <span className="block -tracking-[0.14px]">{item.role}</span>
-                  </div>
-                </div>
-              </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[20px] md:gap-[25px]">
+          {stats.map((stat, index) => (
+            <div
+              key={index}
+              className="bg-[#E9DFDA] dark:bg-[#06201b] rounded-[12px] p-[24px] md:p-[30px] text-center"
+            >
+              <p className="text-[32px] md:text-[38px] font-bold text-[#06201b] dark:text-white !mb-[4px]">
+                {stat.value}
+              </p>
+              <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[8px]">
+                {stat.label}
+              </p>
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 !mb-0">
+                {stat.description}
+              </p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-[30px] md:mt-[40px] bg-[#06201b] rounded-[16px] p-[30px] md:p-[40px] text-center">
+          <p className="text-[18px] md:text-[22px] text-white !mb-[8px]">
+            &ldquo;We built Capital OS because founders shouldn&apos;t need a
+            $20K PitchBook subscription and a team of analysts to find the right
+            investors.&rdquo;
+          </p>
+          <p className="text-[14px] text-gray-400 !mb-0">
+            — The Capital OS Team
+          </p>
         </div>
       </div>
     </div>

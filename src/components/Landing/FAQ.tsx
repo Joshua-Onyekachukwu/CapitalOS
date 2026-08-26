@@ -82,10 +82,10 @@ const FAQ: React.FC = () => {
               />
               <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 px-[20px]">
                 <h3 className="!mb-[8px] italic !leading-none !text-[30px] md:!text-4xl -tracking-[1.08px] !text-black">
-                  86+
+                  57K+
                 </h3>
                 <span className="block uppercase font-bold tracking-[1.95px] text-xs md:text-sm text-[#8F3E13]">
-                  Investors Matched
+                  Investors
                 </span>
               </div>
             </div>
@@ -99,10 +99,10 @@ const FAQ: React.FC = () => {
               />
               <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 px-[20px]">
                 <h3 className="!mb-[8px] italic !leading-none !text-[30px] md:!text-4xl -tracking-[1.08px] !text-white">
-                  9K+
+                  SEC
                 </h3>
                 <span className="block uppercase font-bold tracking-[1.95px] text-xs md:text-sm text-white">
-                  Happy Clients
+                  Sourced
                 </span>
               </div>
             </div>

@@ -6,9 +6,9 @@ import Image from "next/image";
 const benefits = [
   {
     number: "1",
-    title: "Save Time with Smart Automation",
+    title: "Stop Wasting Hours on Investor Research",
     description:
-      "Capital OS eliminates repetitive manual tasks by automating your fundraising workflow — so you can focus on what truly matters: building investor relationships and closing rounds.",
+      "Instead of spending 20+ hours a week digging through PitchBook, LinkedIn, and spreadsheets, let AI find and score the right investors in minutes. Filter by stage, sector, geography, check size, and investment activity — all from one search.",
     image: "/images/real-estate-agent/benefits/benefit1.png",
     bgColor: "bg-[#06201b]",
     numberBg: "bg-lime-500",
@@ -18,9 +18,9 @@ const benefits = [
   },
   {
     number: "2",
-    title: "Stay Organized with All-in-One Tools",
+    title: "Send Emails That Actually Get Replies",
     description:
-      "No more juggling between spreadsheets, email threads, and notes. Capital OS brings everything — investors, outreach, pipeline, and analytics — into one unified dashboard.",
+      "Stop sending generic cold emails that get ignored. AI drafts personalized messages that reference each investor's thesis, portfolio companies, and recent activity. Every email requires your approval before sending.",
     image: "/images/real-estate-agent/benefits/benefit2.png",
     bgColor: "bg-[#E9DFDA] dark:bg-[#0a0e19]",
     numberBg: "bg-[#D15616]",
@@ -29,9 +29,9 @@ const benefits = [
   },
   {
     number: "3",
-    title: "Grow Your Business with Data-Driven Insights",
+    title: "Track Every Conversation in One Place",
     description:
-      "Make smarter decisions and boost your fundraising performance using Capital OS's powerful analytics — whether it's tracking pipeline velocity or identifying your best-match investors.",
+      "Move investors from discovery to term sheet on a visual pipeline. See exactly where every investor is in your process, what's been sent, who's replied, and what needs your attention next.",
     image: "/images/real-estate-agent/benefits/benefit3.png",
     bgColor: "bg-lime-500",
     numberBg: "bg-[#06201b]",
@@ -45,12 +45,12 @@ const Benefits: React.FC = () => {
     <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px] pb-[60px] md:pb-[80px] lg:pb-[100px] xl:pb-[120px]">
       <div className="text-center mx-auto xl:max-w-[920px] mb-[30px] md:mb-[40px] lg:mb-[50px]">
         <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
-          Benefits
+          Outcomes
         </span>
         <h2 className="!mb-0 !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
-          How <span className="font-semibold italic">Capital OS Helps</span>{" "}
-          You Work Smarter, Convert More Leads, and Maximize{" "}
-          <span className="font-semibold italic">Opportunity</span>
+          What Founders{" "}
+          <span className="font-semibold italic">Actually Get</span> from{" "}
+          <span className="font-semibold italic">Capital OS</span>
         </h2>
       </div>
       <div className="relative">
@@ -80,9 +80,7 @@ const Benefits: React.FC = () => {
               </div>
               <div className="text-center">
                 <div className="relative inline-block">
-                  {/* Subtle frame border */}
                   <div className="absolute -inset-[6px] rounded-[24px] border border-white/10 dark:border-white/5 pointer-events-none" />
-                  {/* Decorative corner accent */}
                   <div className="absolute -top-[3px] -left-[3px] w-[24px] h-[24px] border-t-2 border-l-2 border-lime-500/40 rounded-tl-[10px] pointer-events-none z-10" />
                   <div className="absolute -bottom-[3px] -right-[3px] w-[24px] h-[24px] border-b-2 border-r-2 border-[#D15616]/40 rounded-br-[10px] pointer-events-none z-10" />
                   <Image

@@ -17,7 +17,7 @@ const Footer: React.FC = () => {
                 </span>
               </Link>
               <p className="!leading-[1.5] font-light text-[#89837F] -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] text-lg md:text-[20px] lg:text-[22px] xl:text-xl">
-                Built for Founders Who Mean Business.
+                The AI fundraising platform for startup founders.
               </p>
             </div>
             <div className="ltr:lg:-ml-[35px] rtl:lg:-mr-[35px]">
