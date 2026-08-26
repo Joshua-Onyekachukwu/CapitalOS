@@ -34,14 +34,21 @@ ALTER TABLE email_accounts ADD COLUMN IF NOT EXISTS sending_window_end INTEGER D
 ALTER TABLE email_accounts ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'America/New_York';
 
 -- =============================================
--- 2. EXTEND email_messages TABLE
+-- 2. EXTEND email_messages TABLE (if it exists in Supabase)
+-- Note: email_messages may be in CockroachDB, not Supabase.
+-- This block safely skips if the table doesn't exist.
 -- =============================================
 
-ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS bounce_type TEXT;
-ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS delivery_status TEXT DEFAULT 'unknown';
-ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS account_id UUID;
-ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS campaign_id UUID;
-ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS unsubscribed BOOLEAN DEFAULT false;
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'email_messages') THEN
+    ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS bounce_type TEXT;
+    ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS delivery_status TEXT DEFAULT 'unknown';
+    ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS account_id UUID;
+    ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS campaign_id UUID;
+    ALTER TABLE email_messages ADD COLUMN IF NOT EXISTS unsubscribed BOOLEAN DEFAULT false;
+  END IF;
+END $$;
 
 -- =============================================
 -- 3. email_health_events TABLE
