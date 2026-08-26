@@ -70,6 +70,7 @@ const navSections: NavSection[] = [
     title: "System",
     items: [
       { label: "Data Health", href: "/dashboard/admin", icon: "ri-heart-pulse-line" },
+      { label: "Email Monitor", href: "/dashboard/admin/email-monitor", icon: "ri-mail-check-line" },
     ],
   },
   {
