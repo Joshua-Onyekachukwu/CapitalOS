@@ -54,7 +54,7 @@ const About: React.FC = () => {
           <div>
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[16px]">
               Most founders spend <strong>20+ hours per week</strong> on investor
-              research — digging through spreadsheets, scanning PitchBook, copying
+              research, digging through spreadsheets, scanning PitchBook, copying
               email addresses, and writing cold emails that get ignored.
             </p>
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[16px]">
@@ -65,7 +65,7 @@ const About: React.FC = () => {
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[20px] lg:mb-[25px]">
               We built Capital OS because <strong>founders deserve better</strong>.
               A single platform that gives you a real investor database, AI-powered
-              matching, and personalized outreach — without the spreadsheet chaos.
+              matching, and personalized outreach, without the spreadsheet chaos.
             </p>
             <Link
               href="/signup"

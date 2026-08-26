@@ -15,7 +15,7 @@ const features = [
     icon: "ri-brain-line",
     title: "AI Fit Scoring",
     description:
-      "Multi-factor scoring across 10+ dimensions — stage match, sector alignment, geography, check size, and investment recency. Every score comes with a clear explanation.",
+      "Multi-factor scoring across 10+ dimensions: stage match, sector alignment, geography, check size, and investment recency. Every score comes with a clear explanation.",
   },
   {
     icon: "ri-mail-star-line",
@@ -27,7 +27,7 @@ const features = [
     icon: "ri-dashboard-3-line",
     title: "Fundraising Pipeline",
     description:
-      "Visual pipeline to track every investor from discovery through qualification, outreach, meetings, and close — all in one view.",
+      "Visual pipeline to track every investor from discovery through qualification, outreach, meetings, and close, all in one view.",
   },
 ];
 

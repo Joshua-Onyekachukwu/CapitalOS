@@ -18,9 +18,8 @@ const HeroBanner: React.FC = () => {
             </h1>
 
             <p className="text-[#ebebe0] text-[14px] md:text-[15px] lg:text-md xl:text-lg xl:max-w-[420px] leading-relaxed">
-              57,000 investors. AI-powered matching. Personalized outreach.
-              One platform to replace your spreadsheets, PitchBook, and cold
-              email tools.
+              Find the right investors. Send emails that get replies. Close your
+              round. All without the spreadsheet chaos.
             </p>
 
             <div className="mt-[26px] md:mt-[24px] lg:mt-[30px] flex flex-col sm:flex-row gap-[14px] sm:gap-[12px]">
@@ -28,7 +27,7 @@ const HeroBanner: React.FC = () => {
                 href="/signup"
                 className="inline-block font-medium text-[14px] md:text-base rounded-[7px] bg-lime-500 text-black py-[10px] md:py-[11.5px] px-[20px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
               >
-                Start Free — No Credit Card
+                Start Free
               </Link>
               <Link
                 href="/#how-it-works"
@@ -95,28 +94,21 @@ const HeroBanner: React.FC = () => {
         </div>
       </div>
 
-      {/* Social Proof Bar — Real Data */}
+      {/* Trust Bar */}
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px] mt-[20px] md:mt-[40px] lg:mt-[60px]">
-        <div className="flex flex-wrap items-center justify-center gap-[20px] md:gap-[40px] py-[16px] md:py-[20px] text-center">
-          <div className="flex flex-col items-center">
-            <span className="text-[22px] md:text-[28px] font-bold text-[#06201b] dark:text-white">57K+</span>
-            <span className="text-[11px] md:text-[13px] text-gray-500 dark:text-gray-400">Investors in Database</span>
-          </div>
-          <div className="w-[1px] h-[30px] bg-gray-200 dark:bg-gray-700 hidden sm:block"></div>
-          <div className="flex flex-col items-center">
-            <span className="text-[22px] md:text-[28px] font-bold text-[#06201b] dark:text-white">SEC</span>
-            <span className="text-[11px] md:text-[13px] text-gray-500 dark:text-gray-400">Sourced Filings</span>
-          </div>
-          <div className="w-[1px] h-[30px] bg-gray-200 dark:bg-gray-700 hidden sm:block"></div>
-          <div className="flex flex-col items-center">
-            <span className="text-[22px] md:text-[28px] font-bold text-[#06201b] dark:text-white">AI</span>
-            <span className="text-[11px] md:text-[13px] text-gray-500 dark:text-gray-400">Matched & Scored</span>
-          </div>
-          <div className="w-[1px] h-[30px] bg-gray-200 dark:bg-gray-700 hidden sm:block"></div>
-          <div className="flex flex-col items-center">
-            <span className="text-[22px] md:text-[28px] font-bold text-[#06201b] dark:text-white">10+</span>
-            <span className="text-[11px] md:text-[13px] text-gray-500 dark:text-gray-400">Scoring Dimensions</span>
-          </div>
+        <div className="flex flex-wrap items-center justify-center gap-[16px] md:gap-[32px] py-[12px] md:py-[16px] text-center">
+          <span className="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400">
+            <i className="ri-check-line text-lime-500 mr-[4px]"></i>
+            1M+ Verified Investors
+          </span>
+          <span className="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400">
+            <i className="ri-check-line text-lime-500 mr-[4px]"></i>
+            AI-Powered Matching
+          </span>
+          <span className="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400">
+            <i className="ri-check-line text-lime-500 mr-[4px]"></i>
+            Personalized Outreach
+          </span>
         </div>
       </div>
     </>

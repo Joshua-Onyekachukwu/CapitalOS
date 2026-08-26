@@ -29,7 +29,7 @@ const WorkingProcess: React.FC = () => {
           <div>
             <div className="text-center ltr:xl:-mr-[5px] rtl:xl:-ml-[5px] lg:sticky xl:relative top-0">
               <Image
-                src="/working-process.png"
+                src="/images/real-estate-agent/working-process-new.png"
                 className="inline-block rtl:-scale-x-100"
                 alt="working-process"
                 width={500}
@@ -49,10 +49,10 @@ const WorkingProcess: React.FC = () => {
               <span className="font-semibold italic">Founders</span>
             </h2>
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] xl:max-w-[530px]">
-              Capital OS is built to streamline the way you fundraise — from
+              Capital OS is built to streamline the way you fundraise, from
               the first investor discovery to the final signed term sheet.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-[25px] mt-[25px] md:mt-[30px] lg:mt-[30px] xl:mt-[75px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-[25px] mt-[25px] md:mt-[30px] lg:mt-[30px] xl:mt-[75px] ltr:xl:-ml-[267px] rtl:xl:-mr-[267px]">
               {steps.map((step, index) => (
                 <div
                   key={index}

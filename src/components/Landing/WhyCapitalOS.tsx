@@ -12,12 +12,12 @@ const whyItems = [
   {
     title: "AI That Scores, Not Just Searches",
     description:
-      "Multi-factor scoring across 10+ dimensions — stage match, sector alignment, geography, check size, investment recency, and more. Every score comes with a clear explanation of why.",
+      "Multi-factor scoring across 10+ dimensions: stage match, sector alignment, geography, check size, investment recency, and more. Every score comes with a clear explanation of why.",
   },
   {
     title: "Outreach That Actually Gets Replies",
     description:
-      "AI drafts emails that reference each investor's thesis, portfolio, and recent activity. Not generic templates — personalized messages that show you've done your homework.",
+      "AI drafts emails that reference each investor's thesis, portfolio, and recent activity. Not generic templates, personalized messages that show you've done your homework.",
   },
   {
     title: "One Platform, Not Five Tools",
@@ -27,7 +27,7 @@ const whyItems = [
   {
     title: "You Stay in Control",
     description:
-      "Every AI-generated action requires your review and approval. The AI does the research and writing — you make the decisions. Nothing goes out without your say-so.",
+      "Every AI-generated action requires your review and approval. The AI does the research and writing, you make the decisions. Nothing goes out without your say-so.",
   },
   {
     title: "Built for Founders, Not Enterprises",

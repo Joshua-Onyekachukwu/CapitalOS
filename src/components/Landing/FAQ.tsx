@@ -12,7 +12,7 @@ const faqData = [
   {
     question: "Do I need technical experience to use Capital OS?",
     answer:
-      "Not at all. Capital OS is designed for founders, not engineers. Simply upload your pitch deck or describe your startup, and our AI handles the rest — from investor discovery to email drafting.",
+      "Not at all. Capital OS is designed for founders, not engineers. Simply upload your pitch deck or describe your startup, and our AI handles the rest, from investor discovery to email drafting.",
   },
   {
     question: "How does the AI investor matching work?",

@@ -8,7 +8,7 @@ const benefits = [
     number: "1",
     title: "Stop Wasting Hours on Investor Research",
     description:
-      "Instead of spending 20+ hours a week digging through PitchBook, LinkedIn, and spreadsheets, let AI find and score the right investors in minutes. Filter by stage, sector, geography, check size, and investment activity — all from one search.",
+      "Instead of spending 20+ hours a week digging through PitchBook, LinkedIn, and spreadsheets, let AI find and score the right investors in minutes. Filter by stage, sector, geography, check size, and investment activity, all from one search.",
     image: "/images/real-estate-agent/benefits/benefit1.png",
     bgColor: "bg-[#06201b]",
     numberBg: "bg-lime-500",
