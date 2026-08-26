@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
@@ -19,12 +19,17 @@ const authMenuItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Investors", href: "/dashboard/investors" },
   { label: "Campaigns", href: "/dashboard/campaigns" },
+  { label: "Copilot", href: "/dashboard/copilot" },
+  { label: "Settings", href: "/dashboard/settings" },
 ];
 
 const Navbar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, signedIn } = useUser();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const elementId = document.getElementById("navbar");
@@ -42,12 +47,23 @@ const Navbar: React.FC = () => {
     };
   }, []);
 
-  const [isActiveMobileMenu, setActiveMobileMenu] = useState<boolean>(true);
-  const [signingOut, setSigningOut] = useState(false);
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
-  const handleToggleMobileMenu = (): void => {
-    setActiveMobileMenu(!isActiveMobileMenu);
-  };
+  // Close mobile menu on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    }
+    if (mobileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [mobileMenuOpen]);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -62,7 +78,6 @@ const Navbar: React.FC = () => {
     }
   };
 
-  // During loading, show the public nav to avoid flash of wrong content
   const displayItems = loading ? publicMenuItems : signedIn ? authMenuItems : publicMenuItems;
 
   return (
@@ -70,6 +85,7 @@ const Navbar: React.FC = () => {
       <div
         className="sales-navbar bg-white dark:bg-dark fixed top-0 right-0 left-0 transition-all h-auto z-[999] py-[20px] md:py-[30px] lg:py-[35px]"
         id="navbar"
+        ref={menuRef}
       >
         <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
           <div className="flex items-center relative flex-wrap lg:flex-nowrap justify-between lg:justify-start">
@@ -84,12 +100,13 @@ const Navbar: React.FC = () => {
             <button
               type="button"
               className="inline-block relative leading-none lg:hidden"
-              onClick={handleToggleMobileMenu}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
-              <span className="h-[3px] w-[30px] my-[5px] block bg-dark dark:bg-white"></span>
-              <span className="h-[3px] w-[30px] my-[5px] block bg-dark dark:bg-white"></span>
-              <span className="h-[3px] w-[30px] my-[5px] block bg-dark dark:bg-white"></span>
+              <span className={`h-[3px] w-[30px] my-[5px] block bg-dark dark:bg-white transition-all ${mobileMenuOpen ? "rotate-45 translate-y-[13px]" : ""}`}></span>
+              <span className={`h-[3px] w-[30px] my-[5px] block bg-dark dark:bg-white transition-all ${mobileMenuOpen ? "opacity-0" : ""}`}></span>
+              <span className={`h-[3px] w-[30px] my-[5px] block bg-dark dark:bg-white transition-all ${mobileMenuOpen ? "-rotate-45 -translate-y-[13px]" : ""}`}></span>
             </button>
 
             {/* Desktop Navigation */}
@@ -111,13 +128,11 @@ const Navbar: React.FC = () => {
 
               <div className="flex items-center gap-[12px]">
                 {loading ? (
-                  /* Loading skeleton */
                   <div className="flex items-center gap-[12px]">
                     <div className="w-[80px] h-[40px] bg-gray-100 rounded-[7px] animate-pulse"></div>
                     <div className="w-[100px] h-[40px] bg-gray-100 rounded-[7px] animate-pulse"></div>
                   </div>
                 ) : signedIn ? (
-                  /* Authenticated: Dashboard + Account */
                   <>
                     <Link
                       href="/dashboard"
@@ -133,7 +148,6 @@ const Navbar: React.FC = () => {
                     </Link>
                   </>
                 ) : (
-                  /* Visitor: Log In + Get Started */
                   <>
                     <Link
                       href="/login"
@@ -152,71 +166,68 @@ const Navbar: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Navigation */}
-            <div
-              className={`absolute top-full left-0 right-0 bg-white dark:bg-[#0a0e19] border border-gray-200 dark:border-[#202c4b] p-[20px] md:p-[30px] w-full hidden lg:!hidden z-[999] ${
-                isActiveMobileMenu ? "" : "active"
-              }`}
-              id="navbar-collapse"
-            >
-              <ul>
-                {displayItems.map((item) => (
-                  <li
-                    key={item.href}
-                    className="my-[14px] md:my-[16px] first:mt-0 last:mb-0"
-                  >
-                    <Link
-                      href={item.href}
-                      className={`font-medium transition-all hover:text-[#06201b] ${
-                        pathname === item.href ? "text-[#06201b]" : ""
-                      }`}
+            {/* Mobile Navigation — controlled by state */}
+            {mobileMenuOpen && (
+              <div className="absolute top-full left-0 right-0 bg-white dark:bg-[#0a0e19] border border-gray-200 dark:border-[#202c4b] p-[20px] md:p-[30px] w-full lg:hidden z-[999]">
+                <ul>
+                  {displayItems.map((item) => (
+                    <li
+                      key={item.href}
+                      className="my-[14px] md:my-[16px] first:mt-0 last:mb-0"
                     >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                      <Link
+                        href={item.href}
+                        className={`font-medium transition-all hover:text-[#06201b] ${
+                          pathname === item.href ? "text-[#06201b]" : ""
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
 
-              <div className="flex flex-col gap-[10px] mt-[20px]">
-                {loading ? (
-                  <div className="space-y-[10px]">
-                    <div className="h-[44px] bg-gray-100 rounded-[7px] animate-pulse"></div>
-                    <div className="h-[44px] bg-gray-100 rounded-[7px] animate-pulse"></div>
-                  </div>
-                ) : signedIn ? (
-                  <>
-                    <Link
-                      href="/dashboard"
-                      className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
-                    >
-                      Go to Dashboard
-                    </Link>
-                    <button
-                      onClick={handleSignOut}
-                      disabled={signingOut}
-                      className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
-                    >
-                      {signingOut ? "Signing out..." : "Sign Out"}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
-                    >
-                      Log In
-                    </Link>
-                    <Link
-                      href="/signup"
-                      className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
-                    >
-                      Get Started
-                    </Link>
-                  </>
-                )}
+                <div className="flex flex-col gap-[10px] mt-[20px]">
+                  {loading ? (
+                    <div className="space-y-[10px]">
+                      <div className="h-[44px] bg-gray-100 rounded-[7px] animate-pulse"></div>
+                      <div className="h-[44px] bg-gray-100 rounded-[7px] animate-pulse"></div>
+                    </div>
+                  ) : signedIn ? (
+                    <>
+                      <Link
+                        href="/dashboard"
+                        className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
+                      >
+                        Go to Dashboard
+                      </Link>
+                      <button
+                        onClick={handleSignOut}
+                        disabled={signingOut}
+                        className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                      >
+                        {signingOut ? "Signing out..." : "Sign Out"}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login"
+                        className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
+                      >
+                        Log In
+                      </Link>
+                      <Link
+                        href="/signup"
+                        className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                      >
+                        Get Started
+                      </Link>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

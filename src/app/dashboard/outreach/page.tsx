@@ -69,8 +69,38 @@ export default function OutreachPage() {
   const [emailConnected, setEmailConnected] = useState<boolean | null>(null);
   const [emailProvider, setEmailProvider] = useState<string | null>(null);
 
+  // Inline editing state
+  const [editingDraft, setEditingDraft] = useState<string | null>(null);
+  const [editSubject, setEditSubject] = useState("");
+  const [editBody, setEditBody] = useState("");
+
+  // Persist drafts to localStorage
+  const saveDraftsToStorage = (d: EmailDraft[]) => {
+    try {
+      const serializable = d.filter((draft) => draft.body); // only save drafts with content
+      localStorage.setItem("outreach-drafts", JSON.stringify(serializable));
+    } catch { /* ignore */ }
+  };
+
+  const loadDraftsFromStorage = (): EmailDraft[] | null => {
+    try {
+      const stored = localStorage.getItem("outreach-drafts");
+      if (stored) return JSON.parse(stored);
+    } catch { /* ignore */ }
+    return null;
+  };
+
   // Load top-fit investors for email drafting
   const loadInvestors = useCallback(async () => {
+    // First, try to restore persisted drafts
+    const stored = loadDraftsFromStorage();
+    if (stored && stored.length > 0) {
+      setDrafts(stored);
+      setSelectedDraft(stored[0]);
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/investors?limit=30&minScore=60");
       const data = await res.json();
@@ -199,6 +229,10 @@ export default function OutreachPage() {
           : prev
       );
 
+      // Persist updated drafts
+      const updated = drafts.map((d) => d.id === draft.id ? { ...d, subject: data.subject || d.subject, body: data.body || d.body } : d);
+      saveDraftsToStorage(updated);
+
       setSendResult({ type: "success", text: "Email generated successfully!" });
     } catch {
       setSendResult({ type: "error", text: "AI service unavailable. Please try again." });
@@ -258,12 +292,12 @@ export default function OutreachPage() {
   };
 
   const handleApprove = (draftId: string) => {
-    setDrafts((prev) =>
-      prev.map((d) => (d.id === draftId ? { ...d, status: "approved" as const } : d))
-    );
+    const updated = drafts.map((d) => (d.id === draftId ? { ...d, status: "approved" as const } : d));
+    setDrafts(updated);
     setSelectedDraft((prev) =>
       prev?.id === draftId ? { ...prev, status: "approved" as const } : prev
     );
+    saveDraftsToStorage(updated);
   };
 
   const handleSend = async (draft: EmailDraft) => {
@@ -604,6 +638,45 @@ export default function OutreachPage() {
                   </div>
                 )}
 
+                {/* Inline Editing Mode */}
+                {editingDraft === selectedDraft.id && (
+                  <div className="bg-white dark:bg-gray-800 border border-lime-300 dark:border-lime-700 rounded-[12px] p-[20px] mb-[16px]">
+                    <div className="mb-[12px]">
+                      <label className="text-[12px] text-gray-400 block mb-[4px]">Subject</label>
+                      <input
+                        type="text"
+                        value={editSubject}
+                        onChange={(e) => setEditSubject(e.target.value)}
+                        className="w-full px-[12px] py-[8px] border border-gray-200 dark:border-gray-600 rounded-[8px] text-[14px] bg-gray-50 dark:bg-gray-700 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                      />
+                    </div>
+                    <div className="mb-[12px]">
+                      <label className="text-[12px] text-gray-400 block mb-[4px]">Body</label>
+                      <textarea
+                        value={editBody}
+                        onChange={(e) => setEditBody(e.target.value)}
+                        rows={8}
+                        className="w-full px-[12px] py-[8px] border border-gray-200 dark:border-gray-600 rounded-[8px] text-[14px] bg-gray-50 dark:bg-gray-700 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500 resize-y"
+                      />
+                    </div>
+                    <div className="flex items-center gap-[8px]">
+                      <Button size="sm" onClick={() => {
+                        handleEditDraft(selectedDraft.id, editSubject, editBody);
+                        setEditingDraft(null);
+                        // Persist
+                        const updated = drafts.map((d) => d.id === selectedDraft.id ? { ...d, subject: editSubject, body: editBody } : d);
+                        saveDraftsToStorage(updated);
+                      }}>
+                        <i className="ri-check-line text-[14px] mr-[4px]"></i>
+                        Save Changes
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingDraft(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {/* AI Analysis */}
                 {selectedDraft.aiAnalysis && (
                   <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] p-[14px] mb-[16px] border border-lime-100 dark:border-lime-800/30">
@@ -634,10 +707,9 @@ export default function OutreachPage() {
                         Regenerate
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => {
-                        const newBody = prompt("Edit the email body:", selectedDraft.body);
-                        if (newBody !== null) {
-                          handleEditDraft(selectedDraft.id, selectedDraft.subject, newBody);
-                        }
+                        setEditingDraft(selectedDraft.id);
+                        setEditSubject(selectedDraft.subject);
+                        setEditBody(selectedDraft.body);
                       }}>
                         <i className="ri-edit-line text-[14px]"></i>
                         Edit

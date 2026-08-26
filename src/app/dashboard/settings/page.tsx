@@ -30,6 +30,11 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [fullName, setFullName] = useState("");
+  const [notifications, setNotifications] = useState({
+    email_replies: true,
+    meeting_requests: true,
+    ai_task_completion: true,
+  });
 
   const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
   const [emailLoading, setEmailLoading] = useState(true);
@@ -65,6 +70,14 @@ export default function SettingsPage() {
       }
     }
     loadProfile();
+  }, []);
+
+  // Load notifications from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("notifications");
+      if (stored) setNotifications(JSON.parse(stored));
+    } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
@@ -425,18 +438,27 @@ export default function SettingsPage() {
         </CardHeader>
         <CardBody>
           <div className="space-y-[14px]">
-            {[
-              { label: "Email replies", description: "Get notified when investors reply" },
-              { label: "Meeting requests", description: "Get notified when meetings are requested" },
-              { label: "AI task completion", description: "Get notified when AI finishes tasks" },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between">
+            {([
+              { key: "email_replies" as const, label: "Email replies", description: "Get notified when investors reply" },
+              { key: "meeting_requests" as const, label: "Meeting requests", description: "Get notified when meetings are requested" },
+              { key: "ai_task_completion" as const, label: "AI task completion", description: "Get notified when AI finishes tasks" },
+            ]).map((item) => (
+              <div key={item.key} className="flex items-center justify-between">
                 <div>
                   <p className="text-[14px] font-medium !mb-[2px]">{item.label}</p>
                   <p className="text-[13px] text-gray-400 !mb-0">{item.description}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={notifications[item.key]}
+                    onChange={(e) => {
+                      const updated = { ...notifications, [item.key]: e.target.checked };
+                      setNotifications(updated);
+                      localStorage.setItem("notifications", JSON.stringify(updated));
+                    }}
+                  />
                   <div className="w-[40px] h-[22px] bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-[18px] after:w-[18px] after:transition-all peer-checked:bg-lime-500"></div>
                 </label>
               </div>

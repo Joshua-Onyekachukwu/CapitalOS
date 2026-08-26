@@ -44,11 +44,15 @@ export async function GET(_request: NextRequest) {
       campaigns = data || [];
     } catch { /* table may not exist */ }
 
+    // Count investors with LinkedIn
+    const withLinkedIn = (investors || []).filter((i: any) => i.linkedin_url).length;
+
     return NextResponse.json({
       investors: investors || [],
       emails,
       pendingDuplicates,
       campaigns,
+      withLinkedIn,
     });
   } catch (err) {
     console.error("Analytics error:", err);

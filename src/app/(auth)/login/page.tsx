@@ -22,6 +22,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true); // Supabase persists by default
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -135,6 +136,8 @@ function LoginForm() {
               <input
                 type="checkbox"
                 className="w-[16px] h-[16px] rounded border-gray-300"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
               />
               Remember me
             </label>

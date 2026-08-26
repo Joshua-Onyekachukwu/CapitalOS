@@ -113,15 +113,17 @@ const Footer: React.FC = () => {
                   <i className="ri-github-fill"></i>
                 </a>
                 <a
-                  href="#"
+                  href="https://x.com/capitalos"
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-block text-[#D15616] transition-all hover:text-[#06201b] dark:hover:text-white ltr:mr-[5px] ltr:md:mr-[10px] rtl:ml-[5px] rtl:md:ml-[10px]"
                 >
                   <i className="ri-twitter-x-fill"></i>
                 </a>
                 <a
-                  href="#"
+                  href="https://linkedin.com/company/capitalos"
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-block text-[#D15616] transition-all hover:text-[#06201b] dark:hover:text-white ltr:mr-[5px] ltr:md:mr-[10px] rtl:ml-[5px] rtl:md:ml-[10px]"
                 >
                   <i className="ri-linkedin-fill"></i>

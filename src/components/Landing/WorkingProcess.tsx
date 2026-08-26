@@ -52,7 +52,7 @@ const WorkingProcess: React.FC = () => {
               Capital OS is built to streamline the way you fundraise — from
               the first investor discovery to the final signed term sheet.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-[25px] mt-[25px] md:mt-[30px] lg:mt-[30px] xl:mt-[75px] ltr:xl:-ml-[267px] rtl:xl:-mr-[267px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-[25px] mt-[25px] md:mt-[30px] lg:mt-[30px] xl:mt-[75px]">
               {steps.map((step, index) => (
                 <div
                   key={index}

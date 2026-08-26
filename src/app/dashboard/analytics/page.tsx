@@ -442,7 +442,7 @@ export default function AnalyticsPage() {
                 { label: "Verified", value: d.verifiedInvestors, total: d.totalInvestors, color: "bg-blue-500" },
                 { label: "High-Fit (80+)", value: d.highFitInvestors, total: d.totalInvestors, color: "bg-purple-500" },
                 { label: "Ready for Outreach", value: d.readinessBreakdown.find((r) => r.stage === "ready")?.count || 0, total: d.totalInvestors, color: "bg-lime-500" },
-                { label: "With LinkedIn", value: Math.round(d.totalInvestors * 0.65), total: d.totalInvestors, color: "bg-cyan-500" },
+                { label: "With LinkedIn", value: d.withLinkedIn || 0, total: d.totalInvestors, color: "bg-cyan-500" },
               ].map((item) => {
                 const pct = item.total > 0 ? Math.round((item.value / item.total) * 100) : 0;
                 return (
