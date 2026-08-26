@@ -76,6 +76,8 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchError, setResearchError] = useState("");
   const [showOutreach, setShowOutreach] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [savingInvestor, setSavingInvestor] = useState(false);
 
   const fetchInvestor = useCallback(async () => {
     setLoading(true);
@@ -121,8 +123,44 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
   }, [investorId]);
 
   useEffect(() => {
-    if (investorId) fetchInvestor();
+    if (investorId) {
+      fetchInvestor();
+      // Check if already saved
+      fetch("/api/investors/saved")
+        .then((r) => r.json())
+        .then((data) => {
+          const saved = data.investors || [];
+          setIsSaved(saved.some((s: any) => s.investor_id === investorId));
+        })
+        .catch(() => {});
+    }
   }, [investorId, fetchInvestor]);
+
+  const handleToggleSave = async () => {
+    if (!investorId || savingInvestor) return;
+    setSavingInvestor(true);
+    try {
+      if (isSaved) {
+        await fetch("/api/investors/saved", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ investorId }),
+        });
+        setIsSaved(false);
+      } else {
+        await fetch("/api/investors/saved", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ investorId }),
+        });
+        setIsSaved(true);
+      }
+    } catch (err) {
+      console.error("Save toggle failed:", err);
+    } finally {
+      setSavingInvestor(false);
+    }
+  };
 
   const handleGenerateResearch = async () => {
     setResearchLoading(true);
@@ -202,9 +240,9 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
         title=""
         actions={
           <div className="flex items-center gap-[10px]">
-            <Button variant="outline">
-              <i className="ri-bookmark-line text-[16px]"></i>
-              Save
+            <Button variant="outline" onClick={handleToggleSave} loading={savingInvestor}>
+              <i className={`${isSaved ? "ri-bookmark-fill text-lime-500" : "ri-bookmark-line"} text-[16px]`}></i>
+              {isSaved ? "Saved" : "Save"}
             </Button>
             <Button onClick={() => setShowOutreach(true)}>
               <i className="ri-mail-send-line text-[16px]"></i>
@@ -499,9 +537,9 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                 <i className="ri-mail-send-line text-[16px]"/>
                 Start Personalized Outreach
               </Button>
-              <Button fullWidth variant="outline">
-                <i className="ri-bookmark-line text-[16px]"></i>
-                Save to List
+              <Button fullWidth variant="outline" onClick={handleToggleSave} loading={savingInvestor}>
+                <i className={`${isSaved ? "ri-bookmark-fill text-lime-500" : "ri-bookmark-line"} text-[16px]`}></i>
+                {isSaved ? "Saved to List" : "Save to List"}
               </Button>
               <Link href="/dashboard/investors">
                 <Button fullWidth variant="ghost">
