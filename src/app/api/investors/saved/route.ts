@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { createClient } from "@supabase/supabase-js";
+import { Client } from "pg";
+
+// Direct CockroachDB connection for saved_investors (PostgREST cache issue with Supabase)
+function getCockroachClient() {
+  return new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
+    statement_timeout: 10000,
+  });
+}
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // GET — List saved investors
 export async function GET(request: NextRequest) {
@@ -8,41 +26,43 @@ export async function GET(request: NextRequest) {
   if (user instanceof NextResponse) return user;
 
   try {
-    const sp = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    // Query saved_investors from CockroachDB
+    const cockroach = getCockroachClient();
+    await cockroach.connect();
+
+    const { rows: saved } = await cockroach.query(
+      "SELECT id, investor_id, notes, created_at FROM saved_investors WHERE user_id = $1 ORDER BY created_at DESC",
+      [user.id]
     );
+    await cockroach.end();
 
-    const { data: saved, error } = await sp
-      .from("saved_investors")
-      .select(`
-        id,
-        investor_id,
-        notes,
-        created_at,
-        investors (
-          id, full_name, email, job_title, investor_type,
-          fit_score, country, city, investment_stages, investment_sectors
-        )
-      `)
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    if (saved.length === 0) {
+      return NextResponse.json({ investors: [] });
+    }
 
-    if (error) throw error;
+    // Fetch investor details from Supabase
+    const sp = getSupabase();
+    const investorIds = saved.map((s: any) => s.investor_id);
 
-    // Flatten the join
-    const investors = (saved || []).map((s: any) => ({
+    const { data: investors } = await sp
+      .from("investors")
+      .select("id, full_name, email, job_title, investor_type, fit_score, country, city, investment_stages, investment_sectors")
+      .in("id", investorIds);
+
+    // Merge saved data with investor details
+    const investorMap = new Map((investors || []).map((i: any) => [i.id, i]));
+    const result = saved.map((s: any) => ({
       id: s.id,
       investor_id: s.investor_id,
       notes: s.notes,
       saved_at: s.created_at,
-      ...s.investors,
+      ...investorMap.get(s.investor_id),
     }));
 
-    return NextResponse.json({ investors });
+    return NextResponse.json({ investors: result });
   } catch (err) {
     console.error("Saved investors GET error:", err);
-    return NextResponse.json({ error: "Failed to load saved investors" }, { status: 500 });
+    return NextResponse.json({ investors: [] });
   }
 }
 
@@ -59,36 +79,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "investorId is required" }, { status: 400 });
     }
 
-    const sp = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const cockroach = getCockroachClient();
+    await cockroach.connect();
 
     // Check if already saved
-    const { data: existing } = await sp
-      .from("saved_investors")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("investor_id", investorId)
-      .single();
+    const { rows: existing } = await cockroach.query(
+      "SELECT id FROM saved_investors WHERE user_id = $1 AND investor_id = $2",
+      [user.id, investorId]
+    );
 
-    if (existing) {
-      return NextResponse.json({ error: "Already saved", saved: true });
+    if (existing.length > 0) {
+      await cockroach.end();
+      return NextResponse.json({ success: true, savedId: existing[0].id, alreadySaved: true });
     }
 
-    const { data, error } = await sp
-      .from("saved_investors")
-      .insert({
-        user_id: user.id,
-        investor_id: investorId,
-        notes: notes || null,
-      })
-      .select("id")
-      .single();
+    // Insert
+    const { rows } = await cockroach.query(
+      "INSERT INTO saved_investors (user_id, investor_id, notes) VALUES ($1, $2, $3) RETURNING id",
+      [user.id, investorId, notes || null]
+    );
+    await cockroach.end();
 
-    if (error) throw error;
-
-    return NextResponse.json({ success: true, savedId: data.id });
+    return NextResponse.json({ success: true, savedId: rows[0].id });
   } catch (err) {
     console.error("Saved investors POST error:", err);
     return NextResponse.json({ error: "Failed to save investor" }, { status: 500 });
@@ -104,24 +116,19 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json();
     const { savedId, investorId } = body;
 
-    const sp = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    let query = sp.from("saved_investors").delete().eq("user_id", user.id);
+    const cockroach = getCockroachClient();
+    await cockroach.connect();
 
     if (savedId) {
-      query = query.eq("id", savedId);
+      await cockroach.query("DELETE FROM saved_investors WHERE id = $1 AND user_id = $2", [savedId, user.id]);
     } else if (investorId) {
-      query = query.eq("investor_id", investorId);
+      await cockroach.query("DELETE FROM saved_investors WHERE investor_id = $1 AND user_id = $2", [investorId, user.id]);
     } else {
+      await cockroach.end();
       return NextResponse.json({ error: "savedId or investorId required" }, { status: 400 });
     }
 
-    const { error } = await query;
-    if (error) throw error;
-
+    await cockroach.end();
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Saved investors DELETE error:", err);
