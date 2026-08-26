@@ -466,7 +466,6 @@ CREATE INDEX IF NOT EXISTS idx_investors_outreach ON investors(outreach_readines
 CREATE INDEX IF NOT EXISTS idx_investors_type ON investors(investor_type);
 CREATE INDEX IF NOT EXISTS idx_investors_country ON investors(country);
 CREATE INDEX IF NOT EXISTS idx_investors_source ON investors(source);
-CREATE INDEX IF NOT EXISTS idx_investors_active ON investors(is_active) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_company_profiles_user ON company_profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_saved_investors_user ON saved_investors(user_id);
 CREATE INDEX IF NOT EXISTS idx_email_messages_user ON email_messages(user_id);
