@@ -16,57 +16,61 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    const sp = request.nextUrl.searchParams;
 
-    // Fetch a large sample for facet computation
-    const { data: investors, count: total } = await supabase
+    // 1. Get accurate counts for key stats using head:true (fast, no data transfer)
+    const [
+      { count: totalCount },
+      { count: withEmailCount },
+      { count: withLinkedinCount },
+      { count: verifiedCount },
+      { count: readyCount },
+      { count: needsVerificationCount },
+    ] = await Promise.all([
+      supabase.from("investors").select("*", { count: "exact", head: true }),
+      supabase.from("investors").select("*", { count: "exact", head: true }).not("email", "is", null).neq("email", ""),
+      supabase.from("investors").select("*", { count: "exact", head: true }).not("linkedin_url", "is", null).neq("linkedin_url", ""),
+      supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_verified", true),
+      supabase.from("investors").select("*", { count: "exact", head: true }).eq("outreach_readiness", "ready"),
+      supabase.from("investors").select("*", { count: "exact", head: true }).eq("outreach_readiness", "needs_verification"),
+    ]);
+
+    // 2. Fetch a larger sample for category facets (type, sector, stage, country)
+    // Use multiple paginated requests to get a better sample
+    const SAMPLE_SIZE = 5000;
+    const { data: investors } = await supabase
       .from("investors")
-      .select("investor_type, investment_sectors, investment_stages, country, city, outreach_readiness, is_verified, fit_score, data_quality_score, email, linkedin_url")
-      .limit(5000);
+      .select("investor_type, investment_sectors, investment_stages, country, city, outreach_readiness")
+      .limit(SAMPLE_SIZE);
 
     const rows = investors || [];
 
-    // Compute facets
+    // Compute category facets from sample
     const typeCounts: Record<string, number> = {};
     const sectorCounts: Record<string, number> = {};
     const stageCounts: Record<string, number> = {};
     const countryCounts: Record<string, number> = {};
     const readinessCounts: Record<string, number> = {};
-    let withEmail = 0, withoutEmail = 0;
-    let withLinkedin = 0, withoutLinkedin = 0;
-    let verifiedYes = 0, verifiedNo = 0;
 
     for (const inv of rows) {
-      // Type
       if (inv.investor_type) {
         typeCounts[inv.investor_type] = (typeCounts[inv.investor_type] || 0) + 1;
       }
-      // Sectors
       if (Array.isArray(inv.investment_sectors)) {
         for (const s of inv.investment_sectors) {
           if (s) sectorCounts[s] = (sectorCounts[s] || 0) + 1;
         }
       }
-      // Stages
       if (Array.isArray(inv.investment_stages)) {
         for (const s of inv.investment_stages) {
           if (s) stageCounts[s] = (stageCounts[s] || 0) + 1;
         }
       }
-      // Country
       if (inv.country) {
         countryCounts[inv.country] = (countryCounts[inv.country] || 0) + 1;
       }
-      // Readiness
       if (inv.outreach_readiness) {
         readinessCounts[inv.outreach_readiness] = (readinessCounts[inv.outreach_readiness] || 0) + 1;
       }
-      // Email
-      if (inv.email && inv.email.trim()) withEmail++; else withoutEmail++;
-      // LinkedIn
-      if (inv.linkedin_url && inv.linkedin_url.trim()) withLinkedin++; else withoutLinkedin++;
-      // Verified
-      if (inv.is_verified) verifiedYes++; else verifiedNo++;
     }
 
     // Sort and format
@@ -76,15 +80,28 @@ export async function GET(request: NextRequest) {
         .map(([value, count]) => ({ value, count }));
 
     return NextResponse.json({
-      total: total || rows.length,
+      total: totalCount || 0,
       types: sortDesc(typeCounts),
       sectors: sortDesc(sectorCounts),
       stages: sortDesc(stageCounts),
       countries: sortDesc(countryCounts),
       readiness: sortDesc(readinessCounts),
-      emailStats: { with: withEmail, without: withoutEmail },
-      linkedinStats: { with: withLinkedin, without: withoutLinkedin },
-      verifiedStats: { yes: verifiedYes, no: verifiedNo },
+      emailStats: {
+        with: withEmailCount || 0,
+        without: (totalCount || 0) - (withEmailCount || 0),
+      },
+      linkedinStats: {
+        with: withLinkedinCount || 0,
+        without: (totalCount || 0) - (withLinkedinCount || 0),
+      },
+      verifiedStats: {
+        yes: verifiedCount || 0,
+        no: (totalCount || 0) - (verifiedCount || 0),
+      },
+      readyToOutreach: readyCount || 0,
+      needsVerification: needsVerificationCount || 0,
+      _sampleSize: rows.length,
+      _sampleTotal: totalCount || 0,
     });
   } catch (err) {
     console.error("Facets API error:", err);

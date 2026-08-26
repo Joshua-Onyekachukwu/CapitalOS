@@ -27,7 +27,7 @@ interface ModelConfig {
 const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Investor matching — needs fast, accurate classification
   investor_matching: {
-    model: "nvidia/llama-3.3-nemotron-super-49b-v1",
+    model: "nvidia/nemotron-3.5-lightning-30b-a3b",
     maxTokens: 2048,
     temperature: 0.1,
     description: "High-accuracy investor-startup matching",
@@ -35,7 +35,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
 
   // Investor scoring — structured scoring with reasoning
   investor_scoring: {
-    model: "nvidia/llama-3.3-nemotron-super-49b-v1",
+    model: "nvidia/nemotron-3.5-lightning-30b-a3b",
     maxTokens: 4096,
     temperature: 0.2,
     description: "Multi-factor investor scoring with explanations",
@@ -43,7 +43,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
 
   // Email drafting — needs creative, natural language
   email_drafting: {
-    model: "nvidia/llama-3.3-nemotron-super-49b-v1",
+    model: "nvidia/nemotron-3.5-lightning-30b-a3b",
     maxTokens: 2048,
     temperature: 0.7,
     description: "Personalized outreach email generation",
@@ -51,7 +51,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
 
   // Research summarization — condensing large amounts of data
   research_summary: {
-    model: "nvidia/llama-3.3-nemotron-super-49b-v1",
+    model: "nvidia/nemotron-3.5-lightning-30b-a3b",
     maxTokens: 4096,
     temperature: 0.3,
     description: "Investor research and profile summarization",
@@ -59,7 +59,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
 
   // Fit analysis — explaining why an investor matches
   fit_analysis: {
-    model: "nvidia/llama-3.3-nemotron-super-49b-v1",
+    model: "nvidia/nemotron-3.5-lightning-30b-a3b",
     maxTokens: 2048,
     temperature: 0.2,
     description: "Detailed investor-startup fit explanations",
@@ -67,7 +67,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
 
   // Pipeline analysis — strategic insights on fundraising progress
   pipeline_analysis: {
-    model: "nvidia/llama-3.3-nemotron-super-49b-v1",
+    model: "nvidia/nemotron-3.5-lightning-30b-a3b",
     maxTokens: 4096,
     temperature: 0.3,
     description: "Fundraising pipeline strategy and analytics",

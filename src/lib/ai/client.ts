@@ -91,8 +91,8 @@ export async function chatCompletion({
         const errorBody = await response.text();
         lastError = new Error(`NVIDIA API error ${response.status}: ${errorBody}`);
 
-        // Don't retry on auth errors (401, 403)
-        if (response.status === 401 || response.status === 403) {
+        // Don't retry on auth errors (401, 403) or model-gone (410)
+        if (response.status === 401 || response.status === 403 || response.status === 410) {
           throw lastError;
         }
 
