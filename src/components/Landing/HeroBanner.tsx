@@ -12,17 +12,15 @@ const HeroBanner: React.FC = () => {
           {/* Left: Copy */}
           <div className="relative z-10 pt-[45px] pb-[280px] px-[20px] md:pt-[60px] md:px-[40px] lg:pt-[80px] lg:pb-[20px] lg:px-[50px] xl:pt-[90px] xl:px-[80px] lg:absolute lg:inset-y-0 lg:left-0 lg:w-[50%] lg:flex lg:flex-col lg:justify-center">
             <h1 className="!font-medium !text-[#ebebe0] !text-[32px] md:!text-[44px] lg:!text-[50px] xl:!text-[58px] !leading-[1.15] md:-tracking-[1.5px] !mb-[12px] lg:!mb-[16px]">
-              57,000 Investors.
+              The Operating System
               <br />
-              One Platform.
-              <br />
-              <span className="italic text-lime-500">Zero Spreadsheets.</span>
+              for <span className="italic text-lime-500">Raising Capital</span>
             </h1>
 
             <p className="text-[#ebebe0] text-[14px] md:text-[15px] lg:text-md xl:text-lg xl:max-w-[420px] leading-relaxed">
-              Capital OS uses AI to match your startup with the right investors,
-              draft thesis-aligned outreach, and track every conversation from
-              first contact to signed term sheet.
+              57,000 investors. AI-powered matching. Personalized outreach.
+              One platform to replace your spreadsheets, PitchBook, and cold
+              email tools.
             </p>
 
             <div className="mt-[26px] md:mt-[24px] lg:mt-[30px] flex flex-col sm:flex-row gap-[14px] sm:gap-[12px]">
