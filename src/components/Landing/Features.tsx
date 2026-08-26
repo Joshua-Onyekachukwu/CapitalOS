@@ -13,15 +13,15 @@ const features = [
   },
   {
     icon: "ri-brain-line",
-    title: "Intelligent Fit Scoring",
+    title: "AI-Powered Fit Scoring",
     description:
-      "We score every investor across 10+ dimensions: stage match, sector alignment, geography, check size, and investment recency. Every score comes with a clear explanation.",
+      "We score every investor across 10+ dimensions using AI: stage match, sector alignment, geography, check size, and investment recency. Every score comes with a clear explanation.",
   },
   {
     icon: "ri-mail-star-line",
-    title: "Personalized Outreach",
+    title: "AI-Personalized Outreach",
     description:
-      "We generate personalized emails that reference each investor's thesis, portfolio, and recent activity. You review, edit, and approve before anything is sent.",
+      "We use AI to generate personalized emails that reference each investor's thesis, portfolio, and recent activity. You review, edit, and approve before anything is sent.",
   },
   {
     icon: "ri-dashboard-3-line",

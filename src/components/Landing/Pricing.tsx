@@ -10,9 +10,9 @@ const plans = [
     price: "$49",
     suffix: "/month",
     features: [
-      "Intelligent investor discovery",
+      "AI-powered investor discovery",
       "Up to 500 investor matches",
-      "Email drafting & outreach",
+      "AI email drafting & outreach",
       "Visual pipeline board",
       "500 Capital Credits/month",
     ],
@@ -29,7 +29,7 @@ const plans = [
     suffix: "/month",
     features: [
       "Unlimited investor discovery",
-      "Advanced matching & scoring",
+      "Advanced AI matching & scoring",
       "Personalized outreach at scale",
       "Full analytics & reporting",
       "2,000 Capital Credits/month",

@@ -30,7 +30,7 @@ const Testimonials: React.FC = () => {
                 Discover the Right Investors
               </h3>
               <p className="text-[14px] md:text-[15px] text-gray-500 dark:text-gray-400 !mb-0">
-                We find and score investors who match your stage, sector, and
+                We use AI to find and score investors who match your stage, sector, and
                 geography. No more scrolling through PitchBook for hours.
               </p>
             </div>
@@ -42,7 +42,7 @@ const Testimonials: React.FC = () => {
                 Outreach That Gets Replies
               </h3>
               <p className="text-[14px] md:text-[15px] text-gray-500 dark:text-gray-400 !mb-0">
-                We draft personalized emails that reference each investor&apos;s
+                We use AI to draft personalized emails that reference each investor&apos;s
                 thesis and portfolio. You review and approve before anything goes
                 out.
               </p>
