@@ -54,6 +54,7 @@ const navSections: NavSection[] = [
     title: "Outreach",
     items: [
       { label: "Outreach", href: "/dashboard/outreach", icon: "ri-mail-send-line" },
+      { label: "Email Health", href: "/dashboard/email-health", icon: "ri-heart-pulse-line", badge: "New" },
       { label: "Metrics", href: "/dashboard/outreach/metrics", icon: "ri-bar-chart-line" },
       { label: "Meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" },
     ],
