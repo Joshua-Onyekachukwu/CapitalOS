@@ -102,7 +102,8 @@ export default function OutreachPage() {
     }
 
     try {
-      const res = await fetch("/api/investors?limit=30&minScore=60");
+      const res = await fetch("/api/investors?limit=50&minScore=50");
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
       const data = await res.json();
 
       if (data.investors && data.investors.length > 0) {
@@ -128,8 +129,8 @@ export default function OutreachPage() {
           setSelectedDraft(mappedDrafts[0]);
         }
       }
-    } catch {
-      // API may not be available
+    } catch (err) {
+      console.error("Failed to load investors for outreach:", err);
     } finally {
       setLoading(false);
     }

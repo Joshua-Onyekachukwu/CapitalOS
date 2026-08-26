@@ -124,7 +124,7 @@ export default function AIActivityPage() {
           { label: "Total Operations", value: entries.length, icon: "ri-robot-2-line" },
           { label: "Credits Used", value: totalCreditsUsed, icon: "ri-flashlight-line" },
           { label: "AI Models Used", value: new Set(entries.filter((e) => e.modelUsed).map((e) => e.modelUsed)).size, icon: "ri-cpu-line" },
-          { label: "Most Used", value: Object.entries(operationCounts).sort(([, a], [, b]) => b - a)[0]?.[0]?.replace(/_/g, " ") || "—", icon: "ri-trophy-line" },
+          { label: "Most Used", value: (() => { const top = Object.entries(operationCounts).sort(([, a], [, b]) => b - a)[0]?.[0]; return top ? (OPERATION_LABELS[top]?.label || top.replace(/_/g, " ")) : "—"; })(), icon: "ri-trophy-line" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[16px] text-center">

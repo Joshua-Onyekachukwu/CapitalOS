@@ -118,7 +118,12 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname.startsWith(href);
+    // Exact match for non-dashboard routes to avoid false positives
+    // e.g., /dashboard/investors should not match /dashboard/investors/discover
+    if (pathname === href) return true;
+    // Check if pathname starts with href followed by / or ?
+    if (pathname.startsWith(href + "/") || pathname.startsWith(href + "?")) return true;
+    return false;
   };
 
   return (

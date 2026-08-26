@@ -88,13 +88,35 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/dashboard/cockpit")
-      .then((res) => res.json())
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    let cancelled = false;
+
+    const fetchWithRetry = async (retries = 3, delay = 1000) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const res = await fetch("/api/dashboard/cockpit");
+          if (res.status === 401 && i < retries - 1) {
+            // Auth not ready yet, wait and retry
+            await new Promise((r) => setTimeout(r, delay * (i + 1)));
+            continue;
+          }
+          const d = await res.json();
+          if (!cancelled) {
+            setData(d);
+            setLoading(false);
+          }
+          return;
+        } catch {
+          if (i < retries - 1) {
+            await new Promise((r) => setTimeout(r, delay * (i + 1)));
+            continue;
+          }
+          if (!cancelled) setLoading(false);
+        }
+      }
+    };
+
+    fetchWithRetry();
+    return () => { cancelled = true; };
   }, []);
 
   const stats = data?.stats;

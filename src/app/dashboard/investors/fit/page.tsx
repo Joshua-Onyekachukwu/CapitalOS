@@ -58,12 +58,31 @@ export default function FitDashboardPage() {
       const profileData = await getOrCreateCompanyProfile();
       if (profileData) setProfile(profileData);
 
-      // Load investors with fit scores
-      const params = new URLSearchParams({ sortBy: "fit_score", sortDirection: "desc", limit: "100" });
-      const res = await fetch(`/api/investors?${params}`);
-      const data = await res.json();
-      setInvestors(data.investors || []);
-      setTotal(data.total || 0);
+      // Load investors with fit scores — fetch in batches
+      const batchSize = 500;
+      let allInvestors: any[] = [];
+      let offset = 0;
+      let hasMore = true;
+      let totalCount = 0;
+
+      while (hasMore) {
+        const params = new URLSearchParams({
+          sortBy: "fit_score", sortDirection: "desc",
+          limit: String(batchSize), offset: String(offset),
+        });
+        const res = await fetch(`/api/investors?${params}`);
+        const data = await res.json();
+        const batch = data.investors || [];
+        totalCount = data.total || totalCount;
+        allInvestors = [...allInvestors, ...batch];
+        if (batch.length < batchSize) hasMore = false;
+        else offset += batchSize;
+        // Limit to 2000 to avoid memory issues
+        if (allInvestors.length >= 2000) break;
+      }
+
+      setInvestors(allInvestors);
+      setTotal(totalCount);
     } catch (err) {
       console.error("Failed to load fit data:", err);
     } finally {

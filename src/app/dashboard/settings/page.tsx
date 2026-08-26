@@ -467,6 +467,42 @@ export default function SettingsPage() {
         </CardBody>
       </Card>
 
+      <Card className="mb-[20px]">
+        <CardHeader>
+          <h3 className="!text-[16px] !font-semibold !mb-0">Security</h3>
+        </CardHeader>
+        <CardBody>
+          <div className="flex items-center justify-between flex-wrap gap-[15px]">
+            <div>
+              <p className="text-[14px] font-medium !mb-[2px]">Change Password</p>
+              <p className="text-[13px] text-gray-400 !mb-0">Update your account password.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={async () => {
+              try {
+                const { getClientUser } = await import("@/lib/client-auth");
+                const user = await getClientUser();
+                if (user?.email) {
+                  const { createClient } = await import("@supabase/supabase-js");
+                  const sp = createClient(
+                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                  );
+                  await sp.auth.resetPasswordForEmail(user.email, {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                  });
+                  setEmailMessage({ type: "success", text: "Password reset email sent. Check your inbox." });
+                }
+              } catch {
+                setEmailMessage({ type: "error", text: "Failed to send password reset email." });
+              }
+            }}>
+              <i className="ri-lock-line text-[14px] mr-[4px]"></i>
+              Send Reset Link
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+
       <Card>
         <CardHeader>
           <h3 className="!text-[16px] !font-semibold !mb-0 text-danger-600">Account</h3>

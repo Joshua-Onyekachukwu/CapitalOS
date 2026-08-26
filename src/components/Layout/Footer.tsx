@@ -90,6 +90,22 @@ const Footer: React.FC = () => {
                         Log In
                       </Link>
                     </li>
+                    <li className="mb-[12px] md:mb-[15px] last:mb-0">
+                      <Link
+                        href="/privacy"
+                        className="text-black dark:text-white transition-all hover:text-[#D15616]"
+                      >
+                        Privacy Policy
+                      </Link>
+                    </li>
+                    <li className="mb-[12px] md:mb-[15px] last:mb-0">
+                      <Link
+                        href="/terms"
+                        className="text-black dark:text-white transition-all hover:text-[#D15616]"
+                      >
+                        Terms of Service
+                      </Link>
+                    </li>
                   </ul>
                 </div>
               </div>

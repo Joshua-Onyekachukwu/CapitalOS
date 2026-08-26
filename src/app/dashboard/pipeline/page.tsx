@@ -95,10 +95,22 @@ export default function PipelinePage() {
   const fetchPipeline = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/investors?limit=200&sortBy=fit_score&sortDirection=desc");
-      const data = await response.json();
-      const investors: PipelineInvestor[] = data.investors || [];
+      // Fetch all investors in batches to avoid loading everything at once
+      const batchSize = 500;
+      let allInvestors: PipelineInvestor[] = [];
+      let offset = 0;
+      let hasMore = true;
 
+      while (hasMore) {
+        const response = await fetch(`/api/investors?limit=${batchSize}&offset=${offset}&sortBy=fit_score&sortDirection=desc`);
+        const data = await response.json();
+        const batch = data.investors || [];
+        allInvestors = [...allInvestors, ...batch];
+        if (batch.length < batchSize) hasMore = false;
+        else offset += batchSize;
+      }
+
+      const investors = allInvestors;
       setTotalInvestors(investors.length);
 
       // Group by outreach_readiness

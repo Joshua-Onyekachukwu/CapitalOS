@@ -18,6 +18,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu on outside click
@@ -61,6 +62,13 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
             <i className="ri-search-line absolute left-[12px] top-1/2 -translate-y-1/2 text-gray-400 text-[18px]"></i>
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  router.push(`/dashboard/investors?search=${encodeURIComponent(searchQuery.trim())}`);
+                }
+              }}
               placeholder="Search investors, campaigns..."
               className="w-full py-[9px] pl-[38px] pr-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 focus:border-lime-500"
             />
