@@ -110,11 +110,31 @@ export default function NewCampaignPage() {
     setGeneratingEmails(true);
     setGeneratedCount(0);
 
-    // Simulate progressive email generation
-    const count = selectedIds.size;
-    for (let i = 0; i < count; i++) {
-      await new Promise((r) => setTimeout(r, 200));
+    // Generate emails for each selected investor via the real API
+    const selected = investors.filter((i) => selectedIds.has(i.id));
+    let successCount = 0;
+
+    for (let i = 0; i < selected.length; i++) {
+      const inv = selected[i];
+      try {
+        const resp = await fetch("/api/outreach/draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            investorName: `${inv.first_name || ""} ${inv.last_name || ""}`.trim(),
+            investorFirm: inv.firm_name || "Unknown",
+            investorType: inv.investor_type || "investor",
+            fitScore: inv.fit_score || 75,
+            tone: "professional",
+          }),
+        });
+        if (resp.ok) successCount++;
+      } catch {
+        // Continue with next investor
+      }
       setGeneratedCount(i + 1);
+      // Small delay to avoid rate limiting
+      if (i < selected.length - 1) await new Promise((r) => setTimeout(r, 300));
     }
 
     setGeneratingEmails(false);

@@ -78,6 +78,15 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
   const [showOutreach, setShowOutreach] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [savingInvestor, setSavingInvestor] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const fetchInvestor = useCallback(async () => {
     setLoading(true);
@@ -147,6 +156,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           body: JSON.stringify({ investorId }),
         });
         setIsSaved(false);
+        setToast({ message: "Removed from saved investors", type: "success" });
       } else {
         await fetch("/api/investors/saved", {
           method: "POST",
@@ -154,9 +164,11 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           body: JSON.stringify({ investorId }),
         });
         setIsSaved(true);
+        setToast({ message: "Investor saved!", type: "success" });
       }
     } catch (err) {
       console.error("Save toggle failed:", err);
+      setToast({ message: "Failed to save investor", type: "error" });
     } finally {
       setSavingInvestor(false);
     }
@@ -236,6 +248,20 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div>
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[200] animate-in slide-in-from-bottom-2">
+          <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-sm font-medium ${
+            toast.type === "success"
+              ? "bg-green-600 text-white"
+              : "bg-red-600 text-white"
+          }`}>
+            <i className={`${toast.type === "success" ? "ri-check-line" : "ri-error-warning-line"} text-lg`}></i>
+            {toast.message}
+          </div>
+        </div>
+      )}
+
       <PageHeader
         title=""
         actions={
