@@ -10,7 +10,7 @@ const HeroBanner: React.FC = () => {
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
         <div className="relative bg-[#06201b] rounded-[20px] md:rounded-[30px] overflow-hidden min-h-[480px] md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]">
           {/* Left: Copy — more top padding, centered vertically */}
-          <div className="relative z-10 pt-[50px] pb-[220px] px-[20px] md:pt-[60px] md:px-[40px] lg:pt-[80px] lg:pb-[20px] lg:px-[50px] xl:pt-[90px] xl:px-[80px] lg:absolute lg:inset-y-0 lg:left-0 lg:w-[50%] lg:flex lg:flex-col lg:justify-center">
+          <div className="relative z-10 pt-[45px] pb-[260px] px-[20px] md:pt-[60px] md:px-[40px] lg:pt-[80px] lg:pb-[20px] lg:px-[50px] xl:pt-[90px] xl:px-[80px] lg:absolute lg:inset-y-0 lg:left-0 lg:w-[50%] lg:flex lg:flex-col lg:justify-center">
             <h1 className="!font-medium !text-[#ebebe0] !text-[32px] md:!text-[44px] lg:!text-[50px] xl:!text-[58px] !leading-[1.15] md:-tracking-[1.5px] !mb-[12px] lg:!mb-[16px]">
               Your AI{" "}
               <span className="italic text-lime-500">Fundraising</span>{" "}
@@ -23,7 +23,7 @@ const HeroBanner: React.FC = () => {
               process — all from one place.
             </p>
 
-            <div className="mt-[22px] md:mt-[24px] lg:mt-[30px] flex flex-col sm:flex-row gap-[12px] sm:gap-[12px]">
+            <div className="mt-[26px] md:mt-[24px] lg:mt-[30px] flex flex-col sm:flex-row gap-[14px] sm:gap-[12px]">
               <Link
                 href="/signup"
                 className="inline-block font-medium text-[14px] md:text-base rounded-[7px] bg-lime-500 text-black py-[10px] md:py-[11.5px] px-[20px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
@@ -38,7 +38,7 @@ const HeroBanner: React.FC = () => {
               </Link>
             </div>
 
-            <div className="mt-[24px] md:mt-[30px] lg:mt-[40px] flex flex-wrap gap-[12px] md:gap-[15px] text-[#ebebe0]/60 text-[12px] md:text-[13px] lg:text-[14px]">
+            <div className="mt-[28px] md:mt-[30px] lg:mt-[40px] flex flex-wrap gap-[12px] md:gap-[15px] text-[#ebebe0]/60 text-[12px] md:text-[13px] lg:text-[14px]">
               <span className="flex items-center gap-[6px]">
                 <i className="ri-shield-check-fill text-lime-500"></i>
                 No credit card required
