@@ -1,13 +1,11 @@
-import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/middleware/api-auth";
 import { detectDuplicates } from "@/lib/services/investor/matching";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const user = await requireUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const user = await requireAdmin(request);
+    if (user instanceof NextResponse) return user;
 
     const result = await detectDuplicates(500);
     return NextResponse.json(result);

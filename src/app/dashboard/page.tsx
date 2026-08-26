@@ -335,7 +335,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-[14px] text-gray-400 !mb-[4px]">No investors yet</p>
               <p className="text-[13px] text-gray-300 dark:text-gray-600 !mb-0">
-                Run a data acquisition job or import investors via CSV.
+                Discover investors from our database to start building your pipeline.
               </p>
             </div>
           ) : (
