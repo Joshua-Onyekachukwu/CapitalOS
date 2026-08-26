@@ -17,7 +17,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "rounded-[15px] md:rounded-[20px]",
+          "rounded-[16px] md:rounded-[20px]",
           variantStyles[variant],
           className
         )}
@@ -37,7 +37,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("px-[20px] md:px-[25px] py-[18px] md:py-[22px] border-b border-gray-100 dark:border-gray-800", className)}
+    className={cn("px-[20px] md:px-[25px] py-[16px] md:py-[24px] border-b border-gray-100 dark:border-gray-800", className)}
     {...props}
   />
 ));

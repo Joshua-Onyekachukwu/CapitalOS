@@ -91,7 +91,7 @@ export function DataHistory({ investorId }: { investorId: string }) {
               <span className="text-[12px] font-medium text-[#06201b] dark:text-white capitalize">
                 {entry.field_name.replace(/_/g, " ")}
               </span>
-              <span className={`text-[10px] px-[5px] py-[1px] rounded-full font-medium ${
+              <span className={`text-[10px] px-[4px] py-[1px] rounded-full font-medium ${
                 entry.change_type === "create" ? "bg-green-100 text-green-700" :
                 entry.change_type === "update" ? "bg-blue-100 text-blue-700" :
                 "bg-gray-100 text-gray-600"

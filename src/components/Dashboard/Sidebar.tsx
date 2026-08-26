@@ -92,7 +92,7 @@ function SidebarNavItem({ item, isActive, onClick }: { item: NavItem; isActive: 
       href={item.href}
       onClick={onClick}
       className={cn(
-        "group flex items-center gap-[12px] px-[14px] py-[9px] rounded-[8px] text-[14px] font-medium transition-all duration-150",
+        "group flex items-center gap-[12px] px-[16px] py-[8px] rounded-[8px] text-[14px] font-medium transition-all duration-150",
         isActive
           ? "bg-lime-50 dark:bg-lime-900/20 text-[#06201b] dark:text-white"
           : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[#06201b] dark:hover:text-white"
@@ -100,7 +100,7 @@ function SidebarNavItem({ item, isActive, onClick }: { item: NavItem; isActive: 
     >
       <i
         className={cn(
-          "text-[20px] flex-shrink-0 transition-colors",
+          "text-[18px] flex-shrink-0 transition-colors",
           isActive ? "text-lime-600" : "text-gray-400 group-hover:text-gray-500"
         )}
       ></i>
@@ -147,7 +147,7 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="px-[20px] py-[18px] border-b border-gray-100 dark:border-gray-800">
+          <div className="px-[20px] py-[16px] border-b border-gray-100 dark:border-gray-800">
             <Link href="/dashboard" className="inline-flex items-center gap-[2px]">
               <span className="text-[19px] font-bold text-[#06201b] dark:text-white">
                 Capital<span className="text-lime-500">OS</span>
@@ -174,7 +174,7 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
               .map((section, sectionIndex) => (
                 <div key={sectionIndex} className={section.title ? "mt-[16px]" : sectionIndex > 0 ? "mt-[4px]" : ""}>
                   {section.title && (
-                    <p className="px-[14px] mb-[6px] text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    <p className="px-[16px] mb-[6px] text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                       {section.title}
                     </p>
                   )}
@@ -208,11 +208,11 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
               <Link
                 href="/admin"
                 onClick={onClose}
-                className="flex items-center gap-[12px] px-[14px] py-[9px] rounded-[8px] text-[14px] font-medium transition-all duration-150 text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 dark:hover:text-red-400 border border-dashed border-gray-200 dark:border-gray-700"
+                className="flex items-center gap-[12px] px-[16px] py-[8px] rounded-[8px] text-[14px] font-medium transition-all duration-150 text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 dark:hover:text-red-400 border border-dashed border-gray-200 dark:border-gray-700"
               >
-                <i className="ri-admin-line text-[20px] flex-shrink-0 text-gray-400 group-hover:text-red-500"></i>
+                <i className="ri-admin-line text-[18px] flex-shrink-0 text-gray-400 group-hover:text-red-500"></i>
                 <span className="flex-1 truncate">Admin Panel</span>
-                <span className="text-[9px] font-bold px-[5px] py-[1px] rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                <span className="text-[9px] font-bold px-[4px] py-[1px] rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                   ADMIN
                 </span>
               </Link>

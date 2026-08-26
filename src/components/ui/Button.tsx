@@ -27,9 +27,9 @@ const variantStyles: Record<ButtonVariant, string> = {
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "py-[7px] px-[14px] text-[13px] md:text-[14px] rounded-[5px]",
-  md: "py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] text-[14px] md:text-base rounded-[7px]",
-  lg: "py-[12px] md:py-[14px] px-[28px] md:px-[32px] text-base md:text-[18px] rounded-[8px]",
+  sm: "py-[8px] px-[16px] text-[13px] md:text-[14px] rounded-[6px]",
+  md: "py-[10.5px] md:py-[11.5px] px-[24px] md:px-[25px] text-[14px] md:text-base rounded-[8px]",
+  lg: "py-[12px] md:py-[16px] px-[32px] md:px-[32px] text-base md:text-[18px] rounded-[8px]",
 };
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

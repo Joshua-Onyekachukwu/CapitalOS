@@ -326,7 +326,7 @@ export default function SettingsPage() {
 
               {showSmtpForm && (
                 <div className="mt-[16px] p-[20px] bg-gray-50 dark:bg-gray-800/30 rounded-[12px] border border-gray-200 dark:border-gray-700">
-                  <h4 className="text-[15px] font-semibold mb-[12px]">Custom SMTP Settings</h4>
+                  <h4 className="text-[14px] font-semibold mb-[12px]">Custom SMTP Settings</h4>
                   <p className="text-[13px] text-gray-400 mb-[16px]">Connect your own domain email. Works with any SMTP server — Gmail, Outlook, Zoho, or your company's mail server.</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
@@ -387,7 +387,7 @@ export default function SettingsPage() {
           ) : (
             <div className="space-y-[12px]">
               {emailAccounts.map((account) => (
-                <div key={account.id} className="flex items-center justify-between p-[14px] rounded-[10px] border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                <div key={account.id} className="flex items-center justify-between p-[16px] rounded-[12px] border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                   <div className="flex items-center gap-[12px]">
                     {account.provider === "google" ? (
                       <div className="w-[36px] h-[36px] rounded-[8px] bg-red-50 flex items-center justify-center">
@@ -400,7 +400,7 @@ export default function SettingsPage() {
                       </div>
                     ) : account.provider === "custom_smtp" ? (
                       <div className="w-[36px] h-[36px] rounded-[8px] bg-lime-50 flex items-center justify-center">
-                        <i className="ri-mail-settings-line text-lime-600 text-[20px]"></i>
+                        <i className="ri-mail-settings-line text-lime-600 text-[18px]"></i>
                       </div>
                     ) : (
                       <div className="w-[36px] h-[36px] rounded-[8px] bg-blue-50 flex items-center justify-center">
@@ -472,7 +472,7 @@ export default function SettingsPage() {
           <h3 className="!text-[16px] !font-semibold !mb-0">Security</h3>
         </CardHeader>
         <CardBody>
-          <div className="flex items-center justify-between flex-wrap gap-[15px]">
+          <div className="flex items-center justify-between flex-wrap gap-[16px]">
             <div>
               <p className="text-[14px] font-medium !mb-[2px]">Change Password</p>
               <p className="text-[13px] text-gray-400 !mb-0">Update your account password.</p>
@@ -507,7 +507,7 @@ export default function SettingsPage() {
         <CardHeader>
           <h3 className="!text-[16px] !font-semibold !mb-0 text-danger-600">Account</h3>
         </CardHeader>
-        <CardBody className="flex items-center justify-between flex-wrap gap-[15px]">
+        <CardBody className="flex items-center justify-between flex-wrap gap-[16px]">
           <div>
             <p className="text-[14px] font-medium !mb-[2px]">Sign out</p>
             <p className="text-[13px] text-gray-400 !mb-0">Sign out of your account on this device.</p>

@@ -439,7 +439,7 @@ export default function OutreachPage() {
         </div>
       )}
       {emailConnected === true && emailProvider && (
-        <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-[12px] p-[14px] mb-[20px] flex items-center gap-[10px]">
+        <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-[12px] p-[16px] mb-[20px] flex items-center gap-[10px]">
           <div className="w-[8px] h-[8px] rounded-full bg-green-500 flex-none"></div>
           <span className="text-[13px] text-green-700 dark:text-green-400">
             Connected via {emailProvider === "google" ? "Gmail" : "Outlook"} — emails will be sent from your account
@@ -469,7 +469,7 @@ export default function OutreachPage() {
 
       {/* Send Result */}
       {sendResult && (
-        <div className={`rounded-[12px] p-[14px] mb-[20px] text-[13px] font-medium flex items-center gap-[8px] ${
+        <div className={`rounded-[12px] p-[16px] mb-[20px] text-[13px] font-medium flex items-center gap-[8px] ${
           sendResult.type === "success"
             ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800/30"
             : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30"
@@ -588,7 +588,7 @@ export default function OutreachPage() {
                     <button
                       key={tone.value}
                       onClick={() => setSelectedTone(tone.value)}
-                      className={`flex items-center gap-[4px] px-[10px] py-[5px] rounded-full text-[12px] font-medium transition-all ${
+                      className={`flex items-center gap-[4px] px-[10px] py-[4px] rounded-full text-[12px] font-medium transition-all ${
                         selectedTone === tone.value
                           ? "bg-[#06201b] text-white dark:bg-lime-500 dark:text-black"
                           : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -628,7 +628,7 @@ export default function OutreachPage() {
                   </div>
                 ) : (
                   <div className="bg-gray-50 dark:bg-gray-800/30 rounded-[12px] p-[40px] mb-[16px] text-center">
-                    <i className="ri-mail-line text-[36px] text-gray-200 dark:text-gray-700 mb-[12px] block"></i>
+                    <i className="ri-mail-line text-[32px] text-gray-200 dark:text-gray-700 mb-[12px] block"></i>
                     <p className="text-[14px] text-gray-400 !mb-[16px]">
                       No email drafted yet for this investor.
                     </p>
@@ -680,7 +680,7 @@ export default function OutreachPage() {
 
                 {/* AI Analysis */}
                 {selectedDraft.aiAnalysis && (
-                  <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] p-[14px] mb-[16px] border border-lime-100 dark:border-lime-800/30">
+                  <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[12px] p-[16px] mb-[16px] border border-lime-100 dark:border-lime-800/30">
                     <div className="flex items-center gap-[6px] mb-[6px]">
                       <i className="ri-sparkling-2-line text-lime-600 text-[14px]"></i>
                       <span className="text-[12px] font-semibold text-[#06201b] dark:text-white">AI Notes</span>

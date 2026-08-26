@@ -86,9 +86,9 @@ export default function AIActivityPage() {
         <Card className="mb-[20px]">
           <CardBody className="p-[20px]">
             <div className="flex items-center gap-[20px] flex-wrap">
-              <div className="flex items-center gap-[14px] flex-1">
+              <div className="flex items-center gap-[16px] flex-1">
                 <div className="w-[56px] h-[56px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center flex-none">
-                  <span className="text-[20px] font-bold text-lime-700 dark:text-lime-400">{billing.creditsRemaining}</span>
+                  <span className="text-[18px] font-bold text-lime-700 dark:text-lime-400">{billing.creditsRemaining}</span>
                 </div>
                 <div>
                   <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">
@@ -119,7 +119,7 @@ export default function AIActivityPage() {
       )}
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[20px]">
         {[
           { label: "Total Operations", value: entries.length, icon: "ri-robot-2-line" },
           { label: "Credits Used", value: totalCreditsUsed, icon: "ri-flashlight-line" },
@@ -128,7 +128,7 @@ export default function AIActivityPage() {
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[16px] text-center">
-              <i className={`${stat.icon} text-gray-300 text-[20px] mb-[6px] block`}></i>
+              <i className={`${stat.icon} text-gray-300 text-[18px] mb-[6px] block`}></i>
               <p className="text-[16px] font-bold text-[#06201b] dark:text-white !mb-0 capitalize">{stat.value}</p>
               <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
             </CardBody>
@@ -157,7 +157,7 @@ export default function AIActivityPage() {
             </div>
           ) : entries.length === 0 ? (
             <div className="text-center py-[40px]">
-              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 text-[24px]">
+              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[16px] text-gray-300 text-[24px]">
                 <i className="ri-robot-2-line"></i>
               </div>
               <p className="text-[14px] text-gray-400 !mb-[4px]">No AI activity yet</p>

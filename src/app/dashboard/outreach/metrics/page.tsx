@@ -76,7 +76,7 @@ export default function CampaignMetricsPage() {
     return (
       <div>
         <PageHeader title="Outreach Metrics" description="Loading..." />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px]">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px]">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-[80px] bg-gray-100 dark:bg-gray-800 rounded-[12px] animate-pulse" />
           ))}
@@ -104,7 +104,7 @@ export default function CampaignMetricsPage() {
       />
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[20px]">
         {[
           { label: "Total Emails", value: s.totalEmails, icon: "ri-mail-line", color: "bg-blue-50 text-blue-600" },
           { label: "Sent", value: s.sent, icon: "ri-send-plane-line", color: "bg-lime-100 text-lime-600" },
@@ -113,11 +113,11 @@ export default function CampaignMetricsPage() {
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="flex items-center gap-[12px] p-[16px]">
-              <div className={`w-[40px] h-[40px] rounded-[10px] ${stat.color} flex items-center justify-center text-[18px] flex-none`}>
+              <div className={`w-[40px] h-[40px] rounded-[12px] ${stat.color} flex items-center justify-center text-[18px] flex-none`}>
                 <i className={stat.icon}></i>
               </div>
               <div>
-                <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+                <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
                 <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
               </div>
             </CardBody>

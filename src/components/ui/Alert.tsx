@@ -21,10 +21,10 @@ const variantStyles: Record<AlertVariant, string> = {
 };
 
 const defaultIcons: Record<AlertVariant, React.ReactNode> = {
-  info: <i className="ri-information-line text-[20px]"></i>,
-  success: <i className="ri-check-line text-[20px]"></i>,
-  warning: <i className="ri-alert-line text-[20px]"></i>,
-  danger: <i className="ri-close-circle-line text-[20px]"></i>,
+  info: <i className="ri-information-line text-[18px]"></i>,
+  success: <i className="ri-check-line text-[18px]"></i>,
+  warning: <i className="ri-alert-line text-[18px]"></i>,
+  danger: <i className="ri-close-circle-line text-[18px]"></i>,
 };
 
 const Alert: React.FC<AlertProps> = ({
@@ -40,7 +40,7 @@ const Alert: React.FC<AlertProps> = ({
   return (
     <div
       className={cn(
-        "flex items-start gap-[12px] p-[14px] md:p-[16px] rounded-[10px] border text-[14px] md:text-[15px]",
+        "flex items-start gap-[12px] p-[16px] md:p-[16px] rounded-[12px] border text-[14px] md:text-[14px]",
         variantStyles[variant],
         className
       )}
@@ -52,7 +52,7 @@ const Alert: React.FC<AlertProps> = ({
       </span>
       <div className="flex-1">
         {title && (
-          <h4 className="font-semibold !mb-[4px] !text-[14px] md:!text-[15px]">{title}</h4>
+          <h4 className="font-semibold !mb-[4px] !text-[14px] md:!text-[14px]">{title}</h4>
         )}
         <div className="[&>p]:!mb-0">{children}</div>
       </div>

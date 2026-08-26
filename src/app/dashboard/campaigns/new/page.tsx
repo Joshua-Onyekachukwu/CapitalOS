@@ -251,7 +251,7 @@ export default function NewCampaignPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Seed Round — Enterprise SaaS"
-                  className="w-full px-[14px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[10px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                  className="w-full px-[16px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[12px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
                 />
               </div>
               <div>
@@ -263,10 +263,10 @@ export default function NewCampaignPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe the goal of this campaign..."
                   rows={3}
-                  className="w-full px-[14px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[10px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500 resize-none"
+                  className="w-full px-[16px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[12px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500 resize-none"
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-[15px]">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px]">
                 <div>
                   <label className="block text-[13px] font-medium text-[#06201b] dark:text-white mb-[6px]">
                     Target Sector
@@ -274,7 +274,7 @@ export default function NewCampaignPage() {
                   <select
                     value={sector}
                     onChange={(e) => setSector(e.target.value)}
-                    className="w-full px-[14px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[10px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                    className="w-full px-[16px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[12px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
                   >
                     <option value="">Any sector</option>
                     <option value="saas">SaaS</option>
@@ -294,7 +294,7 @@ export default function NewCampaignPage() {
                   <select
                     value={stage}
                     onChange={(e) => setStage(e.target.value)}
-                    className="w-full px-[14px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[10px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                    className="w-full px-[16px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[12px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
                   >
                     <option value="">Any stage</option>
                     <option value="pre_seed">Pre-Seed</option>
@@ -311,7 +311,7 @@ export default function NewCampaignPage() {
                   <select
                     value={geography}
                     onChange={(e) => setGeography(e.target.value)}
-                    className="w-full px-[14px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[10px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                    className="w-full px-[16px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[12px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
                   >
                     <option value="">Global</option>
                     <option value="United States">United States</option>
@@ -400,7 +400,7 @@ export default function NewCampaignPage() {
                   <button
                     key={inv.id}
                     onClick={() => toggleInvestor(inv.id)}
-                    className={`w-full text-left px-[25px] py-[14px] flex items-center gap-[14px] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800/50 ${
+                    className={`w-full text-left px-[25px] py-[16px] flex items-center gap-[16px] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800/50 ${
                       selectedIds.has(inv.id) ? "bg-lime-50/50 dark:bg-lime-900/10" : ""
                     }`}
                   >
@@ -471,7 +471,7 @@ export default function NewCampaignPage() {
             <div className="text-center py-[40px]">
               {!generatingEmails && generatedCount === 0 ? (
                 <>
-                  <div className="w-[80px] h-[80px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[36px] mx-auto mb-[20px]">
+                  <div className="w-[80px] h-[80px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[32px] mx-auto mb-[20px]">
                     <i className="ri-mail-add-line"></i>
                   </div>
                   <h3 className="text-[18px] font-semibold text-[#06201b] dark:text-white !mb-[8px]">
@@ -488,7 +488,7 @@ export default function NewCampaignPage() {
                 </>
               ) : generatingEmails ? (
                 <>
-                  <div className="w-[80px] h-[80px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[36px] mx-auto mb-[20px] animate-pulse">
+                  <div className="w-[80px] h-[80px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[32px] mx-auto mb-[20px] animate-pulse">
                     <i className="ri-sparkling-2-line"></i>
                   </div>
                   <h3 className="text-[18px] font-semibold text-[#06201b] dark:text-white !mb-[8px]">
@@ -506,7 +506,7 @@ export default function NewCampaignPage() {
                 </>
               ) : (
                 <>
-                  <div className="w-[80px] h-[80px] rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center text-green-600 text-[36px] mx-auto mb-[20px]">
+                  <div className="w-[80px] h-[80px] rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center text-green-600 text-[32px] mx-auto mb-[20px]">
                     <i className="ri-check-double-line"></i>
                   </div>
                   <h3 className="text-[18px] font-semibold text-[#06201b] dark:text-white !mb-[8px]">
@@ -589,7 +589,7 @@ export default function NewCampaignPage() {
                           ]);
                         }
                       }}
-                      className={`text-left p-[14px] rounded-[10px] border-2 transition-all ${
+                      className={`text-left p-[16px] rounded-[12px] border-2 transition-all ${
                         selectedTemplate === tpl.id
                           ? "border-lime-500 bg-lime-50/50 dark:bg-lime-900/10"
                           : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
@@ -611,12 +611,12 @@ export default function NewCampaignPage() {
                   value={sequenceName}
                   onChange={(e) => setSequenceName(e.target.value)}
                   placeholder="e.g., Seed Round Follow-up"
-                  className="w-full px-[14px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[10px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                  className="w-full px-[16px] py-[10px] border border-gray-200 dark:border-gray-700 rounded-[12px] text-[14px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
                 />
               </div>
 
               {/* Stop on Reply Toggle */}
-              <div className="flex items-center justify-between p-[14px] bg-gray-50 dark:bg-gray-800/30 rounded-[10px] mb-[16px]">
+              <div className="flex items-center justify-between p-[16px] bg-gray-50 dark:bg-gray-800/30 rounded-[12px] mb-[16px]">
                 <div>
                   <p className="text-[14px] font-medium text-[#06201b] dark:text-white !mb-[2px]">Stop sequence on reply</p>
                   <p className="text-[12px] text-gray-400 !mb-0">If an investor replies, stop sending follow-ups</p>
@@ -636,7 +636,7 @@ export default function NewCampaignPage() {
             {sequenceSteps.map((seqStep, idx) => (
               <Card key={idx}>
                 <CardBody>
-                  <div className="flex items-center justify-between mb-[14px]">
+                  <div className="flex items-center justify-between mb-[16px]">
                     <div className="flex items-center gap-[10px]">
                       <div className={`w-[32px] h-[32px] rounded-full flex items-center justify-center text-[13px] font-bold flex-none ${
                         seqStep.step_type === "initial" ? "bg-blue-100 text-blue-600" :
@@ -765,7 +765,7 @@ export default function NewCampaignPage() {
                   },
                 ]);
               }}
-              className="w-full p-[14px] border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[12px] text-[14px] text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all flex items-center justify-center gap-[8px]"
+              className="w-full p-[16px] border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[12px] text-[14px] text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all flex items-center justify-center gap-[8px]"
             >
               <i className="ri-add-line text-[18px]"></i>
               Add Follow-up Step
@@ -796,27 +796,27 @@ export default function NewCampaignPage() {
           </CardHeader>
           <CardBody>
             <div className="text-center py-[40px]">
-              <div className="w-[80px] h-[80px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[36px] mx-auto mb-[20px]">
+              <div className="w-[80px] h-[80px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[32px] mx-auto mb-[20px]">
                 <i className="ri-rocket-line"></i>
               </div>
               <h3 className="text-[18px] font-semibold text-[#06201b] dark:text-white !mb-[12px]">
                 Ready to Launch
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-[16px] max-w-[500px] mx-auto mb-[24px]">
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[10px] p-[14px]">
-                  <p className="text-[22px] font-bold text-[#06201b] dark:text-white !mb-0">{name}</p>
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[12px] p-[16px]">
+                  <p className="text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">{name}</p>
                   <p className="text-[11px] text-gray-400 !mb-0">Campaign</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[10px] p-[14px]">
-                  <p className="text-[22px] font-bold text-[#06201b] dark:text-white !mb-0">{selectedIds.size}</p>
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[12px] p-[16px]">
+                  <p className="text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">{selectedIds.size}</p>
                   <p className="text-[11px] text-gray-400 !mb-0">Investors</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[10px] p-[14px]">
-                  <p className="text-[22px] font-bold text-[#06201b] dark:text-white !mb-0">{generatedCount}</p>
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[12px] p-[16px]">
+                  <p className="text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">{generatedCount}</p>
                   <p className="text-[11px] text-gray-400 !mb-0">Emails</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[10px] p-[14px]">
-                  <p className="text-[22px] font-bold text-lime-600 !mb-0">0</p>
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[12px] p-[16px]">
+                  <p className="text-[24px] font-bold text-lime-600 !mb-0">0</p>
                   <p className="text-[11px] text-gray-400 !mb-0">Credits Used</p>
                 </div>
               </div>

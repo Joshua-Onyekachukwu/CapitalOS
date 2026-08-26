@@ -35,7 +35,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
       return (
         <div className="flex flex-col items-center justify-center py-[40px] px-[20px] text-center">
-          <div className="w-[48px] h-[48px] rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-[14px] text-red-500 text-[24px]">
+          <div className="w-[48px] h-[48px] rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-[16px] text-red-500 text-[24px]">
             <i className="ri-error-warning-line"></i>
           </div>
           <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[8px]">

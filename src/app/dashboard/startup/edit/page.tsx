@@ -196,7 +196,7 @@ export default function StartupEditPage() {
     );
   }
 
-  const inputClass = "w-full py-[9px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30";
+  const inputClass = "w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30";
   const labelClass = "block text-[13px] font-medium text-gray-500 dark:text-gray-400 !mb-[6px]";
 
   return (

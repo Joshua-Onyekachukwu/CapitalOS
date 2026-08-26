@@ -88,7 +88,7 @@ export default function MeetingsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-[8px] mb-[4px]">
-                        <Link href={`/dashboard/investors/${inv.id}`} className="text-[15px] font-semibold text-[#06201b] dark:text-white hover:text-lime-600 transition-colors">
+                        <Link href={`/dashboard/investors/${inv.id}`} className="text-[14px] font-semibold text-[#06201b] dark:text-white hover:text-lime-600 transition-colors">
                           {inv.full_name}
                         </Link>
                         <Badge variant={inv.outreach_readiness === "contacted" ? "info" : "success"} size="sm">

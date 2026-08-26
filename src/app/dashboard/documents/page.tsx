@@ -171,7 +171,7 @@ export default function DocumentsPage() {
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[12px] text-gray-300 text-[20px]">
+            <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[12px] text-gray-300 text-[18px]">
               <i className="ri-upload-cloud-2-line"></i>
             </div>
             <p className="text-[14px] text-gray-400 !mb-[4px]">
@@ -229,7 +229,7 @@ export default function DocumentsPage() {
             </div>
           ) : documents.length === 0 ? (
             <div className="text-center py-[30px]">
-              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 text-[24px]">
+              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[16px] text-gray-300 text-[24px]">
                 <i className="ri-file-text-line"></i>
               </div>
               <p className="text-[14px] text-gray-400 !mb-[4px]">No documents uploaded yet</p>

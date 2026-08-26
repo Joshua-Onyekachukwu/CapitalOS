@@ -150,9 +150,9 @@ export default function DecksPage() {
             return (
               <Card key={primaryDeck.id} className="hover:shadow-md transition-shadow">
                 <CardBody className="p-[16px]">
-                  <div className="flex items-center gap-[14px]">
-                    <div className="w-[44px] h-[44px] rounded-[10px] bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-none">
-                      <i className="ri-file-ppt-2-line text-red-500 text-[20px]"></i>
+                  <div className="flex items-center gap-[16px]">
+                    <div className="w-[44px] h-[44px] rounded-[12px] bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-none">
+                      <i className="ri-file-ppt-2-line text-red-500 text-[18px]"></i>
                     </div>
                     <div className="flex-1 min-w-0">
                       {renamingId === primaryDeck.id ? (

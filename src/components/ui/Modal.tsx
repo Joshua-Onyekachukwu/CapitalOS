@@ -59,7 +59,7 @@ const Modal: React.FC<ModalProps> = ({
       {/* Modal */}
       <div
         className={cn(
-          "relative w-full bg-white dark:bg-[#0a0e19] rounded-[15px] md:rounded-[20px] shadow-xl",
+          "relative w-full bg-white dark:bg-[#0a0e19] rounded-[16px] md:rounded-[20px] shadow-xl",
           sizeStyles[size],
           className
         )}
@@ -90,10 +90,10 @@ const Modal: React.FC<ModalProps> = ({
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-[15px] right-[15px] w-[32px] h-[32px] flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-400"
+          className="absolute top-[16px] right-[15px] w-[32px] h-[32px] flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-400"
           aria-label="Close"
         >
-          <i className="ri-close-line text-[20px]"></i>
+          <i className="ri-close-line text-[18px]"></i>
         </button>
 
         {/* Content */}

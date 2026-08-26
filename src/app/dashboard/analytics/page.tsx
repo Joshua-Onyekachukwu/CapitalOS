@@ -179,7 +179,7 @@ export default function AnalyticsPage() {
     return (
       <div>
         <PageHeader title="Analytics" description="Track your fundraising performance and metrics." />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[20px]">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="animate-pulse h-[80px] bg-gray-100 dark:bg-gray-800 rounded-[12px]"></div>
           ))}
@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
     <div>
       <PageHeader title="Analytics" description="Track your fundraising performance and metrics." />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[20px]">
         {[
           { label: "Total Investors", value: d.totalInvestors.toLocaleString(), icon: "ri-team-line", color: "bg-lime-100 dark:bg-lime-900/20 text-lime-600" },
           { label: "High-Fit Investors", value: d.highFitInvestors.toLocaleString(), icon: "ri-star-line", color: "bg-purple-50 dark:bg-purple-900/20 text-purple-600" },
@@ -227,7 +227,7 @@ export default function AnalyticsPage() {
           <Card key={stat.label}>
             <CardBody className="p-[16px]">
               <div className="flex items-center gap-[10px]">
-                <div className={`w-[40px] h-[40px] rounded-[10px] ${stat.color} flex items-center justify-center text-[18px] flex-none`}>
+                <div className={`w-[40px] h-[40px] rounded-[12px] ${stat.color} flex items-center justify-center text-[18px] flex-none`}>
                   <i className={stat.icon}></i>
                 </div>
                 <div>
@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[20px]">
         {[
           { label: "Emails Sent", value: d.emailsSent, icon: "ri-send-plane-line", color: "text-blue-600" },
           { label: "Reply Rate", value: `${replyRate}%`, icon: "ri-reply-line", color: "text-green-600" },
@@ -249,8 +249,8 @@ export default function AnalyticsPage() {
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[16px] text-center">
-              <i className={`${stat.icon} ${stat.color} text-[20px] mb-[6px] block`}></i>
-              <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+              <i className={`${stat.icon} ${stat.color} text-[18px] mb-[6px] block`}></i>
+              <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
               <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
             </CardBody>
           </Card>

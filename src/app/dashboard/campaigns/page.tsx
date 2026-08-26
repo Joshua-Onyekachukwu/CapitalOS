@@ -189,37 +189,37 @@ export default function CampaignsPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-[15px] md:gap-[20px] mb-[16px]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px] md:gap-[20px] mb-[16px]">
         <Card>
-          <CardBody className="flex items-center gap-[14px]">
-            <div className="w-[40px] h-[40px] rounded-[10px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[20px] flex-none">
+          <CardBody className="flex items-center gap-[16px]">
+            <div className="w-[40px] h-[40px] rounded-[12px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[18px] flex-none">
               <i className="ri-megaphone-line"></i>
             </div>
             <div>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Active Campaigns</p>
-              <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{activeCount}</p>
+              <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{activeCount}</p>
             </div>
           </CardBody>
         </Card>
         <Card>
-          <CardBody className="flex items-center gap-[14px]">
-            <div className="w-[40px] h-[40px] rounded-[10px] bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 text-[20px] flex-none">
+          <CardBody className="flex items-center gap-[16px]">
+            <div className="w-[40px] h-[40px] rounded-[12px] bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 text-[18px] flex-none">
               <i className="ri-team-line"></i>
             </div>
             <div>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Total Investors</p>
-              <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{totalInvestors.toLocaleString()}</p>
+              <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{totalInvestors.toLocaleString()}</p>
             </div>
           </CardBody>
         </Card>
         <Card>
-          <CardBody className="flex items-center gap-[14px]">
-            <div className="w-[40px] h-[40px] rounded-[10px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[20px] flex-none">
+          <CardBody className="flex items-center gap-[16px]">
+            <div className="w-[40px] h-[40px] rounded-[12px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[18px] flex-none">
               <i className="ri-mail-line"></i>
             </div>
             <div>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Emails Generated</p>
-              <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{totalEmails.toLocaleString()}</p>
+              <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{totalEmails.toLocaleString()}</p>
             </div>
           </CardBody>
         </Card>
@@ -299,7 +299,7 @@ export default function CampaignsPage() {
                 <CardBody>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-[16px]">
                     {/* Campaign Icon */}
-                    <div className={`w-[48px] h-[48px] rounded-[12px] flex items-center justify-center text-[22px] flex-none ${
+                    <div className={`w-[48px] h-[48px] rounded-[12px] flex items-center justify-center text-[24px] flex-none ${
                       campaign.status === "active"
                         ? "bg-lime-100 dark:bg-lime-900/20 text-lime-600"
                         : campaign.status === "completed"
@@ -319,7 +319,7 @@ export default function CampaignsPage() {
                     {/* Campaign Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-[8px] mb-[4px] flex-wrap">
-                        <h3 className="text-[15px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
+                        <h3 className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
                           {campaign.name}
                         </h3>
                         <Badge variant={config.variant} size="sm">{config.label}</Badge>

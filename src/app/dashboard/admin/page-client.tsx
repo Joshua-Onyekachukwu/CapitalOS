@@ -295,7 +295,7 @@ export default function AdminPage() {
     return (
       <div>
         <PageHeader title="Data Health" description="Monitor data quality, ingestion, and system health." />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[20px]">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="animate-pulse h-[80px] bg-gray-100 dark:bg-gray-800 rounded-[12px]"></div>
           ))}
@@ -388,7 +388,7 @@ export default function AdminPage() {
               />
               <label htmlFor="csv-upload" className="cursor-pointer">
                 <div className="w-[48px] h-[48px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center mx-auto mb-[12px]">
-                  <i className="ri-file-upload-line text-[22px] text-lime-600"></i>
+                  <i className="ri-file-upload-line text-[24px] text-lime-600"></i>
                 </div>
                 <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[4px]">
                   {importing ? "Importing..." : "Upload CSV File"}
@@ -409,7 +409,7 @@ export default function AdminPage() {
             {/* Apollo Import */}
             <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[12px] p-[20px] text-center hover:border-blue-400 transition-colors">
               <div className="w-[48px] h-[48px] rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-[12px]">
-                <i className="ri-database-2-line text-[22px] text-blue-600"></i>
+                <i className="ri-database-2-line text-[24px] text-blue-600"></i>
               </div>
               <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[4px]">
                 Apollo Bulk Import
@@ -440,7 +440,7 @@ export default function AdminPage() {
                   { label: "Errors", value: importResult.errors.length, color: "text-red-500" },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
-                    <p className={`text-[20px] font-bold ${stat.color} !mb-0`}>{stat.value.toLocaleString()}</p>
+                    <p className={`text-[18px] font-bold ${stat.color} !mb-0`}>{stat.value.toLocaleString()}</p>
                     <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
                   </div>
                 ))}
@@ -464,7 +464,7 @@ export default function AdminPage() {
       </Card>
 
       {/* Primary Health Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[20px]">
         {[
           { label: "Total Investors", value: h.totalInvestors.toLocaleString(), icon: "ri-team-line", color: "bg-lime-100 dark:bg-lime-900/20 text-lime-600" },
           { label: "With Email", value: h.withEmail.toLocaleString(), icon: "ri-mail-line", color: "bg-green-50 dark:bg-green-900/20 text-green-600" },
@@ -474,7 +474,7 @@ export default function AdminPage() {
           <Card key={stat.label}>
             <CardBody className="p-[16px]">
               <div className="flex items-center gap-[10px]">
-                <div className={`w-[40px] h-[40px] rounded-[10px] ${stat.color} flex items-center justify-center text-[18px] flex-none`}>
+                <div className={`w-[40px] h-[40px] rounded-[12px] ${stat.color} flex items-center justify-center text-[18px] flex-none`}>
                   <i className={stat.icon}></i>
                 </div>
                 <div>
@@ -488,7 +488,7 @@ export default function AdminPage() {
       </div>
 
       {/* Ingestion & Queue Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[20px]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[20px]">
         {[
           { label: "Records Ingested", value: ing.totalRecordsIngested.toLocaleString(), icon: "ri-database-2-line", color: "text-blue-600" },
           { label: "Pending Raw Records", value: h.pendingRawRecords.toLocaleString(), icon: "ri-inbox-line", color: "text-amber-600" },
@@ -497,8 +497,8 @@ export default function AdminPage() {
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[16px] text-center">
-              <i className={`${stat.icon} ${stat.color} text-[20px] mb-[6px] block`}></i>
-              <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+              <i className={`${stat.icon} ${stat.color} text-[18px] mb-[6px] block`}></i>
+              <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
               <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
             </CardBody>
           </Card>

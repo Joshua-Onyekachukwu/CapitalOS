@@ -88,7 +88,7 @@ export default function SavedInvestorsPage() {
       ) : investors.length === 0 ? (
         <Card>
           <CardBody className="text-center py-[40px]">
-            <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[12px] text-gray-300 text-[20px]">
+            <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[12px] text-gray-300 text-[18px]">
               <i className="ri-bookmark-line"></i>
             </div>
             <p className="text-[14px] text-gray-400 !mb-[16px]">No saved investors yet</p>
@@ -109,7 +109,7 @@ export default function SavedInvestorsPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-[8px] mb-[4px]">
-                      <h3 className="text-[15px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
+                      <h3 className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
                         {investor.full_name}
                       </h3>
                       <Badge variant="info" size="sm">{investor.investor_type?.replace(/_/g, " ")}</Badge>

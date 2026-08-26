@@ -183,7 +183,7 @@ export default function FitDashboardPage() {
           { label: "Low Fit (<50)", value: lowFit, icon: "ri-arrow-down-line", color: "text-red-400" },
         ].map((stat) => (
           <Card key={stat.label}>
-            <CardBody className="p-[14px]">
+            <CardBody className="p-[16px]">
               <div className="flex items-center gap-[10px]">
                 <i className={`${stat.icon} ${stat.color} text-[18px]`}></i>
                 <div>
@@ -202,7 +202,7 @@ export default function FitDashboardPage() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-[14px] py-[7px] rounded-full text-[13px] font-medium transition-colors ${
+            className={`px-[16px] py-[8px] rounded-full text-[13px] font-medium transition-colors ${
               filter === f
                 ? "bg-lime-500 text-white"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -219,7 +219,7 @@ export default function FitDashboardPage() {
         {filtered.length === 0 ? (
           <Card>
             <CardBody className="text-center py-[40px]">
-              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 text-[24px]">
+              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[16px] text-gray-300 text-[24px]">
                 <i className="ri-radar-line"></i>
               </div>
               <p className="text-[14px] text-gray-400 !mb-[4px]">No investors with fit scores yet</p>
@@ -266,7 +266,7 @@ export default function FitDashboardPage() {
                               {factor.score}%
                             </span>
                           </div>
-                          <div className="w-full h-[3px] bg-gray-200 dark:bg-gray-700 rounded-full !mb-[6px] overflow-hidden">
+                          <div className="w-full h-[4px] bg-gray-200 dark:bg-gray-700 rounded-full !mb-[6px] overflow-hidden">
                             <div className={`h-full rounded-full ${factor.score >= 80 ? "bg-green-500" : factor.score >= 50 ? "bg-amber-500" : "bg-gray-300"}`} style={{ width: `${factor.score}%` }} />
                           </div>
                           <p className="text-[11px] text-gray-400 !mb-0 leading-relaxed">{factor.explanation}</p>

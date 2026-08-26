@@ -50,7 +50,7 @@ function InvestorCard({ investor }: { investor: PipelineInvestor }) {
 
   return (
     <Link href={`/dashboard/investors/${investor.id}`}>
-      <div className="bg-white dark:bg-[#1a1f2e] rounded-[10px] p-[14px] border border-gray-100 dark:border-gray-800 hover:border-lime-300 dark:hover:border-lime-700 hover:shadow-sm transition-all cursor-pointer">
+      <div className="bg-white dark:bg-[#1a1f2e] rounded-[12px] p-[16px] border border-gray-100 dark:border-gray-800 hover:border-lime-300 dark:hover:border-lime-700 hover:shadow-sm transition-all cursor-pointer">
         <div className="flex items-center gap-[10px] mb-[10px]">
           <div className="w-[32px] h-[32px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[13px] font-semibold text-gray-500 flex-none">
             {initials}
@@ -176,7 +176,7 @@ export default function PipelinePage() {
               </div>
               <div className={`${stage.bgColor} rounded-[12px] p-[10px] min-h-[300px]`}>
                 {[1, 2].map((i) => (
-                  <div key={i} className="animate-pulse bg-white dark:bg-[#1a1f2e] rounded-[10px] p-[14px] mb-[10px]">
+                  <div key={i} className="animate-pulse bg-white dark:bg-[#1a1f2e] rounded-[12px] p-[16px] mb-[10px]">
                     <div className="h-[14px] bg-gray-100 dark:bg-gray-800 rounded w-[120px] mb-[6px]"></div>
                     <div className="h-[10px] bg-gray-100 dark:bg-gray-800 rounded w-[80px]"></div>
                   </div>

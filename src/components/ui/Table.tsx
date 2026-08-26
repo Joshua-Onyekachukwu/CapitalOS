@@ -68,7 +68,7 @@ function Table<T extends Record<string, unknown>>({
                   <td
                     key={col.key}
                     className={cn(
-                      "px-[16px] py-[14px] text-[14px] text-gray-600 dark:text-gray-400",
+                      "px-[16px] py-[16px] text-[14px] text-gray-600 dark:text-gray-400",
                       col.className
                     )}
                   >

@@ -144,12 +144,12 @@ export default function DashboardPage() {
     return (
       <div>
         <PageHeader title="Dashboard" description="Loading your workspace..." />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px] md:gap-[20px] mb-[25px] md:mb-[30px]">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardBody>
-                <div className="animate-pulse flex items-center gap-[15px]">
-                  <div className="w-[44px] h-[44px] rounded-[10px] bg-gray-100 dark:bg-gray-800"></div>
+                <div className="animate-pulse flex items-center gap-[16px]">
+                  <div className="w-[44px] h-[44px] rounded-[12px] bg-gray-100 dark:bg-gray-800"></div>
                   <div>
                     <div className="h-[12px] bg-gray-100 dark:bg-gray-800 rounded w-[80px] mb-[6px]"></div>
                     <div className="h-[24px] bg-gray-100 dark:bg-gray-800 rounded w-[60px]"></div>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
       />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px] md:gap-[20px] mb-[25px] md:mb-[30px]">
         {[
           { label: "Total Investors", value: (stats?.totalInvestors || 0).toLocaleString(), icon: "ri-database-2-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
           { label: "High-Fit Investors", value: (stats?.highFitInvestors || 0).toLocaleString(), icon: "ri-star-line", color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600" },
@@ -179,13 +179,13 @@ export default function DashboardPage() {
           { label: "Ready for Outreach", value: (stats?.readyInvestors || 0).toLocaleString(), icon: "ri-send-plane-line", color: "bg-green-50 dark:bg-green-900/20", iconColor: "text-green-600" },
         ].map((stat) => (
           <Card key={stat.label}>
-            <CardBody className="flex items-center gap-[15px]">
-              <div className={`w-[44px] h-[44px] rounded-[10px] ${stat.color} flex items-center justify-center ${stat.iconColor} text-[22px] flex-none`}>
+            <CardBody className="flex items-center gap-[16px]">
+              <div className={`w-[44px] h-[44px] rounded-[12px] ${stat.color} flex items-center justify-center ${stat.iconColor} text-[24px] flex-none`}>
                 <i className={stat.icon}></i>
               </div>
               <div>
                 <p className="text-[12px] md:text-[13px] text-gray-400 !mb-[2px]">{stat.label}</p>
-                <p className="text-[20px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+                <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
               </div>
             </CardBody>
           </Card>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Email & Campaign Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-[15px] mb-[25px] md:mb-[30px]">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-[16px] mb-[25px] md:mb-[30px]">
         {[
           { label: "Emails Sent", value: (stats?.emailsSent || 0).toLocaleString(), icon: "ri-mail-send-line", color: "text-blue-600" },
           { label: "Replies Received", value: (stats?.emailsReplied || 0).toLocaleString(), icon: "ri-reply-line", color: "text-green-600" },
@@ -202,7 +202,7 @@ export default function DashboardPage() {
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="flex items-center gap-[12px]">
-              <i className={`${stat.icon} ${stat.color} text-[20px]`}></i>
+              <i className={`${stat.icon} ${stat.color} text-[18px]`}></i>
               <div>
                 <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
                 <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                 Edit →
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-[14px]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-[16px]">
               <div>
                 <p className="text-[11px] text-gray-400 !mb-[2px]">Company</p>
                 <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
@@ -278,7 +278,7 @@ export default function DashboardPage() {
       )}
 
       {/* Quick Actions + Pipeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[15px] md:gap-[20px] mb-[25px] md:mb-[30px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[16px] md:gap-[20px] mb-[25px] md:mb-[30px]">
         {/* Next Steps */}
         <Card>
           <CardBody>
@@ -288,7 +288,7 @@ export default function DashboardPage() {
             <div className="space-y-[10px]">
               {nextSteps.map((step, i) => (
                 <Link key={i} href={step.href}>
-                  <div className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
+                  <div className="flex items-center gap-[12px] p-[16px] rounded-[12px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
                     <div className="w-[36px] h-[36px] rounded-[8px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[18px] flex-none">
                       <i className={step.icon}></i>
                     </div>
@@ -316,7 +316,7 @@ export default function DashboardPage() {
             </div>
             {pipeline.length === 0 ? (
               <div className="text-center py-[30px]">
-                <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 dark:text-gray-600 text-[24px]">
+                <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[16px] text-gray-300 dark:text-gray-600 text-[24px]">
                   <i className="ri-kanban-view"></i>
                 </div>
                 <p className="text-[14px] text-gray-400 !mb-[4px]">No pipeline data yet</p>
@@ -352,7 +352,7 @@ export default function DashboardPage() {
           </div>
           {recentInvestors.length === 0 ? (
             <div className="text-center py-[30px]">
-              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 dark:text-gray-600 text-[24px]">
+              <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[16px] text-gray-300 dark:text-gray-600 text-[24px]">
                 <i className="ri-team-line"></i>
               </div>
               <p className="text-[14px] text-gray-400 !mb-[4px]">No investors yet</p>

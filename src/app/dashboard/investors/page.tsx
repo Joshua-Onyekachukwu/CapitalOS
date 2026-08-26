@@ -417,9 +417,9 @@ export default function InvestorsPage() {
           { label: "Has LinkedIn", value: withLinkedinCount.toLocaleString(), icon: "ri-linkedin-box-line", color: "text-sky-600" },
         ].map((stat) => (
           <Card key={stat.label}>
-            <CardBody className="p-[14px]">
+            <CardBody className="p-[16px]">
               <div className="flex items-center gap-[10px]">
-                <div className={`w-[36px] h-[36px] rounded-[10px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center flex-none`}>
+                <div className={`w-[36px] h-[36px] rounded-[12px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center flex-none`}>
                   <i className={`${stat.icon} ${stat.color} text-[18px]`}></i>
                 </div>
                 <div className="min-w-0">
@@ -466,7 +466,7 @@ export default function InvestorsPage() {
           {loading ? (
             <div className="p-[20px] space-y-[10px]">
               {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                <div key={i} className="animate-pulse flex items-center gap-[12px] p-[14px]">
+                <div key={i} className="animate-pulse flex items-center gap-[12px] p-[16px]">
                   <div className="w-[36px] h-[36px] rounded-full bg-gray-100 dark:bg-gray-800 flex-none"></div>
                   <div className="flex-1">
                     <div className="h-[14px] bg-gray-100 dark:bg-gray-800 rounded w-[150px] mb-[6px]"></div>
@@ -478,10 +478,10 @@ export default function InvestorsPage() {
             </div>
           ) : investors.length === 0 ? (
             <div className="text-center py-[60px]">
-              <div className="w-[56px] h-[56px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px]">
+              <div className="w-[56px] h-[56px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[16px]">
                 <i className="ri-search-line text-gray-300 text-[24px]"></i>
               </div>
-              <p className="text-[15px] font-semibold text-gray-500 !mb-[4px]">No investors found</p>
+              <p className="text-[14px] font-semibold text-gray-500 !mb-[4px]">No investors found</p>
               <p className="text-[13px] text-gray-400 !mb-[16px]">
                 Try adjusting your filters or search terms.
               </p>
@@ -495,28 +495,28 @@ export default function InvestorsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-800">
-                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px]">
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px]">
                         Investor
                       </th>
-                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px] hidden sm:table-cell">
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px] hidden sm:table-cell">
                         Type
                       </th>
-                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px] hidden md:table-cell">
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px] hidden md:table-cell">
                         Firm
                       </th>
-                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px] hidden lg:table-cell">
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px] hidden lg:table-cell">
                         Location
                       </th>
-                      <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px]">
+                      <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px]">
                         Fit
                       </th>
-                      <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px] hidden lg:table-cell">
+                      <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px] hidden lg:table-cell">
                         Quality
                       </th>
-                      <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px] hidden xl:table-cell">
+                      <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px] hidden xl:table-cell">
                         Verified
                       </th>
-                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[14px] py-[10px]">
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px]">
                         Status
                       </th>
                     </tr>
@@ -528,7 +528,7 @@ export default function InvestorsPage() {
                         className="border-b border-gray-50 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
                       >
                         {/* Name + email */}
-                        <td className="px-[14px] py-[12px]">
+                        <td className="px-[16px] py-[12px]">
                           <Link
                             href={`/dashboard/investors/${inv.id}`}
                             className="hover:text-lime-600 transition-colors"
@@ -543,28 +543,28 @@ export default function InvestorsPage() {
                         </td>
 
                         {/* Type */}
-                        <td className="px-[14px] py-[12px] hidden sm:table-cell">
+                        <td className="px-[16px] py-[12px] hidden sm:table-cell">
                           <Badge variant="default" size="sm">
                             {inv.investor_type.replace(/_/g, " ")}
                           </Badge>
                         </td>
 
                         {/* Firm */}
-                        <td className="px-[14px] py-[12px] hidden md:table-cell">
+                        <td className="px-[16px] py-[12px] hidden md:table-cell">
                           <span className="text-[12px] text-gray-500">
                             {inv.firm_name || "—"}
                           </span>
                         </td>
 
                         {/* Location */}
-                        <td className="px-[14px] py-[12px] hidden lg:table-cell">
+                        <td className="px-[16px] py-[12px] hidden lg:table-cell">
                           <span className="text-[12px] text-gray-500">
                             {[inv.city, inv.country].filter(Boolean).join(", ") || "—"}
                           </span>
                         </td>
 
                         {/* Fit Score */}
-                        <td className="px-[14px] py-[12px] text-center">
+                        <td className="px-[16px] py-[12px] text-center">
                           <span
                             className={`text-[13px] font-bold ${
                               inv.fit_score >= 80
@@ -579,7 +579,7 @@ export default function InvestorsPage() {
                         </td>
 
                         {/* Quality bar */}
-                        <td className="px-[14px] py-[12px] text-center hidden lg:table-cell">
+                        <td className="px-[16px] py-[12px] text-center hidden lg:table-cell">
                           <div className="flex items-center gap-[6px] justify-center">
                             <div className="w-[40px] h-[4px] bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                               <div
@@ -600,7 +600,7 @@ export default function InvestorsPage() {
                         </td>
 
                         {/* Verified */}
-                        <td className="px-[14px] py-[12px] text-center hidden xl:table-cell">
+                        <td className="px-[16px] py-[12px] text-center hidden xl:table-cell">
                           {inv.is_verified ? (
                             <i className="ri-shield-check-line text-green-500 text-[16px]"></i>
                           ) : (
@@ -609,7 +609,7 @@ export default function InvestorsPage() {
                         </td>
 
                         {/* Outreach status */}
-                        <td className="px-[14px] py-[12px]">
+                        <td className="px-[16px] py-[12px]">
                           <Badge variant={readinessColors[inv.outreach_readiness] || "default"} size="sm">
                             {inv.outreach_readiness.replace(/_/g, " ")}
                           </Badge>
@@ -621,7 +621,7 @@ export default function InvestorsPage() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between px-[14px] py-[12px] border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between px-[16px] py-[12px] border-t border-gray-100 dark:border-gray-800">
                 <p className="text-[12px] text-gray-400 !mb-0">
                   Page {page} of {Math.ceil(total / limit) || 1}
                   <span className="text-gray-300 mx-[6px]">·</span>

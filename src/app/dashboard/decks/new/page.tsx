@@ -47,7 +47,7 @@ function SortableSlideItem({
     <div ref={setNodeRef} style={style} {...attributes}>
       <button
         onClick={onSelect}
-        className={`w-full text-left p-[12px] rounded-[10px] transition-all ${
+        className={`w-full text-left p-[12px] rounded-[12px] transition-all ${
           isSelected
             ? "bg-lime-50 dark:bg-lime-900/20 border border-lime-200 dark:border-lime-800"
             : "bg-gray-50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800/50"
@@ -271,7 +271,7 @@ export default function NewDeckPage() {
       />
 
       {error && (
-        <div className="mb-[16px] p-[14px] bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-[10px] text-[13px] text-red-600 dark:text-red-400">
+        <div className="mb-[16px] p-[16px] bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-[12px] text-[13px] text-red-600 dark:text-red-400">
           {error}
         </div>
       )}
@@ -319,7 +319,7 @@ export default function NewDeckPage() {
                   { value: 14, label: "Detailed", desc: "Comprehensive" },
                 ].map((opt) => (
                   <button key={opt.value} onClick={() => setSlideCount(opt.value)}
-                    className={`flex-1 p-[14px] rounded-[10px] border-2 text-center transition-all ${
+                    className={`flex-1 p-[16px] rounded-[12px] border-2 text-center transition-all ${
                       slideCount === opt.value ? "border-lime-500 bg-lime-50/50 dark:bg-lime-900/10"
                         : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
                     }`}>
@@ -364,7 +364,7 @@ export default function NewDeckPage() {
       {/* Results */}
       {slides.length > 0 && (
         <div className="space-y-[20px]">
-          <div className="flex items-center gap-[16px] p-[14px] bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] border border-lime-100 dark:border-lime-800/30">
+          <div className="flex items-center gap-[16px] p-[16px] bg-lime-50/50 dark:bg-lime-900/10 rounded-[12px] border border-lime-100 dark:border-lime-800/30">
             <div className="w-[40px] h-[40px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center flex-none">
               <i className="ri-check-line text-lime-600 text-[18px]"></i>
             </div>
@@ -463,11 +463,11 @@ export default function NewDeckPage() {
                       ) : (
                         /* View Mode */
                         <>
-                          <h2 className="!text-[24px] md:!text-[30px] !font-bold !leading-tight !mb-[16px]"
+                          <h2 className="!text-[24px] md:!text-[28px] !font-bold !leading-tight !mb-[16px]"
                             style={{ color: design?.primaryColor || "#1A237E" }}>
                             {slides[selectedSlide].title}
                           </h2>
-                          <p className="text-[15px] md:text-[16px] leading-relaxed !mb-[20px]"
+                          <p className="text-[14px] md:text-[16px] leading-relaxed !mb-[20px]"
                             style={{ color: design?.textColor || "#212121" }}>
                             {slides[selectedSlide].content}
                           </p>
@@ -475,7 +475,7 @@ export default function NewDeckPage() {
                             <ul className="space-y-[10px]">
                               {slides[selectedSlide].bullets!.map((bullet, i) => (
                                 <li key={i} className="flex items-start gap-[10px] text-[14px]" style={{ color: design?.textColor || "#212121" }}>
-                                  <span className="mt-[3px] w-[6px] h-[6px] rounded-full flex-none"
+                                  <span className="mt-[4px] w-[6px] h-[6px] rounded-full flex-none"
                                     style={{ backgroundColor: design?.accentColor || "#5C6BC0" }}></span>
                                   {bullet}
                                 </li>
@@ -485,7 +485,7 @@ export default function NewDeckPage() {
                           {slides[selectedSlide].metrics && slides[selectedSlide].metrics!.length > 0 && (
                             <div className="grid grid-cols-3 gap-[16px] mt-[20px]">
                               {slides[selectedSlide].metrics!.map((metric, i) => (
-                                <div key={i} className="text-center p-[16px] bg-gray-50 dark:bg-gray-800/30 rounded-[10px]">
+                                <div key={i} className="text-center p-[16px] bg-gray-50 dark:bg-gray-800/30 rounded-[12px]">
                                   <p className="text-[24px] font-bold !mb-[4px]" style={{ color: design?.primaryColor || "#1A237E" }}>{metric.value}</p>
                                   <p className="text-[12px] text-gray-400 !mb-0">{metric.label}</p>
                                 </div>

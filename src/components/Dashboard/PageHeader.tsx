@@ -12,7 +12,7 @@ function PageHeader({ title, description, actions, className }: PageHeaderProps)
   return (
     <div
       className={cn(
-        "flex items-start justify-between mb-[25px] md:mb-[30px] flex-wrap gap-[15px]",
+        "flex items-start justify-between mb-[25px] md:mb-[30px] flex-wrap gap-[16px]",
         className
       )}
     >
@@ -21,7 +21,7 @@ function PageHeader({ title, description, actions, className }: PageHeaderProps)
           {title}
         </h1>
         {description && (
-          <p className="text-[14px] md:text-[15px] text-gray-500 !mb-0">
+          <p className="text-[14px] md:text-[14px] text-gray-500 !mb-0">
             {description}
           </p>
         )}

@@ -123,7 +123,7 @@ export default function CopilotPage() {
             <button
               key={i}
               onClick={() => sendMessage(q)}
-              className="text-[13px] px-[14px] py-[8px] rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-lime-50 hover:text-lime-700 dark:hover:bg-lime-900/20 transition-all"
+              className="text-[13px] px-[16px] py-[8px] rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-lime-50 hover:text-lime-700 dark:hover:bg-lime-900/20 transition-all"
             >
               {q}
             </button>
@@ -139,7 +139,7 @@ export default function CopilotPage() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
           placeholder="Ask about your investors, strategy, or outreach..."
-          className="flex-1 py-[12px] px-[16px] text-[14px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 focus:border-lime-500"
+          className="flex-1 py-[12px] px-[16px] text-[14px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[12px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 focus:border-lime-500"
           disabled={loading}
         />
         <Button onClick={() => sendMessage()} disabled={loading || !input.trim()}>

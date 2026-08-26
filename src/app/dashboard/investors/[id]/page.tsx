@@ -283,12 +283,12 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           <Card>
             <CardBody className="p-[24px]">
               <div className="flex items-start gap-[16px]">
-                <div className="w-[64px] h-[64px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center text-[22px] font-bold text-lime-700 dark:text-lime-400 flex-none">
+                <div className="w-[64px] h-[64px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center text-[24px] font-bold text-lime-700 dark:text-lime-400 flex-none">
                   {initials}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-[8px] mb-[4px]">
-                    <h2 className="!text-[20px] !font-bold !mb-0">{investor.full_name}</h2>
+                    <h2 className="!text-[18px] !font-bold !mb-0">{investor.full_name}</h2>
                     {investor.is_verified && (
                       <i className="ri-verified-badge-fill text-lime-500 text-[18px]"></i>
                     )}
@@ -359,7 +359,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                 </div>
               ) : research ? (
                 <div className="space-y-[16px]">
-                  <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] p-[16px] border border-lime-100 dark:border-lime-800/30">
+                  <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[12px] p-[16px] border border-lime-100 dark:border-lime-800/30">
                     <p className="text-[14px] text-gray-700 dark:text-gray-300 leading-[1.7] !mb-0">{research.summary}</p>
                   </div>
 
@@ -426,7 +426,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                 </div>
               ) : (
                 <div className="text-center py-[20px]">
-                  <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[12px] text-gray-300 text-[20px]">
+                  <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[12px] text-gray-300 text-[18px]">
                     <i className="ri-sparkling-2-line"></i>
                   </div>
                   <p className="text-[14px] text-gray-400 !mb-[4px]">No research summary yet</p>
@@ -477,7 +477,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
               {(investor.min_check_size || investor.max_check_size) && (
-                <div className="mt-[14px]">
+                <div className="mt-[16px]">
                   <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Check Size</span>
                   <span className="text-[14px] font-medium text-gray-700 dark:text-gray-300">
                     {investor.min_check_size ? `$${investor.min_check_size.toLocaleString()}` : "?"} — {investor.max_check_size ? `$${investor.max_check_size.toLocaleString()}` : "?"}

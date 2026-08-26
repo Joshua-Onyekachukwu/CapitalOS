@@ -351,14 +351,14 @@ export default function InvestorDiscoverPage() {
             })}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-[14px] mb-[16px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-[16px]">
             <div>
               <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Sector</label>
               <input
                 value={sector}
                 onChange={(e) => setSector(e.target.value)}
                 placeholder="e.g. AI, SaaS, Fintech"
-                className="w-full py-[9px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
               />
             </div>
             <div>
@@ -366,7 +366,7 @@ export default function InvestorDiscoverPage() {
               <select
                 value={stage}
                 onChange={(e) => setStage(e.target.value)}
-                className="w-full py-[9px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
               >
                 <option value="">All Stages</option>
                 <option value="pre_seed">Pre-Seed</option>
@@ -382,7 +382,7 @@ export default function InvestorDiscoverPage() {
                 value={geography}
                 onChange={(e) => setGeography(e.target.value)}
                 placeholder="e.g. US, Europe, Global"
-                className="w-full py-[9px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
               />
             </div>
           </div>
@@ -395,7 +395,7 @@ export default function InvestorDiscoverPage() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="e.g. AI-focused VCs who invest in developer tools at seed stage..."
               rows={2}
-              className="w-full py-[9px] px-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 resize-none"
+              className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 resize-none"
             />
           </div>
 
@@ -430,7 +430,7 @@ export default function InvestorDiscoverPage() {
                 onChange={(e) => {
                   setSortBy(e.target.value);
                 }}
-                className="py-[9px] px-[14px] text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+                className="py-[8px] px-[16px] text-[13px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
               >
                 <option value="fit_score">Best Fit</option>
                 <option value="data_quality_score">Data Quality</option>
@@ -537,8 +537,8 @@ export default function InvestorDiscoverPage() {
 
                 return (
                   <Card key={investor.id} className="hover:shadow-md transition-shadow">
-                    <CardBody className="p-[18px]">
-                      <div className="flex items-start gap-[14px]">
+                    <CardBody className="p-[16px]">
+                      <div className="flex items-start gap-[16px]">
                         {/* Avatar */}
                         <div className="w-[44px] h-[44px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center text-[14px] font-bold text-lime-700 dark:text-lime-400 flex-none">
                           {investor.full_name
@@ -554,7 +554,7 @@ export default function InvestorDiscoverPage() {
                           <div className="flex items-center gap-[10px] mb-[4px] flex-wrap">
                             <Link
                               href={`/dashboard/investors/${investor.id}`}
-                              className="text-[15px] font-semibold text-[#06201b] dark:text-white hover:text-lime-600 transition-colors"
+                              className="text-[14px] font-semibold text-[#06201b] dark:text-white hover:text-lime-600 transition-colors"
                             >
                               {investor.full_name}
                             </Link>
@@ -625,7 +625,7 @@ export default function InvestorDiscoverPage() {
                           {isExpanded && analyzeResult && (
                             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[12px] p-[16px] mt-[4px] border border-gray-100 dark:border-gray-800">
                               {/* Overall Score */}
-                              <div className="flex items-center gap-[12px] mb-[14px]">
+                              <div className="flex items-center gap-[12px] mb-[16px]">
                                 <div
                                   className={`w-[48px] h-[48px] rounded-full flex items-center justify-center text-[18px] font-bold ${getScoreBg(
                                     analyzeResult.fitScore
@@ -656,7 +656,7 @@ export default function InvestorDiscoverPage() {
                               </div>
 
                               {/* Factor Breakdown */}
-                              <div className="space-y-[8px] mb-[14px]">
+                              <div className="space-y-[8px] mb-[16px]">
                                 <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
                                   Score Breakdown
                                 </span>
@@ -674,7 +674,7 @@ export default function InvestorDiscoverPage() {
 
                               {/* AI Analysis */}
                               {analyzeResult.aiAnalysis && (
-                                <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] p-[14px] border border-lime-100 dark:border-lime-800/30">
+                                <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[12px] p-[16px] border border-lime-100 dark:border-lime-800/30">
                                   <div className="flex items-center gap-[6px] mb-[8px]">
                                     <i className="ri-sparkling-2-line text-lime-600 text-[14px]"></i>
                                     <span className="text-[12px] font-semibold text-[#06201b] dark:text-white">

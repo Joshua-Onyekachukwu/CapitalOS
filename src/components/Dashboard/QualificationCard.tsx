@@ -54,11 +54,11 @@ export function QualificationCard() {
     <Card>
       <CardBody>
         <div className="flex items-center gap-[10px] mb-[16px]">
-          <div className="w-[40px] h-[40px] rounded-[10px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[20px]">
+          <div className="w-[40px] h-[40px] rounded-[12px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[18px]">
             <i className="ri-scoreboard-line"></i>
           </div>
           <div>
-            <h3 className="text-[15px] font-semibold text-[#06201b] dark:text-white !mb-0">Batch Qualification</h3>
+            <h3 className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0">Batch Qualification</h3>
             <p className="text-[12px] text-gray-400 !mb-0">Score all investors against your startup profile</p>
           </div>
         </div>

@@ -7,7 +7,7 @@ export function PageLoader() {
         <Skeleton className="h-[28px] w-[200px] mb-[8px]" />
         <Skeleton className="h-[16px] w-[300px]" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[15px] md:gap-[20px] mb-[25px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px] md:gap-[20px] mb-[25px]">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonCard key={i} />
         ))}

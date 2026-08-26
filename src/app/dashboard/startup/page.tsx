@@ -107,7 +107,7 @@ export default function StartupPage() {
         <PageHeader title="My Startup" description="Set up your company profile to improve investor matching." />
         <Card>
           <CardBody className="text-center py-[40px]">
-            <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[14px] text-gray-300 text-[24px]">
+            <div className="w-[48px] h-[48px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[16px] text-gray-300 text-[24px]">
               <i className="ri-building-line"></i>
             </div>
             <p className="text-[14px] text-gray-400 !mb-[16px]">No company profile yet.</p>
@@ -142,7 +142,7 @@ export default function StartupPage() {
         <CardBody className="p-[20px]">
           <div className="flex items-center gap-[16px]">
             <div className="w-[56px] h-[56px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center flex-none">
-              <span className={`text-[20px] font-bold ${readinessColor}`}>{profile.readinessScore}%</span>
+              <span className={`text-[18px] font-bold ${readinessColor}`}>{profile.readinessScore}%</span>
             </div>
             <div className="flex-1">
               <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">
@@ -172,7 +172,7 @@ export default function StartupPage() {
           <CardBody className="p-[20px]">
             <div className="flex items-center gap-[16px]">
               <div className="w-[48px] h-[48px] rounded-[12px] bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center flex-none">
-                <i className="ri-magic-line text-lime-600 text-[22px]"></i>
+                <i className="ri-magic-line text-lime-600 text-[24px]"></i>
               </div>
               <div className="flex-1">
                 <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">
@@ -294,7 +294,7 @@ export default function StartupPage() {
               ))}
             </div>
             {profile.milestones.length > 0 && (
-              <div className="mt-[14px]">
+              <div className="mt-[16px]">
                 <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Key Milestones</span>
                 <div className="flex flex-wrap gap-[6px]">
                   {profile.milestones.map((m, i) => (

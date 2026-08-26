@@ -143,7 +143,7 @@ export function SearchFilterBar({
       {/* Main search bar */}
       <div className="bg-white dark:bg-[#0d1b16] border border-gray-200 dark:border-gray-800 rounded-[12px] overflow-hidden">
         {/* Search row */}
-        <div className="flex items-center gap-[10px] p-[14px]">
+        <div className="flex items-center gap-[10px] p-[16px]">
           {/* Search icon */}
           <i className="ri-search-line text-gray-400 text-[18px] flex-none"></i>
 
@@ -161,13 +161,13 @@ export function SearchFilterBar({
           {/* Filter toggle button */}
           <button
             onClick={() => setExpanded(!expanded)}
-            className={`flex items-center gap-[6px] px-[12px] py-[7px] text-[13px] font-medium rounded-[8px] border transition-all flex-none ${
+            className={`flex items-center gap-[6px] px-[12px] py-[8px] text-[13px] font-medium rounded-[8px] border transition-all flex-none ${
               expanded || hasActiveFilters
                 ? "bg-lime-50 dark:bg-lime-900/20 border-lime-300 dark:border-lime-700 text-lime-700 dark:text-lime-400"
                 : "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300"
             }`}
           >
-            <i className="ri-filter-3-line text-[15px]"></i>
+            <i className="ri-filter-3-line text-[14px]"></i>
             Filters
             {filterCount > 0 && (
               <span className="w-[18px] h-[18px] rounded-full bg-lime-500 text-black text-[11px] font-bold flex items-center justify-center">
@@ -185,7 +185,7 @@ export function SearchFilterBar({
           {onSearch && (
             <Button size="sm" onClick={onSearch} disabled={loading}>
               {loading ? (
-                <i className="ri-loader-4-line animate-spin text-[15px]"></i>
+                <i className="ri-loader-4-line animate-spin text-[14px]"></i>
               ) : (
                 searchLabel
               )}
@@ -197,10 +197,10 @@ export function SearchFilterBar({
             <div className="relative flex-none">
               <button
                 onClick={() => setShowSavedList(!showSavedList)}
-                className="flex items-center gap-[6px] px-[10px] py-[7px] text-[13px] font-medium rounded-[8px] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all"
+                className="flex items-center gap-[6px] px-[10px] py-[8px] text-[13px] font-medium rounded-[8px] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all"
                 title="Saved Filters"
               >
-                <i className="ri-bookmark-line text-[15px]"></i>
+                <i className="ri-bookmark-line text-[14px]"></i>
                 {savedFilters.length > 0 && (
                   <span className="w-[18px] h-[18px] rounded-full bg-gray-200 dark:bg-gray-700 text-[11px] font-bold flex items-center justify-center">
                     {savedFilters.length}
@@ -210,7 +210,7 @@ export function SearchFilterBar({
 
               {/* Saved filters dropdown */}
               {showSavedList && (
-                <div className="absolute right-0 top-full mt-[8px] w-[280px] bg-white dark:bg-[#0d1b16] border border-gray-200 dark:border-gray-800 rounded-[10px] shadow-lg z-50 overflow-hidden">
+                <div className="absolute right-0 top-full mt-[8px] w-[280px] bg-white dark:bg-[#0d1b16] border border-gray-200 dark:border-gray-800 rounded-[12px] shadow-lg z-50 overflow-hidden">
                   <div className="p-[12px] border-b border-gray-100 dark:border-gray-800">
                     <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider !mb-0">Saved Filters</p>
                   </div>
@@ -262,7 +262,7 @@ export function SearchFilterBar({
               <button
                 onClick={() => setShowSaveDialog(!showSaveDialog)}
                 disabled={saving}
-                className="flex items-center gap-[6px] px-[10px] py-[7px] text-[13px] font-medium rounded-[8px] border border-lime-300 dark:border-lime-700 text-lime-700 dark:text-lime-400 hover:bg-lime-50 dark:hover:bg-lime-900/20 transition-all"
+                className="flex items-center gap-[6px] px-[10px] py-[8px] text-[13px] font-medium rounded-[8px] border border-lime-300 dark:border-lime-700 text-lime-700 dark:text-lime-400 hover:bg-lime-50 dark:hover:bg-lime-900/20 transition-all"
                 title="Save this filter"
               >
                 {saving ? (
@@ -275,7 +275,7 @@ export function SearchFilterBar({
 
               {/* Save dialog */}
               {showSaveDialog && (
-                <div className="absolute right-0 top-full mt-[8px] w-[260px] bg-white dark:bg-[#0d1b16] border border-gray-200 dark:border-gray-800 rounded-[10px] shadow-lg z-50 p-[14px]">
+                <div className="absolute right-0 top-full mt-[8px] w-[260px] bg-white dark:bg-[#0d1b16] border border-gray-200 dark:border-gray-800 rounded-[12px] shadow-lg z-50 p-[16px]">
                   <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider !mb-[8px]">Save Filter</p>
                   <input
                     type="text"
@@ -325,14 +325,14 @@ export function SearchFilterBar({
 
         {/* Quick filter chips */}
         {quickFilters && quickFilters.length > 0 && (
-          <div className="px-[14px] pb-[12px] flex flex-wrap gap-[6px]">
+          <div className="px-[16px] pb-[12px] flex flex-wrap gap-[6px]">
             {quickFilters.map((qf) => {
               const isActive = values[qf.key] === qf.value;
               return (
                 <button
                   key={qf.label}
                   onClick={() => onChange(qf.key, isActive ? "" : qf.value)}
-                  className={`px-[10px] py-[5px] text-[12px] font-medium rounded-full border transition-all ${
+                  className={`px-[10px] py-[4px] text-[12px] font-medium rounded-full border transition-all ${
                     isActive
                       ? "bg-lime-500 text-black border-lime-500"
                       : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-lime-400 hover:text-lime-600"
@@ -349,7 +349,7 @@ export function SearchFilterBar({
 
         {/* Expanded filter panel */}
         {expanded && (
-          <div className="border-t border-gray-100 dark:border-gray-800 p-[14px]">
+          <div className="border-t border-gray-100 dark:border-gray-800 p-[16px]">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[12px]">
               {filters.map((filter) => {
                 if (filter.type === "toggle") {
@@ -367,7 +367,7 @@ export function SearchFilterBar({
                               isActive ? "" : "true"
                             )
                           }
-                          className={`flex-1 py-[7px] text-[12px] font-medium rounded-[6px] border transition-all ${
+                          className={`flex-1 py-[8px] text-[12px] font-medium rounded-[6px] border transition-all ${
                             isActive
                               ? "bg-lime-50 dark:bg-lime-900/20 border-lime-300 text-lime-700 dark:text-lime-400"
                               : "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-500"
@@ -382,7 +382,7 @@ export function SearchFilterBar({
                               values[filter.key] === "false" ? "" : "false"
                             )
                           }
-                          className={`flex-1 py-[7px] text-[12px] font-medium rounded-[6px] border transition-all ${
+                          className={`flex-1 py-[8px] text-[12px] font-medium rounded-[6px] border transition-all ${
                             values[filter.key] === "false"
                               ? "bg-red-50 dark:bg-red-900/20 border-red-300 text-red-600 dark:text-red-400"
                               : "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-500"

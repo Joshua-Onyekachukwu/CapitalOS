@@ -36,7 +36,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         {title}
       </h3>
       {description && (
-        <p className="text-[14px] md:text-[15px] text-gray-500 max-w-[360px] !mb-0">
+        <p className="text-[14px] md:text-[14px] text-gray-500 max-w-[360px] !mb-0">
           {description}
         </p>
       )}

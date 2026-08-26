@@ -165,48 +165,48 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       />
 
       {/* Campaign Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-[15px] mb-[25px]">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-[16px] mb-[25px]">
         <Card>
-          <CardBody className="flex items-center gap-[14px]">
-            <div className="w-[40px] h-[40px] rounded-[10px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[20px] flex-none">
+          <CardBody className="flex items-center gap-[16px]">
+            <div className="w-[40px] h-[40px] rounded-[12px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[18px] flex-none">
               <i className="ri-team-line"></i>
             </div>
             <div>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Total Investors</p>
-              <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{stats.total}</p>
+              <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stats.total}</p>
             </div>
           </CardBody>
         </Card>
         <Card>
-          <CardBody className="flex items-center gap-[14px]">
-            <div className="w-[40px] h-[40px] rounded-[10px] bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 text-[20px] flex-none">
+          <CardBody className="flex items-center gap-[16px]">
+            <div className="w-[40px] h-[40px] rounded-[12px] bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 text-[18px] flex-none">
               <i className="ri-draft-line"></i>
             </div>
             <div>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Drafted</p>
-              <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{stats.drafted}</p>
+              <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stats.drafted}</p>
             </div>
           </CardBody>
         </Card>
         <Card>
-          <CardBody className="flex items-center gap-[14px]">
-            <div className="w-[40px] h-[40px] rounded-[10px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[20px] flex-none">
+          <CardBody className="flex items-center gap-[16px]">
+            <div className="w-[40px] h-[40px] rounded-[12px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[18px] flex-none">
               <i className="ri-mail-send-line"></i>
             </div>
             <div>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Sent</p>
-              <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{stats.sent}</p>
+              <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stats.sent}</p>
             </div>
           </CardBody>
         </Card>
         <Card>
-          <CardBody className="flex items-center gap-[14px]">
-            <div className="w-[40px] h-[40px] rounded-[10px] bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 text-[20px] flex-none">
+          <CardBody className="flex items-center gap-[16px]">
+            <div className="w-[40px] h-[40px] rounded-[12px] bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 text-[18px] flex-none">
               <i className="ri-reply-line"></i>
             </div>
             <div>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Replied</p>
-              <p className="text-[20px] font-bold text-[#06201b] dark:text-white !mb-0">{stats.replied}</p>
+              <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stats.replied}</p>
             </div>
           </CardBody>
         </Card>
@@ -252,7 +252,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                       className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer"
                       onClick={() => setSelectedInvestor(inv)}
                     >
-                      <td className="px-[20px] py-[14px]">
+                      <td className="px-[20px] py-[16px]">
                         <div className="flex items-center gap-[10px]">
                           <div className="w-[32px] h-[32px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[12px] font-semibold text-[#06201b] dark:text-white flex-shrink-0">
                             {(inv.first_name?.[0] || "") + (inv.last_name?.[0] || "")}
@@ -264,20 +264,20 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                           </div>
                         </div>
                       </td>
-                      <td className="px-[20px] py-[14px] text-[13px] text-gray-400">{inv.email || "No email"}</td>
-                      <td className="px-[20px] py-[14px]">
+                      <td className="px-[20px] py-[16px] text-[13px] text-gray-400">{inv.email || "No email"}</td>
+                      <td className="px-[20px] py-[16px]">
                         <span className={`text-[13px] font-bold ${
                           inv.fit_score >= 80 ? "text-green-600" : inv.fit_score >= 60 ? "text-amber-600" : "text-gray-400"
                         }`}>
                           {inv.fit_score}%
                         </span>
                       </td>
-                      <td className="px-[20px] py-[14px]">
+                      <td className="px-[20px] py-[16px]">
                         <Badge variant={statusColors[inv.status]?.variant || "default"} size="sm">
                           {statusColors[inv.status]?.label || inv.status}
                         </Badge>
                       </td>
-                      <td className="px-[20px] py-[14px]">
+                      <td className="px-[20px] py-[16px]">
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedInvestor(inv); }}>
                           <i className="ri-eye-line text-[14px]"></i>
                           View

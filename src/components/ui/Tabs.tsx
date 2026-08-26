@@ -27,13 +27,13 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onChange, className }) => 
 
   return (
     <div className={cn("border-b border-gray-200 dark:border-gray-800", className)}>
-      <div className="flex gap-[5px] md:gap-[10px] overflow-x-auto">
+      <div className="flex gap-[4px] md:gap-[10px] overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => handleChange(tab.id)}
             className={cn(
-              "flex items-center gap-[8px] px-[14px] md:px-[18px] py-[12px] md:py-[14px] text-[14px] md:text-[15px] font-medium whitespace-nowrap transition-all relative",
+              "flex items-center gap-[8px] px-[16px] md:px-[16px] py-[12px] md:py-[16px] text-[14px] md:text-[14px] font-medium whitespace-nowrap transition-all relative",
               active === tab.id
                 ? "text-[#06201b] dark:text-white"
                 : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
