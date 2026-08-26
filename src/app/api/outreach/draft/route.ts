@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const response = await chatCompletion({
       task: "email_drafting",
-      systemPrompt: `You are an expert fundraising outreach specialist for Capital OS, an AI-powered platform that helps founders manage their fundraising process. Write a personalized, professional investor outreach email. The email should be concise (under 150 words), reference the investor's firm and investment thesis, explain why the startup is relevant, and include a clear ask. Return JSON with "subject" and "body" fields. Keep a warm but professional tone.`,
+      systemPrompt: `You are an expert fundraising outreach specialist. Write a personalized investor outreach email.\n\nRULES:\n- Return ONLY a JSON object, no markdown, no code blocks, no explanation\n- The JSON must have exactly two fields: "subject" and "body"\n- The body must be the email text only (plain text, not HTML)\n- Keep the body under 150 words\n- Warm, professional tone\n- Reference the investor's focus areas\n- Include a clear call to action\n\nExample format (return ONLY this, nothing else):\n{"subject": "Your subject line", "body": "Dear [Name],\n\nYour email text here...\n\nBest,\n[Your Name]"}`,
       messages: [
         {
           role: "user",
@@ -37,7 +37,21 @@ export async function POST(request: NextRequest) {
     });
 
     // Try to parse JSON from the response
-    const content = response.content;
+    let content = response.content;
+
+    // Strip markdown code blocks if present
+    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      content = jsonMatch[1].trim();
+    }
+
+    // Also strip any preamble text before the JSON object
+    const braceIndex = content.indexOf('{');
+    const lastBrace = content.lastIndexOf('}');
+    if (braceIndex !== -1 && lastBrace > braceIndex) {
+      content = content.substring(braceIndex, lastBrace + 1);
+    }
+
     try {
       const parsed = JSON.parse(content);
       return NextResponse.json({

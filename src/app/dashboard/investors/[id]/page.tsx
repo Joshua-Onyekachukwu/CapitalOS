@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { DataHistory } from "@/components/Dashboard/DataHistory";
 import { CommunicationTimeline } from "@/components/Outreach/CommunicationTimeline";
+import { EmailComposeModal } from "@/components/Outreach/EmailComposeModal";
 
 interface InvestorData {
   id: string;
@@ -74,6 +75,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchError, setResearchError] = useState("");
+  const [showOutreach, setShowOutreach] = useState(false);
 
   const fetchInvestor = useCallback(async () => {
     setLoading(true);
@@ -163,7 +165,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
     );
-  }
+}
 
   if (!investor) {
     return (
@@ -181,6 +183,17 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
     );
   }
 
+  // Build AI analysis context for email drafting
+  const aiAnalysisContext = [
+    investor.bio && `Bio: ${investor.bio}`,
+    investor.firm_name && `Firm: ${investor.firm_name}`,
+    investor.fund_size && `Fund size: $${(investor.fund_size / 1_000_000).toFixed(0)}M`,
+    investor.investment_sectors?.length && `Sectors: ${investor.investment_sectors.join(", ")}`,
+    investor.investment_stages?.length && `Stages: ${investor.investment_stages.join(", ")}`,
+    investor.investment_geographies?.length && `Geographies: ${investor.investment_geographies.join(", ")}`,
+    (investor.min_check_size || investor.max_check_size) && `Check size: $${investor.min_check_size || "?"} — $${investor.max_check_size || "?"}`,
+  ].filter(Boolean).join("; ");
+
   const initials = investor.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2);
 
   return (
@@ -193,7 +206,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
               <i className="ri-bookmark-line text-[16px]"></i>
               Save
             </Button>
-            <Button>
+            <Button onClick={() => setShowOutreach(true)}>
               <i className="ri-mail-send-line text-[16px]"></i>
               Start Outreach
             </Button>
@@ -482,8 +495,8 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
 
           <Card>
             <CardBody className="p-[20px] space-y-[10px]">
-              <Button fullWidth>
-                <i className="ri-mail-send-line text-[16px]"></i>
+              <Button fullWidth onClick={() => setShowOutreach(true)}>
+                <i className="ri-mail-send-line text-[16px]"/>
                 Start Personalized Outreach
               </Button>
               <Button fullWidth variant="outline">
@@ -500,6 +513,19 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           </Card>
         </div>
       </div>
+
+      <EmailComposeModal
+        isOpen={showOutreach}
+        onClose={() => setShowOutreach(false)}
+        investorId={investorId}
+        investorName={investor.full_name}
+        investorFirm={investor.firm_name || undefined}
+        investorEmail={investor.email || undefined}
+        investorType={investor.investor_type}
+        fitScore={investor.fit_score}
+        aiAnalysis={aiAnalysisContext}
+        onSent={() => {}}
+      />
     </div>
   );
 }
