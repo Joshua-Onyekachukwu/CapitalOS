@@ -53,19 +53,20 @@ const About: React.FC = () => {
           </div>
           <div>
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[16px]">
-              Most founders spend <strong>20+ hours per week</strong> on investor
-              research, digging through spreadsheets, scanning PitchBook, copying
-              email addresses, and writing cold emails that get ignored.
+              Raising capital shouldn&apos;t feel like a second job. But for most
+              founders, it does. Hours lost to spreadsheets. Emails that go
+              nowhere. Tools that cost a fortune and deliver very little.
             </p>
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[16px]">
-              The tools available today are either too expensive (PitchBook at
-              $20K+/year), too generic (CRMs that weren&apos;t built for fundraising),
-              or too manual (Google Sheets with 500 rows of investor data).
+              We started Capital OS because we saw founders struggling with the
+              same broken process over and over again. The same spreadsheets. The
+              same cold emails. The same frustration.
             </p>
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mb-[20px] lg:mb-[25px]">
-              We built Capital OS because <strong>founders deserve better</strong>.
-              A single platform that gives you a real investor database, AI-powered
-              matching, and personalized outreach, without the spreadsheet chaos.
+              We imagined something different. A platform that feels effortless.
+              Where you describe your startup and the right investors appear.
+              Where AI drafts the emails and you just review and send. Where you
+              can finally focus on what matters: building your company.
             </p>
             <Link
               href="/signup"

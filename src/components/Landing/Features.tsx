@@ -9,7 +9,7 @@ const features = [
     icon: "ri-radar-line",
     title: "Investor Intelligence Database",
     description:
-      "57,000+ investors sourced from SEC filings, venture databases, and curated profiles. Filter by stage, sector, geography, check size, and investment activity.",
+      "Over 1M+ verified investors sourced from SEC filings, venture databases, and curated profiles. Filter by stage, sector, geography, check size, and investment activity.",
   },
   {
     icon: "ri-brain-line",
@@ -137,8 +137,8 @@ const Features: React.FC = () => {
         </div>
         <div className="text-center mx-auto max-w-[500px] mt-[25px] xl:mt-[30px]">
           <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
-            Replace your stack of spreadsheets, PitchBook, and cold email tools
-            with one platform.{" "}
+            Stop juggling five tools when one platform does it all.
+            Replace spreadsheets, PitchBook, and cold email tools.{" "}
             <Link
               href="/signup"
               className="text-lime-500 font-semibold transition-all hover:underline"

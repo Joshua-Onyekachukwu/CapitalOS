@@ -7,7 +7,7 @@ const whyItems = [
   {
     title: "Real Investor Data, Not Just Names",
     description:
-      "57,000+ investors sourced from SEC 13F filings, Form D, venture databases, and curated profiles. Each record includes investment history, check sizes, sectors, and portfolio companies.",
+      "Over 1M+ verified investors sourced from SEC 13F filings, Form D, venture databases, and curated profiles. Each record includes investment history, check sizes, sectors, and portfolio companies.",
   },
   {
     title: "AI That Scores, Not Just Searches",
@@ -52,9 +52,9 @@ const WhyCapitalOS: React.FC = () => {
               Can&apos;t
             </h2>
             <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px]">
-              Most founders use 3-5 different tools to raise capital. Capital OS
-              replaces them all with one platform built specifically for
-              fundraising.
+              Imagine raising your next round without the chaos. No more
+              juggling spreadsheets, PitchBook, and cold email tools.
+              One platform. Everything you need. That's Capital OS.
             </p>
             <div className="mt-[25px] lg:mt-[40px] xl:max-w-[545px]">
               {whyItems.map((item, index) => (

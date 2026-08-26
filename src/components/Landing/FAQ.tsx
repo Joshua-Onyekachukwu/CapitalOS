@@ -7,27 +7,27 @@ const faqData = [
   {
     question: "What is Capital OS and who is it for?",
     answer:
-      "Capital OS is an AI-powered fundraising operating system designed to help founders discover relevant investors, understand their investment thesis, prepare personalized outreach, and manage the entire fundraising process from one platform.",
+      "Capital OS is the stress-free way to raise capital. It finds the right investors for your startup, helps you understand what they care about, and drafts personalized outreach, all from one platform. Think of it as your fundraising co-pilot.",
   },
   {
     question: "Do I need technical experience to use Capital OS?",
     answer:
-      "Not at all. Capital OS is designed for founders, not engineers. Simply upload your pitch deck or describe your startup, and our AI handles the rest, from investor discovery to email drafting.",
+      "Not at all. Describe your startup in a few sentences, and Capital OS takes it from there. No spreadsheets, no complicated setup. Just tell us what you're building and we'll find the investors who want to fund it.",
   },
   {
     question: "How does the AI investor matching work?",
     answer:
-      "We use a multi-layer approach: SQL filters narrow by stage, sector, and geography. Then semantic embeddings find investors whose thesis aligns with your startup. A reranker refines the top candidates, and a reasoning model produces a scored, explained ranking.",
+      "We match you against a database of over 1M+ verified investors using multiple factors: your industry, stage, location, check size, and investment history. Every match comes with a score and a clear explanation of why that investor is a good fit.",
   },
   {
     question: "What's included in the Professional plan?",
     answer:
-      "The Professional plan includes unlimited investor discovery, advanced AI matching and scoring, personalized outreach at scale, full analytics and reporting, priority support, and access to all future features.",
+      "Everything you need to run a professional fundraise. Unlimited investor discovery, AI-powered matching, personalized outreach, full analytics, and priority support. No limits on what you can do.",
   },
   {
     question: "Is there a free trial available?",
     answer:
-      "Yes! All plans come with a 14-day free trial. No credit card required. You'll have full access to all features during your trial period.",
+      "Yes! Start free, no credit card required. You'll have full access to explore the platform and see how it fits your fundraising process.",
   },
 ];
 
@@ -82,7 +82,7 @@ const FAQ: React.FC = () => {
               />
               <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 px-[20px]">
                 <h3 className="!mb-[8px] italic !leading-none !text-[30px] md:!text-4xl -tracking-[1.08px] !text-black">
-                  57K+
+                  1M+
                 </h3>
                 <span className="block uppercase font-bold tracking-[1.95px] text-xs md:text-sm text-[#8F3E13]">
                   Investors

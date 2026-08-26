@@ -6,9 +6,8 @@ import Image from "next/image";
 const benefits = [
   {
     number: "1",
-    title: "Stop Wasting Hours on Investor Research",
-    description:
-      "Instead of spending 20+ hours a week digging through PitchBook, LinkedIn, and spreadsheets, let AI find and score the right investors in minutes. Filter by stage, sector, geography, check size, and investment activity, all from one search.",
+    title: "Stop Wasting Hours on Investor Research",      description:
+      "Stop spending your evenings scrolling through PitchBook and LinkedIn. Tell Capital OS what you're building, and it finds the investors who actually care about your space. Filter by stage, sector, geography, and check size, all from one search.",
     image: "/images/real-estate-agent/benefits/benefit1.png",
     bgColor: "bg-[#06201b]",
     numberBg: "bg-lime-500",
@@ -18,9 +17,8 @@ const benefits = [
   },
   {
     number: "2",
-    title: "Send Emails That Actually Get Replies",
-    description:
-      "Stop sending generic cold emails that get ignored. AI drafts personalized messages that reference each investor's thesis, portfolio companies, and recent activity. Every email requires your approval before sending.",
+    title: "Send Emails That Actually Get Replies",      description:
+      "No more staring at a blank email wondering what to write. AI drafts messages that speak to each investor's thesis and recent activity. You review, edit if you want, and approve. That's it. Nothing goes out without your say-so.",
     image: "/images/real-estate-agent/benefits/benefit2.png",
     bgColor: "bg-[#E9DFDA] dark:bg-[#0a0e19]",
     numberBg: "bg-[#D15616]",
@@ -29,9 +27,8 @@ const benefits = [
   },
   {
     number: "3",
-    title: "Track Every Conversation in One Place",
-    description:
-      "Move investors from discovery to term sheet on a visual pipeline. See exactly where every investor is in your process, what's been sent, who's replied, and what needs your attention next.",
+    title: "Track Every Conversation in One Place",      description:
+      "Watch your fundraise come together on one visual board. See who's been contacted, who's replied, and what needs your attention next. No more guessing where things stand.",
     image: "/images/real-estate-agent/benefits/benefit3.png",
     bgColor: "bg-lime-500",
     numberBg: "bg-[#06201b]",
