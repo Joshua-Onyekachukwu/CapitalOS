@@ -41,7 +41,8 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
     description: "Multi-factor investor scoring with explanations",
   },
 
-  // Email drafting — needs creative, natural language
+  // Email drafting — using Nemotron Lightning (fastest, most reliable model on this API key)
+  // Post-processing strips chain-of-thought output which this model always produces
   email_drafting: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
     maxTokens: 2048,
@@ -50,9 +51,10 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   },
 
   // Research summarization — condensing large amounts of data
+  // Using Nemotron Lightning (fast, reliable, well-tested)
   research_summary: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
-    maxTokens: 4096,
+    maxTokens: 2048,
     temperature: 0.3,
     description: "Investor research and profile summarization",
   },
@@ -68,7 +70,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Pipeline analysis — strategic insights on fundraising progress
   pipeline_analysis: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
-    maxTokens: 4096,
+    maxTokens: 2048,
     temperature: 0.3,
     description: "Fundraising pipeline strategy and analytics",
   },
