@@ -79,9 +79,11 @@ CREATE INDEX IF NOT EXISTS idx_health_events_severity ON email_health_events(sev
 
 ALTER TABLE email_health_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own health events" ON email_health_events;
 CREATE POLICY "Users can view own health events" ON email_health_events
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role can insert health events" ON email_health_events;
 CREATE POLICY "Service role can insert health events" ON email_health_events
   FOR INSERT WITH CHECK (true);
 
@@ -122,12 +124,15 @@ CREATE INDEX IF NOT EXISTS idx_sending_log_created ON email_sending_log(created_
 
 ALTER TABLE email_sending_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own sending log" ON email_sending_log;
 CREATE POLICY "Users can view own sending log" ON email_sending_log
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role can insert sending log" ON email_sending_log;
 CREATE POLICY "Service role can insert sending log" ON email_sending_log
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role can update sending log" ON email_sending_log;
 CREATE POLICY "Service role can update sending log" ON email_sending_log
   FOR UPDATE USING (true);
 
@@ -160,12 +165,15 @@ CREATE INDEX IF NOT EXISTS idx_suppression_user ON email_suppression_list(user_i
 
 ALTER TABLE email_suppression_list ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own suppression list" ON email_suppression_list;
 CREATE POLICY "Users can view own suppression list" ON email_suppression_list
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can manage own suppression list" ON email_suppression_list;
 CREATE POLICY "Users can manage own suppression list" ON email_suppression_list
   FOR ALL USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role can insert suppression" ON email_suppression_list;
 CREATE POLICY "Service role can insert suppression" ON email_suppression_list
   FOR INSERT WITH CHECK (true);
 
@@ -198,9 +206,11 @@ CREATE INDEX IF NOT EXISTS idx_health_scores_created ON email_health_scores(crea
 
 ALTER TABLE email_health_scores ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own health scores" ON email_health_scores;
 CREATE POLICY "Users can view own health scores" ON email_health_scores
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role can insert health scores" ON email_health_scores;
 CREATE POLICY "Service role can insert health scores" ON email_health_scores
   FOR INSERT WITH CHECK (true);
 
@@ -240,15 +250,19 @@ CREATE INDEX IF NOT EXISTS idx_warmup_status ON email_warmup(status);
 
 ALTER TABLE email_warmup ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own warmup" ON email_warmup;
 CREATE POLICY "Users can view own warmup" ON email_warmup
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can manage own warmup" ON email_warmup;
 CREATE POLICY "Users can manage own warmup" ON email_warmup
   FOR ALL USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role can insert warmup" ON email_warmup;
 CREATE POLICY "Service role can insert warmup" ON email_warmup
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role can update warmup" ON email_warmup;
 CREATE POLICY "Service role can update warmup" ON email_warmup
   FOR UPDATE USING (true);
 
@@ -282,9 +296,11 @@ CREATE INDEX IF NOT EXISTS idx_domain_health_domain ON email_domain_health(domai
 
 ALTER TABLE email_domain_health ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own domain health" ON email_domain_health;
 CREATE POLICY "Users can view own domain health" ON email_domain_health
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can manage own domain health" ON email_domain_health;
 CREATE POLICY "Users can manage own domain health" ON email_domain_health
   FOR ALL USING (auth.uid() = user_id);
 

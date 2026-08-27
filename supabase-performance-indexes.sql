@@ -13,7 +13,6 @@ CREATE INDEX IF NOT EXISTS idx_investors_has_email ON investors(email) WHERE ema
 CREATE INDEX IF NOT EXISTS idx_investors_country ON investors(country);
 CREATE INDEX IF NOT EXISTS idx_investors_source ON investors(source);
 CREATE INDEX IF NOT EXISTS idx_investors_data_quality ON investors(data_quality_score DESC);
-CREATE INDEX IF NOT EXISTS idx_investors_firm_id ON investors(firm_id);
 CREATE INDEX IF NOT EXISTS idx_investors_created_at ON investors(created_at DESC);
 
 -- Composite index for the most common query: investors with email, ordered by fit score
