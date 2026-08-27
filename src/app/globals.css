@@ -224,6 +224,29 @@ button {
   .text-caption { @apply text-[11px] leading-normal; }
   .text-meta { @apply text-[10px] leading-tight uppercase tracking-wider font-semibold; }
 
+  /* Spacing Scale (4px base) */
+  .space-1 { @apply p-[4px]; }
+  .space-2 { @apply p-[8px]; }
+  .space-3 { @apply p-[12px]; }
+  .space-4 { @apply p-[16px]; }
+  .space-5 { @apply p-[20px]; }
+  .space-6 { @apply p-[24px]; }
+  .space-8 { @apply p-[32px]; }
+  .space-10 { @apply p-[40px]; }
+  .space-12 { @apply p-[48px]; }
+  .space-16 { @apply p-[64px]; }
+  .space-20 { @apply p-[80px]; }
+  .space-24 { @apply p-[96px]; }
+
+  .gap-1 { @apply gap-[4px]; }
+  .gap-2 { @apply gap-[8px]; }
+  .gap-3 { @apply gap-[12px]; }
+  .gap-4 { @apply gap-[16px]; }
+  .gap-5 { @apply gap-[20px]; }
+  .gap-6 { @apply gap-[24px]; }
+  .gap-8 { @apply gap-[32px]; }
+  .gap-10 { @apply gap-[40px]; }
+
   /* Border Radius */
   .radius-sm { @apply rounded-[6px]; }
   .radius-md { @apply rounded-[8px]; }

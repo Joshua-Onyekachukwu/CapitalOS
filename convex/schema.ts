@@ -141,4 +141,102 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
   })
     .index("by_status", ["status"]),
+
+  // ════════════════════════════════════════════════════════════════
+  // RAW INVESTOR STAGING — Unqualified scraped records
+  // Keeps Supabase free tier from being overwhelmed.
+  // Only qualified investors are promoted to Supabase.
+  // ════════════════════════════════════════════════════════════════
+
+  rawInvestors: defineTable({
+    rawData: v.any(),
+    fullName: v.string(),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    companyName: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    website: v.optional(v.string()),
+    linkedinUrl: v.optional(v.string()),
+    country: v.optional(v.string()),
+    city: v.optional(v.string()),
+    investorType: v.optional(v.string()),
+    source: v.string(),
+    sourceId: v.optional(v.string()),
+    sourceUrl: v.optional(v.string()),
+    scrapedAt: v.number(),
+    status: v.union(
+      v.literal("scraped"),
+      v.literal("deduplicated"),
+      v.literal("normalized"),
+      v.literal("enriched"),
+      v.literal("scored"),
+      v.literal("qualified"),
+      v.literal("promoted"),
+      v.literal("rejected"),
+      v.literal("error")
+    ),
+    dedupeKey: v.string(),
+    isDuplicate: v.boolean(),
+    duplicateOf: v.optional(v.string()),
+    emailInferred: v.boolean(),
+    emailVerified: v.boolean(),
+    emailSource: v.optional(v.string()),
+    emailConfidence: v.optional(v.string()),
+    qualificationScore: v.optional(v.number()),
+    syncedToSupabase: v.boolean(),
+    supabaseId: v.optional(v.string()),
+    syncedAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    retryCount: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_source", ["source"])
+    .index("by_dedupeKey", ["dedupeKey"])
+    .index("by_synced", ["syncedToSupabase"])
+    .index("by_created", ["createdAt"]),
+
+  // ════════════════════════════════════════════════════════════════
+  // ENRICHMENT QUEUE
+  // ════════════════════════════════════════════════════════════════
+
+  enrichmentJobs: defineTable({
+    source: v.string(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    totalRecords: v.number(),
+    processedRecords: v.number(),
+    enrichedRecords: v.number(),
+    failedRecords: v.number(),
+    qualifiedRecords: v.number(),
+    promotedRecords: v.number(),
+    error: v.optional(v.string()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])  
+    .index("by_source", ["source"]),
+
+  // ════════════════════════════════════════════════════════════════
+  // DATA QUALITY METRICS — Daily snapshots
+  // ════════════════════════════════════════════════════════════════
+
+  dataQualityMetrics: defineTable({
+    date: v.string(),
+    totalRaw: v.number(),
+    totalQualified: v.number(),
+    totalPromoted: v.number(),
+    withEmail: v.number(),
+    emailVerified: v.number(),
+    emailInferred: v.number(),
+    bySource: v.any(),
+    createdAt: v.number(),
+  })
+    .index("by_date", ["date"]),
 });

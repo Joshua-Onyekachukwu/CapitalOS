@@ -19,6 +19,11 @@ const BRAND = {
   warningBg: "#fffbeb",
 };
 
+// CAN-SPAM compliance constants
+const COMPANY_NAME = "Capital OS";
+const COMPANY_ADDRESS = "Capital OS, 1603 Capitol Ave, Suite 310, Cheyenne, WY 82001, USA";
+const UNSUBSCRIBE_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://capital-os-nine.vercel.app";
+
 // =============================================
 // Base Layout
 // =============================================
@@ -62,14 +67,19 @@ function header(title: string, subtitle?: string): string {
     </div>`;
 }
 
-function footer(date?: string): string {
+function footer(date?: string, unsubscribeUrl?: string): string {
   const displayDate = date || new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const unsubUrl = unsubscribeUrl || `${UNSUBSCRIBE_BASE_URL}/unsubscribe`;
   return `
     <div style="background: #fafafa; padding: 20px 32px; text-align: center; border-top: 1px solid ${BRAND.border};">
-      <p style="color: ${BRAND.textLight}; font-size: 12px; margin: 0;">Sent from Capital OS • ${displayDate}</p>
-      <p style="color: ${BRAND.textLight}; font-size: 11px; margin: 6px 0 0;">
-        <a href="{{unsubscribe_url}}" style="color: ${BRAND.textLight};">Unsubscribe</a> • 
-        <a href="https://capital-os.com" style="color: ${BRAND.textLight};">Visit Capital OS</a>
+      <p style="color: ${BRAND.textLight}; font-size: 11px; margin: 0 0 4px; font-style: italic;">This is a commercial email sent via ${COMPANY_NAME}.</p>
+      <p style="color: ${BRAND.textLight}; font-size: 12px; margin: 0 0 4px;">${COMPANY_NAME} • ${COMPANY_ADDRESS}</p>
+      <p style="color: ${BRAND.textLight}; font-size: 11px; margin: 0 0 4px;">
+        <a href="${unsubUrl}" style="color: ${BRAND.textLight}; text-decoration: underline;">Unsubscribe from all emails</a>
+      </p>
+      <p style="color: ${BRAND.textLight}; font-size: 11px; margin: 0;">
+        <a href="${UNSUBSCRIBE_BASE_URL}/privacy" style="color: ${BRAND.textLight};">Privacy Policy</a> • 
+        <a href="${UNSUBSCRIBE_BASE_URL}/terms" style="color: ${BRAND.textLight};">Terms of Service</a>
       </p>
     </div>
   </div>`;
@@ -87,6 +97,7 @@ export function investorOutreachTemplate({
   customMessage,
   meetingLink,
   ctaText = "Let's Connect",
+  unsubscribeUrl,
 }: {
   investorName: string;
   founderName: string;
@@ -95,6 +106,7 @@ export function investorOutreachTemplate({
   customMessage?: string;
   meetingLink?: string;
   ctaText?: string;
+  unsubscribeUrl?: string;
 }): { html: string; text: string } {
   const html = baseLayout(
     `${header("Investor Outreach")}
@@ -129,7 +141,7 @@ export function investorOutreachTemplate({
         <span style="color: ${BRAND.textLight}; font-size: 13px;">Founder, ${companyName}</span>
       </p>
     </div>
-    ${footer()}`,
+    ${footer(undefined, unsubscribeUrl)}`,
     { preheader: `Hi ${investorName}, I'm ${founderName} from ${companyName}. I'd love to share...` }
   );
 
@@ -157,6 +169,7 @@ export function followUpTemplate({
   originalSubject,
   followUpMessage,
   meetingLink,
+  unsubscribeUrl,
 }: {
   investorName: string;
   founderName: string;
@@ -164,6 +177,7 @@ export function followUpTemplate({
   originalSubject: string;
   followUpMessage?: string;
   meetingLink?: string;
+  unsubscribeUrl?: string;
 }): { html: string; text: string } {
   const html = baseLayout(
     `${header("Follow Up")}
@@ -197,7 +211,7 @@ export function followUpTemplate({
         <span style="color: ${BRAND.textLight}; font-size: 13px;">Founder, ${companyName}</span>
       </p>
     </div>
-    ${footer()}`,
+    ${footer(undefined, unsubscribeUrl)}`,
     { preheader: `Following up on my previous email about ${companyName}...` }
   );
 
@@ -222,9 +236,11 @@ Founder, ${companyName}`;
 export function welcomeTemplate({
   userName,
   companyName,
+  unsubscribeUrl,
 }: {
   userName: string;
   companyName: string;
+  unsubscribeUrl?: string;
 }): { html: string; text: string } {
   const html = baseLayout(
     `${header("Welcome to Capital OS")}
@@ -271,7 +287,7 @@ export function welcomeTemplate({
         </a>
       </div>
     </div>
-    ${footer()}`
+    ${footer(undefined, unsubscribeUrl)}`
   );
 
   const text = `Welcome aboard, ${userName}!
