@@ -118,6 +118,16 @@ function detectContextCategory(text: string): string {
   return "default";
 }
 
+// Strip markdown formatting from AI responses
+function cleanMarkdown(text: string): string {
+  return text
+    .replace(/\*\*([^*]+?)\*\*/g, '$1')
+    .replace(/\*([^*]+?)\*/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^[-*]\s+/gm, '• ');
+}
+
+
 export default function CopilotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -313,7 +323,7 @@ export default function CopilotPage() {
                     </div>
                   )}
                   <p className="text-[14px] leading-[1.7] !mb-0 whitespace-pre-wrap">
-                    {msg.content}
+                    {cleanMarkdown(msg.content)}
                     {msg.isStreaming && (
                       <span className="inline-block w-[2px] h-[14px] bg-lime-500 ml-[2px] animate-pulse align-middle" />
                     )}
