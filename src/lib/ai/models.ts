@@ -41,11 +41,12 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
     description: "Multi-factor investor scoring with explanations",
   },
 
-  // Email drafting — using Nemotron Lightning (fastest, most reliable model on this API key)
-  // Post-processing strips chain-of-thought output which this model always produces
+  // Email drafting — using Nemotron Lightning
+  // Reduced maxTokens from 2048 to 1536 to cut generation time
+  // Subject+body generated in a single call with structured markers
   email_drafting: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
-    maxTokens: 2048,
+    maxTokens: 1536,
     temperature: 0.7,
     description: "Personalized outreach email generation",
   },
