@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const error = searchParams.get("error");
 
-  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/settings`;
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/dashboard/settings`;
 
   if (error) {
     return NextResponse.redirect(

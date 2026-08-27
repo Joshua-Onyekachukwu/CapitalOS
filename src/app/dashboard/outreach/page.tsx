@@ -122,6 +122,10 @@ export default function OutreachPage() {
             fitScore: inv.fit_score || 75,
             aiAnalysis: "",
             tone: "warm",
+            investorSectors: inv.investment_sectors,
+            investorStages: inv.investment_stages,
+            checkSize: (inv.min_check_size || inv.max_check_size) ? "$" + (inv.min_check_size || "?") + " - $" + (inv.max_check_size || "?") : undefined,
+            fundSize: inv.fund_size ? "$" + Math.round(inv.fund_size / 1000000) + "M" : undefined,
           }));
 
         setDrafts(mappedDrafts);
