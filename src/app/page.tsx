@@ -13,6 +13,7 @@ const Benefits = dynamic(() => import("@/components/Landing/Benefits"));
 const Testimonials = dynamic(() => import("@/components/Landing/Testimonials"));
 const Pricing = dynamic(() => import("@/components/Landing/Pricing"));
 const FAQ = dynamic(() => import("@/components/Landing/FAQ"));
+const Waitlist = dynamic(() => import("@/components/Landing/Waitlist"));
 
 export default function Home() {
   return (
@@ -46,6 +47,8 @@ export default function Home() {
 
       <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <div id="faq"><FAQ /></div>
+
+      <Waitlist />
 
       <Footer />
       <GoTop />
