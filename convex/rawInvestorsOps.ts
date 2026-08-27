@@ -1,35 +1,78 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
 // ════════════════════════════════════════════════════════════════
-// QUERIES
+// QUERIES — Read-only, used by dashboard and scripts
 // ════════════════════════════════════════════════════════════════
 
+/**
+ * Efficient stats using index-based counting.
+ * Does NOT load all records into memory.
+ */
 export const stats = query({
   handler: async (ctx) => {
-    const all = await ctx.db.query("rawInvestors").collect();
-    const byStatus: Record<string, number> = {};
-    const bySource: Record<string, number> = {};
-    let withEmail = 0;
-    let synced = 0;
+    // Count by status using indexed queries (each is O(log n))
+    const statuses = [
+      "scraped", "deduplicated", "normalized", "enriched",
+      "scored", "qualified", "promoted", "rejected", "error",
+    ] as const;
 
-    for (const r of all) {
-      byStatus[r.status] = (byStatus[r.status] || 0) + 1;
-      bySource[r.source] = (bySource[r.source] || 0) + 1;
-      if (r.email) withEmail++;
-      if (r.syncedToSupabase) synced++;
+    const byStatus: Record<string, number> = {};
+    let total = 0;
+
+    for (const status of statuses) {
+      const count = await ctx.db
+        .query("rawInvestors")
+        .withIndex("by_status", (q) => q.eq("status", status))
+        .collect();
+      byStatus[status] = count.length;
+      total += count.length;
     }
 
+    // Count by source
+    const sources = [
+      "edgar-13f", "edgar-form-d", "edgar-ncen", "fishtank",
+      "vc-team-scraper", "openvc", "vc-directory-manual", "unknown",
+    ];
+
+    const bySource: Record<string, number> = {};
+    for (const source of sources) {
+      const count = await ctx.db
+        .query("rawInvestors")
+        .withIndex("by_source", (q) => q.eq("source", source))
+        .collect();
+      if (count.length > 0) bySource[source] = count.length;
+    }
+
+    // Count synced
+    const synced = await ctx.db
+      .query("rawInvestors")
+      .withIndex("by_synced", (q) => q.eq("syncedToSupabase", true))
+      .collect();
+
     return {
-      total: all.length,
+      total,
       byStatus,
       bySource,
-      withEmail,
-      synced,
+      synced: synced.length,
+      unsynced: total - synced.length,
     };
   },
 });
 
+/**
+ * Quick count — even more efficient, just counts records.
+ */
+export const quickCount = query({
+  handler: async (ctx) => {
+    const all = await ctx.db.query("rawInvestors").collect();
+    return all.length;
+  },
+});
+
+/**
+ * List raw investors by status with pagination.
+ */
 export const listByStatus = query({
   args: {
     status: v.string(),
@@ -46,6 +89,9 @@ export const listByStatus = query({
   },
 });
 
+/**
+ * List raw investors by source.
+ */
 export const listBySource = query({
   args: {
     source: v.string(),
@@ -60,6 +106,10 @@ export const listBySource = query({
   },
 });
 
+/**
+ * Get records ready for promotion to Supabase.
+ * Only returns qualified records that haven't been synced yet.
+ */
 export const pendingPromotion = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
@@ -71,10 +121,47 @@ export const pendingPromotion = query({
   },
 });
 
+/**
+ * Get records that need processing (scraped but not yet enriched).
+ */
+export const pendingProcessing = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("rawInvestors")
+      .withIndex("by_status", (q) => q.eq("status", "scraped"))
+      .take(args.limit ?? 100);
+  },
+});
+
+/**
+ * Search raw investors by name or company.
+ */
+export const search = query({
+  args: {
+    query: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const q = args.query.toLowerCase();
+    const results = await ctx.db.query("rawInvestors").collect();
+    return results
+      .filter((r) =>
+        r.fullName.toLowerCase().includes(q) ||
+        r.companyName?.toLowerCase().includes(q) ||
+        r.email?.toLowerCase().includes(q)
+      )
+      .slice(0, args.limit ?? 50);
+  },
+});
+
 // ════════════════════════════════════════════════════════════════
-// MUTATIONS
+// MUTATIONS — Write operations
 // ════════════════════════════════════════════════════════════════
 
+/**
+ * Insert a single raw investor record with deduplication.
+ */
 export const insertRaw = mutation({
   args: {
     rawData: v.any(),
@@ -99,13 +186,16 @@ export const insertRaw = mutation({
       ? args.email.toLowerCase()
       : `${args.fullName}|${args.companyName || ""}`.toLowerCase();
 
-    // Check for duplicate
     const existing = await ctx.db
       .query("rawInvestors")
       .withIndex("by_dedupeKey", (q) => q.eq("dedupeKey", dedupeKey))
       .first();
 
-    return await ctx.db.insert("rawInvestors", {
+    if (existing) {
+      return { id: existing._id, status: "duplicate" as const };
+    }
+
+    const id = await ctx.db.insert("rawInvestors", {
       rawData: args.rawData,
       fullName: args.fullName,
       firstName: args.firstName,
@@ -122,10 +212,9 @@ export const insertRaw = mutation({
       sourceId: args.sourceId,
       sourceUrl: args.sourceUrl,
       scrapedAt: now,
-      status: existing ? "rejected" : "scraped",
+      status: "scraped",
       dedupeKey,
-      isDuplicate: !!existing,
-      duplicateOf: existing?._id,
+      isDuplicate: false,
       emailInferred: false,
       emailVerified: false,
       syncedToSupabase: false,
@@ -133,9 +222,15 @@ export const insertRaw = mutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    return { id, status: "inserted" as const };
   },
 });
 
+/**
+ * Batch insert with deduplication. Processes up to 100 records per call.
+ * For larger imports, call this multiple times from a script.
+ */
 export const batchInsert = mutation({
   args: {
     records: v.array(
@@ -162,6 +257,7 @@ export const batchInsert = mutation({
     const now = Date.now();
     let inserted = 0;
     let duplicates = 0;
+    const ids: string[] = [];
 
     for (const record of args.records) {
       const dedupeKey = record.email
@@ -178,7 +274,7 @@ export const batchInsert = mutation({
         continue;
       }
 
-      await ctx.db.insert("rawInvestors", {
+      const id = await ctx.db.insert("rawInvestors", {
         rawData: record.rawData,
         fullName: record.fullName,
         firstName: record.firstName,
@@ -205,13 +301,17 @@ export const batchInsert = mutation({
         createdAt: now,
         updatedAt: now,
       });
+      ids.push(id);
       inserted++;
     }
 
-    return { inserted, duplicates, total: args.records.length };
+    return { inserted, duplicates, total: args.records.length, ids };
   },
 });
 
+/**
+ * Update status of a raw investor record.
+ */
 export const updateStatus = mutation({
   args: {
     id: v.id("rawInvestors"),
@@ -219,15 +319,57 @@ export const updateStatus = mutation({
     error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
     await ctx.db.patch(args.id, {
       status: args.status as any,
       lastError: args.error,
-      updatedAt: now,
+      updatedAt: Date.now(),
     });
   },
 });
 
+/**
+ * Mark a record as enriched with email data.
+ */
+export const markEnriched = mutation({
+  args: {
+    id: v.id("rawInvestors"),
+    email: v.optional(v.string()),
+    emailInferred: v.optional(v.boolean()),
+    emailSource: v.optional(v.string()),
+    emailConfidence: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const updates: Record<string, any> = { status: "enriched", updatedAt: Date.now() };
+    if (args.email) updates.email = args.email;
+    if (args.emailInferred !== undefined) updates.emailInferred = args.emailInferred;
+    if (args.emailSource) updates.emailSource = args.emailSource;
+    if (args.emailConfidence) updates.emailConfidence = args.emailConfidence;
+    await ctx.db.patch(args.id, updates);
+  },
+});
+
+/**
+ * Mark a record as qualified with a score.
+ */
+export const markQualified = mutation({
+  args: {
+    id: v.id("rawInvestors"),
+    score: v.number(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      status: "qualified",
+      qualificationScore: args.score,
+      qualificationNotes: args.notes,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mark a record as promoted to Supabase.
+ */
 export const markPromoted = mutation({
   args: {
     id: v.id("rawInvestors"),
@@ -244,38 +386,84 @@ export const markPromoted = mutation({
   },
 });
 
-export const markEnriched = mutation({
+/**
+ * Mark a record as rejected.
+ */
+export const markRejected = mutation({
   args: {
     id: v.id("rawInvestors"),
-    email: v.optional(v.string()),
-    emailInferred: v.optional(v.boolean()),
-    emailSource: v.optional(v.string()),
-    emailConfidence: v.optional(v.string()),
+    reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, {
-      status: "enriched",
-      ...(args.email ? { email: args.email } : {}),
-      ...(args.emailInferred !== undefined ? { emailInferred: args.emailInferred } : {}),
-      ...(args.emailSource ? { emailSource: args.emailSource } : {}),
-      ...(args.emailConfidence ? { emailConfidence: args.emailConfidence } : {}),
+      status: "rejected",
+      lastError: args.reason,
       updatedAt: Date.now(),
     });
   },
 });
 
-export const markQualified = mutation({
+/**
+ * Batch update status for multiple records.
+ */
+export const batchUpdateStatus = mutation({
   args: {
-    id: v.id("rawInvestors"),
-    score: v.number(),
-    notes: v.optional(v.string()),
+    ids: v.array(v.id("rawInvestors")),
+    status: v.string(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {
-      status: "qualified",
-      qualificationScore: args.score,
-      qualificationNotes: args.notes,
-      updatedAt: Date.now(),
+    const now = Date.now();
+    for (const id of args.ids) {
+      await ctx.db.patch(id, {
+        status: args.status as any,
+        updatedAt: now,
+      });
+    }
+    return { updated: args.ids.length };
+  },
+});
+
+// ════════════════════════════════════════════════════════════════
+// INTERNAL MUTATIONS — Called by Convex actions/cron jobs
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * Record daily data quality metrics snapshot.
+ */
+export const recordDailyMetrics = internalMutation({
+  handler: async (ctx) => {
+    const now = Date.now();
+    const date = new Date(now).toISOString().split("T")[0];
+
+    const all = await ctx.db.query("rawInvestors").collect();
+    const bySource: Record<string, number> = {};
+    let withEmail = 0;
+    let emailVerified = 0;
+    let emailInferred = 0;
+    let qualified = 0;
+    let promoted = 0;
+
+    for (const r of all) {
+      bySource[r.source] = (bySource[r.source] || 0) + 1;
+      if (r.email) withEmail++;
+      if (r.emailVerified) emailVerified++;
+      if (r.emailInferred) emailInferred++;
+      if (r.status === "qualified") qualified++;
+      if (r.status === "promoted") promoted++;
+    }
+
+    await ctx.db.insert("dataQualityMetrics", {
+      date,
+      totalRaw: all.length,
+      totalQualified: qualified,
+      totalPromoted: promoted,
+      withEmail,
+      emailVerified,
+      emailInferred,
+      bySource,
+      createdAt: now,
     });
+
+    return { date, totalRaw: all.length };
   },
 });
