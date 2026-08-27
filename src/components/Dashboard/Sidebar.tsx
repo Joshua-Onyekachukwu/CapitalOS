@@ -15,70 +15,79 @@ interface NavItem {
 interface NavSection {
   title?: string;
   items: NavItem[];
-}
+  adminOnly?: boolean;
+}  // Admin-only hrefs — hidden from non-admins in sidebar AND blocked by layout
+  const ADMIN_HREFS = ["/dashboard/admin"];
 
-const navSections: NavSection[] = [
-  {
-    items: [
-      { label: "Dashboard", href: "/dashboard", icon: "ri-dashboard-3-line" },
-      { label: "Fundraising Copilot", href: "/dashboard/copilot", icon: "ri-sparkling-2-line", badge: "AI" },
-    ],
-  },
-  {
-    title: "Startup",
-    items: [
-      { label: "My Startup", href: "/dashboard/startup", icon: "ri-rocket-2-line" },
-      { label: "Edit Profile", href: "/dashboard/startup/edit", icon: "ri-edit-line" },
-      { label: "Onboarding", href: "/onboarding", icon: "ri-flask-line" },
-      { label: "Documents", href: "/dashboard/documents", icon: "ri-file-text-line" },
-      { label: "Pitch Decks", href: "/dashboard/decks", icon: "ri-file-ppt-2-line" },
-    ],
-  },
-  {
-    title: "Investors",
-    items: [
-      { label: "Discover", href: "/dashboard/investors/discover", icon: "ri-radar-line" },
-      { label: "Investor Database", href: "/dashboard/investors", icon: "ri-database-2-line" },
-      { label: "Saved Investors", href: "/dashboard/investors/saved", icon: "ri-bookmark-line" },
-      { label: "Fit Analysis", href: "/dashboard/investors/fit", icon: "ri-pie-chart-line" },
-    ],
-  },
-  {
-    title: "Pipeline",
-    items: [
-      { label: "Fundraising Pipeline", href: "/dashboard/pipeline", icon: "ri-kanban-view" },
-      { label: "Campaigns", href: "/dashboard/campaigns", icon: "ri-megaphone-line" },
-    ],
-  },
-  {
-    title: "Outreach",
-    items: [
-      { label: "Outreach", href: "/dashboard/outreach", icon: "ri-mail-send-line" },
-      { label: "Email Health", href: "/dashboard/email-health", icon: "ri-heart-pulse-line", badge: "New" },
-      { label: "Metrics", href: "/dashboard/outreach/metrics", icon: "ri-bar-chart-line" },
-      { label: "Meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" },
-    ],
-  },
-  {
-    title: "Insights",
-    items: [
-      { label: "Analytics", href: "/dashboard/analytics", icon: "ri-line-chart-line" },
-      { label: "AI Activity", href: "/dashboard/ai-activity", icon: "ri-robot-2-line" },
-    ],
-  },
-  {
-    title: "System",
-    items: [
-      { label: "Data Health", href: "/dashboard/admin", icon: "ri-heart-pulse-line" },
-      { label: "Email Monitor", href: "/dashboard/admin/email-monitor", icon: "ri-mail-check-line" },
-    ],
-  },
-  {
-    items: [
-      { label: "Settings", href: "/dashboard/settings", icon: "ri-settings-3-line" },
-    ],
-  },
-];
+  function isAdminItem(href: string): boolean {
+    return ADMIN_HREFS.some((adminHref) => href === adminHref || href.startsWith(adminHref + "/"));
+  }
+
+  const navSections: NavSection[] = [
+    {
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: "ri-dashboard-3-line" },
+        { label: "Fundraising Copilot", href: "/dashboard/copilot", icon: "ri-sparkling-2-line", badge: "AI" },
+      ],
+    },
+    {
+      title: "Startup",
+      items: [
+        { label: "My Startup", href: "/dashboard/startup", icon: "ri-rocket-2-line" },
+        { label: "Edit Profile", href: "/dashboard/startup/edit", icon: "ri-edit-line" },
+        { label: "Onboarding", href: "/onboarding", icon: "ri-flask-line" },
+        { label: "Documents", href: "/dashboard/documents", icon: "ri-file-text-line" },
+        { label: "Pitch Decks", href: "/dashboard/decks", icon: "ri-file-ppt-2-line" },
+      ],
+    },
+    {
+      title: "Investors",
+      items: [
+        { label: "Discover", href: "/dashboard/investors/discover", icon: "ri-radar-line" },
+        { label: "Investor Database", href: "/dashboard/investors", icon: "ri-database-2-line" },
+        { label: "Saved Investors", href: "/dashboard/investors/saved", icon: "ri-bookmark-line" },
+        { label: "Fit Analysis", href: "/dashboard/investors/fit", icon: "ri-pie-chart-line" },
+      ],
+    },
+    {
+      title: "Pipeline",
+      items: [
+        { label: "Fundraising Pipeline", href: "/dashboard/pipeline", icon: "ri-kanban-view" },
+        { label: "Campaigns", href: "/dashboard/campaigns", icon: "ri-megaphone-line" },
+      ],
+    },
+    {
+      title: "Outreach",
+      items: [
+        { label: "Outreach", href: "/dashboard/outreach", icon: "ri-mail-send-line" },
+        { label: "Email Health", href: "/dashboard/email-health", icon: "ri-heart-pulse-line", badge: "New" },
+        { label: "Metrics", href: "/dashboard/outreach/metrics", icon: "ri-bar-chart-line" },
+        { label: "Meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" },
+      ],
+    },
+    {
+      title: "Insights",
+      items: [
+        { label: "Analytics", href: "/dashboard/analytics", icon: "ri-line-chart-line" },
+        { label: "AI Activity", href: "/dashboard/ai-activity", icon: "ri-robot-2-line" },
+      ],
+    },
+    // Admin-only section — only rendered for admins
+    {
+      title: "Admin",
+      items: [
+        { label: "Data Health", href: "/dashboard/admin", icon: "ri-heart-pulse-line" },
+        { label: "Email Monitor", href: "/dashboard/admin/email-monitor", icon: "ri-mail-check-line" },
+        { label: "Waitlist", href: "/dashboard/admin/waitlist", icon: "ri-user-star-line" },
+      ],
+      adminOnly: true,
+    },
+    {
+      items: [
+        { label: "Settings", href: "/dashboard/settings", icon: "ri-settings-3-line" },
+      ],
+    },
+  ];
 
 interface SidebarProps {
   isOpen: boolean;
@@ -156,39 +165,29 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-[10px] py-[12px]">
-            {navSections
+          <nav className="flex-1 overflow-y-auto px-[10px] py-[12px]">            {navSections
               .filter((section) => {
-                // Hide admin-only sections from non-admins
-                if (!isAdmin) {
-                  const adminOnlyLabels = ["Data Health"];
-                  const adminOnlyHrefs = ["/dashboard/admin"];
-                  return !section.items.some(
-                    (item) =>
-                      adminOnlyLabels.includes(item.label) ||
-                      adminOnlyHrefs.includes(item.href)
-                  );
-                }
+                // Hide admin-only sections entirely from non-admins
+                if (!isAdmin && section.adminOnly) return false;
                 return true;
               })
-              .map((section, sectionIndex) => (
-                <div key={sectionIndex} className={section.title ? "mt-[16px]" : sectionIndex > 0 ? "mt-[4px]" : ""}>
-                  {section.title && (
-                    <p className="px-[16px] mb-[6px] text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                      {section.title}
-                    </p>
-                  )}
-                  <ul className="space-y-[2px]">
-                    {section.items
-                      .filter((item) => {
-                        // Hide individual admin items from non-admins
-                        if (!isAdmin) {
-                          const adminOnlyHrefs = ["/dashboard/admin"];
-                          return !adminOnlyHrefs.includes(item.href);
-                        }
-                        return true;
-                      })
-                      .map((item) => (
+              .map((section, sectionIndex) => {
+                // Filter items within section
+                const visibleItems = section.items.filter((item) => {
+                  if (!isAdmin && isAdminItem(item.href)) return false;
+                  return true;
+                });
+                // Don't render section if all items are hidden
+                if (visibleItems.length === 0) return null;
+                return (
+                  <div key={sectionIndex} className={section.title ? "mt-[16px]" : sectionIndex > 0 ? "mt-[4px]" : ""}>
+                    {section.title && (
+                      <p className="px-[16px] mb-[6px] text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                        {section.title}
+                      </p>
+                    )}
+                    <ul className="space-y-[2px]">
+                      {visibleItems.map((item) => (
                         <li key={item.href}>
                           <SidebarNavItem
                             item={item}
@@ -197,9 +196,10 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
                           />
                         </li>
                       ))}
-                  </ul>
-                </div>
-              ))}
+                    </ul>
+                  </div>
+                );
+              })}
           </nav>
 
           {/* Admin Link (visible only to admins) */}
