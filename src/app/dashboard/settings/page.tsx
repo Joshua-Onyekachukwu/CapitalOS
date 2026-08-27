@@ -70,6 +70,24 @@ export default function SettingsPage() {
       }
     }
     loadProfile();
+
+    // Load branding settings from company profile
+    async function loadBranding() {
+      try {
+        const res = await fetch("/api/dashboard/settings/branding");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.brandName) (document.getElementById("brand-name") as HTMLInputElement).value = data.brandName;
+          if (data.tagline) (document.getElementById("brand-tagline") as HTMLInputElement).value = data.tagline;
+          if (data.accentColor) (document.getElementById("brand-color") as HTMLInputElement).value = data.accentColor;
+          if (data.accentColor) (document.getElementById("brand-color-text") as HTMLInputElement).value = data.accentColor;
+          if (data.logoUrl) (document.getElementById("brand-logo") as HTMLInputElement).value = data.logoUrl;
+          if (data.ctaText) (document.getElementById("brand-cta") as HTMLInputElement).value = data.ctaText;
+          if (data.signature) (document.getElementById("brand-signature") as HTMLTextAreaElement).value = data.signature;
+        }
+      } catch { /* ignore */ }
+    }
+    loadBranding();
   }, []);
 
   // Load notifications from localStorage
@@ -463,6 +481,71 @@ export default function SettingsPage() {
                 </label>
               </div>
             ))}
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Email Branding */}
+      <Card className="mb-[20px]">
+        <CardHeader>
+          <h3 className="!text-[16px] !font-semibold !mb-0">Email Branding</h3>
+        </CardHeader>
+        <CardBody>
+          <p className="text-[13px] text-gray-400 !mb-[16px]">Customize how your outreach emails look to investors.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+            <div>
+              <label className="block text-[13px] font-medium text-gray-300 mb-[6px]">Brand Name</label>
+              <input type="text" defaultValue="" placeholder="Your Company" className="w-full px-[12px] py-[8px] bg-[#1a1a1a] border border-gray-700 rounded-[8px] text-[14px] text-white placeholder-gray-500" id="brand-name" />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-gray-300 mb-[6px]">Tagline</label>
+              <input type="text" defaultValue="" placeholder="AI-Powered Fundraising" className="w-full px-[12px] py-[8px] bg-[#1a1a1a] border border-gray-700 rounded-[8px] text-[14px] text-white placeholder-gray-500" id="brand-tagline" />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-gray-300 mb-[6px]">Accent Color</label>
+              <div className="flex items-center gap-[8px]">
+                <input type="color" defaultValue="#84cc16" className="w-[40px] h-[36px] rounded-[6px] border border-gray-700 cursor-pointer" id="brand-color" />
+                <input type="text" defaultValue="#84cc16" placeholder="#84cc16" className="flex-1 px-[12px] py-[8px] bg-[#1a1a1a] border border-gray-700 rounded-[8px] text-[14px] text-white placeholder-gray-500" id="brand-color-text" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-gray-300 mb-[6px]">Logo URL</label>
+              <input type="url" defaultValue="" placeholder="https://your-logo.com/logo.png" className="w-full px-[12px] py-[8px] bg-[#1a1a1a] border border-gray-700 rounded-[8px] text-[14px] text-white placeholder-gray-500" id="brand-logo" />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-gray-300 mb-[6px]">CTA Button Text</label>
+              <input type="text" defaultValue="" placeholder="Let's Connect" className="w-full px-[12px] py-[8px] bg-[#1a1a1a] border border-gray-700 rounded-[8px] text-[14px] text-white placeholder-gray-500" id="brand-cta" />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-gray-300 mb-[6px]">Signature</label>
+              <textarea defaultValue="" placeholder="Best regards,\nYour Name\nFounder, Your Company" rows={3} className="w-full px-[12px] py-[8px] bg-[#1a1a1a] border border-gray-700 rounded-[8px] text-[14px] text-white placeholder-gray-500 resize-none" id="brand-signature" />
+            </div>
+          </div>
+          <div className="mt-[16px] flex items-center gap-[12px]">
+            <Button variant="primary" size="sm" onClick={async () => {
+              try {
+                const brandName = (document.getElementById("brand-name") as HTMLInputElement)?.value;
+                const tagline = (document.getElementById("brand-tagline") as HTMLInputElement)?.value;
+                const color = (document.getElementById("brand-color") as HTMLInputElement)?.value;
+                const logo = (document.getElementById("brand-logo") as HTMLInputElement)?.value;
+                const cta = (document.getElementById("brand-cta") as HTMLInputElement)?.value;
+                const signature = (document.getElementById("brand-signature") as HTMLTextAreaElement)?.value;
+                const { updateCompanyProfile } = await import("@/lib/actions/company");
+                await updateCompanyProfile({
+                  emailBrandName: brandName || undefined,
+                  emailTagline: tagline || undefined,
+                  emailAccentColor: color || undefined,
+                  emailLogoUrl: logo || undefined,
+                  emailCtaText: cta || undefined,
+                  emailSignature: signature || undefined,
+                } as any);
+                setSaveSuccess(true);
+                setTimeout(() => setSaveSuccess(false), 3000);
+              } catch (err) {
+                console.error("Branding save error:", err);
+              }
+            }}>Save Branding</Button>
+            {saveSuccess && <Alert variant="success" className="mb-0">Branding saved.</Alert>}
           </div>
         </CardBody>
       </Card>

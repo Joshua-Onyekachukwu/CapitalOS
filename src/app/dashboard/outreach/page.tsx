@@ -27,6 +27,8 @@ interface EmailDraft {
   investorType: string;
   subject: string;
   body: string;
+  html?: string;
+  text?: string;
   status: "draft" | "approved" | "sent" | "replied";
   createdAt: string;
   fitScore: number;
@@ -211,6 +213,8 @@ export default function OutreachPage() {
                 ...d,
                 subject: data.subject || d.subject,
                 body: data.body || d.body,
+                html: data.html || d.html,
+                text: data.text || d.text,
                 status: "draft" as const,
                 createdAt: new Date().toLocaleTimeString(),
                 tone: selectedTone,
@@ -226,6 +230,8 @@ export default function OutreachPage() {
               ...prev,
               subject: data.subject || prev.subject,
               body: data.body || prev.body,
+              html: data.html || prev.html,
+              text: data.text || prev.text,
               status: "draft" as const,
               createdAt: new Date().toLocaleTimeString(),
               tone: selectedTone,
@@ -235,7 +241,7 @@ export default function OutreachPage() {
       );
 
       // Persist updated drafts
-      const updated = drafts.map((d) => d.id === draft.id ? { ...d, subject: data.subject || d.subject, body: data.body || d.body } : d);
+      const updated = drafts.map((d) => d.id === draft.id ? { ...d, subject: data.subject || d.subject, body: data.body || d.body, html: data.html || d.html, text: data.text || d.text } : d);
       saveDraftsToStorage(updated);
 
       setSendResult({ type: "success", text: "Email generated successfully!" });
@@ -277,6 +283,8 @@ export default function OutreachPage() {
                     ...d,
                     subject: data.subject || d.subject,
                     body: data.body || d.body,
+                    html: data.html || d.html,
+                    text: data.text || d.text,
                     createdAt: new Date().toLocaleTimeString(),
                     aiAnalysis: data.analysis || `Generated with ${selectedTone} tone`,
                   }
@@ -325,7 +333,7 @@ export default function OutreachPage() {
           userId: user.id,
           investorId: draft.investorId,
           subject: draft.subject,
-          bodyHtml: draft.body.replace(/\n/g, "<br>"),
+          bodyHtml: draft.html || draft.body.replace(/\n/g, "<br>"),
           bodyText: draft.body,
         }),
       });

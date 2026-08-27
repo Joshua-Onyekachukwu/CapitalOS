@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatCompletion } from "@/lib/ai";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { brandedOutreachEmail, type UserBranding } from "@/lib/services/email/branded-template";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Extract the actual email from an AI response that may contain
@@ -206,9 +208,51 @@ EMAIL RULES:
       return NextResponse.json({ error: "Could not generate email. Please try again." }, { status: 500 });
     }
 
+    // Load user branding from company_profiles
+    let branding: UserBranding | undefined;
+    try {
+      const sp = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      const { data: profile } = await sp
+        .from("company_profiles")
+        .select("email_brand_name, email_tagline, email_accent_color, email_logo_url, email_website, email_footer_text, email_cta_text, email_cta_url, email_signature, company_name")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        branding = {
+          brandName: profile.email_brand_name || profile.company_name || "Capital OS",
+          tagline: profile.email_tagline || "AI-Powered Fundraising",
+          accentColor: profile.email_accent_color || "#84cc16",
+          logoUrl: profile.email_logo_url,
+          website: profile.email_website || profile.company_name,
+          footerText: profile.email_footer_text,
+          ctaText: profile.email_cta_text || "Let's Connect",
+          ctaUrl: profile.email_cta_url,
+          signature: profile.email_signature,
+        };
+      }
+    } catch {
+      // Use defaults if branding load fails
+    }
+
+    // Generate branded HTML template
+    const finalSubject = subject || emailBody.split(/\n/)[0].substring(0, 60);
+    const { html: brandedHtml, text: brandedText } = brandedOutreachEmail({
+      emailBody,
+      subject: finalSubject,
+      investorName: investorName || "there",
+      branding,
+      unsubscribeEmail: user.email,
+    });
+
     return NextResponse.json({
-      subject: subject || emailBody.split(/\n/)[0].substring(0, 60),
+      subject: finalSubject,
       body: emailBody,
+      html: brandedHtml,
+      text: brandedText,
       tone: tone || "warm",
     });
   } catch (err) {
