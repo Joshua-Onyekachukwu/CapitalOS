@@ -361,7 +361,6 @@ export const markQualified = mutation({
     await ctx.db.patch(args.id, {
       status: "qualified",
       qualificationScore: args.score,
-      qualificationNotes: args.notes,
       updatedAt: Date.now(),
     });
   },

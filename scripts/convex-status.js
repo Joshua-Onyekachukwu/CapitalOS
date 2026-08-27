@@ -38,7 +38,7 @@ async function convexQuery(functionPath, args) {
       let data = "";
       res.on("data", (c) => { data += c; });
       res.on("end", () => {
-        try { const j = JSON.parse(data); j.error ? reject(new Error(j.error)) : resolve(j.value); }
+        try { const j = JSON.parse(data); if (j.status === 'error' || j.error) { reject(new Error(j.errorMessage || j.error || JSON.stringify(j))); } else { resolve(j.value); } }
         catch (e) { reject(e); }
       });
     });

@@ -70,8 +70,11 @@ async function convexMutation(functionPath, args) {
       res.on("end", () => {
         try {
           const json = JSON.parse(data);
-          if (json.error) reject(new Error(json.error));
-          else resolve(json.value);
+          if (json.status === "error" || json.error) {
+            reject(new Error(json.errorMessage || json.error || JSON.stringify(json)));
+          } else {
+            resolve(json.value);
+          }
         } catch (e) {
           reject(e);
         }
@@ -86,22 +89,24 @@ async function convexMutation(functionPath, args) {
 
 function normalizeRecord(inv) {
   const name = inv.full_name || `${inv.first_name || ""} ${inv.last_name || ""}`.trim();
+  // Convex v.optional(v.string()) accepts undefined but NOT null
+  const safe = (v) => (v === null || v === undefined ? undefined : v);
   return {
     rawData: inv,
     fullName: name || inv.company_name || "Unknown",
-    firstName: inv.first_name,
-    lastName: inv.last_name,
-    companyName: inv.company_name,
-    email: inv.email,
-    phone: inv.phone,
-    website: inv.company_website,
-    linkedinUrl: inv.linkedin_url,
-    country: inv.country,
-    city: inv.city,
-    investorType: inv.investor_type,
+    firstName: safe(inv.first_name),
+    lastName: safe(inv.last_name),
+    companyName: safe(inv.company_name),
+    email: safe(inv.email),
+    phone: safe(inv.phone),
+    website: safe(inv.company_website),
+    linkedinUrl: safe(inv.linkedin_url),
+    country: safe(inv.country),
+    city: safe(inv.city),
+    investorType: safe(inv.investor_type),
     source: inv.source || "unknown",
-    sourceId: inv.id,
-    sourceUrl: inv.source_url,
+    sourceId: safe(inv.id),
+    sourceUrl: safe(inv.source_url),
   };
 }
 
