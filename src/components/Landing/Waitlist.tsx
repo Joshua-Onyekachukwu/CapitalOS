@@ -165,6 +165,51 @@ export default function Waitlist() {
         <p className="text-[12px] text-gray-500 !mt-[16px] !mb-0">
           No spam. No credit card. Just early access when we launch.
         </p>
+
+        {/* Founding Member CTA */}
+        <div className="mt-[40px] pt-[32px] border-t border-white/10">
+          <div className="inline-flex items-center gap-[6px] bg-amber-500/10 border border-amber-500/20 rounded-full px-[12px] py-[4px] mb-[16px]">
+            <i className="ri-vip-crown-line text-amber-400 text-[12px]"></i>
+            <span className="text-[12px] text-amber-400 font-medium">Founding Member</span>
+          </div>
+          <h3 className="text-[20px] md:text-[24px] font-bold text-white !mb-[8px]">
+            Reserve your founding seat
+          </h3>
+          <p className="text-[14px] text-gray-400 !mb-[16px] leading-relaxed">
+            Your $9.99 isn't lost. When we launch, it becomes $9.99 in platform credit toward your subscription.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] text-[13px] text-gray-400 !mb-[20px]">
+            <span className="flex items-center gap-[6px]">
+              <i className="ri-check-line text-lime-400"></i> $9.99 platform credit
+            </span>
+            <span className="flex items-center gap-[6px]">
+              <i className="ri-check-line text-lime-400"></i> Priority early access
+            </span>
+            <span className="flex items-center gap-[6px]">
+              <i className="ri-check-line text-lime-400"></i> Founding-member pricing
+            </span>
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                const res = await fetch("/api/founding-member/checkout", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email, name: name || undefined }),
+                });
+                const data = await res.json();
+                if (data.url) {
+                  window.location.href = data.url;
+                }
+              } catch {
+                // Checkout failed — stay on page
+              }
+            }}
+            className="bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold rounded-[10px] px-[24px] py-[14px] text-[15px] transition-colors"
+          >
+            Become a Founding Member — $9.99
+          </button>
+        </div>
       </div>
     </section>
   );
