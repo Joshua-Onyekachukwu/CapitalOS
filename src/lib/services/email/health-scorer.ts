@@ -303,25 +303,24 @@ async function getSendingStats(accountId: string, userId: string) {
   const bounceRate30d = sentLast30d > 0 ? (bouncedLast30d / sentLast30d) * 100 : 0;
 
   // Get reply rate from email_messages
-  const { data: replies } = await sp
+  const { count: replyCount } = await sp
     .from("email_messages")
     .select("id", { count: "exact", head: true })
     .eq("account_id", accountId)
     .eq("direction", "inbound")
     .gte("created_at", sevenDaysAgo);
 
-  const replyCount = replies || 0;
-  const replyRate7d = sentLast7d > 0 ? (replyCount / sentLast7d) * 100 : 0;
+  const replyRate7d = sentLast7d > 0 ? ((replyCount || 0) / sentLast7d) * 100 : 0;
 
   // Get open rate
-  const { data: opened } = await sp
+  const { count: openedCount } = await sp
     .from("email_messages")
     .select("id", { count: "exact", head: true })
     .eq("account_id", accountId)
     .eq("direction", "outbound")
     .not("opened_at", "is", null);
 
-  const openRate = sentLast30d > 0 ? ((opened || 0) / sentLast30d) * 100 : 0;
+  const openRate = sentLast30d > 0 ? ((openedCount || 0) / sentLast30d) * 100 : 0;
 
   return {
     sentLast7d,

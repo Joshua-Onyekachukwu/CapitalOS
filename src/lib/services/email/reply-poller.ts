@@ -7,7 +7,35 @@ import { query } from "@/lib/db";
 import { decryptToken } from "./crypto";
 import { analyzeSentiment } from "./reply-detection";
 import { handleBounce, handleComplaint } from "./suppression";
-import { logEvent, logBounce } from "./events"
+import { logEvent, logBounce } from "./events";
+
+// Bounce detection helpers (module scope so processReply can access)
+function isBounceMessage(email: IncomingEmail): boolean {
+  const text = `${email.subject} ${email.bodyPreview}`.toLowerCase();
+  return text.includes("delivery failed") || text.includes("delivery status notification") ||
+    text.includes("undeliverable") || text.includes("returned mail") ||
+    text.includes("non-delivery report") || text.includes("mail delivery subsystem") ||
+    (email.from.toLowerCase().includes("mailer-daemon") ||
+     email.from.toLowerCase().includes("postmaster"));
+}
+
+function isHardBounce(email: IncomingEmail): boolean {
+  const text = `${email.subject} ${email.bodyPreview}`.toLowerCase();
+  return text.includes("mailbox not found") || text.includes("user unknown") ||
+    text.includes("invalid address") || text.includes("does not exist") ||
+    text.includes("no such user") || text.includes("address rejected");
+}
+
+function extractBouncedAddress(email: IncomingEmail): string {
+  const match = email.bodyPreview.match(/\b([\w.-]+@[\w.-]+\.\w+)\b/);
+  return match ? match[1] : email.from;
+}
+
+function isComplaintMessage(email: IncomingEmail): boolean {
+  const text = `${email.subject} ${email.bodyPreview}`.toLowerCase();
+  return text.includes("spam complaint") || text.includes("abuse report") ||
+    text.includes("unsubscribe request");
+}
 
 interface PollResult {
   accountId: string;
@@ -206,34 +234,6 @@ export async function pollEmailAccounts(userId?: string): Promise<PollResult[]> 
 
   const accounts = await query<any>(sql, params);
   if (!accounts.length) return [];
-
-  // Bounce detection helpers
-  function isBounceMessage(email: IncomingEmail): boolean {
-    const text = `${email.subject} ${email.bodyPreview}`.toLowerCase();
-    return text.includes("delivery failed") || text.includes("delivery status notification") ||
-      text.includes("undeliverable") || text.includes("returned mail") ||
-      text.includes("non-delivery report") || text.includes("mail delivery subsystem") ||
-      (email.from.toLowerCase().includes("mailer-daemon") ||
-       email.from.toLowerCase().includes("postmaster"));
-  }
-
-  function isHardBounce(email: IncomingEmail): boolean {
-    const text = `${email.subject} ${email.bodyPreview}`.toLowerCase();
-    return text.includes("mailbox not found") || text.includes("user unknown") ||
-      text.includes("invalid address") || text.includes("does not exist") ||
-      text.includes("no such user") || text.includes("address rejected");
-  }
-
-  function extractBouncedAddress(email: IncomingEmail): string {
-    const match = email.bodyPreview.match(/\b([\w.-]+@[\w.-]+\.\w+)\b/);
-    return match ? match[1] : email.from;
-  }
-
-  function isComplaintMessage(email: IncomingEmail): boolean {
-    const text = `${email.subject} ${email.bodyPreview}`.toLowerCase();
-    return text.includes("spam complaint") || text.includes("abuse report") ||
-      text.includes("unsubscribe request");
-  }
 
   const results: PollResult[] = [];
 

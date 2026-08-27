@@ -220,16 +220,17 @@ export async function handleBounce(
     // Update account bounce count
     if (accountId) {
       const sp = getSp();
-      await sp.rpc("increment_bounce_count" as any, { p_account_id: accountId }).catch(() => {
-        // Fallback: direct update
-        sp.from("email_accounts").select("total_bounced_all_time").eq("id", accountId).single().then(({ data }) => {
-          if (data) {
-            sp.from("email_accounts").update({
-              total_bounced_all_time: (data.total_bounced_all_time || 0) + 1,
-            }).eq("id", accountId);
-          }
-        });
-      });
+      try {
+        await sp.rpc("increment_bounce_count" as any, { p_account_id: accountId });
+      } catch {
+        // Fallback: direct update if RPC not available
+        const { data } = await sp.from("email_accounts").select("total_bounced_all_time").eq("id", accountId).single();
+        if (data) {
+          await sp.from("email_accounts").update({
+            total_bounced_all_time: (data.total_bounced_all_time || 0) + 1,
+          }).eq("id", accountId);
+        }
+      }
     }
   }
   // Soft bounces: suppress after 3 consecutive soft bounces

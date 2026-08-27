@@ -106,15 +106,17 @@ export async function logSend(params: {
 
   // Update account send count
   if (params.accountId) {
-    await sp.rpc("increment_send_count" as any, { p_account_id: params.accountId }).catch(() => {
-      sp.from("email_accounts").select("total_sent_all_time").eq("id", params.accountId).single().then(({ data: acct }) => {
-        if (acct) {
-          sp.from("email_accounts").update({
-            total_sent_all_time: (acct.total_sent_all_time || 0) + 1,
-          }).eq("id", params.accountId);
-        }
-      });
-    });
+    try {
+      await sp.rpc("increment_send_count" as any, { p_account_id: params.accountId });
+    } catch {
+      // Fallback: direct update if RPC not available
+      const { data: acct } = await sp.from("email_accounts").select("total_sent_all_time").eq("id", params.accountId).single();
+      if (acct) {
+        await sp.from("email_accounts").update({
+          total_sent_all_time: (acct.total_sent_all_time || 0) + 1,
+        }).eq("id", params.accountId);
+      }
+    }
   }
 
   return data?.id || "";
