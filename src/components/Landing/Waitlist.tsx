@@ -82,21 +82,21 @@ export default function Waitlist() {
             <div className="w-[64px] h-[64px] rounded-full bg-lime-500/15 flex items-center justify-center mx-auto mb-[20px]">
               <i className="ri-check-line text-lime-500 text-[32px]"></i>
             </div>
-            <h2 className="!mb-[12px] !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
+            <h2 className="!text-white !mb-[12px] !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
               You&apos;re on the <span className="font-semibold italic">list!</span>
             </h2>
-            <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px] text-[#9E948E] !mb-[12px]">
+            <p className="text-white/70 text-base md:text-[16px] lg:text-md -tracking-[0.16px] !mb-[12px]">
               We&apos;ll let you know as soon as Capital OS launches.
             </p>
             {position > 0 && (
-              <p className="text-[15px] text-lime-500 font-medium !mb-[32px]">
+              <p className="text-lime-400 text-[15px] font-medium !mb-[32px]">
                 You&apos;re #{position.toLocaleString()} in line.
               </p>
             )}
 
             {referralCode && (
               <div className="bg-[#06201b] rounded-[16px] p-[24px] md:p-[32px] mt-[24px]">
-                <p className="text-[14px] text-[#9E948E] !mb-[12px]">
+                <p className="text-white/60 text-[14px] !mb-[12px]">
                   Share with friends and move up the list:
                 </p>
                 <div className="flex items-center gap-[8px] max-w-[400px] mx-auto">
@@ -200,14 +200,14 @@ export default function Waitlist() {
           <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
             Early Access
           </span>
-          <h2 className="!mb-[12px] !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
+          <h2 className="!text-white !mb-[12px] !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
             Be first to launch <span className="font-semibold italic">with Capital OS</span>
           </h2>
-          <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px] text-[#9E948E] !mb-[8px]">
+          <p className="text-white/70 text-base md:text-[16px] lg:text-md -tracking-[0.16px] !mb-[8px]">
             Join the waitlist and get notified the moment we go live.
           </p>
           {totalSignups > 0 && (
-            <p className="text-[14px] text-[#9E948E] !mb-[32px]">
+            <p className="text-white/50 text-[14px] !mb-[32px]">
               {totalSignups.toLocaleString()} founder{totalSignups !== 1 ? "s" : ""} already waiting
             </p>
           )}
@@ -253,7 +253,7 @@ export default function Waitlist() {
             </button>
           </form>
 
-          <p className="text-[12px] text-[#9E948E] !mt-[16px] !mb-0">
+          <p className="text-white/40 text-[12px] !mt-[16px] !mb-0">
             No spam. No credit card. Just early access when we launch.
           </p>
         </div>
