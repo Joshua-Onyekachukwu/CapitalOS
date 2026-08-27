@@ -3,18 +3,21 @@
 // =============================================
 // Redirects user to Google's consent screen for Gmail access.
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/google/callback`;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (!GOOGLE_CLIENT_ID) {
     return NextResponse.json(
       { error: "Google OAuth not configured. Set GOOGLE_CLIENT_ID in environment." },
       { status: 503 }
     );
   }
+
+  // Derive redirect URI from the actual request origin so it works on both localhost and production
+  const origin = request.nextUrl.origin;
+  const redirectUri = `${origin}/api/auth/google/callback`;
 
   const scopes = [
     "https://www.googleapis.com/auth/gmail.send",
@@ -26,7 +29,7 @@ export async function GET() {
 
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: GOOGLE_REDIRECT_URI,
+    redirect_uri: redirectUri,
     response_type: "code",
     scope: scopes.join(" "),
     access_type: "offline",

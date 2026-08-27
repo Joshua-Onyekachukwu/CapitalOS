@@ -9,7 +9,6 @@ import { encryptToken } from "@/lib/services/email/crypto";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/google/callback`;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -31,6 +30,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Derive redirect URI from the actual request origin (works on localhost and production)
+    const origin = request.nextUrl.origin;
+    const redirectUri = `${origin}/api/auth/google/callback`;
+
     // Exchange code for tokens
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -40,7 +43,7 @@ export async function GET(request: NextRequest) {
         client_secret: GOOGLE_CLIENT_SECRET,
         code,
         grant_type: "authorization_code",
-        redirect_uri: GOOGLE_REDIRECT_URI,
+        redirect_uri: redirectUri,
       }),
     });
 
