@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { createClient } from "@supabase/supabase-js";
-import { Client } from "pg";
-
-// Direct CockroachDB connection for saved_investors (PostgREST cache issue with Supabase)
-function getCockroachClient() {
-  return new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 10000,
-    statement_timeout: 10000,
-  });
-}
 
 function getSupabase() {
   return createClient(
@@ -26,24 +15,22 @@ export async function GET(request: NextRequest) {
   if (user instanceof NextResponse) return user;
 
   try {
-    // Query saved_investors from CockroachDB
-    const cockroach = getCockroachClient();
-    await cockroach.connect();
+    const sp = getSupabase();
 
-    const { rows: saved } = await cockroach.query(
-      "SELECT id, investor_id, notes, created_at FROM saved_investors WHERE user_id = $1 ORDER BY created_at DESC",
-      [user.id]
-    );
-    await cockroach.end();
+    const { data: saved, error } = await sp
+      .from("saved_investors")
+      .select("id, investor_id, notes, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
 
-    if (saved.length === 0) {
+    if (error) throw error;
+
+    if (!saved || saved.length === 0) {
       return NextResponse.json({ investors: [] });
     }
 
-    // Fetch investor details from Supabase
-    const sp = getSupabase();
+    // Fetch investor details from investors table
     const investorIds = saved.map((s: any) => s.investor_id);
-
     const { data: investors } = await sp
       .from("investors")
       .select("id, full_name, email, job_title, investor_type, fit_score, country, city, investment_stages, investment_sectors")
@@ -79,28 +66,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "investorId is required" }, { status: 400 });
     }
 
-    const cockroach = getCockroachClient();
-    await cockroach.connect();
+    const sp = getSupabase();
 
     // Check if already saved
-    const { rows: existing } = await cockroach.query(
-      "SELECT id FROM saved_investors WHERE user_id = $1 AND investor_id = $2",
-      [user.id, investorId]
-    );
+    const { data: existing } = await sp
+      .from("saved_investors")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("investor_id", investorId)
+      .limit(1);
 
-    if (existing.length > 0) {
-      await cockroach.end();
+    if (existing && existing.length > 0) {
       return NextResponse.json({ success: true, savedId: existing[0].id, alreadySaved: true });
     }
 
     // Insert
-    const { rows } = await cockroach.query(
-      "INSERT INTO saved_investors (user_id, investor_id, notes) VALUES ($1, $2, $3) RETURNING id",
-      [user.id, investorId, notes || null]
-    );
-    await cockroach.end();
+    const { data, error } = await sp
+      .from("saved_investors")
+      .insert({ user_id: user.id, investor_id: investorId, notes: notes || null })
+      .select("id")
+      .single();
 
-    return NextResponse.json({ success: true, savedId: rows[0].id });
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, savedId: data.id });
   } catch (err) {
     console.error("Saved investors POST error:", err);
     return NextResponse.json({ error: "Failed to save investor" }, { status: 500 });
@@ -116,19 +105,21 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json();
     const { savedId, investorId } = body;
 
-    const cockroach = getCockroachClient();
-    await cockroach.connect();
+    const sp = getSupabase();
+
+    let query = sp.from("saved_investors").delete().eq("user_id", user.id);
 
     if (savedId) {
-      await cockroach.query("DELETE FROM saved_investors WHERE id = $1 AND user_id = $2", [savedId, user.id]);
+      query = query.eq("id", savedId);
     } else if (investorId) {
-      await cockroach.query("DELETE FROM saved_investors WHERE investor_id = $1 AND user_id = $2", [investorId, user.id]);
+      query = query.eq("investor_id", investorId);
     } else {
-      await cockroach.end();
       return NextResponse.json({ error: "savedId or investorId required" }, { status: 400 });
     }
 
-    await cockroach.end();
+    const { error } = await query;
+    if (error) throw error;
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Saved investors DELETE error:", err);

@@ -252,7 +252,6 @@ export async function POST(request: NextRequest) {
       const { data: investors } = await sp
         .from("investors")
         .select("*")
-        .eq("is_active", true)
         .order("created_at")
         .limit(5000);
 

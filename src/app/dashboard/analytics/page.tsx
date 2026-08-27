@@ -48,26 +48,29 @@ export default function AnalyticsPage() {
       if (!res.ok) throw new Error("Failed to load analytics");
       const json = await res.json();
 
-      const investors: Array<{
-        id: string; email: string | null; fit_score: number;
-        is_verified: boolean; investment_sectors: string[];
+      // Server returns pre-computed totals (no more fetching 82K rows into memory)
+      const totalInvestors = json.totalInvestors || 0;
+      const investorsWithEmail = json.withEmail || 0;
+      const highFitInvestors = json.highFitInvestors || 0;
+      const avgFitScore = json.avgFitScore || 0;
+      const emailsSent = json.emailsSent || 0;
+      const emailsReplied = 0;
+      const activeCampaigns = json.activeCampaigns || 0;
+      const withLinkedIn = json.withLinkedIn || 0;
+
+      // For charts, fetch a sampled subset (1000 investors) for distribution data
+      let investors: Array<{
+        fit_score: number; investment_sectors: string[];
         country: string | null; investor_type: string;
         outreach_readiness: string; created_at: string;
-      }> = json.investors || [];
-      const emails: Array<{ id: string; direction: string; status: string; created_at: string }> = json.emails || [];
-      const campaigns: Array<{ id: string; status: string }> = json.campaigns || [];
-
-      const totalInvestors = investors.length;
-      const investorsWithEmail = investors.filter((i) => i.email).length;
-      const highFitInvestors = investors.filter((i) => (i.fit_score || 0) >= 80).length;
-      const verifiedInvestors = investors.filter((i) => i.is_verified).length;
-      const avgFitScore = totalInvestors > 0
-        ? Math.round(investors.reduce((sum, i) => sum + (i.fit_score || 0), 0) / totalInvestors)
-        : 0;
-
-      const emailsSent = emails.filter((e) => e.direction === "outbound" && e.status === "sent").length;
-      const emailsReplied = emails.filter((e) => e.direction === "inbound").length;
-      const activeCampaigns = campaigns.filter((c) => c.status === "running" || c.status === "pending").length;
+      }> = [];
+      try {
+        const sampleRes = await fetch("/api/investors?limit=1000&fields=fit_score,investment_sectors,country,investor_type,outreach_readiness,created_at");
+        if (sampleRes.ok) {
+          const sampleJson = await sampleRes.json();
+          investors = sampleJson.investors || [];
+        }
+      } catch { /* chart data not available */ }
 
       // Sector distribution
       const sectorMap: Record<string, number> = {};
@@ -126,11 +129,9 @@ export default function AnalyticsPage() {
         .map(([stage, count]) => ({ stage, count }))
         .sort((a, b) => b.count - a.count);
 
-      // Weekly trend
+      // Weekly trend (placeholder with empty weeks)
       const weeklyMap: Record<string, number> = {};
       for (let i = 7; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i * 7);
         const weekLabel = `W${8 - i}`;
         weeklyMap[weekLabel] = 0;
       }
@@ -151,7 +152,7 @@ export default function AnalyticsPage() {
         totalInvestors,
         investorsWithEmail,
         highFitInvestors,
-        verifiedInvestors,
+        verifiedInvestors: 0,
         pendingDuplicates: json.pendingDuplicates || 0,
         emailsSent,
         emailsReplied,

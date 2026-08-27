@@ -16,22 +16,45 @@ export async function GET(_request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Investors from Supabase (primary data)
-    const { data: investors, error: invError } = await sp
-      .from("investors")
-      .select("id, email, fit_score, is_verified, investment_sectors, country, investor_type, outreach_readiness, created_at")
-      .eq("is_active", true);
+    // Use count queries instead of fetching all rows (Supabase caps at 1000)
+    const [
+      totalResult,
+      withEmailResult,
+      withLinkedInResult,
+      highFitResult,
+      avgResult,
+    ] = await Promise.all([
+      sp.from("investors").select("id", { count: "exact", head: true }),
+      sp.from("investors").select("id", { count: "exact", head: true }).not("email", "is", null).neq("email", ""),
+      sp.from("investors").select("id", { count: "exact", head: true }).not("linkedin_url", "is", null).neq("linkedin_url", ""),
+      sp.from("investors").select("id", { count: "exact", head: true }).gte("fit_score", 80),
+      sp.from("investors").select("fit_score").gt("fit_score", 0).limit(1000),
+    ]);
 
-    if (invError) throw invError;
+    const totalInvestors = totalResult.count || 0;
+    const withEmail = withEmailResult.count || 0;
+    const withLinkedIn = withLinkedInResult.count || 0;
+    const highFit = highFitResult.count || 0;
+    const avgScores = avgResult.data || [];
+    const avgFitScore = avgScores.length > 0
+      ? Math.round(avgScores.reduce((sum: number, i: any) => sum + (i.fit_score || 0), 0) / avgScores.length)
+      : 0;
 
-    // These tables may not exist in Supabase yet — gracefully return empty
-    let emails: any[] = [];
+    // These tables may not exist — gracefully return empty
+    let emailsSent = 0;
+    let replyRate = 0;
     let pendingDuplicates = 0;
-    let campaigns: any[] = [];
+    let activeCampaigns = 0;
 
     try {
-      const { data } = await sp.from("email_messages").select("id, direction, status, created_at");
-      emails = data || [];
+      const { count } = await sp.from("email_messages").select("id", { count: "exact", head: true }).eq("direction", "outbound").eq("status", "sent");
+      emailsSent = count || 0;
+    } catch { /* table may not exist */ }
+
+    try {
+      const { count: sentCount } = await sp.from("email_messages").select("id", { count: "exact", head: true }).eq("direction", "outbound").eq("status", "sent");
+      const { count: replyCount } = await sp.from("email_messages").select("id", { count: "exact", head: true }).eq("direction", "inbound");
+      replyRate = (sentCount || 0) > 0 ? Math.round(((replyCount || 0) / (sentCount || 0)) * 100) : 0;
     } catch { /* table may not exist */ }
 
     try {
@@ -40,25 +63,23 @@ export async function GET(_request: NextRequest) {
     } catch { /* table may not exist */ }
 
     try {
-      const { data } = await sp.from("data_acquisition_jobs").select("id, status").eq("job_type", "campaign");
-      campaigns = data || [];
+      const { count } = await sp.from("campaigns").select("id", { count: "exact", head: true }).eq("status", "active");
+      activeCampaigns = count || 0;
     } catch { /* table may not exist */ }
 
-    // Count investors with LinkedIn
-    const withLinkedIn = (investors || []).filter((i: any) => i.linkedin_url).length;
-
     return NextResponse.json({
-      investors: investors || [],
-      emails,
-      pendingDuplicates,
-      campaigns,
+      totalInvestors,
+      highFitInvestors: highFit,
+      avgFitScore,
+      withEmail,
       withLinkedIn,
+      emailsSent,
+      replyRate,
+      activeCampaigns,
+      pendingDuplicates,
     });
   } catch (err) {
     console.error("Analytics error:", err);
-    return NextResponse.json(
-      { error: "Failed to load analytics" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to load analytics" }, { status: 500 });
   }
 }

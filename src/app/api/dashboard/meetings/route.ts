@@ -17,7 +17,6 @@ export async function GET(_request: NextRequest) {
       .from("investors")
       .select("id, full_name, investor_type, fit_score, outreach_readiness, email, current_firm_id, company_name")
       .in("outreach_readiness", ["contacted", "ready"])
-      .eq("is_active", true)
       .order("fit_score", { ascending: false })
       .limit(50);
 
