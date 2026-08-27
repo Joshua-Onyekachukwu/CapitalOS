@@ -8,30 +8,76 @@ function getSp() {
   );
 }
 
-// POST /api/unsubscribe — unsubscribe a recipient from all emails
+// GET /api/unsubscribe?email=... — suppress and redirect to confirmation page
+export async function GET(request: NextRequest) {
+  const email = request.nextUrl.searchParams.get("email");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capital-os-nine.vercel.app";
+
+  if (email) {
+    const sp = getSp();
+    const normalized = email.toLowerCase().trim();
+
+    // Write to the same table the suppression checker reads from
+    await sp.from("email_suppression_list").upsert(
+      {
+        user_id: "global",
+        email_address: normalized,
+        reason: "unsubscribed",
+        source: "unsubscribe_link",
+        suppressed_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,email_address" }
+    ).catch(() => {
+      // Fallback: try the other table name in case schema differs
+      return sp.from("email_suppression").upsert(
+        {
+          email: normalized,
+          reason: "unsubscribe",
+          source: "unsubscribe_link",
+          suppressed_at: new Date().toISOString(),
+        },
+        { onConflict: "email" }
+      );
+    });
+
+    // Mark all outbound emails to this address as unsubscribed
+    await sp
+      .from("email_messages")
+      .update({ unsubscribed: true })
+      .eq("to_address", normalized)
+      .catch(() => {});
+  }
+
+  // Redirect to the unsubscribe confirmation page
+  return NextResponse.redirect(`${appUrl}/unsubscribe`);
+}
+
+// POST /api/unsubscribe — JSON API for programmatic unsubscribes
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, token } = body;
+    const { email, userId } = body;
 
-    if (!email && !token) {
+    if (!email) {
       return NextResponse.json(
-        { error: "Email or token required" },
+        { error: "Email required" },
         { status: 400 }
       );
     }
 
     const sp = getSp();
+    const normalized = email.toLowerCase().trim();
 
-    // Add to suppression list
-    const { error } = await sp.from("email_suppression").upsert(
+    // Write to suppression_list (same table the sender checks)
+    const { error } = await sp.from("email_suppression_list").upsert(
       {
-        email: email?.toLowerCase()?.trim(),
-        reason: "unsubscribe",
+        user_id: userId || "global",
+        email_address: normalized,
+        reason: "unsubscribed",
         source: "unsubscribe_link",
         suppressed_at: new Date().toISOString(),
       },
-      { onConflict: "email" }
+      { onConflict: "user_id,email_address" }
     );
 
     if (error) {
@@ -42,13 +88,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update email_messages to mark as unsubscribed
-    if (email) {
-      await sp
-        .from("email_messages")
-        .update({ unsubscribed: true })
-        .eq("to_address", email.toLowerCase().trim());
-    }
+    // Mark email_messages as unsubscribed
+    await sp
+      .from("email_messages")
+      .update({ unsubscribed: true })
+      .eq("to_address", normalized)
+      .catch(() => {});
 
     return NextResponse.json({
       success: true,
@@ -60,26 +105,4 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
-}
-
-// GET /api/unsubscribe?email=... — render unsubscribe confirmation
-export async function GET(request: NextRequest) {
-  const sp = request.nextUrl.searchParams.get("email");
-  if (sp) {
-    const supabase = getSp();
-    await supabase.from("email_suppression").upsert(
-      {
-        email: sp.toLowerCase().trim(),
-        reason: "unsubscribe",
-        source: "unsubscribe_link",
-        suppressed_at: new Date().toISOString(),
-      },
-      { onConflict: "email" }
-    );
-  }
-
-  return NextResponse.json({
-    success: true,
-    message: "You have been unsubscribed.",
-  });
 }

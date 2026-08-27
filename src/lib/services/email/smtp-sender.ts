@@ -97,6 +97,41 @@ function getTransporter(config?: SmtpConfig): nodemailer.Transporter {
 // Send Email
 // =============================================
 
+const SMTP_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://capital-os-nine.vercel.app";
+const SMTP_COMPANY_ADDRESS = "Capital OS, 1603 Capitol Ave, Suite 310, Cheyenne, WY 82001, USA";
+
+function injectSmtpCompliance(html: string, text: string, toEmail: string): { html: string; text: string } {
+  const unsubUrl = `${SMTP_APP_URL}/api/unsubscribe?email=${encodeURIComponent(toEmail)}`;
+  
+  const htmlFooter = `
+    <div style="background: #fafafa; padding: 16px 32px; text-align: center; border-top: 1px solid #eeeeee; margin-top: 24px;">
+      <p style="color: #999999; font-size: 11px; margin: 0 0 4px; font-style: italic;">This is a commercial email sent via Capital OS.</p>
+      <p style="color: #999999; font-size: 11px; margin: 0 0 4px;">${SMTP_COMPANY_ADDRESS}</p>
+      <p style="color: #999999; font-size: 11px; margin: 0 0 4px;">
+        <a href="${unsubUrl}" style="color: #999999; text-decoration: underline;">Unsubscribe from all emails</a>
+      </p>
+      <p style="color: #999999; font-size: 11px; margin: 0;">
+        <a href="${SMTP_APP_URL}/privacy" style="color: #999999;">Privacy Policy</a> • 
+        <a href="${SMTP_APP_URL}/terms" style="color: #999999;">Terms of Service</a>
+      </p>
+    </div>`;
+  
+  const compliantHtml = html.includes("Unsubscribe from all emails")
+    ? html
+    : html.replace(/<\/body>/i, `${htmlFooter}\n</body>`);
+  
+  const textFooter = `
+
+---
+This is a commercial email sent via Capital OS.
+${SMTP_COMPANY_ADDRESS}
+Unsubscribe: ${unsubUrl}`;
+  
+  const compliantText = text.includes("Unsubscribe:") ? text : text + textFooter;
+  
+  return { html: compliantHtml, text: compliantText };
+}
+
 export async function sendEmailViaSmtp(
   params: SmtpSendParams
 ): Promise<SmtpSendResult> {
@@ -108,13 +143,16 @@ export async function sendEmailViaSmtp(
       ? `"${config.fromName || "Capital OS"}" <${config.fromEmail}>`
       : `"Capital OS" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`;
 
+    const bodyText = params.bodyText || params.bodyHtml.replace(/<[^>]*>/g, "");
+    const compliant = injectSmtpCompliance(params.bodyHtml, bodyText, params.to);
+
     const info = await transport.sendMail({
       from: fromAddress,
       to: params.to,
       cc: params.cc?.join(", "),
       subject: params.subject,
-      text: params.bodyText || params.bodyHtml.replace(/<[^>]*>/g, ""),
-      html: params.bodyHtml,
+      text: compliant.text,
+      html: compliant.html,
       replyTo: params.replyTo,
     });
 

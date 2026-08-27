@@ -172,6 +172,44 @@ async function refreshMicrosoftToken(
   } catch { return null; }
 }
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://capital-os-nine.vercel.app";
+const COMPANY_ADDRESS = "Capital OS, 1603 Capitol Ave, Suite 310, Cheyenne, WY 82001, USA";
+
+function injectComplianceFooter(html: string, text: string, toEmail: string): { html: string; text: string } {
+  const unsubUrl = `${APP_URL}/api/unsubscribe?email=${encodeURIComponent(toEmail)}`;
+  
+  // HTML footer — injected before closing </body>
+  const htmlFooter = `
+    <div style="background: #fafafa; padding: 16px 32px; text-align: center; border-top: 1px solid #eeeeee; margin-top: 24px;">
+      <p style="color: #999999; font-size: 11px; margin: 0 0 4px; font-style: italic;">This is a commercial email sent via Capital OS.</p>
+      <p style="color: #999999; font-size: 11px; margin: 0 0 4px;">${COMPANY_ADDRESS}</p>
+      <p style="color: #999999; font-size: 11px; margin: 0 0 4px;">
+        <a href="${unsubUrl}" style="color: #999999; text-decoration: underline;">Unsubscribe from all emails</a>
+      </p>
+      <p style="color: #999999; font-size: 11px; margin: 0;">
+        <a href="${APP_URL}/privacy" style="color: #999999;">Privacy Policy</a> • 
+        <a href="${APP_URL}/terms" style="color: #999999;">Terms of Service</a>
+      </p>
+    </div>`;
+  
+  const compliantHtml = html.includes("Unsubscribe from all emails")
+    ? html // Already has compliance footer (from template)
+    : html.replace(/<\/body>/i, `${htmlFooter}\n</body>`);
+  
+  const textFooter = `
+
+---
+This is a commercial email sent via Capital OS.
+${COMPANY_ADDRESS}
+Unsubscribe: ${unsubUrl}`;
+  
+  const compliantText = text.includes("Unsubscribe:")
+    ? text // Already has compliance footer
+    : text + textFooter;
+  
+  return { html: compliantHtml, text: compliantText };
+}
+
 export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
   const sp = getSp();
 
@@ -231,15 +269,18 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
     }
   }
 
+  // Inject CAN-SPAM compliance footer into every outbound email
+  const compliant = injectComplianceFooter(params.bodyHtml, params.bodyText || params.bodyHtml.replace(/<[^>]*>/g, ""), params.to);
+
   const trackingEnabled = params.enableTracking !== false;
   const trackingId = trackingEnabled ? generateTrackingId() : null;
-  let trackedHtml = params.bodyHtml;
+  let trackedHtml = compliant.html;
 
   if (trackingEnabled && trackingId) {
-    trackedHtml = injectTracking(params.bodyHtml, trackingId, true);
+    trackedHtml = injectTracking(compliant.html, trackingId, true);
   }
 
-  const sendParams = { ...params, bodyHtml: trackedHtml };
+  const sendParams = { ...params, bodyHtml: trackedHtml, bodyText: compliant.text };
   let result: SendResult;
 
   if (account.provider === "google") {

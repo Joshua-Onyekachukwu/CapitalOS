@@ -67,6 +67,11 @@ function header(title: string, subtitle?: string): string {
     </div>`;
 }
 
+function textComplianceFooter(unsubscribeUrl?: string): string {
+  const unsubUrl = unsubscribeUrl || `${UNSUBSCRIBE_BASE_URL}/unsubscribe`;
+  return `\n\n---\nThis is a commercial email sent via ${COMPANY_NAME}.\n${COMPANY_ADDRESS}\nUnsubscribe: ${unsubUrl}`;
+}
+
 function footer(date?: string, unsubscribeUrl?: string): string {
   const displayDate = date || new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const unsubUrl = unsubscribeUrl || `${UNSUBSCRIBE_BASE_URL}/unsubscribe`;
@@ -155,7 +160,7 @@ Best regards,
 ${founderName}
 Founder, ${companyName}`;
 
-  return { html, text };
+  return { html, text: text + textComplianceFooter(unsubscribeUrl) };
 }
 
 // =============================================
@@ -226,7 +231,7 @@ Thanks for your time,
 ${founderName}
 Founder, ${companyName}`;
 
-  return { html, text };
+  return { html, text: text + textComplianceFooter(unsubscribeUrl) };
 }
 
 // =============================================
@@ -303,5 +308,5 @@ Go to your dashboard: https://capital-os.com/dashboard
 
 — The Capital OS Team`;
 
-  return { html, text };
+  return { html, text: text + textComplianceFooter(unsubscribeUrl) };
 }
