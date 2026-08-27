@@ -161,46 +161,54 @@ EMAIL RULES:
 
     const raw = response.content;
 
-    // Extract from structured markers (SUBJECT: / BODY:) — these appear at the END of nemotron's reasoning
+    // Extract from structured markers — use LAST SUBJECT: as anchor
+    // Nemotron outputs reasoning BEFORE the final email, so the actual
+    // email always comes after the LAST SUBJECT: marker.
     let subject = "";
     let emailBody = "";
 
-    const subjectMatch = raw.match(/SUBJECT:\s*(.+?)(?:\r?\n|$)/i);
-    const bodyMatch = raw.match(/BODY:\s*\n([\s\S]+?)$/i);
+    const lastSubjectIdx = raw.lastIndexOf("SUBJECT:");
+    if (lastSubjectIdx >= 0) {
+      // Extract subject from the line
+      const subjectEnd = raw.indexOf("\n", lastSubjectIdx);
+      const subjectLine = raw.substring(lastSubjectIdx, subjectEnd > 0 ? subjectEnd : raw.length);
+      subject = subjectLine.replace(/^SUBJECT:\s*/i, "").trim().replace(/^["']|["']$/g, "");
 
-    if (subjectMatch && bodyMatch) {
-      subject = subjectMatch[1].trim().replace(/^["']|["']$/g, "");
-      emailBody = bodyMatch[1].trim();
-      // Clean trailing reasoning from body
-      emailBody = emailBody.replace(/\n\s*(?:Check|Verify|Let me|\*\*|Total|\(\d+\)).*/is, "").trim();
-    } else {
-      // Fallback: use extraction function
-      emailBody = extractEmailFromResponse(raw);
-      // Generate subject from body
-      if (emailBody.length > 20) {
-        const words = emailBody.replace(/^(Hi|Dear|Hello|Hey)\s+\w+[,.]?\s*/i, "").split(/\s+/).slice(0, 6);
-        subject = words.join(" ");
+      // Everything after SUBJECT: line
+      const afterSubject = raw.substring(lastSubjectIdx + subjectLine.length);
+
+      // Find the email greeting pattern after BODY: or directly
+      const greetingMatch = afterSubject.match(/(?:BODY:\s*\n\s*)?((?:Hi|Dear|Hello|Hey)\s+[A-Z][a-z]+[,.]?)/i);
+      if (greetingMatch) {
+        const emailStart = afterSubject.indexOf(greetingMatch[0]);
+        emailBody = afterSubject.substring(emailStart).replace(/^BODY:\s*\n\s*/i, "").trim();
+
+        // Trim at reasoning patterns
+        const reasoningPatterns = [ /\n\s*(?:Check|Verify|Word count|Final|Let|Revised|I need|Wait|Actually|No |Ensure|The email|Note|\*\*|\d+\.|I'll|I can|Maybe|Hmm|So the|Actually|Wait,|Draft:)/i ];
+        for (const pattern of reasoningPatterns) {
+          const match = emailBody.match(pattern);
+          if (match && match.index > 50) {
+            emailBody = emailBody.substring(0, match.index).trim();
+          }
+        }
+
+        // Trim at last sentence with proper punctuation
+        const lastPeriod = emailBody.lastIndexOf(".");
+        const lastExcl = emailBody.lastIndexOf("!");
+        const lastQ = emailBody.lastIndexOf("?");
+        const lastSentence = Math.max(lastPeriod, lastExcl, lastQ);
+        if (lastSentence > 50 && lastSentence < emailBody.length - 5) {
+          emailBody = emailBody.substring(0, lastSentence + 1).trim();
+        }
       }
     }
 
-    // Final safety: strip any remaining reasoning artifacts
-    if (emailBody.length > 600 || /thinking process|analyze the request|chain|\*\*\d+\./i.test(emailBody)) {
-      // Try quoted segments extraction as last resort
-      const quoted = [...raw.matchAll(/"([^"]{10,300})"/g)]
-        .map(m => m[1])
-        .filter(s => !/^(?:Analyze|Identify|Consider|Draft|Check|Verify|Here|Let me|\*\*|I need|I'll|Total)/i.test(s));
-      if (quoted.length >= 2) {
-        emailBody = quoted.join(" ").replace(/\s*\(\d+\)/g, "").trim();
-      } else {
-        // Last resort: find last Hi greeting to end
-        const lines = raw.split(/\n/);
-        for (let i = lines.length - 1; i >= 0; i--) {
-          if (/^\s*(Hi|Dear|Hello|Hey)\s+[A-Z][a-z]+[,.]?\s*$/i.test(lines[i].trim())) {
-            emailBody = lines.slice(i).join("\n").trim();
-            emailBody = emailBody.replace(/\n\s*(?:Check|Verify|\(\d+\)|Total|\*\*).*/is, "").trim();
-            break;
-          }
-        }
+    // Fallback: use extraction function if structured extraction failed
+    if (!emailBody || emailBody.length < 30) {
+      emailBody = extractEmailFromResponse(raw);
+      if (!subject && emailBody.length > 20) {
+        const words = emailBody.replace(/^(Hi|Dear|Hello|Hey)\s+\w+[,.]?\s*/i, "").split(/\s+/).slice(0, 6);
+        subject = words.join(" ");
       }
     }
 

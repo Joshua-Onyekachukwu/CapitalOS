@@ -42,11 +42,11 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   },
 
   // Email drafting — using Nemotron Lightning
-  // Reduced maxTokens from 2048 to 1536 to cut generation time
+  // Kept at 2048 tokens — nemotron needs room for chain-of-thought + email
   // Subject+body generated in a single call with structured markers
   email_drafting: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
-    maxTokens: 1536,
+    maxTokens: 2048,
     temperature: 0.7,
     description: "Personalized outreach email generation",
   },
