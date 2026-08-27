@@ -11,9 +11,10 @@ export default function Waitlist() {
   const [position, setPosition] = useState(0);
   const [referralCode, setReferralCode] = useState("");
   const [totalSignups, setTotalSignups] = useState(0);
+  const [showFoundingModal, setShowFoundingModal] = useState(false);
+  const [foundingLoading, setFoundingLoading] = useState(false);
 
   useEffect(() => {
-    // Fetch current waitlist count for social proof
     fetch("/api/waitlist")
       .then((r) => r.json())
       .then((d) => setTotalSignups(d.totalSignups || 0))
@@ -44,6 +45,9 @@ export default function Waitlist() {
       setPosition(data.position || 0);
       setReferralCode(data.referralCode || "");
       setTotalSignups((prev) => (data.alreadySignedUp ? prev : prev + 1));
+
+      // Show founding member upsell after a short delay
+      setTimeout(() => setShowFoundingModal(true), 1500);
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -51,6 +55,26 @@ export default function Waitlist() {
     }
   };
 
+  const handleFoundingCheckout = async () => {
+    setFoundingLoading(true);
+    try {
+      const res = await fetch("/api/founding-member/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name: name || undefined }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      // Stay on page
+    } finally {
+      setFoundingLoading(false);
+    }
+  };
+
+  // ── Success State ──
   if (success) {
     return (
       <section className="py-[80px] md:py-[100px] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -94,11 +118,87 @@ export default function Waitlist() {
               </div>
             </div>
           )}
+
+          {/* Founding Member Upsell Modal */}
+          {showFoundingModal && (
+            <div className="fixed inset-0 z-[1000] flex items-center justify-center px-[20px]">
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={() => setShowFoundingModal(false)}
+              ></div>
+
+              {/* Modal */}
+              <div className="relative bg-gray-900 border border-white/10 rounded-[20px] p-[32px] md:p-[40px] max-w-[480px] w-full shadow-2xl">
+                {/* Close button */}
+                <button
+                  onClick={() => setShowFoundingModal(false)}
+                  className="absolute top-[16px] right-[16px] w-[32px] h-[32px] rounded-full bg-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/15 transition-colors"
+                >
+                  <i className="ri-close-line text-[18px]"></i>
+                </button>
+
+                {/* Crown icon */}
+                <div className="w-[56px] h-[56px] rounded-full bg-amber-500/15 flex items-center justify-center mx-auto mb-[20px]">
+                  <i className="ri-vip-crown-line text-amber-400 text-[28px]"></i>
+                </div>
+
+                <h3 className="text-[24px] md:text-[28px] font-bold text-white !mb-[8px] text-center">
+                  Want early access?
+                </h3>
+                <p className="text-[15px] text-gray-400 !mb-[24px] text-center leading-relaxed">
+                  Become a Founding Member for <span className="text-white font-semibold">$9.99</span> and
+                  get <span className="text-lime-400 font-medium">$9.99 in platform credit</span> when we launch.
+                  You&apos;ll also get priority access and founding-member pricing forever.
+                </p>
+
+                {/* Benefits */}
+                <div className="space-y-[10px] !mb-[28px]">
+                  <div className="flex items-center gap-[10px] text-[14px] text-gray-300">
+                    <i className="ri-check-line text-lime-400 text-[16px]"></i>
+                    $9.99 platform credit (applies to first subscription)
+                  </div>
+                  <div className="flex items-center gap-[10px] text-[14px] text-gray-300">
+                    <i className="ri-check-line text-lime-400 text-[16px]"></i>
+                    Priority early access before public launch
+                  </div>
+                  <div className="flex items-center gap-[10px] text-[14px] text-gray-300">
+                    <i className="ri-check-line text-lime-400 text-[16px]"></i>
+                    Locked-in founding-member pricing forever
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <button
+                  onClick={handleFoundingCheckout}
+                  disabled={foundingLoading}
+                  className="w-full bg-lime-400 hover:bg-lime-300 text-gray-900 font-semibold rounded-[8px] px-[24px] py-[14px] text-[16px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed !mb-[12px]"
+                >
+                  {foundingLoading ? (
+                    <span className="flex items-center justify-center gap-[8px]">
+                      <span className="w-[16px] h-[16px] border-2 border-gray-900/30 border-t-gray-900 rounded-full animate-spin"></span>
+                      Redirecting to checkout...
+                    </span>
+                  ) : (
+                    "Become a Founding Member — $9.99"
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setShowFoundingModal(false)}
+                  className="w-full text-[14px] text-gray-500 hover:text-gray-300 transition-colors py-[8px]"
+                >
+                  No thanks, I&apos;ll wait for the free launch
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     );
   }
 
+  // ── Waitlist Form ──
   return (
     <section className="py-[80px] md:py-[100px] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="max-w-[640px] mx-auto px-[20px] text-center">
@@ -165,51 +265,6 @@ export default function Waitlist() {
         <p className="text-[12px] text-gray-500 !mt-[16px] !mb-0">
           No spam. No credit card. Just early access when we launch.
         </p>
-
-        {/* Founding Member CTA */}
-        <div className="mt-[40px] pt-[32px] border-t border-white/10">
-          <div className="inline-flex items-center gap-[8px] bg-amber-500/10 border border-amber-500/20 rounded-full px-[12px] py-[4px] mb-[16px]">
-            <i className="ri-vip-crown-line text-amber-400 text-[12px]"></i>
-            <span className="text-[12px] text-amber-400 font-medium">Founding Member</span>
-          </div>
-          <h3 className="text-[20px] md:text-[24px] font-bold text-white !mb-[8px]">
-            Reserve your founding seat
-          </h3>
-          <p className="text-[14px] text-gray-400 !mb-[16px] leading-relaxed">
-            Your $9.99 isn't lost. When we launch, it becomes $9.99 in platform credit toward your subscription.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] text-[13px] text-gray-400 !mb-[20px]">
-            <span className="flex items-center gap-[8px]">
-              <i className="ri-check-line text-lime-400"></i> $9.99 platform credit
-            </span>
-            <span className="flex items-center gap-[8px]">
-              <i className="ri-check-line text-lime-400"></i> Priority early access
-            </span>
-            <span className="flex items-center gap-[8px]">
-              <i className="ri-check-line text-lime-400"></i> Founding-member pricing
-            </span>
-          </div>
-          <button
-            onClick={async () => {
-              try {
-                const res = await fetch("/api/founding-member/checkout", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email, name: name || undefined }),
-                });
-                const data = await res.json();
-                if (data.url) {
-                  window.location.href = data.url;
-                }
-              } catch {
-                // Checkout failed — stay on page
-              }
-            }}
-            className="bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold rounded-[8px] px-[24px] py-[14px] text-[16px] transition-colors"
-          >
-            Become a Founding Member — $9.99
-          </button>
-        </div>
       </div>
     </section>
   );
