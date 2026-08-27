@@ -309,8 +309,8 @@ export default function OnboardingPage() {
         employeeCount: data.employeeCount ? Number(data.employeeCount) : undefined,
         onboardingStep: currentStep,
       });
-    } catch {
-      // Silently fail — progress is saved on next step
+    } catch (err) {
+      console.error("[Onboarding] saveProgress error:", err);
     } finally {
       setSaving(false);
     }
@@ -339,8 +339,8 @@ export default function OnboardingPage() {
           });
         }
       }
-    } catch {
-      // Non-critical — team members can be added later
+    } catch (err) {
+      console.error("[Onboarding] saveTeamMembers error:", err);
     }
   }, [data.teamMembers]);
 
