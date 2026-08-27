@@ -46,11 +46,11 @@ const FAQ: React.FC = () => {
             We&apos;ve Got <span className="font-semibold italic">Answers</span>
           </h2>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[25px] items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[24px] items-center">
           <div className="relative ltr:xl:pr-[15px] rtl:xl:pl-[15px]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-[25px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-[24px]">
               <div>
-                <div className="relative rounded-[10px] overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                <div className="relative rounded-[8px] overflow-hidden" style={{ aspectRatio: "3/4" }}>
                   <Image
                     src="/images/real-estate-agent/faq-custom-1.jpg"
                     className="object-cover w-full h-full"
@@ -61,7 +61,7 @@ const FAQ: React.FC = () => {
                 </div>
               </div>
               <div>
-                <div className="lg:mt-[110px] relative rounded-[10px] overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                <div className="lg:mt-[110px] relative rounded-[8px] overflow-hidden" style={{ aspectRatio: "3/4" }}>
                   <Image
                     src="/images/real-estate-agent/faq-custom-2.jpg"
                     className="object-cover w-full h-full"
@@ -72,7 +72,7 @@ const FAQ: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="max-w-[203px] absolute top-[15px] lg:top-0 xl:top-[35px] ltr:right-[15px] rtl:left-[15px] ltr:lg:right-0 rtl:lg:left-0 ltr:xl:right-[45px] rtl:xl:left-[45px]">
+            <div className="max-w-[203px] absolute top-[16px] lg:top-0 xl:top-[32px] ltr:right-[15px] rtl:left-[15px] ltr:lg:right-0 rtl:lg:left-0 ltr:xl:right-[45px] rtl:xl:left-[45px]">
               <Image
                 src="/images/real-estate-agent/union2.png"
                 className="inline-block"
@@ -89,7 +89,7 @@ const FAQ: React.FC = () => {
                 </span>
               </div>
             </div>
-            <div className="max-w-[203px] absolute bottom-[15px] lg:bottom-0 xl:bottom-[35px] ltr:left-[15px] rtl:right-[15px] ltr:lg:left-0 rtl:lg:right-0 ltr:xl:left-[155px] rtl:xl:right-[155px]">
+            <div className="max-w-[203px] absolute bottom-[15px] lg:bottom-0 xl:bottom-[32px] ltr:left-[15px] rtl:right-[15px] ltr:lg:left-0 rtl:lg:right-0 ltr:xl:left-[155px] rtl:xl:right-[155px]">
               <Image
                 src="/images/real-estate-agent/union1.png"
                 className="inline-block"
@@ -114,7 +114,7 @@ const FAQ: React.FC = () => {
                 className={`border-b border-[#7D6B61]/10 dark:border-white/10 pb-[20px] md:pb-[25px] xl:pb-[30px] mb-[20px] md:mb-[25px] xl:mb-[30px] last:mb-0 ${index === 0 ? 'pt-[10px]' : ''}`}
               >
                 <button
-                  className="text-black dark:text-white font-normal text-lg md:text-[20px] lg:text-[22px] xl:text-xl -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] flex items-center justify-between w-full ltr:text-left rtl:text-right"
+                  className="text-black dark:text-white font-normal text-lg md:text-[20px] lg:text-[24px] xl:text-xl -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] flex items-center justify-between w-full ltr:text-left rtl:text-right"
                   type="button"
                   onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
                 >
@@ -126,7 +126,7 @@ const FAQ: React.FC = () => {
                   </span>
                 </button>
                 <div
-                  className={`mt-[12px] md:mt-[15px] text-base md:text-[15px] lg:text-md -tracking-[0.16px] ${openIndex === index ? "" : "hidden"}`}
+                  className={`mt-[12px] md:mt-[15px] text-base md:text-[16px] lg:text-md -tracking-[0.16px] ${openIndex === index ? "" : "hidden"}`}
                 >
                   <p>{item.answer}</p>
                 </div>

@@ -38,13 +38,13 @@ const SkeletonCard: React.FC<{ className?: string }> = ({ className }) => {
   return (
     <div
       className={cn(
-        "rounded-[16px] md:rounded-[20px] border border-gray-200 dark:border-gray-800 p-[20px] md:p-[25px]",
+        "rounded-[16px] md:rounded-[20px] border border-gray-200 dark:border-gray-800 p-[20px] md:p-[24px]",
         className
       )}
     >
       <Skeleton className="h-[20px] w-[40%] mb-[16px]" />
       <SkeletonText lines={2} />
-      <div className="mt-[20px] flex gap-[10px]">
+      <div className="mt-[20px] flex gap-[8px]">
         <Skeleton className="h-[32px] w-[80px] rounded-full" />
         <Skeleton className="h-[32px] w-[80px] rounded-full" />
       </div>

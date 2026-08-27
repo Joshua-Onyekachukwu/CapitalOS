@@ -117,12 +117,12 @@ export default function ScrapePage() {
         <Card>
           <CardBody>
             <div className="flex items-center justify-between mb-[16px]">
-              <div className="flex items-center gap-[10px]">
-                <div className="w-[40px] h-[40px] rounded-[10px] bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 text-[20px]">
+              <div className="flex items-center gap-[8px]">
+                <div className="w-[40px] h-[40px] rounded-[8px] bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 text-[20px]">
                   <i className="ri-government-line"></i>
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-semibold text-[#06201b] dark:text-white !mb-0">SEC EDGAR</h3>
+                  <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-0">SEC EDGAR</h3>
                   <p className="text-[12px] text-gray-400 !mb-0">Form D fund filings</p>
                 </div>
               </div>
@@ -132,7 +132,7 @@ export default function ScrapePage() {
             </div>
 
             {/* Config */}
-            <div className="grid grid-cols-3 gap-[10px] mb-[16px]">
+            <div className="grid grid-cols-3 gap-[8px] mb-[16px]">
               <div>
                 <label className="block text-[11px] text-gray-400 mb-[4px]">Start Date</label>
                 <input
@@ -216,12 +216,12 @@ export default function ScrapePage() {
         {/* Normalization Pipeline */}
         <Card>
           <CardBody>
-            <div className="flex items-center gap-[10px] mb-[16px]">
-              <div className="w-[40px] h-[40px] rounded-[10px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[20px]">
+            <div className="flex items-center gap-[8px] mb-[16px]">
+              <div className="w-[40px] h-[40px] rounded-[8px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[20px]">
                 <i className="ri-filter-3-line"></i>
               </div>
               <div>
-                <h3 className="text-[15px] font-semibold text-[#06201b] dark:text-white !mb-0">Process Pipeline</h3>
+                <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-0">Process Pipeline</h3>
                 <p className="text-[12px] text-gray-400 !mb-0">Normalize, match, and promote raw records</p>
               </div>
             </div>
@@ -262,12 +262,12 @@ export default function ScrapePage() {
         {/* Apollo CSV Import */}
         <Card>
           <CardBody>
-            <div className="flex items-center gap-[10px] mb-[16px]">
-              <div className="w-[40px] h-[40px] rounded-[10px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[20px]">
+            <div className="flex items-center gap-[8px] mb-[16px]">
+              <div className="w-[40px] h-[40px] rounded-[8px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[20px]">
                 <i className="ri-file-upload-line"></i>
               </div>
               <div>
-                <h3 className="text-[15px] font-semibold text-[#06201b] dark:text-white !mb-0">Apollo CSV Import</h3>
+                <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-0">Apollo CSV Import</h3>
                 <p className="text-[12px] text-gray-400 !mb-0">Upload exported Apollo contacts</p>
               </div>
             </div>
@@ -292,12 +292,12 @@ export default function ScrapePage() {
         {/* Data Health */}
         <Card>
           <CardBody>
-            <div className="flex items-center gap-[10px] mb-[16px]">
-              <div className="w-[40px] h-[40px] rounded-[10px] bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 text-[20px]">
+            <div className="flex items-center gap-[8px] mb-[16px]">
+              <div className="w-[40px] h-[40px] rounded-[8px] bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 text-[20px]">
                 <i className="ri-heart-pulse-line"></i>
               </div>
               <div>
-                <h3 className="text-[15px] font-semibold text-[#06201b] dark:text-white !mb-0">Data Health</h3>
+                <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-0">Data Health</h3>
                 <p className="text-[12px] text-gray-400 !mb-0">Overview of investor database quality</p>
               </div>
             </div>

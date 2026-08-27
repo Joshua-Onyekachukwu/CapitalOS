@@ -28,14 +28,14 @@ export default function DataSourcesPage() {
       />
 
       {/* Provider Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[15px] mb-[25px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[16px] mb-[25px]">
         {providers.map((provider) => (
           <Link key={provider.slug} href={`/admin/data-sources/${provider.slug}`}>
             <Card className="h-full hover:shadow-md transition-shadow cursor-pointer group">
               <CardBody>
                 <div className="flex items-start justify-between mb-[14px]">
-                  <div className="flex items-center gap-[10px]">
-                    <div className="w-[40px] h-[40px] rounded-[10px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[20px]">
+                  <div className="flex items-center gap-[8px]">
+                    <div className="w-[40px] h-[40px] rounded-[8px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[20px]">
                       <i className="ri-plug-line" />
                     </div>
                     <div>
@@ -89,7 +89,7 @@ export default function DataSourcesPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[25px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[25px]">
         {[
           { label: "Total Investors", value: "0", icon: "ri-user-search-line" },
           { label: "Total Firms", value: "0", icon: "ri-building-2-line" },
@@ -97,8 +97,8 @@ export default function DataSourcesPage() {
           { label: "Credits Remaining", value: "39,570", icon: "ri-vip-diamond-line" },
         ].map((stat) => (
           <Card key={stat.label}>
-            <CardBody className="flex items-center gap-[14px]">
-              <div className="w-[40px] h-[40px] rounded-[10px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 text-[20px] flex-none">
+            <CardBody className="flex items-center gap-[16px]">
+              <div className="w-[40px] h-[40px] rounded-[8px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 text-[20px] flex-none">
                 <i className={stat.icon} />
               </div>
               <div>

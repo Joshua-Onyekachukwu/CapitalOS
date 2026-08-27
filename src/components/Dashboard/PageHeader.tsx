@@ -26,7 +26,7 @@ function PageHeader({ title, description, actions, className }: PageHeaderProps)
           </p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-[10px] flex-wrap">{actions}</div>}
+      {actions && <div className="flex items-center gap-[8px] flex-wrap">{actions}</div>}
     </div>
   );
 }

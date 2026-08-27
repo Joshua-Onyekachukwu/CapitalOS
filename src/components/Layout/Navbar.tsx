@@ -129,20 +129,20 @@ const Navbar: React.FC = () => {
               <div className="flex items-center gap-[12px]">
                 {loading ? (
                   <div className="flex items-center gap-[12px]">
-                    <div className="w-[80px] h-[40px] bg-gray-100 rounded-[7px] animate-pulse"></div>
-                    <div className="w-[100px] h-[40px] bg-gray-100 rounded-[7px] animate-pulse"></div>
+                    <div className="w-[80px] h-[40px] bg-gray-100 rounded-[8px] animate-pulse"></div>
+                    <div className="w-[100px] h-[40px] bg-gray-100 rounded-[8px] animate-pulse"></div>
                   </div>
                 ) : signedIn ? (
                   <>
                     <Link
                       href="/dashboard"
-                      className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white"
+                      className="inline-block font-medium md:text-base rounded-[8px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white"
                     >
                       Dashboard
                     </Link>
                     <Link
                       href="/dashboard/settings"
-                      className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600"
+                      className="inline-block font-medium md:text-base rounded-[8px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600"
                     >
                       {user?.email?.split("@")[0] || "Account"}
                     </Link>
@@ -151,13 +151,13 @@ const Navbar: React.FC = () => {
                   <>
                     <Link
                       href="/login"
-                      className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white"
+                      className="inline-block font-medium md:text-base rounded-[8px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white"
                     >
                       Log In
                     </Link>
                     <Link
                       href="/signup"
-                      className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600"
+                      className="inline-block font-medium md:text-base rounded-[8px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600"
                     >
                       Get Started
                     </Link>
@@ -187,24 +187,24 @@ const Navbar: React.FC = () => {
                   ))}
                 </ul>
 
-                <div className="flex flex-col gap-[10px] mt-[20px]">
+                <div className="flex flex-col gap-[8px] mt-[20px]">
                   {loading ? (
                     <div className="space-y-[10px]">
-                      <div className="h-[44px] bg-gray-100 rounded-[7px] animate-pulse"></div>
-                      <div className="h-[44px] bg-gray-100 rounded-[7px] animate-pulse"></div>
+                      <div className="h-[44px] bg-gray-100 rounded-[8px] animate-pulse"></div>
+                      <div className="h-[44px] bg-gray-100 rounded-[8px] animate-pulse"></div>
                     </div>
                   ) : signedIn ? (
                     <>
                       <Link
                         href="/dashboard"
-                        className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
+                        className="inline-block font-medium md:text-base rounded-[8px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
                       >
                         Go to Dashboard
                       </Link>
                       <button
                         onClick={handleSignOut}
                         disabled={signingOut}
-                        className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                        className="inline-block font-medium md:text-base rounded-[8px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
                       >
                         {signingOut ? "Signing out..." : "Sign Out"}
                       </button>
@@ -213,13 +213,13 @@ const Navbar: React.FC = () => {
                     <>
                       <Link
                         href="/login"
-                        className="inline-block font-medium md:text-base rounded-[7px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
+                        className="inline-block font-medium md:text-base rounded-[8px] text-[#06201b] border border-[#06201b] py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-[#06201b] hover:text-white text-center"
                       >
                         Log In
                       </Link>
                       <Link
                         href="/signup"
-                        className="inline-block font-medium md:text-base rounded-[7px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
+                        className="inline-block font-medium md:text-base rounded-[8px] bg-lime-500 text-black py-[10.5px] md:py-[11.5px] px-[22px] md:px-[25px] transition-all hover:bg-lime-600 text-center"
                       >
                         Get Started
                       </Link>

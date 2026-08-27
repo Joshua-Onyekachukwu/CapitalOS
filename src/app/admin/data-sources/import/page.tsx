@@ -128,7 +128,7 @@ export default function ImportPage() {
       {progress.status === "done" && (
         <Card className="mb-[20px]">
           <CardBody>
-            <div className="flex items-center gap-[10px] mb-[16px]">
+            <div className="flex items-center gap-[8px] mb-[16px]">
               <i className="ri-check-double-line text-lime-600 text-[20px]"></i>
               <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-0">
                 Import Complete — {fileName}

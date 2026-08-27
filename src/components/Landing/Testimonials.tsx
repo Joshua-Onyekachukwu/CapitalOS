@@ -14,7 +14,7 @@ const Testimonials: React.FC = () => {
             Raise Capital{" "}
             <span className="font-semibold italic">Without the Stress</span>
           </h2>
-          <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] mt-[15px] text-gray-500 dark:text-gray-400">
+          <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px] mt-[15px] text-gray-500 dark:text-gray-400">
             Founders who use Capital OS spend less time on research and more
             time closing rounds.
           </p>
@@ -29,7 +29,7 @@ const Testimonials: React.FC = () => {
               <h3 className="!font-semibold !text-lg md:!text-xl !mb-[8px]">
                 Discover the Right Investors
               </h3>
-              <p className="text-[14px] md:text-[15px] text-gray-500 dark:text-gray-400 !mb-0">
+              <p className="text-[14px] md:text-[16px] text-gray-500 dark:text-gray-400 !mb-0">
                 We use AI to find and score investors who match your stage, sector, and
                 geography. No more scrolling through PitchBook for hours.
               </p>
@@ -41,7 +41,7 @@ const Testimonials: React.FC = () => {
               <h3 className="!font-semibold !text-lg md:!text-xl !mb-[8px]">
                 Outreach That Gets Replies
               </h3>
-              <p className="text-[14px] md:text-[15px] text-gray-500 dark:text-gray-400 !mb-0">
+              <p className="text-[14px] md:text-[16px] text-gray-500 dark:text-gray-400 !mb-0">
                 We use AI to draft personalized emails that reference each investor&apos;s
                 thesis and portfolio. You review and approve before anything goes
                 out.
@@ -54,7 +54,7 @@ const Testimonials: React.FC = () => {
               <h3 className="!font-semibold !text-lg md:!text-xl !mb-[8px]">
                 Close Your Round Faster
               </h3>
-              <p className="text-[14px] md:text-[15px] text-gray-500 dark:text-gray-400 !mb-0">
+              <p className="text-[14px] md:text-[16px] text-gray-500 dark:text-gray-400 !mb-0">
                 Track every investor from first touch to signed term sheet. See
                 what&apos;s working, what&apos;s not, and what needs your
                 attention next.
@@ -64,7 +64,7 @@ const Testimonials: React.FC = () => {
         </div>
 
         <div className="mt-[30px] md:mt-[40px] bg-[#06201b] rounded-[16px] p-[30px] md:p-[40px] text-center">
-          <p className="text-[18px] md:text-[22px] text-white !mb-[8px]">
+          <p className="text-[18px] md:text-[24px] text-white !mb-[8px]">
             &ldquo;We built Capital OS because founders shouldn&apos;t need a
             $20K PitchBook subscription and a team of analysts to find the right
             investors.&rdquo;

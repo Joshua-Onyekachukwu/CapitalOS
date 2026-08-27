@@ -61,7 +61,7 @@ export function DataHistory({ investorId }: { investorId: string }) {
     return (
       <div className="space-y-[12px]">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="animate-pulse flex gap-[10px]">
+          <div key={i} className="animate-pulse flex gap-[8px]">
             <div className="w-[8px] h-[8px] rounded-full bg-gray-200 mt-[6px]"></div>
             <div className="flex-1">
               <div className="h-[12px] bg-gray-100 dark:bg-gray-800 rounded w-[120px] mb-[4px]"></div>
@@ -84,10 +84,10 @@ export function DataHistory({ investorId }: { investorId: string }) {
   return (
     <div className="space-y-[14px]">
       {entries.map((entry) => (
-        <div key={entry.id} className="flex gap-[10px]">
+        <div key={entry.id} className="flex gap-[8px]">
           <div className={`w-[8px] h-[8px] rounded-full mt-[6px] flex-none ${changeTypeColors[entry.change_type] || "bg-gray-400"}`}></div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-[6px] mb-[2px]">
+            <div className="flex items-center gap-[8px] mb-[2px]">
               <span className="text-[12px] font-medium text-[#06201b] dark:text-white capitalize">
                 {entry.field_name.replace(/_/g, " ")}
               </span>

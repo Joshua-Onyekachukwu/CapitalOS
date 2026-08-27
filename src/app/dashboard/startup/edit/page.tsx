@@ -205,7 +205,7 @@ export default function StartupEditPage() {
         title="Edit Company Profile"
         description="Update your company information. Changes are reflected in investor matching."
         actions={
-          <div className="flex items-center gap-[10px]">
+          <div className="flex items-center gap-[8px]">
             {saved && <span className="text-[13px] text-green-600">✓ Saved</span>}
             <Link href="/dashboard/startup">
               <Button variant="outline" size="sm">Back</Button>
@@ -287,7 +287,7 @@ export default function StartupEditPage() {
       <Card className="mb-[20px]">
         <CardHeader><h3 className="!text-[16px] !font-semibold !mb-0">Fundraising</h3></CardHeader>
         <CardBody className="pt-0 space-y-[16px]">
-          <label className="flex items-center gap-[10px] cursor-pointer">
+          <label className="flex items-center gap-[8px] cursor-pointer">
             <input type="checkbox" checked={form.currentlyRaising} onChange={(e) => updateField("currentlyRaising", e.target.checked)} className="w-[18px] h-[18px] accent-lime-500 rounded" />
             <span className="text-[14px] text-[#06201b] dark:text-white">Currently raising</span>
           </label>
@@ -306,7 +306,7 @@ export default function StartupEditPage() {
               </div>
               <div className="sm:col-span-2">
                 <label className={labelClass}>Target Investor Geographies</label>
-                <div className="flex flex-wrap gap-[6px] mb-[8px]">
+                <div className="flex flex-wrap gap-[8px] mb-[8px]">
                   {form.targetInvestorGeographies.map((g, i) => (
                     <span key={i} className="inline-flex items-center gap-[4px] px-[10px] py-[4px] bg-lime-50 dark:bg-lime-900/20 text-lime-700 dark:text-lime-400 rounded-full text-[12px]">
                       {g}
@@ -352,7 +352,7 @@ export default function StartupEditPage() {
           </div>
           <div className="mt-[16px]">
             <label className={labelClass}>Milestones</label>
-            <div className="flex flex-wrap gap-[6px] mb-[8px]">
+            <div className="flex flex-wrap gap-[8px] mb-[8px]">
               {form.milestones.map((m, i) => (
                 <span key={i} className="inline-flex items-center gap-[4px] px-[10px] py-[4px] bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full text-[12px]">
                   {m}

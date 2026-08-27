@@ -39,7 +39,7 @@ export default function ApolloPage() {
             <div className="flex items-center justify-between">
               <span className="text-[14px] text-gray-500">Status</span>
               <Badge variant="success">
-                <span className="flex items-center gap-[6px]">
+                <span className="flex items-center gap-[8px]">
                   <span className="w-[6px] h-[6px] rounded-full bg-green-500" />
                   Connected
                 </span>
@@ -63,7 +63,7 @@ export default function ApolloPage() {
               <span className="text-[14px] font-medium text-green-600">Configured</span>
             </div>
 
-            <div className="flex gap-[10px] pt-[8px]">
+            <div className="flex gap-[8px] pt-[8px]">
               <Button variant="outline" size="sm" loading={healthChecking} onClick={handleHealthCheck}>
                 <i className="ri-heart-pulse-line text-[16px]" />
                 Run Health Check
@@ -84,7 +84,7 @@ export default function ApolloPage() {
           <CardBody className="space-y-[16px]">
             <div>
               <label className="text-[13px] text-gray-500 block mb-[6px]">API Key</label>
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[8px]">
                 <div className="flex-1 py-[9px] px-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] text-[14px] text-gray-400 font-mono">
                   ••••••••••••••••••••
                 </div>

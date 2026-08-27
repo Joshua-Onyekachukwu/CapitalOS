@@ -127,7 +127,7 @@ export default function DuplicatesReviewPage() {
                   {/* Side-by-side comparison */}
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-[12px]">
                     {/* Person A */}
-                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-[10px] p-[14px]">
+                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-[8px] p-[16px]">
                       <p className="text-[11px] text-gray-400 uppercase tracking-wider !mb-[6px]">Person A</p>
                       <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">
                         {candidate.investor_a_name}
@@ -141,7 +141,7 @@ export default function DuplicatesReviewPage() {
                     </div>
 
                     {/* Person B */}
-                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-[10px] p-[14px]">
+                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-[8px] p-[16px]">
                       <p className="text-[11px] text-gray-400 uppercase tracking-wider !mb-[6px]">Person B</p>
                       <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-[2px]">
                         {candidate.investor_b_name}
@@ -160,7 +160,7 @@ export default function DuplicatesReviewPage() {
                     <p className="text-[11px] text-gray-400 uppercase tracking-wider !mb-[6px]">Signals</p>
                     <div className="space-y-[4px]">
                       {Object.entries(candidate.match_signals).map(([signal, score]) => (
-                        <div key={signal} className="flex items-center gap-[6px]">
+                        <div key={signal} className="flex items-center gap-[8px]">
                           <div className="flex-1 h-[4px] bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${score >= 0.9 ? "bg-green-500" : score >= 0.5 ? "bg-amber-500" : "bg-gray-300"}`}

@@ -57,7 +57,7 @@ function FoundingMemberContent() {
             <div className="w-[8px] h-[8px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
             <div className="w-[8px] h-[8px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
           </div>
-          <p className="text-gray-400 text-[15px]">Confirming your founding membership...</p>
+          <p className="text-gray-400 text-[16px]">Confirming your founding membership...</p>
         </div>
       </div>
     );
@@ -79,7 +79,7 @@ function FoundingMemberContent() {
           </p>
           <Link
             href="/"
-            className="inline-flex items-center gap-[8px] bg-lime-400 hover:bg-lime-300 text-gray-900 font-semibold rounded-[10px] px-[24px] py-[14px] text-[15px] transition-colors"
+            className="inline-flex items-center gap-[8px] bg-lime-400 hover:bg-lime-300 text-gray-900 font-semibold rounded-[8px] px-[24px] py-[14px] text-[16px] transition-colors"
           >
             Back to Home
           </Link>
@@ -107,7 +107,7 @@ function FoundingMemberContent() {
           <div className="space-y-[16px]">
             <div className="flex items-center justify-between">
               <span className="text-gray-400 text-[14px]">Status</span>
-              <span className="flex items-center gap-[6px] text-lime-400 text-[14px] font-medium">
+              <span className="flex items-center gap-[8px] text-lime-400 text-[14px] font-medium">
                 <span className="w-[6px] h-[6px] rounded-full bg-lime-400"></span>
                 Founding Member
               </span>
@@ -153,7 +153,7 @@ function FoundingMemberContent() {
 
         <Link
           href="/"
-          className="inline-flex items-center gap-[8px] bg-white/10 hover:bg-white/15 text-white font-medium rounded-[10px] px-[24px] py-[12px] text-[14px] transition-colors"
+          className="inline-flex items-center gap-[8px] bg-white/10 hover:bg-white/15 text-white font-medium rounded-[8px] px-[24px] py-[12px] text-[14px] transition-colors"
         >
           <i className="ri-arrow-left-line"></i>
           Back to Home

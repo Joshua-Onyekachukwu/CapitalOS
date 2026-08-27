@@ -53,7 +53,7 @@ export function QualificationCard() {
   return (
     <Card>
       <CardBody>
-        <div className="flex items-center gap-[10px] mb-[16px]">
+        <div className="flex items-center gap-[8px] mb-[16px]">
           <div className="w-[40px] h-[40px] rounded-[12px] bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 text-[18px]">
             <i className="ri-scoreboard-line"></i>
           </div>
@@ -68,7 +68,7 @@ export function QualificationCard() {
         </p>
 
         {/* Config */}
-        <div className="grid grid-cols-3 gap-[10px] mb-[16px]">
+        <div className="grid grid-cols-3 gap-[8px] mb-[16px]">
           <div>
             <label className="block text-[11px] text-gray-400 mb-[4px]">Sector</label>
             <input
@@ -121,7 +121,7 @@ export function QualificationCard() {
         </Button>
 
         {error && (
-          <div className="mt-[12px] p-[10px] bg-red-50 dark:bg-red-900/10 rounded-[8px] text-[12px] text-red-600">
+          <div className="mt-[12px] p-[8px] bg-red-50 dark:bg-red-900/10 rounded-[8px] text-[12px] text-red-600">
             {error}
           </div>
         )}

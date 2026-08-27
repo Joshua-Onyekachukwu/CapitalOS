@@ -346,7 +346,7 @@ export default function NewCampaignPage() {
                   {selectedIds.size} of {investors.length} investors selected
                 </p>
               </div>
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[8px]">
                 <Button variant="outline" size="sm" onClick={selectAll}>
                   Select All
                 </Button>
@@ -358,7 +358,7 @@ export default function NewCampaignPage() {
           </CardHeader>
           <CardBody className="p-0">
             {/* Filters */}
-            <div className="px-[25px] py-[16px] border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-[10px]">
+            <div className="px-[25px] py-[16px] border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-[8px]">
               <input
                 type="text"
                 value={searchQuery}
@@ -366,7 +366,7 @@ export default function NewCampaignPage() {
                 placeholder="Search investors..."
                 className="flex-1 min-w-[200px] px-[12px] py-[8px] border border-gray-200 dark:border-gray-700 rounded-[8px] text-[13px] bg-white dark:bg-gray-800 text-[#06201b] dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500"
               />
-              <div className="flex items-center gap-[6px]">
+              <div className="flex items-center gap-[8px]">
                 <span className="text-[12px] text-gray-400">Min score:</span>
                 <input
                   type="range"
@@ -404,7 +404,7 @@ export default function NewCampaignPage() {
                       selectedIds.has(inv.id) ? "bg-lime-50/50 dark:bg-lime-900/10" : ""
                     }`}
                   >
-                    <div className={`w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                    <div className={`w-[18px] h-[18px] rounded-[6px] border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                       selectedIds.has(inv.id)
                         ? "bg-lime-500 border-lime-500"
                         : "border-gray-300 dark:border-gray-600"
@@ -424,7 +424,7 @@ export default function NewCampaignPage() {
                         {inv.firm_name || "Independent"} • {inv.investor_type?.replace(/_/g, " ") || "Investor"}
                       </p>
                     </div>
-                    <div className="flex items-center gap-[10px] flex-shrink-0">
+                    <div className="flex items-center gap-[8px] flex-shrink-0">
                       {inv.email && (
                         <span className="text-[11px] text-gray-400">
                           <i className="ri-mail-line mr-[2px]"></i>Has email
@@ -442,7 +442,7 @@ export default function NewCampaignPage() {
             </div>
           </CardBody>
           <CardFooter>
-            <div className="flex items-center gap-[10px]">
+            <div className="flex items-center gap-[8px]">
               <Button variant="outline" onClick={() => setStep("details")}>
                 <i className="ri-arrow-left-line text-[16px]"></i>
                 Back
@@ -520,7 +520,7 @@ export default function NewCampaignPage() {
             </div>
           </CardBody>
           <CardFooter>
-            <div className="flex items-center gap-[10px]">
+            <div className="flex items-center gap-[8px]">
               <Button variant="outline" onClick={() => setStep("investors")}>
                 <i className="ri-arrow-left-line text-[16px]"></i>
                 Back
@@ -550,7 +550,7 @@ export default function NewCampaignPage() {
               {/* Quick Templates */}
               <div className="mb-[16px]">
                 <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-[8px]">Quick Start Templates</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-[10px]">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-[8px]">
                   {[
                     { id: "standard3", name: "Standard 3-Touch", desc: "Intro + 2 follow-ups over 7 days", steps: 3 },
                     { id: "warm4", name: "Warm Introduction", desc: "Gentle 4-touch over 14 days", steps: 4 },
@@ -625,7 +625,7 @@ export default function NewCampaignPage() {
                   onClick={() => setStopOnReply(!stopOnReply)}
                   className={`relative w-[44px] h-[24px] rounded-full transition-colors ${stopOnReply ? "bg-lime-500" : "bg-gray-300 dark:bg-gray-600"}`}
                 >
-                  <div className={`absolute top-[2px] w-[20px] h-[20px] rounded-full bg-white transition-transform ${stopOnReply ? "left-[22px]" : "left-[2px]"}`}></div>
+                  <div className={`absolute top-[4px] w-[20px] h-[20px] rounded-full bg-white transition-transform ${stopOnReply ? "left-[22px]" : "left-[2px]"}`}></div>
                 </button>
               </div>
             </CardBody>
@@ -637,7 +637,7 @@ export default function NewCampaignPage() {
               <Card key={idx}>
                 <CardBody>
                   <div className="flex items-center justify-between mb-[16px]">
-                    <div className="flex items-center gap-[10px]">
+                    <div className="flex items-center gap-[8px]">
                       <div className={`w-[32px] h-[32px] rounded-full flex items-center justify-center text-[13px] font-bold flex-none ${
                         seqStep.step_type === "initial" ? "bg-blue-100 text-blue-600" :
                         seqStep.step_type === "breakup" ? "bg-amber-100 text-amber-600" :
@@ -673,7 +673,7 @@ export default function NewCampaignPage() {
                   <div className="space-y-[12px]">
                     {/* Delay */}
                     {idx > 0 && (
-                      <div className="flex items-center gap-[10px]">
+                      <div className="flex items-center gap-[8px]">
                         <label className="text-[12px] text-gray-400 whitespace-nowrap">Wait</label>
                         <input
                           type="number"
@@ -724,9 +724,9 @@ export default function NewCampaignPage() {
                     </div>
 
                     {/* Tone */}
-                    <div className="flex items-center gap-[10px]">
+                    <div className="flex items-center gap-[8px]">
                       <label className="text-[12px] text-gray-400">Tone:</label>
-                      <div className="flex gap-[6px]">
+                      <div className="flex gap-[8px]">
                         {["professional", "warm", "friendly", "casual", "bold"].map((t) => (
                           <button
                             key={t}
@@ -773,7 +773,7 @@ export default function NewCampaignPage() {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center gap-[10px]">
+          <div className="flex items-center gap-[8px]">
             <Button variant="outline" onClick={() => setStep("emails")}>
               <i className="ri-arrow-left-line text-[16px]"></i>
               Back
@@ -827,7 +827,7 @@ export default function NewCampaignPage() {
             </div>
           </CardBody>
           <CardFooter>
-            <div className="flex items-center gap-[10px]">
+            <div className="flex items-center gap-[8px]">
               <Button variant="outline" onClick={() => setStep("emails")}>
                 <i className="ri-arrow-left-line text-[16px]"></i>
                 Back

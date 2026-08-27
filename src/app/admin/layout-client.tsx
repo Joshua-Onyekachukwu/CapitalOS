@@ -49,7 +49,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         <div className="flex flex-col h-full">
           <div className="px-[20px] py-[18px] border-b border-gray-100 dark:border-gray-800">
             <Link href="/admin" className="inline-flex items-center gap-[8px]">
-              <span className="text-[19px] font-bold text-[#06201b] dark:text-white">
+              <span className="text-[20px] font-bold text-[#06201b] dark:text-white">
                 Capital<span className="text-lime-500">OS</span>
               </span>
               <span className="text-[11px] font-semibold px-[6px] py-[2px] rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
@@ -78,7 +78,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
                   href={navItem.href}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    "flex items-center gap-[10px] px-[12px] py-[9px] rounded-[7px] text-[13px] font-medium transition-all",
+                    "flex items-center gap-[8px] px-[12px] py-[9px] rounded-[8px] text-[13px] font-medium transition-all",
                     navItem.indent && "pl-[28px]",
                     active
                       ? "bg-lime-50 dark:bg-lime-900/20 text-[#06201b] dark:text-white"
@@ -102,9 +102,9 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
               className="lg:hidden flex items-center justify-center w-[36px] h-[36px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800"
               aria-label="Toggle menu"
             >
-              <i className="ri-menu-line text-[22px] text-[#06201b] dark:text-white" />
+              <i className="ri-menu-line text-[24px] text-[#06201b] dark:text-white" />
             </button>
-            <h1 className="!text-[15px] !font-semibold !mb-0 !text-gray-800 dark:!text-white">
+            <h1 className="!text-[16px] !font-semibold !mb-0 !text-gray-800 dark:!text-white">
               Admin Dashboard
             </h1>
             <Link

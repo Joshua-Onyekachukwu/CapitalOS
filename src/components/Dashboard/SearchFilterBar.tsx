@@ -143,7 +143,7 @@ export function SearchFilterBar({
       {/* Main search bar */}
       <div className="bg-white dark:bg-[#0d1b16] border border-gray-200 dark:border-gray-800 rounded-[12px] overflow-hidden">
         {/* Search row */}
-        <div className="flex items-center gap-[10px] p-[16px]">
+        <div className="flex items-center gap-[8px] p-[16px]">
           {/* Search icon */}
           <i className="ri-search-line text-gray-400 text-[18px] flex-none"></i>
 
@@ -161,7 +161,7 @@ export function SearchFilterBar({
           {/* Filter toggle button */}
           <button
             onClick={() => setExpanded(!expanded)}
-            className={`flex items-center gap-[6px] px-[12px] py-[8px] text-[13px] font-medium rounded-[8px] border transition-all flex-none ${
+            className={`flex items-center gap-[8px] px-[12px] py-[8px] text-[13px] font-medium rounded-[8px] border transition-all flex-none ${
               expanded || hasActiveFilters
                 ? "bg-lime-50 dark:bg-lime-900/20 border-lime-300 dark:border-lime-700 text-lime-700 dark:text-lime-400"
                 : "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300"
@@ -197,7 +197,7 @@ export function SearchFilterBar({
             <div className="relative flex-none">
               <button
                 onClick={() => setShowSavedList(!showSavedList)}
-                className="flex items-center gap-[6px] px-[10px] py-[8px] text-[13px] font-medium rounded-[8px] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all"
+                className="flex items-center gap-[8px] px-[10px] py-[8px] text-[13px] font-medium rounded-[8px] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all"
                 title="Saved Filters"
               >
                 <i className="ri-bookmark-line text-[14px]"></i>
@@ -224,7 +224,7 @@ export function SearchFilterBar({
                       {savedFilters.map((sf) => (
                         <div
                           key={sf.id}
-                          className="flex items-center gap-[10px] px-[12px] py-[10px] hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer group border-b border-gray-50 dark:border-gray-800/50 last:border-0"
+                          className="flex items-center gap-[8px] px-[12px] py-[10px] hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer group border-b border-gray-50 dark:border-gray-800/50 last:border-0"
                           onClick={() => {
                             onLoadFilter?.({ filters: sf.filters, sortBy: sf.sortBy });
                             setShowSavedList(false);
@@ -262,7 +262,7 @@ export function SearchFilterBar({
               <button
                 onClick={() => setShowSaveDialog(!showSaveDialog)}
                 disabled={saving}
-                className="flex items-center gap-[6px] px-[10px] py-[8px] text-[13px] font-medium rounded-[8px] border border-lime-300 dark:border-lime-700 text-lime-700 dark:text-lime-400 hover:bg-lime-50 dark:hover:bg-lime-900/20 transition-all"
+                className="flex items-center gap-[8px] px-[10px] py-[8px] text-[13px] font-medium rounded-[8px] border border-lime-300 dark:border-lime-700 text-lime-700 dark:text-lime-400 hover:bg-lime-50 dark:hover:bg-lime-900/20 transition-all"
                 title="Save this filter"
               >
                 {saving ? (
@@ -325,7 +325,7 @@ export function SearchFilterBar({
 
         {/* Quick filter chips */}
         {quickFilters && quickFilters.length > 0 && (
-          <div className="px-[16px] pb-[12px] flex flex-wrap gap-[6px]">
+          <div className="px-[16px] pb-[12px] flex flex-wrap gap-[8px]">
             {quickFilters.map((qf) => {
               const isActive = values[qf.key] === qf.value;
               return (
@@ -359,7 +359,7 @@ export function SearchFilterBar({
                       <label className="block text-[11px] font-semibold uppercase tracking-wider text-gray-400 !mb-[6px]">
                         {filter.label}
                       </label>
-                      <div className="flex gap-[6px]">
+                      <div className="flex gap-[8px]">
                         <button
                           onClick={() =>
                             onChange(
@@ -489,7 +489,7 @@ export function SearchFilterBar({
 
       {/* Active filter pills */}
       {hasActiveFilters && (
-        <div className="flex items-center gap-[6px] mt-[10px] flex-wrap">
+        <div className="flex items-center gap-[8px] mt-[10px] flex-wrap">
           <span className="text-[11px] text-gray-400 font-medium">Active:</span>
           {activeFilters.map((af) => (
             <Badge

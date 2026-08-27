@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
   if (success) {
     return (
       <Card variant="elevated">
-        <CardBody className="p-[25px] md:p-[35px] text-center">
+        <CardBody className="p-[24px] md:p-[32px] text-center">
           <div className="w-[60px] h-[60px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center mx-auto mb-[20px]">
             <i className="ri-mail-send-line text-lime-600 text-[28px]"></i>
           </div>
@@ -79,7 +79,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <Card variant="elevated">
-      <CardBody className="p-[25px] md:p-[35px]">
+      <CardBody className="p-[24px] md:p-[32px]">
         <div className="text-center mb-[25px]">
           <h1 className="!text-xl md:!text-2xl !font-semibold !mb-[6px]">
             Forgot your password?

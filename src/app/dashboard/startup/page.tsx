@@ -296,7 +296,7 @@ export default function StartupPage() {
             {profile.milestones.length > 0 && (
               <div className="mt-[16px]">
                 <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Key Milestones</span>
-                <div className="flex flex-wrap gap-[6px]">
+                <div className="flex flex-wrap gap-[8px]">
                   {profile.milestones.map((m, i) => (
                     <Badge key={i} variant="info" size="sm">{m}</Badge>
                   ))}
@@ -322,7 +322,7 @@ export default function StartupPage() {
             ) : (
               <div className="space-y-[10px]">
                 {team.map((member) => (
-                  <div key={member.id} className="flex items-center gap-[12px] p-[10px] bg-gray-50 dark:bg-gray-800/30 rounded-[8px]">
+                  <div key={member.id} className="flex items-center gap-[12px] p-[8px] bg-gray-50 dark:bg-gray-800/30 rounded-[8px]">
                     <div className="w-[36px] h-[36px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center text-[13px] font-semibold text-lime-700 dark:text-lime-400 flex-none">
                       {member.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                     </div>
@@ -350,7 +350,7 @@ export default function StartupPage() {
           <CardBody className="pt-0">
             <div className="space-y-[8px]">
               {documents.map((doc) => (
-                <div key={doc.id} className="flex items-center gap-[12px] p-[10px] bg-gray-50 dark:bg-gray-800/30 rounded-[8px]">
+                <div key={doc.id} className="flex items-center gap-[12px] p-[8px] bg-gray-50 dark:bg-gray-800/30 rounded-[8px]">
                   <div className="w-[36px] h-[36px] rounded-[8px] bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 text-[16px] flex-none">
                     <i className="ri-file-text-line"></i>
                   </div>

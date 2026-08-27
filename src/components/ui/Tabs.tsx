@@ -27,7 +27,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onChange, className }) => 
 
   return (
     <div className={cn("border-b border-gray-200 dark:border-gray-800", className)}>
-      <div className="flex gap-[4px] md:gap-[10px] overflow-x-auto">
+      <div className="flex gap-[4px] md:gap-[8px] overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}

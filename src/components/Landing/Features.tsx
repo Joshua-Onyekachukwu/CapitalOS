@@ -44,9 +44,9 @@ const Features: React.FC = () => {
             <span className="font-semibold italic">Actually Does</span>
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px] xl:items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[24px] xl:items-center">
           <div className="sm:order-1 xl:order-1">
-            <div className="relative bg-white/10 rounded-[10px] p-[20px] md:p-[25px] lg:p-[30px] xl:py-[35px] mb-[25px] xl:mb-[100px] last:mb-0">
+            <div className="relative bg-white/10 rounded-[8px] p-[20px] md:p-[24px] lg:p-[30px] xl:py-[35px] mb-[25px] xl:mb-[100px] last:mb-0">
               <div className="absolute ltr:-right-[178px] rtl:-left-[178px] top-[115px] hidden xl:block">
                 <Image
                   src="/images/real-estate-agent/icons/arrow-down-right.png"
@@ -58,14 +58,14 @@ const Features: React.FC = () => {
               <div className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-lime-500 text-black text-xl mb-[22px] md:mb-[25px] lg:mb-[27px]">
                 <i className={features[0].icon}></i>
               </div>
-              <h3 className="!font-normal !text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[22px] xl:!text-xl !mb-[12px] md:!mb-[15px]">
+              <h3 className="!font-normal !text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[24px] xl:!text-xl !mb-[12px] md:!mb-[15px]">
                 {features[0].title}
               </h3>
-              <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
+              <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
                 {features[0].description}
               </p>
             </div>
-            <div className="relative bg-white/10 rounded-[10px] p-[20px] md:p-[25px] lg:p-[30px] xl:py-[35px] mb-[25px] xl:mb-[100px] last:mb-0">
+            <div className="relative bg-white/10 rounded-[8px] p-[20px] md:p-[24px] lg:p-[30px] xl:py-[35px] mb-[25px] xl:mb-[100px] last:mb-0">
               <div className="absolute ltr:-right-[182px] rtl:-left-[182px] top-[42px] hidden xl:block">
                 <Image
                   src="/images/real-estate-agent/icons/arrow-up-right.png"
@@ -77,10 +77,10 @@ const Features: React.FC = () => {
               <div className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-lime-500 text-black text-xl mb-[22px] md:mb-[25px] lg:mb-[27px]">
                 <i className={features[1].icon}></i>
               </div>
-              <h3 className="!font-normal !text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[22px] xl:!text-xl !mb-[12px] md:!mb-[15px]">
+              <h3 className="!font-normal !text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[24px] xl:!text-xl !mb-[12px] md:!mb-[15px]">
                 {features[1].title}
               </h3>
-              <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
+              <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
                 {features[1].description}
               </p>
             </div>
@@ -88,14 +88,14 @@ const Features: React.FC = () => {
           <div className="text-center sm:col-span-2 xl:px-[25px] sm:order-3 xl:order-2">
             <Image
               src="/images/real-estate-agent/dashboard.jpg"
-              className="inline-block rounded-[10px]"
+              className="inline-block rounded-[8px]"
               alt="dashboard-image"
               width={500}
               height={350}
             />
           </div>
           <div className="sm:order-2 xl:order-3">
-            <div className="relative bg-white/10 rounded-[10px] p-[20px] md:p-[25px] lg:p-[30px] xl:py-[35px] mb-[25px] xl:mb-[100px] last:mb-0">
+            <div className="relative bg-white/10 rounded-[8px] p-[20px] md:p-[24px] lg:p-[30px] xl:py-[35px] mb-[25px] xl:mb-[100px] last:mb-0">
               <div className="absolute ltr:-left-[85px] rtl:-right-[85px] top-[100px] hidden xl:block">
                 <Image
                   src="/images/real-estate-agent/icons/arrow-down-left.png"
@@ -107,14 +107,14 @@ const Features: React.FC = () => {
               <div className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-lime-500 text-black text-xl mb-[22px] md:mb-[25px] lg:mb-[27px]">
                 <i className={features[2].icon}></i>
               </div>
-              <h3 className="!font-normal !text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[22px] xl:!text-xl !mb-[12px] md:!mb-[15px]">
+              <h3 className="!font-normal !text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[24px] xl:!text-xl !mb-[12px] md:!mb-[15px]">
                 {features[2].title}
               </h3>
-              <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
+              <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
                 {features[2].description}
               </p>
             </div>
-            <div className="relative bg-white/10 rounded-[10px] p-[20px] md:p-[25px] lg:p-[30px] xl:py-[35px] mb-[25px] xl:mb-[100px] last:mb-0">
+            <div className="relative bg-white/10 rounded-[8px] p-[20px] md:p-[24px] lg:p-[30px] xl:py-[35px] mb-[25px] xl:mb-[100px] last:mb-0">
               <div className="absolute ltr:-left-[75px] rtl:-right-[75px] top-[95px] hidden xl:block">
                 <Image
                   src="/images/real-estate-agent/icons/arrow-up-left.png"
@@ -126,17 +126,17 @@ const Features: React.FC = () => {
               <div className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-lime-500 text-black text-xl mb-[22px] md:mb-[25px] lg:mb-[27px]">
                 <i className={features[3].icon}></i>
               </div>
-              <h3 className="!font-normal !text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[22px] xl:!text-xl !mb-[12px] md:!mb-[15px]">
+              <h3 className="!font-normal !text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[24px] xl:!text-xl !mb-[12px] md:!mb-[15px]">
                 {features[3].title}
               </h3>
-              <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
+              <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
                 {features[3].description}
               </p>
             </div>
           </div>
         </div>
         <div className="text-center mx-auto max-w-[500px] mt-[25px] xl:mt-[30px]">
-          <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
+          <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px] text-[#9E948E]">
             Stop juggling five tools when one platform does it all.
             Replace spreadsheets, PitchBook, and cold email tools.{" "}
             <Link
@@ -148,7 +148,7 @@ const Features: React.FC = () => {
           </p>
         </div>
       </div>
-      <div className="absolute top-0 left-0 right-0 bottom-0 -z-[1] bg-[#06201b] lg:rounded-[30px] lg:mx-[10px] xl:mx-[20px]"></div>
+      <div className="absolute top-0 left-0 right-0 bottom-0 -z-[1] bg-[#06201b] lg:rounded-[20px] lg:mx-[10px] xl:mx-[20px]"></div>
     </div>
   );
 };

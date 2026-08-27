@@ -148,8 +148,8 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="px-[20px] py-[16px] border-b border-gray-100 dark:border-gray-800">
-            <Link href="/dashboard" className="inline-flex items-center gap-[2px]">
-              <span className="text-[19px] font-bold text-[#06201b] dark:text-white">
+            <Link href="/dashboard" className="inline-flex items-center gap-[4px]">
+              <span className="text-[20px] font-bold text-[#06201b] dark:text-white">
                 Capital<span className="text-lime-500">OS</span>
               </span>
             </Link>
@@ -212,7 +212,7 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
               >
                 <i className="ri-admin-line text-[18px] flex-shrink-0 text-gray-400 group-hover:text-red-500"></i>
                 <span className="flex-1 truncate">Admin Panel</span>
-                <span className="text-[9px] font-bold px-[4px] py-[1px] rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                <span className="text-[10px] font-bold px-[4px] py-[1px] rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                   ADMIN
                 </span>
               </Link>
@@ -234,7 +234,7 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
               <Link
                 href="/dashboard/copilot"
                 onClick={onClose}
-                className="inline-flex items-center gap-[6px] text-[12px] font-medium text-lime-500 hover:text-lime-400 transition-colors"
+                className="inline-flex items-center gap-[8px] text-[12px] font-medium text-lime-500 hover:text-lime-400 transition-colors"
               >
                 Open Copilot
                 <i className="ri-arrow-right-line text-[14px]"></i>

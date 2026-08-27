@@ -207,7 +207,7 @@ export function EmailComposeModal({
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="e.g., Partnership opportunity — [Your Startup]"
-                  className="w-full px-[14px] py-[10px] rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[14px] focus:outline-none focus:border-lime-500 focus:ring-1 focus:ring-lime-500/30 transition-colors"
+                  className="w-full px-[14px] py-[10px] rounded-[8px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[14px] focus:outline-none focus:border-lime-500 focus:ring-1 focus:ring-lime-500/30 transition-colors"
                 />
               </div>
 
@@ -233,7 +233,7 @@ export function EmailComposeModal({
                   onChange={(e) => setBody(e.target.value)}
                   placeholder="Write your outreach email here, or use AI to generate a draft..."
                   rows={12}
-                  className="w-full px-[14px] py-[10px] rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[14px] leading-relaxed resize-none focus:outline-none focus:border-lime-500 focus:ring-1 focus:ring-lime-500/30 transition-colors"
+                  className="w-full px-[14px] py-[10px] rounded-[8px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[14px] leading-relaxed resize-none focus:outline-none focus:border-lime-500 focus:ring-1 focus:ring-lime-500/30 transition-colors"
                 />
                 <p className="text-[11px] text-gray-300 dark:text-gray-600 mt-[4px] !mb-0">
                   {body.split(/\s+/).filter(Boolean).length} words
@@ -243,7 +243,7 @@ export function EmailComposeModal({
           )}
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30 rounded-[10px] p-[12px]">
+            <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30 rounded-[8px] p-[12px]">
               <p className="text-[13px] text-red-600 dark:text-red-400 !mb-0">{error}</p>
             </div>
           )}
@@ -251,7 +251,7 @@ export function EmailComposeModal({
 
         {/* Footer */}
         {!sent && (
-          <div className="flex items-center justify-end gap-[10px] p-[16px] border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center justify-end gap-[8px] p-[16px] border-t border-gray-100 dark:border-gray-800">
             <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>

@@ -227,7 +227,7 @@ export default function AnalyticsPage() {
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[16px]">
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[8px]">
                 <div className={`w-[40px] h-[40px] rounded-[12px] ${stat.color} flex items-center justify-center text-[18px] flex-none`}>
                   <i className={stat.icon}></i>
                 </div>

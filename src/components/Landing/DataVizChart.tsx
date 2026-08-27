@@ -5,7 +5,7 @@ import React from "react";
 const DataVizChart: React.FC = () => {
   return (
     <div
-      className="inline-block rounded-[10px] overflow-hidden relative"
+      className="inline-block rounded-[8px] overflow-hidden relative"
       style={{
         width: 210,
         height: 260,

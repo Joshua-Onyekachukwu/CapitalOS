@@ -194,7 +194,7 @@ export default function DecksPage() {
                         <i className="ri-edit-line"></i>
                       </button>
                       {deletingId === primaryDeck.id ? (
-                        <div className="flex items-center gap-[6px]">
+                        <div className="flex items-center gap-[8px]">
                           <button onClick={() => deleteDeck(primaryDeck.id)} className="text-[11px] text-red-500 hover:text-red-600 font-semibold">Delete</button>
                           <button onClick={() => setDeletingId(null)} className="text-[11px] text-gray-400">Cancel</button>
                         </div>

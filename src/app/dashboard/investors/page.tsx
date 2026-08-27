@@ -418,7 +418,7 @@ export default function InvestorsPage() {
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[16px]">
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[8px]">
                 <div className={`w-[36px] h-[36px] rounded-[12px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center flex-none`}>
                   <i className={`${stat.icon} ${stat.color} text-[18px]`}></i>
                 </div>
@@ -580,7 +580,7 @@ export default function InvestorsPage() {
 
                         {/* Quality bar */}
                         <td className="px-[16px] py-[12px] text-center hidden lg:table-cell">
-                          <div className="flex items-center gap-[6px] justify-center">
+                          <div className="flex items-center gap-[8px] justify-center">
                             <div className="w-[40px] h-[4px] bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${

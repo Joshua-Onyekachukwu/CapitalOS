@@ -392,7 +392,7 @@ export default function OutreachPage() {
         title="Outreach"
         description="AI-powered investor email drafting and management."
         actions={
-          <div className="flex items-center gap-[10px]">
+          <div className="flex items-center gap-[8px]">
             <a href="/dashboard/outreach/metrics">
               <Button variant="outline">
                 <i className="ri-bar-chart-line text-[16px] mr-[6px]"></i>
@@ -416,7 +416,7 @@ export default function OutreachPage() {
       {emailConnected === false && (
         <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-[12px] p-[16px] mb-[20px]">
           <div className="flex items-center justify-between flex-wrap gap-[12px]">
-            <div className="flex items-center gap-[10px]">
+            <div className="flex items-center gap-[8px]">
               <div className="w-[36px] h-[36px] rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 text-[18px] flex-none">
                 <i className="ri-mail-line"></i>
               </div>
@@ -439,7 +439,7 @@ export default function OutreachPage() {
         </div>
       )}
       {emailConnected === true && emailProvider && (
-        <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-[12px] p-[16px] mb-[20px] flex items-center gap-[10px]">
+        <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-[12px] p-[16px] mb-[20px] flex items-center gap-[8px]">
           <div className="w-[8px] h-[8px] rounded-full bg-green-500 flex-none"></div>
           <span className="text-[13px] text-green-700 dark:text-green-400">
             Connected via {emailProvider === "google" ? "Gmail" : "Outlook"} — emails will be sent from your account
@@ -681,7 +681,7 @@ export default function OutreachPage() {
                 {/* AI Analysis */}
                 {selectedDraft.aiAnalysis && (
                   <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[12px] p-[16px] mb-[16px] border border-lime-100 dark:border-lime-800/30">
-                    <div className="flex items-center gap-[6px] mb-[6px]">
+                    <div className="flex items-center gap-[8px] mb-[6px]">
                       <i className="ri-sparkling-2-line text-lime-600 text-[14px]"></i>
                       <span className="text-[12px] font-semibold text-[#06201b] dark:text-white">AI Notes</span>
                     </div>
@@ -692,7 +692,7 @@ export default function OutreachPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-[10px] flex-wrap">
+                <div className="flex items-center gap-[8px] flex-wrap">
                   {selectedDraft.status === "draft" && selectedDraft.body && (
                     <>
                       <Button onClick={() => handleApprove(selectedDraft.id)}>

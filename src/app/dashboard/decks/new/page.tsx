@@ -53,7 +53,7 @@ function SortableSlideItem({
             : "bg-gray-50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800/50"
         } ${isDragging ? "shadow-lg ring-2 ring-lime-400" : ""}`}
       >
-        <div className="flex items-center gap-[10px]">
+        <div className="flex items-center gap-[8px]">
           {/* Drag handle */}
           <div
             {...listeners}
@@ -252,7 +252,7 @@ export default function NewDeckPage() {
         title={`Generate Pitch Deck${companyName ? ` — ${companyName}` : ""}`}
         description="AI generates a complete investor pitch deck from your company profile."
         actions={slides.length > 0 ? (
-          <div className="flex items-center gap-[10px]">
+          <div className="flex items-center gap-[8px]">
             {pptxUrl && (
               <a href={pptxUrl} download target="_blank" rel="noopener noreferrer">
                 <Button><i className="ri-file-ppt-2-line text-[16px] mr-[6px]"></i> PPTX</Button>
@@ -292,7 +292,7 @@ export default function NewDeckPage() {
                       selectedStyle === style.id ? "border-lime-500 bg-lime-50/50 dark:bg-lime-900/10 shadow-sm"
                         : "border-gray-200 dark:border-gray-700 hover:border-gray-300 hover:shadow-sm"
                     }`}>
-                    <div className="flex items-center gap-[10px] mb-[8px]">
+                    <div className="flex items-center gap-[8px] mb-[8px]">
                       <div className={`w-[36px] h-[28px] rounded-[6px] ${style.color} flex items-center justify-center flex-none`}>
                         <i className={`${style.icon} text-[14px] ${style.id === "bold" ? "text-white" : "text-gray-500"}`}></i>
                       </div>
@@ -312,7 +312,7 @@ export default function NewDeckPage() {
                 <i className="ri-slides-line text-lime-500 mr-[6px]"></i> Deck Length
               </h3>
               <p className="text-[13px] text-gray-400 !mb-[16px]">How many slides? AI selects the most relevant content.</p>
-              <div className="flex gap-[10px]">
+              <div className="flex gap-[8px]">
                 {[
                   { value: 8, label: "Quick", desc: "Essential slides" },
                   { value: 10, label: "Standard", desc: "Recommended" },
@@ -351,7 +351,7 @@ export default function NewDeckPage() {
               </div>
               <h3 className="!text-[16px] !font-semibold !mb-[6px]">Generating your pitch deck...</h3>
               <p className="text-[14px] text-gray-500 !mb-[12px]">AI is creating slides, writing content, and designing the layout.</p>
-              <div className="flex items-center justify-center gap-[6px]">
+              <div className="flex items-center justify-center gap-[8px]">
                 <div className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "0ms" }}></div>
                 <div className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
                 <div className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
@@ -425,7 +425,7 @@ export default function NewDeckPage() {
                           <i className={`${SLIDE_TYPE_ICONS[slides[selectedSlide].type] || "ri-file-line"} mr-[4px]`}></i>
                           {SLIDE_TYPE_LABELS[slides[selectedSlide].type] || slides[selectedSlide].type}
                         </Badge>
-                        <div className="flex gap-[6px]">
+                        <div className="flex gap-[8px]">
                           <button onClick={() => startEditSlide(selectedSlide)} className="text-[12px] text-gray-400 hover:text-lime-600 transition-colors">
                             <i className="ri-edit-line mr-[2px]"></i> Edit
                           </button>
@@ -474,7 +474,7 @@ export default function NewDeckPage() {
                           {slides[selectedSlide].bullets && slides[selectedSlide].bullets!.length > 0 && (
                             <ul className="space-y-[10px]">
                               {slides[selectedSlide].bullets!.map((bullet, i) => (
-                                <li key={i} className="flex items-start gap-[10px] text-[14px]" style={{ color: design?.textColor || "#212121" }}>
+                                <li key={i} className="flex items-start gap-[8px] text-[14px]" style={{ color: design?.textColor || "#212121" }}>
                                   <span className="mt-[4px] w-[6px] h-[6px] rounded-full flex-none"
                                     style={{ backgroundColor: design?.accentColor || "#5C6BC0" }}></span>
                                   {bullet}

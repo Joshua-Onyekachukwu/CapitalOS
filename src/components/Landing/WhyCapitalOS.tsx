@@ -40,7 +40,7 @@ const WhyCapitalOS: React.FC = () => {
   return (
     <div className="pt-[60px] pb-[60px] md:py-[80px] lg:py-[100px] xl:py-[120px]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[25px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[24px]">
           {/* Text content — second on mobile, first on desktop */}
           <div className="order-2 lg:order-1 mt-[85px] lg:mt-0 ltr:xl:pr-[35px] rtl:xl:pl-[35px]">
             <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
@@ -51,7 +51,7 @@ const WhyCapitalOS: React.FC = () => {
               <span className="font-semibold italic">That Spreadsheets</span>{" "}
               Can&apos;t
             </h2>
-            <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px]">
+            <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px]">
               Imagine raising your next round without the chaos. No more
               juggling spreadsheets, PitchBook, and cold email tools.
               One platform. Everything you need. That's Capital OS.
@@ -67,11 +67,11 @@ const WhyCapitalOS: React.FC = () => {
                       <i className="ri-check-double-line rtl:-scale-x-100"></i>
                       <span className="block absolute top-0 ltr:left-0 rtl:right-0 bottom-0 w-[36px] bg-[#ECE3DE] dark:bg-[#06201b] -z-[1] rounded-full"></span>
                     </div>
-                    <h3 className="!font-normal -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[22px] xl:!text-xl !mb-0">
+                    <h3 className="!font-normal -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[24px] xl:!text-xl !mb-0">
                       {item.title}
                     </h3>
                   </div>
-                  <p className="text-base md:text-[15px] lg:text-md -tracking-[0.16px]">
+                  <p className="text-base md:text-[16px] lg:text-md -tracking-[0.16px]">
                     {item.description}
                   </p>
                 </div>
@@ -83,12 +83,12 @@ const WhyCapitalOS: React.FC = () => {
             <div className="text-center relative lg:sticky top-[100px] ltr:lg:pl-[50px] rtl:lg:pr-[50px] ltr:xl:pl-[80px] rtl:xl:pr-[80px]">
               <Image
                 src="/images/real-estate-agent/why-trezo.jpg"
-                className="inline-block rounded-[15px]"
+                className="inline-block rounded-[16px]"
                 alt="why-capital-os"
                 width={500}
                 height={600}
               />
-              <div className="absolute bottom-[60px] ltr:left-0 rtl:right-0 max-w-[80px] xl:max-w-[140px] hidden lg:block">
+              <div className="absolute bottom-[64px] ltr:left-0 rtl:right-0 max-w-[80px] xl:max-w-[140px] hidden lg:block">
                 <Image
                   src="/images/real-estate-agent/cube.png"
                   className="inline-block"

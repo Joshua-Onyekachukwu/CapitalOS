@@ -179,7 +179,7 @@ export function CommunicationTimeline({ investorId, onRefresh }: CommunicationTi
 
       {/* Add Note */}
       {addingNote && (
-        <div className="mb-[16px] p-[12px] bg-gray-50 dark:bg-gray-800/30 rounded-[10px]">
+        <div className="mb-[16px] p-[12px] bg-gray-50 dark:bg-gray-800/30 rounded-[8px]">
           <textarea
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
@@ -218,7 +218,7 @@ export function CommunicationTimeline({ investorId, onRefresh }: CommunicationTi
                   </div>
 
                   {/* Content */}
-                  <div className="bg-gray-50 dark:bg-gray-800/30 rounded-[10px] p-[12px]">
+                  <div className="bg-gray-50 dark:bg-gray-800/30 rounded-[8px] p-[12px]">
                     <div className="flex items-center justify-between mb-[4px]">
                       <div className="flex items-center gap-[8px]">
                         <span className={`text-[12px] font-semibold ${config.color}`}>{config.label}</span>

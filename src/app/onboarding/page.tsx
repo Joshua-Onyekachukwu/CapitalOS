@@ -502,7 +502,7 @@ export default function OnboardingPage() {
           <CardBody className="p-[24px] md:p-[32px]">
             {/* Step Title */}
             <div className="mb-[24px]">
-              <div className="flex items-center gap-[10px] mb-[6px]">
+              <div className="flex items-center gap-[8px] mb-[6px]">
                 <div className="w-[36px] h-[36px] rounded-full bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[16px]">
                   <i className={STEPS[step - 1].icon}></i>
                 </div>
@@ -650,7 +650,7 @@ export default function OnboardingPage() {
               <div className="space-y-[20px]">
                 <div>
                   <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Are you currently raising?</label>
-                  <div className="flex gap-[10px]">
+                  <div className="flex gap-[8px]">
                     {["Yes", "No", "Planning to"].map((opt) => (
                       <button
                         key={opt}
@@ -758,7 +758,7 @@ export default function OnboardingPage() {
                 <div className="border-t border-gray-100 dark:border-gray-800 pt-[20px]">
                   <div className="mb-[12px]">
                     <label className="block text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-[6px]">Do you have a pitch deck?</label>
-                    <div className="flex gap-[10px]">
+                    <div className="flex gap-[8px]">
                       {["Yes", "No"].map((opt) => (
                         <button
                           key={opt}
@@ -778,7 +778,7 @@ export default function OnboardingPage() {
                   {/* If NO pitch deck — show what they want in one */}
                   {!data.hasPitchDeck && (
                     <div className="space-y-[16px]">
-                      <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-[10px] p-[16px] border border-blue-100 dark:border-blue-800/30">
+                      <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-[8px] p-[16px] border border-blue-100 dark:border-blue-800/30">
                         <p className="text-[13px] text-gray-600 dark:text-gray-400 !mb-[8px]">
                           <i className="ri-magic-line text-blue-500 mr-[4px]"></i>
                           <strong>No problem!</strong> We can help you create a pitch deck after onboarding.
@@ -804,19 +804,19 @@ export default function OnboardingPage() {
                       <i className="ri-sparkling-2-line text-lime-500 mr-[4px]"></i>
                       Choose a pitch deck style
                     </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-[8px]">
                       {PITCH_DECK_STYLES.map((style) => (
                         <button
                           key={style.id}
                           onClick={() => update("pitchDeckStyle", style.id)}
-                          className={`text-left p-[14px] rounded-[10px] border-2 transition-all ${
+                          className={`text-left p-[16px] rounded-[8px] border-2 transition-all ${
                             data.pitchDeckStyle === style.id
                               ? "border-lime-500 bg-lime-50/50 dark:bg-lime-900/10"
                               : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
                           }`}
                         >
-                          <div className="flex items-center gap-[10px] mb-[6px]">
-                            <div className={`w-[32px] h-[24px] rounded-[4px] ${style.preview} flex items-center justify-center`}>
+                          <div className="flex items-center gap-[8px] mb-[6px]">
+                            <div className={`w-[32px] h-[24px] rounded-[6px] ${style.preview} flex items-center justify-center`}>
                               <i className={`${style.icon} text-[12px] ${style.id === "bold" ? "text-white" : "text-gray-500"}`}></i>
                             </div>
                             <span className="text-[13px] font-semibold text-[#06201b] dark:text-white">{style.name}</span>
@@ -846,7 +846,7 @@ export default function OnboardingPage() {
                       <button
                         key={stage.id}
                         onClick={() => update("tractionStage", stage.id)}
-                        className={`text-left p-[10px] rounded-[8px] border-2 transition-all ${
+                        className={`text-left p-[8px] rounded-[8px] border-2 transition-all ${
                           data.tractionStage === stage.id
                             ? "border-lime-500 bg-lime-50/50 dark:bg-lime-900/10"
                             : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
@@ -934,7 +934,7 @@ export default function OnboardingPage() {
                   Add your founding team. This helps investors understand who is behind the company.
                 </p>
                 {data.teamMembers.map((member, idx) => (
-                  <div key={idx} className="bg-gray-50 dark:bg-gray-800/30 rounded-[10px] p-[16px] space-y-[12px]">
+                  <div key={idx} className="bg-gray-50 dark:bg-gray-800/30 rounded-[8px] p-[16px] space-y-[12px]">
                     <div className="flex items-center justify-between">
                       <Badge variant={member.isFounder ? "success" : "default"} size="sm">
                         {member.isFounder ? "Founder" : "Team Member"}
@@ -996,7 +996,7 @@ export default function OnboardingPage() {
                       { name: "", title: "", linkedinUrl: "", isFounder: false },
                     ])
                   }
-                  className="w-full py-[10px] border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[10px] text-[13px] text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all"
+                  className="w-full py-[10px] border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[8px] text-[13px] text-gray-400 hover:border-lime-400 hover:text-lime-600 transition-all"
                 >
                   + Add Team Member
                 </button>
@@ -1022,7 +1022,7 @@ export default function OnboardingPage() {
                     Browse Files
                   </Button>
                 </div>
-                <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[10px] p-[14px] border border-lime-100 dark:border-lime-800/30">
+                <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[8px] p-[16px] border border-lime-100 dark:border-lime-800/30">
                   <p className="text-[13px] text-gray-600 dark:text-gray-400 !mb-0">
                     <i className="ri-sparkling-2-line text-lime-500 mr-[4px]"></i>
                     {data.hasPitchDeck
@@ -1080,7 +1080,7 @@ export default function OnboardingPage() {
                 </div>
 
                 {!data.hasPitchDeck && (
-                  <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-[10px] p-[14px] border border-blue-100 dark:border-blue-800/30">
+                  <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-[8px] p-[16px] border border-blue-100 dark:border-blue-800/30">
                     <p className="text-[13px] text-gray-600 dark:text-gray-400 !mb-0">
                       <i className="ri-magic-line text-blue-500 mr-[4px]"></i>
                       <strong>Next step:</strong> After launching, go to <strong>Pitch Decks</strong> to generate your {PITCH_DECK_STYLES.find((s) => s.id === data.pitchDeckStyle)?.name || "Investor-First"} style deck with one click.
@@ -1088,7 +1088,7 @@ export default function OnboardingPage() {
                   </div>
                 )}
 
-                <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-[10px] p-[14px] border border-amber-100 dark:border-amber-800/30">
+                <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-[8px] p-[16px] border border-amber-100 dark:border-amber-800/30">
                   <p className="text-[13px] text-gray-600 dark:text-gray-400 !mb-0">
                     <i className="ri-information-line text-amber-500 mr-[4px]"></i>
                     You can edit your company profile anytime from the dashboard.
@@ -1159,7 +1159,7 @@ export default function OnboardingPage() {
               {LAUNCH_STAGES.map((stage, i) => (
                 <div
                   key={i}
-                  className={`flex items-center gap-[10px] px-[14px] py-[8px] rounded-[8px] transition-all duration-300 ${
+                  className={`flex items-center gap-[8px] px-[14px] py-[8px] rounded-[8px] transition-all duration-300 ${
                     i < launchStage
                       ? "bg-lime-50/80 dark:bg-lime-900/10"
                       : i === launchStage
@@ -1207,7 +1207,7 @@ export default function OnboardingPage() {
             <p className="text-[14px] text-gray-500 mb-[20px]">
               {launchError}
             </p>
-            <div className="flex gap-[10px] justify-center">
+            <div className="flex gap-[8px] justify-center">
               <Button onClick={handleComplete}>
                 <i className="ri-refresh-line text-[16px] mr-[4px]"></i>
                 Retry

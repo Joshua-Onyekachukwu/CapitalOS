@@ -13,7 +13,7 @@ export default function NotFound() {
             </div>
 
             <h2 className="mb-[15px]">Page Not Found</h2>
-            <p className="md:text-[15px] lg:text-md">
+            <p className="md:text-[16px] lg:text-md">
               The page you are looking for does not exist or has been moved.
             </p>
 

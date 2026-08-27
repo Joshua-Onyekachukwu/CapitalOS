@@ -9,21 +9,21 @@ const Footer: React.FC = () => {
     <>
       <footer className="pt-[60px] md:pt-[80px] lg:pt-[100px] xl:pt-[120px] lg:mb-[10px] xl:mb-[20px] relative z-[1]">
         <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[25px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[24px]">
             <div className="lg:max-w-[250px] xl:max-w-[330px] md:col-span-2 lg:col-span-1">
               <Link href="/" className="inline-block mb-[15px] lg:mb-[85px]">
                 <span className="text-xl font-bold text-[#06201b] dark:text-white">
                   Capital<span className="text-lime-500">OS</span>
                 </span>
               </Link>
-              <p className="!leading-[1.5] font-light text-[#89837F] -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] text-lg md:text-[20px] lg:text-[22px] xl:text-xl">
+              <p className="!leading-[1.5] font-light text-[#89837F] -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] text-lg md:text-[20px] lg:text-[24px] xl:text-xl">
                 The AI fundraising platform for startup founders.
               </p>
             </div>
             <div className="ltr:lg:-ml-[35px] rtl:lg:-mr-[35px]">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-[25px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-[24px]">
                 <div>
-                  <h3 className="!font-normal !text-black dark:!text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[22px] xl:!text-xl !mb-[18px] md:!mb-[22px] lg:!mb-[25px]">
+                  <h3 className="!font-normal !text-black dark:!text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[24px] xl:!text-xl !mb-[18px] md:!mb-[22px] lg:!mb-[25px]">
                     Important Links
                   </h3>
                   <ul className="font-medium -tracking-[0.14px]">
@@ -62,7 +62,7 @@ const Footer: React.FC = () => {
                   </ul>
                 </div>
                 <div>
-                  <h3 className="!font-normal !text-black dark:!text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[22px] xl:!text-xl !mb-[18px] md:!mb-[22px] lg:!mb-[25px]">
+                  <h3 className="!font-normal !text-black dark:!text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[24px] xl:!text-xl !mb-[18px] md:!mb-[22px] lg:!mb-[25px]">
                     Quick Links
                   </h3>
                   <ul className="font-medium -tracking-[0.14px]">

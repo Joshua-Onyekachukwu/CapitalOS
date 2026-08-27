@@ -131,7 +131,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         title={campaign.name}
         description={campaign.description || "Campaign details and management."}
         actions={
-          <div className="flex items-center gap-[10px]">
+          <div className="flex items-center gap-[8px]">
             <Button variant="ghost" onClick={() => router.push("/dashboard/campaigns")}>
               <i className="ri-arrow-left-line text-[16px]"></i>
               Back
@@ -253,7 +253,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                       onClick={() => setSelectedInvestor(inv)}
                     >
                       <td className="px-[20px] py-[16px]">
-                        <div className="flex items-center gap-[10px]">
+                        <div className="flex items-center gap-[8px]">
                           <div className="w-[32px] h-[32px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[12px] font-semibold text-[#06201b] dark:text-white flex-shrink-0">
                             {(inv.first_name?.[0] || "") + (inv.last_name?.[0] || "")}
                           </div>
@@ -296,7 +296,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       {selectedInvestor && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-[20px]" onClick={() => { setSelectedInvestor(null); setEditingEmail(false); }}>
           <div className="bg-white dark:bg-dark rounded-[20px] w-full max-w-[600px] max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-[25px]">
+            <div className="p-[24px]">
               <div className="flex items-center justify-between mb-[20px]">
                 <div>
                   <h3 className="text-[18px] font-semibold text-[#06201b] dark:text-white !mb-[4px]">
@@ -350,7 +350,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 </div>
               )}
 
-              <div className="flex items-center gap-[10px] mt-[20px]">
+              <div className="flex items-center gap-[8px] mt-[20px]">
                 {!editingEmail && selectedInvestor.subject && (
                   <Button variant="outline" size="sm" onClick={() => {
                     setEditSubject(selectedInvestor.subject || "");

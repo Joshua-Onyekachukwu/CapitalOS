@@ -12,7 +12,7 @@ export default function AuthLayout({
         <div className="mb-[20px]">
           <Link
             href="/"
-            className="inline-flex items-center gap-[6px] text-[14px] text-gray-500 hover:text-[#D15616] transition-colors font-medium"
+            className="inline-flex items-center gap-[8px] text-[14px] text-gray-500 hover:text-[#D15616] transition-colors font-medium"
           >
             <i className="ri-arrow-left-line text-[16px]"></i>
             Back to website

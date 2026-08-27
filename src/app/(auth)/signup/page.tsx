@@ -84,7 +84,7 @@ export default function SignupPage() {
   if (success) {
     return (
       <Card variant="elevated">
-        <CardBody className="p-[25px] md:p-[35px] text-center">
+        <CardBody className="p-[24px] md:p-[32px] text-center">
           <div className="w-[60px] h-[60px] rounded-full bg-success-50 dark:bg-success-900/20 flex items-center justify-center mx-auto mb-[20px]">
             <i className="ri-check-line text-success-500 text-[28px]"></i>
           </div>
@@ -108,7 +108,7 @@ export default function SignupPage() {
 
   return (
     <Card variant="elevated">
-      <CardBody className="p-[25px] md:p-[35px]">
+      <CardBody className="p-[24px] md:p-[32px]">
         <div className="text-center mb-[25px]">
           <h1 className="!text-xl md:!text-2xl !font-semibold !mb-[6px]">
             Create your account
@@ -213,7 +213,7 @@ export default function SignupPage() {
               });
               if (error) setServerError(error.message);
             }}
-            className="mt-[16px] w-full flex items-center justify-center gap-[10px] px-[16px] py-[12px] border border-gray-200 dark:border-gray-700 rounded-[8px] bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-[14px] font-medium text-gray-700 dark:text-gray-200"
+            className="mt-[16px] w-full flex items-center justify-center gap-[8px] px-[16px] py-[12px] border border-gray-200 dark:border-gray-700 rounded-[8px] bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-[14px] font-medium text-gray-700 dark:text-gray-200"
           >
             <svg className="w-[20px] h-[20px]" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

@@ -80,14 +80,14 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
           {/* Notifications */}
           <button className="relative flex items-center justify-center w-[36px] h-[36px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             <i className="ri-notification-3-line text-[18px] text-gray-500"></i>
-            <span className="absolute top-[6px] right-[6px] w-[8px] h-[8px] bg-danger-500 rounded-full border-2 border-white dark:border-[#0a0e19]"></span>
+            <span className="absolute top-[8px] right-[6px] w-[8px] h-[8px] bg-danger-500 rounded-full border-2 border-white dark:border-[#0a0e19]"></span>
           </button>
 
           {/* User menu dropdown */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="flex items-center gap-[10px] pl-[12px] border-l border-gray-200 dark:border-gray-700 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-[8px] pl-[12px] border-l border-gray-200 dark:border-gray-700 hover:opacity-80 transition-opacity"
             >
               <Avatar
                 name={user?.name}
@@ -125,7 +125,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
                 <Link
                   href="/dashboard/settings"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-[10px] px-[16px] py-[8px] text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center gap-[8px] px-[16px] py-[8px] text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <i className="ri-settings-3-line text-[16px]"></i>
                   Settings
@@ -134,7 +134,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
                 <Link
                   href="/"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-[10px] px-[16px] py-[8px] text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center gap-[8px] px-[16px] py-[8px] text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <i className="ri-home-4-line text-[16px]"></i>
                   Home
@@ -144,7 +144,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
                   <button
                     onClick={handleSignOut}
                     disabled={signingOut}
-                    className="flex items-center gap-[10px] px-[16px] py-[8px] text-[14px] text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-900/10 transition-colors w-full text-left disabled:opacity-50"
+                    className="flex items-center gap-[8px] px-[16px] py-[8px] text-[14px] text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-900/10 transition-colors w-full text-left disabled:opacity-50"
                   >
                     <i className="ri-logout-box-r-line text-[16px]"></i>
                     {signingOut ? "Signing out..." : "Sign Out"}

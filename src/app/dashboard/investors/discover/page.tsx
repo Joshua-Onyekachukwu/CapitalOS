@@ -399,7 +399,7 @@ export default function InvestorDiscoverPage() {
             />
           </div>
 
-          <div className="flex items-center gap-[10px] flex-wrap">
+          <div className="flex items-center gap-[8px] flex-wrap">
             <Button onClick={handleSearch} disabled={isSearching}>
               {isSearching ? (
                 <>
@@ -551,7 +551,7 @@ export default function InvestorDiscoverPage() {
                         {/* Main Content */}
                         <div className="flex-1 min-w-0">
                           {/* Name + Score */}
-                          <div className="flex items-center gap-[10px] mb-[4px] flex-wrap">
+                          <div className="flex items-center gap-[8px] mb-[4px] flex-wrap">
                             <Link
                               href={`/dashboard/investors/${investor.id}`}
                               className="text-[14px] font-semibold text-[#06201b] dark:text-white hover:text-lime-600 transition-colors"
@@ -603,7 +603,7 @@ export default function InvestorDiscoverPage() {
 
                           {/* Match Reasons (from existing breakdown) */}
                           {!isExpanded && reasons.length > 0 && (
-                            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[8px] p-[10px]">
+                            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[8px] p-[8px]">
                               <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 block mb-[4px]">
                                 Why this match
                               </span>
@@ -611,7 +611,7 @@ export default function InvestorDiscoverPage() {
                                 {reasons.map((reason, i) => (
                                   <li
                                     key={i}
-                                    className="flex items-start gap-[6px] text-[12px] text-gray-500 dark:text-gray-400"
+                                    className="flex items-start gap-[8px] text-[12px] text-gray-500 dark:text-gray-400"
                                   >
                                     <i className="ri-check-line text-lime-500 text-[12px] mt-[2px] flex-none"></i>
                                     {reason}
@@ -675,7 +675,7 @@ export default function InvestorDiscoverPage() {
                               {/* AI Analysis */}
                               {analyzeResult.aiAnalysis && (
                                 <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[12px] p-[16px] border border-lime-100 dark:border-lime-800/30">
-                                  <div className="flex items-center gap-[6px] mb-[8px]">
+                                  <div className="flex items-center gap-[8px] mb-[8px]">
                                     <i className="ri-sparkling-2-line text-lime-600 text-[14px]"></i>
                                     <span className="text-[12px] font-semibold text-[#06201b] dark:text-white">
                                       AI Analysis
@@ -700,7 +700,7 @@ export default function InvestorDiscoverPage() {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex flex-col gap-[6px] flex-none">
+                        <div className="flex flex-col gap-[8px] flex-none">
                           {!isExpanded ? (
                             <>
                               <Button

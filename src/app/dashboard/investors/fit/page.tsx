@@ -184,7 +184,7 @@ export default function FitDashboardPage() {
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[16px]">
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[8px]">
                 <i className={`${stat.icon} ${stat.color} text-[18px]`}></i>
                 <div>
                   <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>

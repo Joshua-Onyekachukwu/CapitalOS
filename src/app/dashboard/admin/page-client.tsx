@@ -351,7 +351,7 @@ export default function AdminPage() {
         title="Data Health"
         description="Monitor data quality, ingestion pipeline, and system health."
         actions={
-          <div className="flex items-center gap-[10px]">
+          <div className="flex items-center gap-[8px]">
             <Button variant="outline" onClick={loadAll}>
               <i className="ri-refresh-line text-[16px]"></i>
               Refresh
@@ -473,7 +473,7 @@ export default function AdminPage() {
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[16px]">
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-[8px]">
                 <div className={`w-[40px] h-[40px] rounded-[12px] ${stat.color} flex items-center justify-center text-[18px] flex-none`}>
                   <i className={stat.icon}></i>
                 </div>
@@ -716,7 +716,7 @@ export default function AdminPage() {
                 {dup.recentPending.map((dup_item) => (
                   <div key={dup_item.id} className="px-[16px] py-[12px]">
                     <div className="flex items-center justify-between mb-[4px]">
-                      <div className="flex items-center gap-[6px]">
+                      <div className="flex items-center gap-[8px]">
                         <span className="text-[13px] font-medium text-[#06201b] dark:text-white">{dup_item.investor_a_name}</span>
                         <i className="ri-links-line text-gray-300 text-[14px]"></i>
                         <span className="text-[13px] font-medium text-[#06201b] dark:text-white">{dup_item.investor_b_name}</span>
@@ -759,7 +759,7 @@ export default function AdminPage() {
                       <Badge variant={change.change_type === "create" ? "success" : "info"} size="sm">{change.change_type}</Badge>
                       <span className="text-[12px] font-medium text-[#06201b] dark:text-white">{change.field_name.replace(/_/g, " ")}</span>
                     </div>
-                    <div className="flex items-center gap-[6px] text-[11px] text-gray-400">
+                    <div className="flex items-center gap-[8px] text-[11px] text-gray-400">
                       {change.old_value && <span className="line-through">{change.old_value.slice(0, 30)}</span>}
                       {change.old_value && change.new_value && <i className="ri-arrow-right-line"></i>}
                       {change.new_value && <span className="text-gray-600 dark:text-gray-300">{change.new_value.slice(0, 30)}</span>}

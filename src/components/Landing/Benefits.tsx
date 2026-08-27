@@ -57,29 +57,29 @@ const Benefits: React.FC = () => {
             className={`${benefit.bgColor} rounded-[20px] pt-[20px] md:pt-[40px] lg:pt-[100px] xl:pt-[120px] lg:sticky mb-[30px] md:mb-[40px] lg:mb-[50px] last:mb-0`}
             style={{ top: `${100 + index * 20}px` }}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-[25px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-[24px]">
               <div className="xl:pt-[25px] px-[20px] md:px-[40px] ltr:lg:pl-[60px] rtl:lg:pr-[60px] ltr:xl:pl-[70px] rtl:xl:pr-[70px] ltr:lg:pr-0 rtl:lg:pl-0">
                 <div
-                  className={`flex items-center justify-center italic ${benefit.numberColor} w-[50px] h-[50px] md:w-[64px] md:h-[64px] rounded-full ${benefit.numberBg} text-[22px] md:text-xl font-semibold mb-[22px] md:mb-[27px] lg:mb-[40px]`}
+                  className={`flex items-center justify-center italic ${benefit.numberColor} w-[50px] h-[50px] md:w-[64px] md:h-[64px] rounded-full ${benefit.numberBg} text-[24px] md:text-xl font-semibold mb-[22px] md:mb-[27px] lg:mb-[40px]`}
                 >
                   {benefit.number}
                 </div>
                 <h3
-                  className={`!font-normal ${benefit.textColor || "text-black"} dark:text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[22px] xl:!text-xl !mb-[15px] md:!mb-[20px] lg:!mb-[25px]`}
+                  className={`!font-normal ${benefit.textColor || "text-black"} dark:text-white -tracking-[.2px] md:-tracking-[.3px] lg:-tracking-[.4px] !text-lg md:!text-[20px] lg:!text-[24px] xl:!text-xl !mb-[15px] md:!mb-[20px] lg:!mb-[25px]`}
                 >
                   {benefit.title}
                 </h3>
                 <p
-                  className={`${benefit.textColor || ""} ${benefit.textColor ? "" : "text-[#9E948E]"} text-base md:text-[15px] lg:text-md -tracking-[0.16px] xl:max-w-[400px]`}
+                  className={`${benefit.textColor || ""} ${benefit.textColor ? "" : "text-[#9E948E]"} text-base md:text-[16px] lg:text-md -tracking-[0.16px] xl:max-w-[400px]`}
                 >
                   {benefit.description}
                 </p>
               </div>
               <div className="text-center">
                 <div className="relative inline-block">
-                  <div className="absolute -inset-[6px] rounded-[24px] border border-white/10 dark:border-white/5 pointer-events-none" />
+                  <div className="absolute -inset-[6px] rounded-[20px] border border-white/10 dark:border-white/5 pointer-events-none" />
                   <div className="absolute -top-[3px] -left-[3px] w-[24px] h-[24px] border-t-2 border-l-2 border-lime-500/40 rounded-tl-[10px] pointer-events-none z-10" />
-                  <div className="absolute -bottom-[3px] -right-[3px] w-[24px] h-[24px] border-b-2 border-r-2 border-[#D15616]/40 rounded-br-[10px] pointer-events-none z-10" />
+                  <div className="absolute -bottom-[4px] -right-[3px] w-[24px] h-[24px] border-b-2 border-r-2 border-[#D15616]/40 rounded-br-[10px] pointer-events-none z-10" />
                   <Image
                     src={benefit.image}
                     className={`inline-block ltr:rounded-br-[20px] rtl:rounded-bl-[20px] ltr:rounded-bl-[20px] rtl:rounded-br-[20px] ltr:lg:rounded-bl-none rtl:lg:rounded-br-none relative z-[1]`}

@@ -51,7 +51,7 @@ function InvestorCard({ investor }: { investor: PipelineInvestor }) {
   return (
     <Link href={`/dashboard/investors/${investor.id}`}>
       <div className="bg-white dark:bg-[#1a1f2e] rounded-[12px] p-[16px] border border-gray-100 dark:border-gray-800 hover:border-lime-300 dark:hover:border-lime-700 hover:shadow-sm transition-all cursor-pointer">
-        <div className="flex items-center gap-[10px] mb-[10px]">
+        <div className="flex items-center gap-[8px] mb-[10px]">
           <div className="w-[32px] h-[32px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[13px] font-semibold text-gray-500 flex-none">
             {initials}
           </div>
@@ -154,7 +154,7 @@ export default function PipelinePage() {
         {columns.map((col) => (
           <div
             key={col.id}
-            className="flex items-center gap-[6px] px-[12px] py-[6px] rounded-full bg-white dark:bg-[#1a1f2e] border border-gray-100 dark:border-gray-800 whitespace-nowrap"
+            className="flex items-center gap-[8px] px-[12px] py-[6px] rounded-full bg-white dark:bg-[#1a1f2e] border border-gray-100 dark:border-gray-800 whitespace-nowrap"
           >
             <div className={`w-[8px] h-[8px] rounded-full ${col.color}`}></div>
             <span className="text-[12px] font-medium text-gray-500">{col.title}</span>
@@ -174,7 +174,7 @@ export default function PipelinePage() {
                 <div className={`w-[8px] h-[8px] rounded-full ${stage.color}`}></div>
                 <div className="h-[14px] bg-gray-100 dark:bg-gray-800 rounded w-[100px]"></div>
               </div>
-              <div className={`${stage.bgColor} rounded-[12px] p-[10px] min-h-[300px]`}>
+              <div className={`${stage.bgColor} rounded-[12px] p-[8px] min-h-[300px]`}>
                 {[1, 2].map((i) => (
                   <div key={i} className="animate-pulse bg-white dark:bg-[#1a1f2e] rounded-[12px] p-[16px] mb-[10px]">
                     <div className="h-[14px] bg-gray-100 dark:bg-gray-800 rounded w-[120px] mb-[6px]"></div>
@@ -203,7 +203,7 @@ export default function PipelinePage() {
 
                 {/* Column Body */}
                 <div
-                  className={`${col.bgColor} rounded-[12px] p-[10px] min-h-[300px] space-y-[10px]`}
+                  className={`${col.bgColor} rounded-[12px] p-[8px] min-h-[300px] space-y-[10px]`}
                 >
                   {col.investors.length === 0 ? (
                     <div className="text-center py-[40px]">

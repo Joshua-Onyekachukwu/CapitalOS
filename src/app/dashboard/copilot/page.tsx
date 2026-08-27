@@ -87,7 +87,7 @@ export default function CopilotPage() {
                   }`}
                 >
                   {msg.role === "assistant" && (
-                    <div className="flex items-center gap-[6px] mb-[6px]">
+                    <div className="flex items-center gap-[8px] mb-[6px]">
                       <i className="ri-sparkling-2-line text-lime-500 text-[14px]"></i>
                       <span className="text-[11px] font-semibold text-lime-600 uppercase tracking-wider">AI Copilot</span>
                     </div>
@@ -99,7 +99,7 @@ export default function CopilotPage() {
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 dark:bg-gray-800 rounded-[12px] px-[16px] py-[12px]">
-                  <div className="flex items-center gap-[6px] mb-[6px]">
+                  <div className="flex items-center gap-[8px] mb-[6px]">
                     <i className="ri-sparkling-2-line text-lime-500 text-[14px]"></i>
                     <span className="text-[11px] font-semibold text-lime-600 uppercase tracking-wider">AI Copilot</span>
                   </div>
@@ -132,7 +132,7 @@ export default function CopilotPage() {
       )}
 
       {/* Input */}
-      <div className="flex gap-[10px]">
+      <div className="flex gap-[8px]">
         <input
           type="text"
           value={input}

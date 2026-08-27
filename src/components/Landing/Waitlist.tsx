@@ -134,7 +134,7 @@ export default function Waitlist() {
               placeholder="Your name (optional)"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 bg-white/10 border border-white/10 rounded-[10px] px-[16px] py-[14px] text-[15px] text-white placeholder:text-gray-500 focus:outline-none focus:border-lime-500/50 transition-colors"
+              className="flex-1 bg-white/10 border border-white/10 rounded-[8px] px-[16px] py-[14px] text-[16px] text-white placeholder:text-gray-500 focus:outline-none focus:border-lime-500/50 transition-colors"
             />
             <input
               type="email"
@@ -142,14 +142,14 @@ export default function Waitlist() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="flex-1 bg-white/10 border border-white/10 rounded-[10px] px-[16px] py-[14px] text-[15px] text-white placeholder:text-gray-500 focus:outline-none focus:border-lime-500/50 transition-colors"
+              className="flex-1 bg-white/10 border border-white/10 rounded-[8px] px-[16px] py-[14px] text-[16px] text-white placeholder:text-gray-500 focus:outline-none focus:border-lime-500/50 transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-lime-400 hover:bg-lime-300 text-gray-900 font-semibold rounded-[10px] px-[24px] py-[14px] text-[15px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-lime-400 hover:bg-lime-300 text-gray-900 font-semibold rounded-[8px] px-[24px] py-[14px] text-[16px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-[8px]">
@@ -168,7 +168,7 @@ export default function Waitlist() {
 
         {/* Founding Member CTA */}
         <div className="mt-[40px] pt-[32px] border-t border-white/10">
-          <div className="inline-flex items-center gap-[6px] bg-amber-500/10 border border-amber-500/20 rounded-full px-[12px] py-[4px] mb-[16px]">
+          <div className="inline-flex items-center gap-[8px] bg-amber-500/10 border border-amber-500/20 rounded-full px-[12px] py-[4px] mb-[16px]">
             <i className="ri-vip-crown-line text-amber-400 text-[12px]"></i>
             <span className="text-[12px] text-amber-400 font-medium">Founding Member</span>
           </div>
@@ -179,13 +179,13 @@ export default function Waitlist() {
             Your $9.99 isn't lost. When we launch, it becomes $9.99 in platform credit toward your subscription.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] text-[13px] text-gray-400 !mb-[20px]">
-            <span className="flex items-center gap-[6px]">
+            <span className="flex items-center gap-[8px]">
               <i className="ri-check-line text-lime-400"></i> $9.99 platform credit
             </span>
-            <span className="flex items-center gap-[6px]">
+            <span className="flex items-center gap-[8px]">
               <i className="ri-check-line text-lime-400"></i> Priority early access
             </span>
-            <span className="flex items-center gap-[6px]">
+            <span className="flex items-center gap-[8px]">
               <i className="ri-check-line text-lime-400"></i> Founding-member pricing
             </span>
           </div>
@@ -205,7 +205,7 @@ export default function Waitlist() {
                 // Checkout failed — stay on page
               }
             }}
-            className="bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold rounded-[10px] px-[24px] py-[14px] text-[15px] transition-colors"
+            className="bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold rounded-[8px] px-[24px] py-[14px] text-[16px] transition-colors"
           >
             Become a Founding Member — $9.99
           </button>

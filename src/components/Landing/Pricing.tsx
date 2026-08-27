@@ -47,9 +47,9 @@ const Pricing: React.FC = () => {
   return (
     <div className="pb-[60px] md:pb-[80px] lg:pb-[100px] xl:pb-[120px]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4px] md:gap-[8px] lg:gap-[25px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4px] md:gap-[8px] lg:gap-[24px]">
           <div className="ltr:xl:pr-[20px] rtl:xl:pl-[20px]">
-            <div className="md:flex lg:block xl:flex items-center justify-between bg-[#06201b] rounded-[15px] p-[20px] md:p-[25px] lg:p-[30px] xl:px-[40px] xl:py-[50px] lg:sticky top-[100px]">
+            <div className="md:flex lg:block xl:flex items-center justify-between bg-[#06201b] rounded-[16px] p-[20px] md:p-[24px] lg:p-[30px] xl:px-[40px] xl:py-[50px] lg:sticky top-[100px]">
               <div>
                 <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[12px] md:mb-[14px] lg:mb-[16px]">
                   {plans[0].name}
@@ -60,7 +60,7 @@ const Pricing: React.FC = () => {
                     {plans[0].suffix}
                   </span>
                 </div>
-                <ul className="text-[#E3E3E3] my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[15px] lg:text-md -tracking-[0.16px]">
+                <ul className="text-[#E3E3E3] my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[16px] lg:text-md -tracking-[0.16px]">
                   {plans[0].features.map((feature, i) => (
                     <li
                       key={i}
@@ -73,7 +73,7 @@ const Pricing: React.FC = () => {
                 </ul>
                 <Link
                   href="/signup"
-                  className="inline-block relative font-medium text-[#FFC813] text-base md:text-[15px] lg:text-md -tracking-[0.16px] transition-all hover:underline md:-mt-[5px]"
+                  className="inline-block relative font-medium text-[#FFC813] text-base md:text-[16px] lg:text-md -tracking-[0.16px] transition-all hover:underline md:-mt-[5px]"
                 >
                   {plans[0].cta} <i className="ri-arrow-right-long-line"></i>
                 </Link>
@@ -94,7 +94,7 @@ const Pricing: React.FC = () => {
                 Designed to Fit Every Founder
               </h2>
             </div>
-            <div className="md:flex lg:block xl:flex items-center justify-between bg-[#D15616] rounded-[15px] p-[20px] md:p-[25px] lg:p-[30px] xl:px-[40px] xl:py-[50px]">
+            <div className="md:flex lg:block xl:flex items-center justify-between bg-[#D15616] rounded-[16px] p-[20px] md:p-[24px] lg:p-[30px] xl:px-[40px] xl:py-[50px]">
               <div>
                 <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-black mb-[12px] md:mb-[14px] lg:mb-[16px]">
                   {plans[1].name}
@@ -105,7 +105,7 @@ const Pricing: React.FC = () => {
                     {plans[1].suffix}
                   </span>
                 </div>
-                <ul className="text-white/80 my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[15px] lg:text-md -tracking-[0.16px]">
+                <ul className="text-white/80 my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[16px] lg:text-md -tracking-[0.16px]">
                   {plans[1].features.map((feature, i) => (
                     <li
                       key={i}
@@ -118,7 +118,7 @@ const Pricing: React.FC = () => {
                 </ul>
                 <Link
                   href="/signup"
-                  className="inline-block relative font-medium text-black text-base md:text-[15px] lg:text-md -tracking-[0.16px] transition-all hover:underline md:-mt-[5px]"
+                  className="inline-block relative font-medium text-black text-base md:text-[16px] lg:text-md -tracking-[0.16px] transition-all hover:underline md:-mt-[5px]"
                 >
                   {plans[1].cta} <i className="ri-arrow-right-long-line"></i>
                 </Link>

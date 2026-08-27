@@ -265,7 +265,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
       <PageHeader
         title=""
         actions={
-          <div className="flex items-center gap-[10px]">
+          <div className="flex items-center gap-[8px]">
             <Button variant="outline" onClick={handleToggleSave} loading={savingInvestor}>
               <i className={`${isSaved ? "ri-bookmark-fill text-lime-500" : "ri-bookmark-line"} text-[16px]`}></i>
               {isSaved ? "Saved" : "Save"}
@@ -450,7 +450,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px]">
                 <div>
                   <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Stages</span>
-                  <div className="flex flex-wrap gap-[6px]">
+                  <div className="flex flex-wrap gap-[8px]">
                     {(investor.investment_stages || []).length > 0
                       ? investor.investment_stages.map((s) => <Badge key={s} variant="info" size="sm">{s.replace(/_/g, " ")}</Badge>)
                       : <span className="text-[13px] text-gray-400">Not specified</span>
@@ -459,7 +459,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                 </div>
                 <div>
                   <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Sectors</span>
-                  <div className="flex flex-wrap gap-[6px]">
+                  <div className="flex flex-wrap gap-[8px]">
                     {(investor.investment_sectors || []).length > 0
                       ? investor.investment_sectors.map((s) => <Badge key={s} variant="primary" size="sm">{s.replace(/_/g, " ")}</Badge>)
                       : <span className="text-[13px] text-gray-400">Not specified</span>
@@ -468,7 +468,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                 </div>
                 <div>
                   <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Geographies</span>
-                  <div className="flex flex-wrap gap-[6px]">
+                  <div className="flex flex-wrap gap-[8px]">
                     {(investor.investment_geographies || []).length > 0
                       ? investor.investment_geographies.map((g) => <Badge key={g} variant="default" size="sm">{g}</Badge>)
                       : <span className="text-[13px] text-gray-400">Not specified</span>

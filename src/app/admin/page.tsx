@@ -131,17 +131,17 @@ export default function AdminOverviewPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[15px] mb-[25px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px] mb-[25px]">
         {statCards.map((stat) => (
           <Link key={stat.label} href={stat.href}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardBody className="flex items-center gap-[14px]">
-                <div className={`w-[44px] h-[44px] rounded-[10px] ${stat.color} flex items-center justify-center text-[20px] flex-none`}>
+              <CardBody className="flex items-center gap-[16px]">
+                <div className={`w-[44px] h-[44px] rounded-[8px] ${stat.color} flex items-center justify-center text-[20px] flex-none`}>
                   <i className={stat.icon} />
                 </div>
                 <div>
                   <p className="text-[12px] text-gray-400 !mb-[2px]">{stat.label}</p>
-                  <p className="text-[22px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+                  <p className="text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
                   {stat.subtitle && (
                     <p className="text-[11px] text-gray-400 !mb-0">{stat.subtitle}</p>
                   )}
@@ -194,7 +194,7 @@ export default function AdminOverviewPage() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="flex items-center gap-[12px] p-[14px] rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all group"
+                className="flex items-center gap-[12px] p-[16px] rounded-[8px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all group"
               >
                 <div className="w-[36px] h-[36px] rounded-[8px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:text-lime-600 text-[18px] flex-none transition-colors">
                   <i className={link.icon} />

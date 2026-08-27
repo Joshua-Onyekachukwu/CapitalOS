@@ -357,13 +357,13 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex items-center gap-[12px] mt-[12px]">
-                    <label className="flex items-center gap-[6px] text-[13px] text-gray-500 cursor-pointer">
+                    <label className="flex items-center gap-[8px] text-[13px] text-gray-500 cursor-pointer">
                       <input type="checkbox" checked={smtpForm.secure} onChange={(e) => setSmtpForm(p => ({...p, secure: e.target.checked}))} className="rounded" />
                       Use TLS/SSL (recommended)
                     </label>
                   </div>
 
-                  <div className="flex items-center gap-[10px] mt-[16px]">
+                  <div className="flex items-center gap-[8px] mt-[16px]">
                     <Button variant="outline" size="sm" loading={smtpTesting} onClick={handleSmtpTest}>
                       <i className="ri-test-tube-line text-[14px] mr-[4px]"></i>
                       Test Connection
@@ -375,7 +375,7 @@ export default function SettingsPage() {
                     <Button variant="ghost" size="sm" onClick={() => setShowSmtpForm(false)}>Cancel</Button>
                   </div>
 
-                  <div className="mt-[12px] p-[10px] bg-blue-50 dark:bg-blue-900/20 rounded-[8px]">
+                  <div className="mt-[12px] p-[8px] bg-blue-50 dark:bg-blue-900/20 rounded-[8px]">
                     <p className="text-[12px] text-blue-600 dark:text-blue-400 !mb-0">
                       <i className="ri-information-line mr-[4px]"></i>
                       <strong>Gmail:</strong> Use app password (not your regular password). Go to Google Account → Security → 2FA → App Passwords.
@@ -459,7 +459,7 @@ export default function SettingsPage() {
                       localStorage.setItem("notifications", JSON.stringify(updated));
                     }}
                   />
-                  <div className="w-[40px] h-[22px] bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-[18px] after:w-[18px] after:transition-all peer-checked:bg-lime-500"></div>
+                  <div className="w-[40px] h-[22px] bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-[18px] after:w-[18px] after:transition-all peer-checked:bg-lime-500"></div>
                 </label>
               </div>
             ))}

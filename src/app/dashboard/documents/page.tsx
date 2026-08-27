@@ -147,7 +147,7 @@ export default function DocumentsPage() {
                 <button
                   key={type.value}
                   onClick={() => setSelectedType(type.value)}
-                  className={`flex items-center gap-[6px] px-[12px] py-[6px] rounded-full text-[12px] font-medium transition-all ${
+                  className={`flex items-center gap-[8px] px-[12px] py-[6px] rounded-full text-[12px] font-medium transition-all ${
                     selectedType === type.value
                       ? "bg-[#06201b] text-white dark:bg-lime-500 dark:text-black"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200"
