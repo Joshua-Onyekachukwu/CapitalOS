@@ -39,36 +39,27 @@ export async function chatWithCopilot(
   });
   const sectors = Array.from(sectorSet).map((name) => ({ name }));
 
-  // Build context
-  const context = `
-You are Capital OS AI Copilot — a fundraising assistant for startup founders.
+  // Build context — keep it tight for speed
+  const topInvestors = investors.slice(0, 8).map((i) => `${i.full_name} (${i.investor_type?.replace(/_/g, " ") || "Unknown"}, fit: ${i.fit_score || 0}%)`).join("\n");
+  const uniqueSectors = Array.from(new Set(sectors.map((s) => s.name))).slice(0, 15).join(", ");
 
-CONTEXT:
-- Total investors in database: 122819
-- Investors loaded for context: ${investors.length}
-- Available sectors: ${sectors.map((s) => s.name).join(", ") || "Various sectors available"}
-- Top investors by fit score: ${investors.slice(0, 10).map((i) => `${i.full_name} (${i.investor_type?.replace(/_/g, " ") || "Unknown"}, fit: ${i.fit_score || 0}%, status: ${i.outreach_readiness?.replace(/_/g, " ") || "unknown"})`).join(", ") || "None yet"}
+  const context = `You are Capital OS AI Copilot — a fundraising assistant for startup founders.
 
-CAPABILITIES:
-- Help founders understand their investor pipeline
-- Recommend outreach strategies
-- Explain investor fit scores and matching logic
-- Suggest which investors to prioritize
-- Help craft fundraising strategy
-- Answer questions about the platform
+DATABASE: ${investors.length} investors loaded. Sectors: ${uniqueSectors || "Various"}.
 
-RULES:
-- Be concise and actionable
-- Use data from the context when available
-- If you don't have enough data, say so honestly
-- Never make up investor data
-- Focus on practical fundraising advice
-`;
+TOP INVESTORS BY FIT:\n${topInvestors || "None scored yet."}
 
-  const fullMessages: CopilotMessage[] = [
-    { role: "user", content: context },
-    ...messages,
-  ];
+YOUR JOB: Help founders raise capital. Be specific, use real data, give actionable advice.
+
+RESPONSE FORMAT (critical):
+- Write in plain, natural English paragraphs
+- Never return JSON, code blocks, arrays, or structured data formats
+- Never use markdown headers (no # or ##)
+- Use short paragraphs and line breaks for readability
+- Be direct and specific — say "Contact Sarah Chen at Sequoia" not "Consider reaching out to investors in your sector"
+- Keep responses under 200 words unless the question demands more
+- If you don't have data to answer, say so honestly
+- Never invent investor names, emails, or data`;
 
   try {
     const { chatCompletion } = await import("@/lib/ai");
@@ -78,7 +69,31 @@ RULES:
       messages: messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
     });
 
-    return response.content;
+    // Clean the response — strip any JSON wrapping, markdown artifacts
+    let clean = response.content.trim();
+    
+    // If the AI returned JSON, try to extract the text
+    if (clean.startsWith("{") || clean.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(clean);
+        if (typeof parsed === "string") clean = parsed;
+        else if (parsed.response) clean = parsed.response;
+        else if (parsed.answer) clean = parsed.answer;
+        else if (parsed.content) clean = parsed.content;
+        else if (parsed.message) clean = parsed.message;
+        else clean = JSON.stringify(parsed, null, 2);
+      } catch { /* not JSON, keep as-is */ }
+    }
+    
+    // Strip markdown code blocks if present
+    clean = clean.replace(/^```[\w]*\n?/gm, "").replace(/```$/gm, "").trim();
+    
+    // Strip leading/trailing quotes if the whole response is quoted
+    if ((clean.startsWith('"') && clean.endsWith('"')) || (clean.startsWith("'") && clean.endsWith("'"))) {
+      clean = clean.slice(1, -1);
+    }
+
+    return clean || "I couldn't generate a response. Please try rephrasing your question.";
   } catch (err) {
     console.error("Copilot error:", err);
     return "I'm having trouble connecting to the AI service. Please try again in a moment.";
