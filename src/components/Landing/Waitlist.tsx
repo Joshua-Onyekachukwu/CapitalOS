@@ -175,7 +175,7 @@ export default function Waitlist() {
                     Redirecting...
                   </span>
                 ) : (
-                  "Become a Founding Member — $9.99"
+                  "Become a Founding Member - $9.99"
                 )}
               </button>
 
@@ -248,7 +248,7 @@ export default function Waitlist() {
                   Joining...
                 </span>
               ) : (
-                "Join the Waitlist — Free"
+                "Join the Waitlist - Free"
               )}
             </button>
           </form>

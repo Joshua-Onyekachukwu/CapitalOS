@@ -70,7 +70,7 @@ const Testimonials: React.FC = () => {
             investors.&rdquo;
           </p>
           <p className="text-[14px] text-gray-400 !mb-0">
-            — The Capital OS Team
+            - The Capital OS Team
           </p>
         </div>
       </div>

@@ -1,240 +1,240 @@
 #!/usr/bin/env node
-/**
- * Capital OS — Contact Enrichment (Parallel Mode)
- * =================================================
- * Uses ALL 5 NVIDIA API keys in parallel for maximum throughput.
- * ~1500 entities/minute vs ~15/min serial mode.
- *
- * Usage:
- *   node scripts/enrich-contacts.js --limit 500     # Enrich first 500
- *   node scripts/enrich-contacts.js                  # All without emails
- *   node scripts/enrich-contacts.js --dry-run        # Preview only
- */
+// =============================================
+// Contact Enrichment Pipeline
+// =============================================
+// Infers emails from investor names + company domains.
+// Uses common email patterns: first.last@, first@, info@, etc.
+// Verifies MX records to confirm the domain accepts email.
 
-require("dotenv").config({ path: require("path").resolve(__dirname, "../.env.local") });
-const { createClient } = require("@supabase/supabase-js");
-const dns = require("dns").promises;
+require('dotenv').config({ path: '.env.local' });
+const { createClient } = require('@supabase/supabase-js');
+const dns = require('dns').promises;
+const fs = require('fs');
+const path = require('path');
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const NVIDIA_URL = process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1";
-const MODEL = "nvidia/llama-3.3-nemotron-super-49b-v1";
+const sp = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-function getKeys() {
-  const keys = [];
-  for (let i = 1; i <= 10; i++) {
-    const k = process.env[`NVIDIA_API_KEY_${i}`];
-    if (k?.startsWith("nvapi-")) keys.push(k);
-  }
-  return keys;
-}
+const BATCH_SIZE = 200;
+const CHECKPOINT_FILE = path.join(__dirname, '../data-backups/enrich-checkpoint.json');
+const OUTPUT_DIR = path.join(__dirname, '../data-backups/enriched-contacts');
+const MAX_ENRICH = 10000; // Process up to 10K investors per run
 
-let ki = 0;
-function nextKey() { const k = getKeys(); return k[ki++ % k.length]; }
+if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-const SYSTEM_PROMPT = `You infer company websites from investment firm names. Rules:
-1. For known firms (Blackstone, KKR, a16z, Sequoia, etc.), use their real domain.
-2. For unknown firms, infer from name: strip LLC/LP/Corp/Inc/Ventures/Capital/Fund/Partners and try domain.com
-3. If the full_name is a PERSON name (not a company), set domain=null and email=null.
-4. Suggest info@domain.com as contact email.
-5. Set confidence: high (well-known firm), medium (reasonable guess), low (uncertain).
-RESPOND ONLY WITH JSON ARRAY. No markdown, no explanation.
-[{"i":1,"name":"Clean Name","domain":"example.com","email":"info@example.com","conf":"high"}]`;
+// Known free email providers (skip these for domain inference)
+const FREE_EMAIL_PROVIDERS = new Set([
+  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+  'icloud.com', 'mail.com', 'protonmail.com', 'proton.me', 'zoho.com',
+  'yandex.com', 'gmx.com', 'live.com', 'msn.com', 'me.com',
+  'yahoo.co.uk', 'gmail.co.uk', 'hotmail.co.uk', 'outlook.co.uk',
+]);
 
-async function aiInfer(entities, retries = 2) {
-  const list = entities.map((e, i) => `${i + 1}. "${e.full_name}" (${e.investor_type || "unknown"})`).join("\n");
+// Common email patterns for investors
+const EMAIL_PATTERNS = [
+  (first, last, domain) => `${first}.${last}@${domain}`,
+  (first, last, domain) => `${first}${last}@${domain}`,
+  (first, last, domain) => `${first[0]}${last}@${domain}`,
+  (first, last, domain) => `${first}@${domain}`,
+  (first, last, domain) => `info@${domain}`,
+  (first, last, domain) => `contact@${domain}`,
+];
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const resp = await fetch(`${NVIDIA_URL}/chat/completions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${nextKey()}` },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: list },
-          ],
-          max_tokens: 2048,
-          temperature: 0.1,
-          stream: false,
-        }),
-      });
-
-      if (resp.status === 429) {
-        await new Promise((r) => setTimeout(r, 3000 + attempt * 2000));
-        continue;
-      }
-
-      if (!resp.ok) {
-        const body = await resp.text();
-        if (attempt < retries) { await new Promise((r) => setTimeout(r, 2000)); continue; }
-        throw new Error(`API ${resp.status}: ${body.substring(0, 200)}`);
-      }
-
-      const data = await resp.json();
-      const content = data.choices?.[0]?.message?.content || "";
-
-      // Parse JSON from response
-      let json = content;
-      const m = content.match(/\[[\s\S]*\]/);
-      if (m) json = m[0];
-
-      return JSON.parse(json);
-    } catch (err) {
-      if (attempt < retries) { await new Promise((r) => setTimeout(r, 2000)); continue; }
-      throw err;
+function loadCheckpoint() {
+  try {
+    if (fs.existsSync(CHECKPOINT_FILE)) {
+      return JSON.parse(fs.readFileSync(CHECKPOINT_FILE, 'utf8'));
     }
-  }
-  return [];
+  } catch {}
+  return { lastId: null, processed: 0, enriched: 0, errors: 0 };
 }
 
-async function verifyMx(domain) {
-  try { const mx = await dns.resolveMx(domain); return mx?.length > 0; }
-  catch {
-    try { const a = await dns.resolve4(domain); return a?.length > 0; }
-    catch { return false; }
+function saveCheckpoint(cp) {
+  fs.writeFileSync(CHECKPOINT_FILE, JSON.stringify(cp, null, 2));
+}
+
+function normalizeName(name) {
+  return (name || '').toLowerCase().trim()
+    .replace(/[^a-z\s]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function extractFirstLast(fullName) {
+  const parts = normalizeName(fullName).split(' ').filter(Boolean);
+  if (parts.length === 0) return { first: '', last: '' };
+  if (parts.length === 1) return { first: parts[0], last: '' };
+  return { first: parts[0], last: parts[parts.length - 1] };
+}
+
+function extractDomain(companyName, companyWebsite) {
+  // Try to get domain from website URL
+  if (companyWebsite && companyWebsite !== 'https://null' && !companyWebsite.includes('googletagmanager')) {
+    try {
+      const url = companyWebsite.startsWith('http') ? companyWebsite : `https://${companyWebsite}`;
+      const hostname = new URL(url).hostname.replace(/^www\./, '');
+      if (!FREE_EMAIL_PROVIDERS.has(hostname) && hostname !== 'null') return hostname;
+    } catch {}
   }
+
+  // Generate domain from company name
+  if (companyName) {
+    const cleaned = companyName.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '')
+      .replace(/(inc|llc|ltd|corp|lp|vc|partners|capital|fund|ventures|advisors|holdings|group|associates|management|advisory|ventures)/g, '')
+      .trim();
+    if (cleaned.length > 2 && cleaned.length < 40) return `${cleaned}.com`;
+  }
+
+  return null;
+}
+
+async function checkMxDomain(domain) {
+  try {
+    const mxRecords = await dns.resolveMx(domain);
+    return mxRecords && mxRecords.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function enrichInvestor(investor) {
+  const { first, last } = extractFirstLast(investor.full_name);
+  if (!first || !last) return null;
+
+  const domain = extractDomain(investor.company_name, investor.company_website);
+  if (!domain) return null;
+
+  // Check if domain has MX records (skip for generated domains)
+  const isRealDomain = investor.company_website &&
+    investor.company_website !== 'https://null' &&
+    !investor.company_website.includes('googletagmanager');
+
+  let hasMx = false;
+  if (isRealDomain) {
+    hasMx = await checkMxDomain(domain);
+    if (!hasMx) return null;
+  }
+
+  // Generate email candidates
+  const candidates = EMAIL_PATTERNS.map(fn => fn(first, last, domain));
+
+  // Return the most likely pattern (first.last is most common for investors)
+  return {
+    investorId: investor.id,
+    inferredEmail: candidates[0],
+    domain,
+    hasMx,
+    confidence: isRealDomain ? 'high' : 'medium',
+    source: 'name_domain_inference',
+    allCandidates: candidates,
+  };
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const dryRun = args.includes("--dry-run");
-  const limitIdx = args.indexOf("--limit");
-  const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1]) : null;
+  const checkpoint = loadCheckpoint();
+  console.log(`📧 Contact Enrichment Pipeline`);
+  console.log(`   Resuming from ID: ${checkpoint.lastId || 'start'}`);
+  console.log(`   Previously processed: ${checkpoint.processed}, enriched: ${checkpoint.enriched}\n`);
 
-  const keys = getKeys();
-  console.log("═══════════════════════════════════════════════════════════");
-  console.log("  Capital OS — Parallel Contact Enrichment");
-  console.log("═══════════════════════════════════════════════════════════\n");
-  console.log(`🔑 API keys: ${keys.length} (parallel mode)`);
-  console.log(`⚡ Throughput: ~${keys.length * 5} entities/batch cycle\n`);
-  if (dryRun) console.log("⚠️  DRY RUN\n");
+  // Get investors with company names but no emails
+  let query = sp
+    .from('investors')
+    .select('id, full_name, company_name, company_website, email')
+    .is('email', null)
+    .not('company_name', 'is', null)
+    .not('full_name', 'is', null)
+    .order('id', { ascending: true })
+    .limit(BATCH_SIZE);
 
-  // Fetch investors without emails
-  console.log("📥 Fetching investors without emails...");
-  let all = [];
-  let offset = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from("investors")
-      .select("id, full_name, investor_type")
-      .is("email", null)
-      .not("full_name", "is", null)
-      .range(offset, offset + 999);
-
-    if (error || !data || data.length === 0) break;
-    all.push(...data);
-    offset += 1000;
-    process.stdout.write(`\r   ${all.length}...`);
-    if (limit && all.length >= limit) { all = all.slice(0, limit); break; }
+  if (checkpoint.lastId) {
+    query = query.gt('id', checkpoint.lastId);
   }
 
-  console.log(`\n   Total: ${all.length}\n`);
+  const { data: investors } = await query;
 
-  // Process in parallel batches (one per API key)
-  const PARALLEL = keys.length; // 5 parallel calls
-  const AI_BATCH = 25;
-  let enriched = 0, verified = 0, failed = 0, skipped = 0;
-  const startTime = Date.now();
-  const domainCache = new Map();
-  const totalCycles = Math.ceil(all.length / (PARALLEL * AI_BATCH));
+  if (!investors?.length) {
+    console.log('✅ No more investors to enrich');
+    return;
+  }
 
-  for (let cycle = 0; cycle < all.length; cycle += PARALLEL * AI_BATCH) {
-    const cycleNum = Math.floor(cycle / (PARALLEL * AI_BATCH)) + 1;
-    const cycleBatch = all.slice(cycle, cycle + PARALLEL * AI_BATCH);
+  console.log(`   Processing ${investors.length} investors...\n`);
 
-    // Split into parallel sub-batches
-    const subBatches = [];
-    for (let j = 0; j < cycleBatch.length; j += AI_BATCH) {
-      subBatches.push(cycleBatch.slice(j, j + AI_BATCH));
+  let processed = checkpoint.processed;
+  let enriched = checkpoint.enriched;
+  let errors = checkpoint.errors;
+  const newEmails = [];
+
+  for (const investor of investors) {
+    try {
+      const result = await enrichInvestor(investor);
+      if (result) {
+        newEmails.push(result);
+        enriched++;
+      }
+      processed++;
+    } catch (err) {
+      errors++;
     }
 
-    process.stdout.write(`\r   ⚡ [${cycleNum}/${totalCycles}] ${subBatches.length} parallel AI calls...`);
-
-    // Execute all sub-batches in parallel
-    const results = await Promise.allSettled(
-      subBatches.map((batch) => aiInfer(batch))
-    );
-
-    // Process results
-    let cycleEnriched = 0;
-    let idx = 0;
-
-    for (let b = 0; b < subBatches.length; b++) {
-      const batch = subBatches[b];
-      const result = results[b];
-
-      if (result.status === "rejected" || !result.value) {
-        failed += batch.length;
-        continue;
-      }
-
-      for (const r of result.value) {
-        idx++;
-        const inv = batch[(r.i || r.index || idx) - 1];
-        if (!inv || !r.domain) { skipped++; continue; }
-
-        const domain = r.domain.toLowerCase().replace(/^(https?:\/\/)/, "").replace(/\/.*$/, "");
-        if (domain.length < 3 || domain.length > 50) { skipped++; continue; }
-
-        // Skip DNS verification for speed — AI inference is reliable
-        // (DNS was causing timeouts at scale)
-
-        verified++;
-        const email = r.email || `info@${domain}`;
-
-        if (!dryRun) {
-          const { error: ue } = await supabase
-            .from("investors")
-            .update({
-              company_website: `https://${domain}`,
-              company_name: r.name || r.clean_name || inv.full_name,
-              email,
-              email_verification_status: "inferred",
-              email_source: "ai_enrichment",
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", inv.id);
-
-          if (!ue) { enriched++; cycleEnriched++; } else failed++;
-        } else {
-          enriched++;
-          cycleEnriched++;
-        }
-      }
+    if (processed % 100 === 0) {
+      console.log(`   Processed: ${processed}, Enriched: ${enriched}, Errors: ${errors}`);
+      saveCheckpoint({ lastId: investor.id, processed, enriched, errors });
     }
 
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-    const rate = enriched > 0 ? ((enriched / (Date.now() - startTime)) * 60000).toFixed(0) : 0;
-    process.stdout.write(`\r   ⚡ [${cycleNum}/${totalCycles}] +${cycleEnriched} enriched | Total: ${enriched} | ${rate}/min | ⏱️ ${elapsed}s     `);
-
-    // Minimal delay between cycles
-    await new Promise((r) => setTimeout(r, 500));
+    // Rate limit DNS lookups
+    await new Promise(r => setTimeout(r, 50));
   }
 
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+  // Save final checkpoint
+  saveCheckpoint({
+    lastId: investors[investors.length - 1]?.id,
+    processed,
+    enriched,
+    errors,
+  });
 
-  console.log(`\n\n═══════════════════════════════════════════════════════════`);
-  console.log(`  ✅ Parallel Contact Enrichment Complete`);
-  console.log(`═══════════════════════════════════════════════════════════\n`);
-  console.log(`   📊 Processed: ${all.length}`);
-  console.log(`   ✅ Enriched: ${enriched}`);
-  console.log(`   🔍 Domains verified: ${verified}`);
-  console.log(`   ⏭️  Skipped: ${skipped}`);
-  console.log(`   ❌ Failed: ${failed}`);
-  console.log(`   ⏱️  Time: ${elapsed}s (${enriched > 0 ? ((enriched / (Date.now() - startTime)) * 60000).toFixed(0) : 0}/min)`);
-  console.log(`   🌐 Unique domains: ${domainCache.size} (${[...domainCache.values()].filter(Boolean).length} valid)`);
+  // Save enriched contacts
+  if (newEmails.length > 0) {
+    const outFile = path.join(OUTPUT_DIR, `enriched-${Date.now()}.json`);
+    fs.writeFileSync(outFile, JSON.stringify(newEmails, null, 2));
+    console.log(`\n💾 Saved ${newEmails.length} enriched contacts to ${outFile}`);
 
-  // Database summary
-  if (!dryRun) {
-    const { count: totalE } = await supabase.from("investors").select("*", { count: "exact", head: true }).not("email", "is", null);
-    const { count: infE } = await supabase.from("investors").select("*", { count: "exact", head: true }).eq("email_source", "ai_enrichment");
-    const { count: total } = await supabase.from("investors").select("*", { count: "exact", head: true });
+    // Update Supabase with inferred emails
+    let updated = 0;
+    for (const email of newEmails) {
+      const { error } = await sp
+        .from('investors')
+        .update({
+          email: email.inferredEmail,
+          email_source: 'inferred',
+          email_verification_status: 'inferred',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', email.investorId);
 
-    console.log(`\n📊 Database:`);
-    console.log(`   Total: ${total} | With emails: ${totalE} (${((totalE / total) * 100).toFixed(1)}%) | AI-inferred: ${infE}`);
+      if (!error) updated++;
+    }
+    console.log(`   Updated ${updated} investors in Supabase with inferred emails`);
   }
+
+  console.log(`\n✅ Enrichment Complete`);
+  console.log(`   Processed: ${processed}`);
+  console.log(`   Enriched: ${enriched}`);
+  console.log(`   Errors: ${errors}`);
+
+  // Show current stats
+  const { count: totalEmails } = await sp
+    .from('investors')
+    .select('id', { count: 'exact', head: true })
+    .not('email', 'is', null);
+
+  console.log(`   Total with email now: ${totalEmails}`);
 }
 
-main().catch((e) => { console.error("💥", e.message); process.exit(1); });
+main().catch(err => {
+  console.error('Fatal error:', err);
+  process.exit(1);
+});

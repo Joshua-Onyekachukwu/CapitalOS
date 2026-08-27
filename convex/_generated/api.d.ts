@@ -11,6 +11,8 @@
 import type * as actions from "../actions.js";
 import type * as dashboard from "../dashboard.js";
 import type * as notifications from "../notifications.js";
+import type * as rawInvestors from "../rawInvestors.js";
+import type * as rawInvestorsOps from "../rawInvestorsOps.js";
 import type * as researchJobs from "../researchJobs.js";
 import type * as scrapingJobs from "../scrapingJobs.js";
 
@@ -24,6 +26,8 @@ declare const fullApi: ApiFromModules<{
   actions: typeof actions;
   dashboard: typeof dashboard;
   notifications: typeof notifications;
+  rawInvestors: typeof rawInvestors;
+  rawInvestorsOps: typeof rawInvestorsOps;
   researchJobs: typeof researchJobs;
   scrapingJobs: typeof scrapingJobs;
 }>;

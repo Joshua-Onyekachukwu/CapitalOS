@@ -65,12 +65,23 @@ async function findRecent13F_Filings(days = 365) {
       
       for (const hit of hits) {
         const src = hit._source;
+        const cik = src.ciks?.[0] || src.entity_id || src.file_num;
+        const adsh = src.adsh;
+        // Construct the filing URL from accession number
+        let filingUrl = null;
+        if (cik && adsh) {
+          const cleanCik = String(cik).replace(/^0+/, "");
+          const adshDashes = adsh.replace(/-/g, "");
+          const adshDir = adsh.replace(/-/g, "");
+          filingUrl = `https://www.sec.gov/Archives/edgar/data/${cleanCik}/${adshDir}/${adsh}-index.htm`;
+        }
         allFilings.push({
-          cik: src.entity_id || src.file_num,
-          name: src.display_names?.[0] || src.entity_name || "Unknown",
+          cik,
+          name: src.display_names?.[0] || "Unknown",
           date: src.file_date,
-          url: src.file_url,
-          form: src.form_type,
+          url: filingUrl,
+          adsh,
+          form: src.form,
         });
       }
       
@@ -104,30 +115,16 @@ async function findRecent13F_Filings(days = 365) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// Step 2: Get the filing index page to find the XML
+// Step 2: Construct filing URL from accession number
 // ══════════════════════════════════════════════════════════════
 
-async function getFilingIndexPage(cik) {
-  // Clean CIK (remove leading zeros, ensure string)
+function getFilingXmlUrl(cik, adsh) {
+  if (!cik || !adsh) return null;
   const cleanCik = String(cik).replace(/^0+/, "");
-  
-  // Try to get the most recent 13F-HR filing index
-  const url = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cleanCik}&type=13F-HR&dateb=&owner=include&count=1&search_text=&action=getcompany`;
-  
-  try {
-    const res = await fetch(url, { headers: SEC_HEADERS });
-    if (!res.ok) return null;
-    
-    const html = await res.text();
-    
-    // Find the filing link
-    const linkMatch = html.match(/href="(\/Archives\/edgar\/data\/[^"]+\/[^"]+\.htm)"/);
-    if (!linkMatch) return null;
-    
-    return `https://www.sec.gov${linkMatch[1]}`;
-  } catch {
-    return null;
-  }
+  const adshDir = adsh.replace(/-/g, "");
+  // The XML is typically at: /Archives/edgar/data/{cik}/{adshDir}/{adsh}-index.htm
+  // And the primary XML doc is in the same directory
+  return `https://www.sec.gov/Archives/edgar/data/${cleanCik}/${adshDir}/${adsh}-index.htm`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -142,31 +139,34 @@ async function parse13F_Filing(cik, filingUrl) {
     
     const html = await indexRes.text();
     
-    // Find the primary XML document URL
-    const xmlPatterns = [
-      /href="(\/Archives\/edgar\/data\/[^"]*primary_doc\.xml)"/,
-      /href="(\/Archives\/edgar\/data\/[^"]*\.xml)"/,
-    ];
+    // Find XML files — try Form13F_InfoTable first, then any XML
+    const allXmlMatches = [...html.matchAll(/href="(\/Archives\/edgar\/data\/[^"]*\.xml)"/gi)];
+    const xmlUrls = allXmlMatches.map(m => `https://www.sec.gov${m[1]}`);
     
+    // Priority: Form13F_InfoTable > infotable > primary_doc > first XML
     let xmlUrl = null;
-    for (const pattern of xmlPatterns) {
-      const match = html.match(pattern);
-      if (match) {
-        xmlUrl = `https://www.sec.gov${match[1]}`;
-        break;
-      }
+    const priorities = ['Form13F_InfoTable', 'InfoTable', 'infotable', 'primary_doc'];
+    for (const priority of priorities) {
+      const found = xmlUrls.find(u => u.toLowerCase().includes(priority.toLowerCase()));
+      if (found) { xmlUrl = found; break; }
+    }
+    // Fallback: try any XML that isn't the index itself
+    if (!xmlUrl && xmlUrls.length > 0) {
+      xmlUrl = xmlUrls.find(u => !u.includes('index.htm')) || xmlUrls[0];
     }
     
-    if (!xmlUrl) return null;
+    if (!xmlUrl) { console.log(`\n      [debug] No XML URL found for CIK ${cik}`); return null; }
     
     await sleep(DELAY_MS);
     
     const xmlRes = await fetch(xmlUrl, { headers: SEC_HEADERS });
-    if (!xmlRes.ok) return null;
+    if (!xmlRes.ok) { console.log(`\n      [debug] XML fetch failed: ${xmlRes.status}`); return null; }
     
     const xml = await xmlRes.text();
+    console.log(`\n      [debug] XML length: ${xml.length}, URL: ${xmlUrl.split('/').pop()}`);
     return extractHoldingsFromXml(xml, cik);
-  } catch {
+  } catch (err) {
+    console.log(`\n      [debug] Error: ${err.message}`);
     return null;
   }
 }
@@ -174,8 +174,8 @@ async function parse13F_Filing(cik, filingUrl) {
 function extractHoldingsFromXml(xml, cik) {
   const holdings = [];
   
-  // Pattern 1: Standard 13F format
-  const entryRegex = /<infotable>([\s\S]*?)<\/infotable>/g;
+  // Pattern 1: CamelCase infoTable (most common)
+  const entryRegex = /<infoTable>([\s\S]*?)<\/infoTable>/gi;
   let match;
   
   while ((match = entryRegex.exec(xml)) !== null) {
@@ -184,20 +184,34 @@ function extractHoldingsFromXml(xml, cik) {
     if (holding) holdings.push(holding);
   }
   
-  // Pattern 2: Newer XML namespace format
-  const newEntryRegex = /<ns1:infoTable>([\s\S]*?)<\/ns1:infoTable>/g;
-  while ((match = newEntryRegex.exec(xml)) !== null) {
-    const entry = match[1];
-    const holding = parseInfoTableEntry(entry);
-    if (holding) holdings.push(holding);
+  // Pattern 2: Lowercase infotable
+  if (holdings.length === 0) {
+    const lowerRegex = /<infotable>([\s\S]*?)<\/infotable>/gi;
+    while ((match = lowerRegex.exec(xml)) !== null) {
+      const entry = match[1];
+      const holding = parseInfoTableEntry(entry);
+      if (holding) holdings.push(holding);
+    }
   }
   
-  // Pattern 3: Another variant
-  const altEntryRegex = /<InfoTable>([\s\S]*?)<\/InfoTable>/g;
-  while ((match = altEntryRegex.exec(xml)) !== null) {
-    const entry = match[1];
-    const holding = parseInfoTableEntry(entry);
-    if (holding) holdings.push(holding);
+  // Pattern 3: Namespace format
+  if (holdings.length === 0) {
+    const nsRegex = /<ns1:infoTable>([\s\S]*?)<\/ns1:infoTable>/gi;
+    while ((match = nsRegex.exec(xml)) !== null) {
+      const entry = match[1];
+      const holding = parseInfoTableEntry(entry);
+      if (holding) holdings.push(holding);
+    }
+  }
+  
+  // Pattern 4: Another variant
+  if (holdings.length === 0) {
+    const altEntryRegex = /<InfoTable>([\s\S]*?)<\/InfoTable>/gi;
+    while ((match = altEntryRegex.exec(xml)) !== null) {
+      const entry = match[1];
+      const holding = parseInfoTableEntry(entry);
+      if (holding) holdings.push(holding);
+    }
   }
   
   // Extract filing date from header
@@ -388,7 +402,7 @@ async function main() {
   
   for (const filer of filers.slice(0, limit)) {
     const cikStr = String(filer.cik || '');
-    const filingUrl = filer.url || await getFilingIndexPage(cikStr);
+    const filingUrl = filer.url || getFilingXmlUrl(cikStr, filer.adsh);
     
     if (!filingUrl) {
       process.stdout.write(`\r   ${processed + 1}/${limit} — ${filer.name.slice(0, 30)} (no URL)`);
