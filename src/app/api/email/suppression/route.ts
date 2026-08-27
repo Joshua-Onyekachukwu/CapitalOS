@@ -11,9 +11,13 @@ import {
   filterSuppressed,
 } from "@/lib/services/email/suppression";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 // GET — List suppressed addresses
 export async function GET(request: NextRequest) {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
   try {
     const sp = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,6 +54,9 @@ export async function GET(request: NextRequest) {
 
 // POST — Suppress an address
 export async function POST(request: NextRequest) {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
   try {
     const body = await request.json();
     const { emailAddress, reason, bounceType, notes } = body;
@@ -95,6 +102,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE — Remove from suppression list
 export async function DELETE(request: NextRequest) {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
   try {
     const { searchParams } = new URL(request.url);
     const emailAddress = searchParams.get("email");

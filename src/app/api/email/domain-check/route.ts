@@ -5,9 +5,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkDomainHealth, getStoredDomainHealth } from "@/lib/services/email/dns-checker";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 // GET — Get domain health (stored or fresh)
 export async function GET(request: NextRequest) {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
   try {
     const { searchParams } = new URL(request.url);
     const domain = searchParams.get("domain");
@@ -61,6 +65,9 @@ export async function GET(request: NextRequest) {
 
 // POST — Check domain health (fresh)
 export async function POST(request: NextRequest) {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
   try {
     const body = await request.json();
     const { domain } = body;

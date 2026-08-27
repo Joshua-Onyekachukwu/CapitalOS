@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { requireAuth } from "@/lib/middleware/api-auth";
+import { requireAdmin } from "@/lib/middleware/api-auth";
 import { getUserRole } from "@/lib/roles";
 
 export async function GET(request: NextRequest) {
-  const user = await requireAuth(request);
+  const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
 
   const roleInfo = await getUserRole(user.id, user.email || "");

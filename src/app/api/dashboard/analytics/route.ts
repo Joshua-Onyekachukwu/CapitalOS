@@ -40,32 +40,24 @@ export async function GET(_request: NextRequest) {
       ? Math.round(avgScores.reduce((sum: number, i: any) => sum + (i.fit_score || 0), 0) / avgScores.length)
       : 0;
 
-    // These tables may not exist — gracefully return empty
+    // These tables may not exist — gracefully return empty, all in parallel
     let emailsSent = 0;
     let replyRate = 0;
     let pendingDuplicates = 0;
     let activeCampaigns = 0;
 
-    try {
-      const { count } = await sp.from("email_messages").select("id", { count: "exact", head: true }).eq("direction", "outbound").eq("status", "sent");
-      emailsSent = count || 0;
-    } catch { /* table may not exist */ }
+    const [sentResult, replyResult, dupResult, campaignResult] = await Promise.allSettled([
+      sp.from("email_messages").select("id", { count: "exact", head: true }).eq("direction", "outbound").eq("status", "sent"),
+      sp.from("email_messages").select("id", { count: "exact", head: true }).eq("direction", "inbound"),
+      sp.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      sp.from("campaigns").select("id", { count: "exact", head: true }).eq("status", "active"),
+    ]);
 
-    try {
-      const { count: sentCount } = await sp.from("email_messages").select("id", { count: "exact", head: true }).eq("direction", "outbound").eq("status", "sent");
-      const { count: replyCount } = await sp.from("email_messages").select("id", { count: "exact", head: true }).eq("direction", "inbound");
-      replyRate = (sentCount || 0) > 0 ? Math.round(((replyCount || 0) / (sentCount || 0)) * 100) : 0;
-    } catch { /* table may not exist */ }
-
-    try {
-      const { count } = await sp.from("duplicate_candidates").select("id", { count: "exact", head: true }).eq("status", "pending");
-      pendingDuplicates = count || 0;
-    } catch { /* table may not exist */ }
-
-    try {
-      const { count } = await sp.from("campaigns").select("id", { count: "exact", head: true }).eq("status", "active");
-      activeCampaigns = count || 0;
-    } catch { /* table may not exist */ }
+    emailsSent = sentResult.status === 'fulfilled' ? (sentResult.value.count || 0) : 0;
+    const replyCount = replyResult.status === 'fulfilled' ? (replyResult.value.count || 0) : 0;
+    replyRate = emailsSent > 0 ? Math.round((replyCount / emailsSent) * 100) : 0;
+    pendingDuplicates = dupResult.status === 'fulfilled' ? (dupResult.value.count || 0) : 0;
+    activeCampaigns = campaignResult.status === 'fulfilled' ? (campaignResult.value.count || 0) : 0;
 
     return NextResponse.json({
       totalInvestors,

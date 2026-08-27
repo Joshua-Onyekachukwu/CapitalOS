@@ -8,24 +8,13 @@ import { getRecommendations, getSendingCapacity } from "@/lib/services/email/rec
 import { getActiveAlerts, getAlertCount } from "@/lib/services/email/alerts";
 import { getRecentEvents, getEventCounts } from "@/lib/services/email/events";
 import { createClient } from "@supabase/supabase-js";
-
-function getUserId(request: NextRequest): string | null {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return null;
-
-  const sp = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  // Extract JWT and verify
-  const token = authHeader.replace("Bearer ", "");
-  // Use service role to get user from JWT
-  return null; // Will be handled by middleware
-}
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 // GET — Get email health overview
 export async function GET(request: NextRequest) {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
   try {
     const sp = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -108,6 +97,9 @@ export async function GET(request: NextRequest) {
 
 // POST — Refresh health scores for all accounts
 export async function POST(request: NextRequest) {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
   try {
     const sp = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

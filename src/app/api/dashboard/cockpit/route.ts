@@ -46,17 +46,15 @@ async function computeCockpit() {
     sp.from("investors").select("id", { count: "exact", head: true }).gte("fit_score", 80),
     sp.from("investors").select("id", { count: "exact", head: true }).eq("outreach_readiness", "ready"),
     sp.from("investors").select("fit_score").gt("fit_score", 0).limit(1000),
-    sp.from("investors").select("outreach_readiness").eq("outreach_readiness", "ready").limit(1)
-      .then(async () => {
-        // Get pipeline distribution
+    (async () => {
         const stages = ["ready", "needs_verification", "not_ready", "contacted", "do_not_contact", "low_priority"];
-        const results = [];
-        for (const stage of stages) {
-          const { count } = await sp.from("investors").select("id", { count: "exact", head: true }).eq("outreach_readiness", stage);
-          if (count && count > 0) results.push({ stage, count });
-        }
-        return results;
-      }),
+        const stageResults = await Promise.all(
+          stages.map(stage =>
+            sp.from("investors").select("id", { count: "exact", head: true }).eq("outreach_readiness", stage)
+          )
+        );
+        return stages.map((stage, i) => ({ stage, count: stageResults[i].count || 0 })).filter(r => r.count > 0);
+      })(),
     sp.from("investors").select("id, full_name, investor_type, fit_score, outreach_readiness, created_at")
       .order("created_at", { ascending: false })
       .limit(5),

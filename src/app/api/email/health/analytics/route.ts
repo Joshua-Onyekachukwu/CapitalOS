@@ -4,9 +4,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/middleware/api-auth";
 
 // GET — Get email analytics data
 export async function GET(request: NextRequest) {
+  const authUser = await requireAuth(request);
+  if (authUser instanceof NextResponse) return authUser;
+
   try {
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get("days") || "30");
