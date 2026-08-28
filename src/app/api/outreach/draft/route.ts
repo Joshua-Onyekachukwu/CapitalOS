@@ -246,12 +246,24 @@ EMAIL RULES:
       // Use defaults if branding load fails
     }
 
+    // Generate context/reason line for the branded template
+    const contextParts2: string[] = [];
+    if (investorType) contextParts2.push(`${investorType.replace(/_/g, ' ')} investor`);
+    if (fitScore && parseInt(String(fitScore)) >= 70) contextParts2.push(`${fitScore}% fit with your startup`);
+    if (investorSectors?.length) contextParts2.push(`focuses on ${investorSectors.slice(0, 3).join(', ')}`);
+    if (investorStages?.length) contextParts2.push(`invests at ${investorStages.slice(0, 2).join(' & ')} stage`);
+    if (checkSize) contextParts2.push(`typical check: ${checkSize}`);
+    const contextLine = contextParts2.length > 0
+      ? `${investorName || 'This investor'} is a ${contextParts2.join(' who ')} — a strong match for your current round.`
+      : `We identified ${investorName || 'this investor'} as a strong potential match based on your startup profile.`;
+
     // Generate branded HTML template
     const finalSubject = subject || emailBody.split(/\n/)[0].substring(0, 60);
     const { html: brandedHtml, text: brandedText } = brandedOutreachEmail({
       emailBody,
       subject: finalSubject,
       investorName: investorName || "there",
+      context: contextLine,
       branding,
       unsubscribeEmail: user.email,
     });
