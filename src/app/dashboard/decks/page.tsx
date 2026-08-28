@@ -6,6 +6,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
+import { DeckPreview } from "@/components/Decks/DeckPreview";
 
 interface DeckDocument {
   id: string;
@@ -21,6 +22,7 @@ export default function DecksPage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [previewDeck, setPreviewDeck] = useState<{ url: string; name: string } | null>(null);
 
   const loadDecks = useCallback(async () => {
     try {
@@ -176,6 +178,10 @@ export default function DecksPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-[8px] flex-none">
+                      <Button variant="outline" size="sm" title="Preview"
+                        onClick={() => setPreviewDeck({ url: group.pdf?.fileUrl || group.pptx?.fileUrl || "", name: group.name })}>
+                        <i className="ri-eye-line text-[14px]"></i>
+                      </Button>
                       {group.pptx && (
                         <a href={group.pptx.fileUrl || undefined} download target="_blank" rel="noopener noreferrer">
                           <Button variant="outline" size="sm" title="Download PPTX">
@@ -210,6 +216,15 @@ export default function DecksPage() {
             );
           })}
         </div>
+      )}
+      {/* Deck Preview Modal */}
+      {previewDeck && (
+        <DeckPreview
+          isOpen={!!previewDeck}
+          onClose={() => setPreviewDeck(null)}
+          deckUrl={previewDeck.url}
+          deckName={previewDeck.name}
+        />
       )}
     </div>
   );

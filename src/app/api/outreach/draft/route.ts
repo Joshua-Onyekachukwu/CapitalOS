@@ -119,22 +119,20 @@ export async function POST(request: NextRequest) {
       referral: "Warm introduction style. Mention shared connections or interests.",
     };
 
-    const systemPrompt = `You write investor outreach emails.
+    const systemPrompt = `Write a ${tone || "warm"} investor outreach email.
 
-OUTPUT FORMAT:
-After all your analysis, end with exactly these two sections on separate lines:
-SUBJECT: your subject line here
+OUTPUT — exactly this format, nothing else:
+SUBJECT: <subject line>
 BODY:
-your email body here
+<Hi [Name], email body under 100 words>
 
-EMAIL RULES:
-- Start with Hi [InvestorFirstName],
-- Start with something specific about the investor
-- Briefly say why you are reaching out
-- End with one low-pressure next step
-- Under 120 words
-- No signature block
-- Tone: ${toneMap[tone] || toneMap.warm}`;
+Rules:
+- Greeting: Hi [FirstName],
+- Open with something specific about them
+- One sentence why you're reaching out
+- One low-pressure CTA
+- Under 100 words total
+- No signature, no analysis, no explanation`;
 
     const contextParts: string[] = [];
     if (investorName) contextParts.push(`Investor: ${investorName}`);
