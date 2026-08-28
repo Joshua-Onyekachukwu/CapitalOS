@@ -142,6 +142,31 @@ export default function CopilotPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Persist conversation to localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("copilot_messages");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Restore messages but mark all as not streaming
+          setMessages(parsed.map((m: Message) => ({ ...m, isStreaming: false })));
+          setShowSuggestions(false);
+        }
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    if (messages.length > 1 || (messages.length === 1 && !messages[0].isStreaming && messages[0].content)) {
+      // Don't persist the initial empty streaming message
+      const toSave = messages.filter(m => m.content || m.role === "user");
+      if (toSave.length > 0) {
+        localStorage.setItem("copilot_messages", JSON.stringify(toSave));
+      }
+    }
+  }, [messages]);
+
   const GREETING =
     "Hey! I'm your AI fundraising copilot. I can see your investor database, pipeline, and startup profile.\n\nI can help you figure out who to contact first, plan your outreach strategy, analyze your pipeline, or prep for your pitch.\n\nWhat are you working on?";
 
@@ -291,10 +316,23 @@ export default function CopilotPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)]">
-      <PageHeader
-        title="AI Copilot"
-        description="Your intelligent fundraising advisor. Ask anything about investors, strategy, or your pipeline."
-      />
+      <div className="flex items-center justify-between mb-[16px]">
+        <PageHeader
+          title="AI Copilot"
+          description="Your intelligent fundraising advisor. Ask anything about investors, strategy, or your pipeline."
+        />
+        <button
+          onClick={() => {
+            setMessages([{ role: "assistant", content: GREETING, isStreaming: false }]);
+            localStorage.removeItem("copilot_messages");
+            setShowSuggestions(true);
+          }}
+          className="flex items-center gap-[6px] px-[12px] py-[6px] text-[13px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <i className="ri-refresh-line text-[14px]"></i>
+          New Chat
+        </button>
+      </div>
 
       {/* Chat Messages */}
       <Card className="flex-1 flex flex-col min-h-0 mb-[16px]">

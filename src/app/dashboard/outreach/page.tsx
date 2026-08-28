@@ -54,6 +54,25 @@ const statusConfig: Record<string, { label: string; variant: "success" | "warnin
 export default function OutreachPage() {
   const [activeTab, setActiveTab] = useState("drafts");
   const [drafts, setDrafts] = useState<EmailDraft[]>([]);
+
+  // Persist drafts to localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("outreach_drafts");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setDrafts(parsed);
+        }
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    if (drafts.length > 0) {
+      localStorage.setItem("outreach_drafts", JSON.stringify(drafts));
+    }
+  }, [drafts]);
   const [selectedDraft, setSelectedDraft] = useState<EmailDraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);

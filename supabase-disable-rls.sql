@@ -1,33 +1,23 @@
 -- =============================================
--- Fix: Disable RLS on all user-created tables
+-- ⚠️ DEPRECATED — DO NOT USE
 -- =============================================
--- The tables created by supabase-create-missing-tables.sql may have RLS
--- enabled by default, which blocks user-level inserts without policies.
--- The existing working tables (investors, email_accounts, audit_log) work
--- fine without RLS, so we disable it on all our tables.
+-- This file used to disable RLS on all tables.
+-- That was a security risk.
+--
+-- USE INSTEAD: supabase-rls-fix.sql
+-- That file creates proper per-user RLS policies.
+--
+-- If you already ran this file and want to fix it:
+-- 1. Run supabase-rls-fix.sql to create proper policies
+-- 2. Then re-enable RLS on any table you disabled:
+--
+-- ALTER TABLE company_profiles ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE saved_investors ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE email_messages ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE email_accounts ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE saved_filters ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE acquisition_jobs ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE saved_investors DISABLE ROW LEVEL SECURITY;
-ALTER TABLE company_profiles DISABLE ROW LEVEL SECURITY;
-ALTER TABLE company_team_members DISABLE ROW LEVEL SECURITY;
-ALTER TABLE company_documents DISABLE ROW LEVEL SECURITY;
-ALTER TABLE campaigns DISABLE ROW LEVEL SECURITY;
-ALTER TABLE email_messages DISABLE ROW LEVEL SECURITY;
-ALTER TABLE acquisition_jobs DISABLE ROW LEVEL SECURITY;
-ALTER TABLE investor_firms DISABLE ROW LEVEL SECURITY;
-ALTER TABLE investor_fit_profiles DISABLE ROW LEVEL SECURITY;
-
--- Also drop any policies that exist (cleanup)
-DO $$ BEGIN
-  DROP POLICY IF EXISTS "Users can view own profile" ON company_profiles;
-  DROP POLICY IF EXISTS "Users can insert own profile" ON company_profiles;
-  DROP POLICY IF EXISTS "Users can update own profile" ON company_profiles;
-  DROP POLICY IF EXISTS "Users can manage own team" ON company_team_members;
-  DROP POLICY IF EXISTS "Users can manage own saved" ON saved_investors;
-  DROP POLICY IF EXISTS "Users can manage own campaigns" ON campaigns;
-  DROP POLICY IF EXISTS "Users can manage own emails" ON email_messages;
-  DROP POLICY IF EXISTS "Users can manage own documents" ON company_documents;
-  DROP POLICY IF EXISTS "Users can manage own jobs" ON acquisition_jobs;
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-
-SELECT 'RLS disabled on all tables' as result;
+SELECT 'DEPRECATED: Use supabase-rls-fix.sql instead. This file disables RLS which is a security risk.' as warning;

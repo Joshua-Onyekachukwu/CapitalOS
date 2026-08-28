@@ -80,19 +80,14 @@ WHERE a.id < b.id
 
 
 -- ═══════════════════════════════════════════
--- 3. DISABLE RLS ON USER TABLES (fixes onboarding)
+-- 3. RLS POLICIES (proper access control)
 -- ═══════════════════════════════════════════
--- The RLS policies on these tables block inserts from the service role client.
--- Since we use service role for all server-side operations, disable RLS.
-
-ALTER TABLE company_profiles DISABLE ROW LEVEL SECURITY;
-ALTER TABLE saved_investors DISABLE ROW LEVEL SECURITY;
-ALTER TABLE email_messages DISABLE ROW LEVEL SECURITY;
-ALTER TABLE email_accounts DISABLE ROW LEVEL SECURITY;
-ALTER TABLE campaigns DISABLE ROW LEVEL SECURITY;
-ALTER TABLE saved_filters DISABLE ROW LEVEL SECURITY;
-ALTER TABLE audit_log DISABLE ROW LEVEL SECURITY;
-ALTER TABLE acquisition_jobs DISABLE ROW LEVEL SECURITY;
+-- SEE: supabase-rls-fix.sql for complete RLS policies.
+-- That file creates proper per-user policies so that:
+--   - Authenticated users can only access their own data
+--   - Service role (API routes) bypasses RLS automatically
+--   - Public routes (waitlist, tracking) work for anonymous users
+-- DO NOT disable RLS — it's a security risk.
 
 
 -- ═══════════════════════════════════════════

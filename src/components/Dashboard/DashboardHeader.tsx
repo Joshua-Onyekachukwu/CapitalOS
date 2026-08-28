@@ -56,7 +56,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
           <i className="ri-menu-line text-[24px] text-[#06201b] dark:text-white"></i>
         </button>
 
-        {/* Search placeholder */}
+        {/* Search */}
         <div className="hidden md:flex items-center flex-1 max-w-[400px] mx-[20px]">
           <div className="relative w-full">
             <i className="ri-search-line absolute left-[12px] top-1/2 -translate-y-1/2 text-gray-400 text-[18px]"></i>
@@ -70,18 +70,32 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
                 }
               }}
               placeholder="Search investors, campaigns..."
-              className="w-full py-[8px] pl-[38px] pr-[14px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 focus:border-lime-500"
+              className="w-full py-[8px] pl-[38px] pr-[36px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30 focus:border-lime-500"
             />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  if (searchQuery.trim()) {
+                    router.push(`/dashboard/investors?search=${encodeURIComponent(searchQuery.trim())}`);
+                  }
+                }}
+                className="absolute right-[8px] top-1/2 -translate-y-1/2 w-[24px] h-[24px] flex items-center justify-center rounded-[4px] hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <i className="ri-arrow-right-line text-[14px] text-gray-500"></i>
+              </button>
+            )}
           </div>
         </div>
 
         {/* Right side */}
         <div className="flex items-center gap-[12px]">
-          {/* Notifications */}
-          <button className="relative flex items-center justify-center w-[36px] h-[36px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          {/* Notifications — link to settings */}
+          <Link
+            href="/dashboard/settings"
+            className="relative flex items-center justify-center w-[36px] h-[36px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
             <i className="ri-notification-3-line text-[18px] text-gray-500"></i>
-            <span className="absolute top-[8px] right-[6px] w-[8px] h-[8px] bg-danger-500 rounded-full border-2 border-white dark:border-[#0a0e19]"></span>
-          </button>
+          </Link>
 
           {/* User menu dropdown */}
           <div className="relative" ref={menuRef}>
