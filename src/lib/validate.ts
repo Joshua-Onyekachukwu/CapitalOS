@@ -71,6 +71,11 @@ export const sendEmailSchema = z.object({
   subject: z.string().min(1).max(200),
   bodyHtml: z.string().min(1).max(50000),
   bodyText: z.string().max(50000).optional(),
+  attachments: z.array(z.object({
+    name: z.string(),
+    content: z.string(), // base64
+    mimeType: z.string(),
+  })).max(5).optional(),
 });
 
 export const draftEmailSchema = z.object({

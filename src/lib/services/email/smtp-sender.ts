@@ -146,7 +146,7 @@ export async function sendEmailViaSmtp(
     const bodyText = params.bodyText || params.bodyHtml.replace(/<[^>]*>/g, "");
     const compliant = injectSmtpCompliance(params.bodyHtml, bodyText, params.to);
 
-    const info = await transport.sendMail({
+    const mailOptions: any = {
       from: fromAddress,
       to: params.to,
       cc: params.cc?.join(", "),
@@ -154,7 +154,14 @@ export async function sendEmailViaSmtp(
       text: compliant.text,
       html: compliant.html,
       replyTo: params.replyTo,
-    });
+    };
+
+    // Add attachments if provided
+    if (params.attachments && params.attachments.length > 0) {
+      mailOptions.attachments = params.attachments;
+    }
+
+    const info = await transport.sendMail(mailOptions);
 
     return {
       success: true,

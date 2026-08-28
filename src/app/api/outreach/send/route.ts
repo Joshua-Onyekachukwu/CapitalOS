@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const validated = await validateBodyAsync(request, sendEmailSchema);
     if (validated instanceof NextResponse) return validated;
 
-    const { investorId, subject, bodyHtml, bodyText } = validated;
+    const { investorId, subject, bodyHtml, bodyText, attachments } = validated;
 
     // Generate tracking ID and inject tracking into HTML
     const { generateTrackingId, injectTracking } = await import("@/lib/services/email/tracking-supabase");
@@ -51,21 +51,23 @@ export async function POST(request: NextRequest) {
     const investorEmail = investor.email;
 
     // Send the email — try OAuth first, fall back to SMTP
-    let result = await sendEmail({
+    const sendParams = {
       userId,
       to: investorEmail,
       subject,
       bodyHtml: trackedHtml,
       bodyText: bodyText || bodyHtml.replace(/<[^>]*>/g, ""),
-    });
+      attachments: attachments?.map((a: { name: string; content: string; mimeType: string }) => ({
+        filename: a.name,
+        content: Buffer.from(a.content, "base64"),
+        contentType: a.mimeType,
+      })),
+    };
+
+    let result = await sendEmail(sendParams);
 
     if (!result.success && result.error?.includes("No email account connected")) {
-      result = await sendEmailViaSmtp({
-        to: investorEmail,
-        subject,
-        bodyHtml: trackedHtml,
-        bodyText: bodyText || bodyHtml.replace(/<[^>]*>/g, ""),
-      });
+      result = await sendEmailViaSmtp(sendParams);
     }
 
     if (result.success) {
