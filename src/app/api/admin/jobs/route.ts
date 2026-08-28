@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-
-function requireAdmin(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const adminEmails = (process.env.COCKROACH_ADMIN_EMAILS || "").split(",").map((e) => e.trim().toLowerCase());
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return false;
-  }
-  // For now, we trust the client-side admin check.
-  // In production, verify the JWT and check the email.
-  return true;
-}
+import { requireAdmin } from "@/lib/middleware/api-auth";
 
 export async function GET(request: NextRequest) {
-  if (!requireAdmin(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const user = await requireAdmin(request);
+  if (user instanceof NextResponse) return user;
 
   try {
     const sp = createClient(
