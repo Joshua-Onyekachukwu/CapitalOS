@@ -1,14 +1,16 @@
 // =============================================
-// Capital OS — Branded Email Templates
+// Capital OS — Branded Email Templates (Premium)
 // =============================================
-// Beautiful, user-branded HTML templates for investor outreach.
-// Pure HTML/CSS — works in all email clients (Gmail, Outlook, Apple Mail).
+// Premium, refined HTML email templates for investor outreach.
+// Pure HTML/CSS — works in all email clients.
 //
-// LAYOUT:
-//   Header (brand logo + name)
-//   ├── Opening paragraphs (greeting + intro)
-//   ├── "Why We're Reaching Out" context box  ← MIDDLE
-//   ├── Closing paragraphs (conclusion + CTA)
+// DESIGN:
+//   Top accent stripe (brand color)
+//   White card with refined typography
+//   ├── Header (logo + name + tagline)
+//   ├── Opening paragraphs
+//   ├── "Why We're Reaching Out" context box
+//   ├── Closing paragraphs
 //   ├── Signature
 //   └── Footer (CAN-SPAM)
 
@@ -91,21 +93,9 @@ function getInitials(name: string): string {
 }
 
 // =============================================
-// Format body paragraphs to HTML
+// Split body into opening and closing
 // =============================================
 
-function formatParagraphs(emailBody: string): string[] {
-  return emailBody
-    .split(/\n\n+/)
-    .map((para) => {
-      const trimmed = para.trim();
-      if (!trimmed) return "";
-      return `<p style="color: #374151; line-height: 1.75; margin: 0 0 16px; font-size: 15px;">${trimmed.replace(/\n/g, "<br>")}</p>`;
-    })
-    .filter(Boolean);
-}
-
-// Split email body into opening (first 2 paragraphs) and closing (rest)
 function splitBody(emailBody: string): { opening: string; closing: string } {
   const paragraphs = emailBody
     .split(/\n\n+/)
@@ -113,15 +103,22 @@ function splitBody(emailBody: string): { opening: string; closing: string } {
     .filter(Boolean);
 
   if (paragraphs.length <= 2) {
-    return { opening: emailBody, closing: "" };
+    return {
+      opening: paragraphs
+        .map(
+          (p) =>
+            `<p style="color:#334155;font-size:15px;line-height:1.8;margin:0 0 18px;letter-spacing:-0.01em;">${p.replace(/\n/g, "<br>")}</p>`
+        )
+        .join("\n"),
+      closing: "",
+    };
   }
 
-  // First 2 paragraphs = opening, rest = closing
   const opening = paragraphs
     .slice(0, 2)
     .map(
       (p) =>
-        `<p style="color: #374151; line-height: 1.75; margin: 0 0 16px; font-size: 15px;">${p.replace(/\n/g, "<br>")}</p>`
+        `<p style="color:#334155;font-size:15px;line-height:1.8;margin:0 0 18px;letter-spacing:-0.01em;">${p.replace(/\n/g, "<br>")}</p>`
     )
     .join("\n");
 
@@ -129,7 +126,7 @@ function splitBody(emailBody: string): { opening: string; closing: string } {
     .slice(2)
     .map(
       (p) =>
-        `<p style="color: #374151; line-height: 1.75; margin: 0 0 16px; font-size: 15px;">${p.replace(/\n/g, "<br>")}</p>`
+        `<p style="color:#334155;font-size:15px;line-height:1.8;margin:0 0 18px;letter-spacing:-0.01em;">${p.replace(/\n/g, "<br>")}</p>`
     )
     .join("\n");
 
@@ -137,30 +134,29 @@ function splitBody(emailBody: string): { opening: string; closing: string } {
 }
 
 // =============================================
-// Context Box (reusable)
+// Context Box (premium style)
 // =============================================
 
 function contextBox(
   context: string,
   accent: string,
-  accentDark: string,
-  compact: boolean = false
+  accentDark: string
 ): string {
-  const pad = compact ? "16px 20px" : "20px 24px";
-  const margin = compact ? "0 0 20px" : "0 0 28px";
   return `
-      <div style="background: ${withAlpha(accent, 0.06)}; border: 1px solid ${withAlpha(accent, 0.15)}; border-radius: 12px; padding: ${pad}; margin: ${margin};">
-        <p style="color: ${accentDark}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 6px;">
+      <div style="margin:28px 0 32px;padding:0;">
+        <!-- Thin accent line above context -->
+        <div style="height:2px;background:linear-gradient(to right,${accent},transparent);margin:0 0 16px;border-radius:1px;"></div>
+        <p style="color:${accentDark};font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
           Why We're Reaching Out
         </p>
-        <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0;">
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
           ${context}
         </p>
       </div>`;
 }
 
 // =============================================
-// Brand Header (reusable)
+// Brand Header (premium style)
 // =============================================
 
 function brandHeader(
@@ -172,29 +168,27 @@ function brandHeader(
 ): string {
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
   const initials = getInitials(brandName);
-  const pad = compact ? "24px 32px" : "36px 32px";
-  const iconSize = compact ? 36 : 56;
-  const iconFontSize = compact ? 14 : 22;
-  const borderRadius = compact ? 8 : 14;
+  const iconSize = compact ? 32 : 44;
+  const iconFontSize = compact ? 13 : 18;
 
   return `
-    <div style="background: linear-gradient(135deg, ${accent} 0%, ${accentDark} 100%); padding: ${pad}; text-align: center;">
-      ${b.logoUrl ? `<img src="${b.logoUrl}" alt="${brandName}" style="height: ${compact ? 28 : 40}px; margin-bottom: 8px;" />` : `
-        <div style="display: inline-flex; align-items: center; justify-content: center; width: ${iconSize}px; height: ${iconSize}px; background: ${withAlpha(textColor, 0.2)}; border-radius: ${borderRadius}px; margin-bottom: ${compact ? 8 : 12}px;">
-          <span style="color: ${textColor}; font-size: ${iconFontSize}px; font-weight: 700; letter-spacing: -0.5px;">${initials}</span>
+    <div style="padding:${compact ? "28px 32px 24px" : "40px 32px 32px"};text-align:center;">
+      ${b.logoUrl ? `<img src="${b.logoUrl}" alt="${brandName}" style="height:${compact ? 24 : 32}px;margin-bottom:10px;" />` : `
+        <div style="display:inline-flex;align-items:center;justify-content:center;width:${iconSize}px;height:${iconSize}px;background:linear-gradient(135deg,${accent} 0%,${accentDark} 100%);border-radius:10px;margin-bottom:12px;">
+          <span style="color:#ffffff;font-size:${iconFontSize}px;font-weight:700;letter-spacing:-0.5px;">${initials}</span>
         </div>
       `}
-      <h1 style="color: ${textColor}; margin: 0; font-size: ${compact ? 18 : 24}px; font-weight: 700; letter-spacing: -0.3px;">
+      <h1 style="color:#0f172a;margin:0 0 2px;font-size:${compact ? 16 : 20}px;font-weight:600;letter-spacing:-0.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
         ${brandName}
       </h1>
-      <p style="color: ${withAlpha(textColor, 0.75)}; margin: 4px 0 0; font-size: ${compact ? 12 : 13}px;">
+      <p style="color:#94a3b8;margin:0;font-size:12px;letter-spacing:0.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
         ${b.tagline}
       </p>
     </div>`;
 }
 
 // =============================================
-// Footer (reusable)
+// Footer (premium style)
 // =============================================
 
 function emailFooter(
@@ -204,26 +198,26 @@ function emailFooter(
 ): string {
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
   return `
-    <div style="height: 1px; background: linear-gradient(to right, transparent, ${withAlpha(accent, 0.3)}, transparent); margin: 0 32px;"></div>
-    <div style="background: #fafafa; padding: 24px 32px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0 0 6px;">
-        ${b.footerText || `Sent by ${brandName} via Capital OS`}
+    <div style="margin:0 32px;"><div style="height:1px;background:#f1f5f9;"></div></div>
+    <div style="padding:24px 32px 28px;text-align:center;">
+      <p style="color:#94a3b8;font-size:12px;margin:0 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+        ${b.footerText || `${brandName} via Capital OS`}
       </p>
-      <p style="color: #9ca3af; font-size: 11px; margin: 0 0 8px;">
+      <p style="color:#cbd5e1;font-size:11px;margin:0 0 10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
         ${COMPANY_ADDRESS}
       </p>
-      <p style="color: #9ca3af; font-size: 11px; margin: 0;">
-        <a href="${unsubUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
-        &nbsp;&middot;&nbsp;
-        <a href="${UNSUBSCRIBE_BASE}/privacy" style="color: #9ca3af;">Privacy</a>
-        &nbsp;&middot;&nbsp;
-        <a href="${UNSUBSCRIBE_BASE}/terms" style="color: #9ca3af;">Terms</a>
+      <p style="color:#cbd5e1;font-size:11px;margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+        <a href="${unsubUrl}" style="color:#94a3b8;text-decoration:underline;">Unsubscribe</a>
+        <span style="color:#e2e8f0;margin:0 6px;">·</span>
+        <a href="${UNSUBSCRIBE_BASE}/privacy" style="color:#94a3b8;text-decoration:none;">Privacy</a>
+        <span style="color:#e2e8f0;margin:0 6px;">·</span>
+        <a href="${UNSUBSCRIBE_BASE}/terms" style="color:#94a3b8;text-decoration:none;">Terms</a>
       </p>
     </div>`;
 }
 
 // =============================================
-// Email Head (reusable)
+// Email Head
 // =============================================
 
 const EMAIL_HEAD = `<!DOCTYPE html>
@@ -234,20 +228,20 @@ const EMAIL_HEAD = `<!DOCTYPE html>
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="x-apple-disable-message-reformatting">
   <style>
-    body, table, td, p, a, li { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    body { margin: 0; padding: 0; width: 100% !important; }
-    img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
-    @media only screen and (max-width: 600px) {
-      .email-container { width: 100% !important; min-width: 100% !important; }
-      .email-body { padding: 24px 20px !important; }
+    body,table,td,p,a,li{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
+    body{margin:0;padding:0;width:100%!important}
+    img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic}
+    @media only screen and (max-width:600px){
+      .email-container{width:100%!important;min-width:100%!important}
+      .email-body{padding:28px 24px!important}
+      .accent-stripe{height:4px!important}
     }
   </style>
 </head>`;
 
 // =============================================
-// Branded Outreach Template
+// Branded Outreach Template (Premium)
 // =============================================
-// Layout: Header → Opening (2 paras) → Context Box → Closing → Signature → Footer
 
 export function brandedOutreachEmail({
   emailBody,
@@ -266,49 +260,53 @@ export function brandedOutreachEmail({
 }): { html: string; text: string } {
   const b = { ...DEFAULT_BRANDING, ...rawBranding };
   const accent = b.accentColor || DEFAULT_BRANDING.accentColor!;
-  const accentDark = darken(accent, 0.15);
+  const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#1a1a1a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
   const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
 
-  // Split body into opening and closing for context box insertion
   const { opening, closing } = splitBody(emailBody);
 
   const html = `${EMAIL_HEAD}
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f3f4f6; margin: 0; padding: 40px 16px;">
-  <div class="email-container" style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
-    
-    ${brandHeader(b, accent, accentDark, textColor)}
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f8fafc;margin:0;padding:0;">
+  <div style="padding:32px 16px;">
+    <div class="email-container" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 12px rgba(0,0,0,0.04);">
+      
+      <!-- Top Accent Stripe -->
+      <div class="accent-stripe" style="height:3px;background:linear-gradient(to right,${accent},${accentDark});"></div>
 
-    <div class="email-body" style="padding: 36px 32px;">
+      ${brandHeader(b, accent, accentDark, textColor)}
 
-      ${opening}
+      <div class="email-body" style="padding:0 36px 36px;">
 
-      ${context ? contextBox(context, accent, accentDark) : ""}
+        ${opening}
 
-      ${closing}
+        ${context ? contextBox(context, accent, accentDark) : ""}
 
-      ${b.signature ? `
-        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #f0f0f0;">
-          <p style="color: #374151; line-height: 1.6; margin: 0; font-size: 14px;">${b.signature.replace(/\n/g, "<br>")}</p>
-        </div>
-      ` : ""}
+        ${closing}
 
-      ${b.ctaText && b.ctaUrl ? `
-        <div style="text-align: center; margin: 28px 0 0;">
-          <a href="${b.ctaUrl}" style="display: inline-block; background: ${accent}; color: ${textColor}; padding: 14px 36px; border-radius: 10px; font-weight: 600; font-size: 15px; text-decoration: none; letter-spacing: 0.2px;">
-            ${b.ctaText} &rarr;
-          </a>
-        </div>
-      ` : ""}
+        ${b.signature ? `
+          <div style="margin-top:32px;padding-top:24px;border-top:1px solid #f1f5f9;">
+            <p style="color:#334155;line-height:1.7;margin:0;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">${b.signature.replace(/\n/g, "<br>")}</p>
+          </div>
+        ` : ""}
+
+        ${b.ctaText && b.ctaUrl ? `
+          <div style="margin-top:28px;">
+            <a href="${b.ctaUrl}" style="display:inline-block;background:${accent};color:${textColor};padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;letter-spacing:0.2px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+              ${b.ctaText} &rarr;
+            </a>
+          </div>
+        ` : ""}
+      </div>
+
+      ${emailFooter(b, accent, unsubUrl)}
     </div>
-
-    ${emailFooter(b, accent, unsubUrl)}
   </div>
 </body>
 </html>`;
 
-  // Plain text version — context in the middle
+  // Plain text version
   const plainParas = emailBody.split(/\n\n+/).filter(Boolean);
   const openingText = plainParas.slice(0, 2).join("\n\n");
   const closingText = plainParas.slice(2).join("\n\n");
@@ -318,7 +316,7 @@ export function brandedOutreachEmail({
 }
 
 // =============================================
-// Branded Follow-up Template
+// Branded Follow-up Template (Premium)
 // =============================================
 
 export function brandedFollowUpEmail({
@@ -340,7 +338,7 @@ export function brandedFollowUpEmail({
 }): { html: string; text: string } {
   const b = { ...DEFAULT_BRANDING, ...rawBranding };
   const accent = b.accentColor || DEFAULT_BRANDING.accentColor!;
-  const accentDark = darken(accent, 0.15);
+  const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#1a1a1a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
   const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
@@ -348,32 +346,36 @@ export function brandedFollowUpEmail({
   const { opening, closing } = splitBody(emailBody);
 
   const html = `${EMAIL_HEAD}
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f3f4f6; margin: 0; padding: 40px 16px;">
-  <div class="email-container" style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
-    
-    ${brandHeader(b, accent, accentDark, textColor, true)}
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f8fafc;margin:0;padding:0;">
+  <div style="padding:32px 16px;">
+    <div class="email-container" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 12px rgba(0,0,0,0.04);">
+      
+      <div class="accent-stripe" style="height:3px;background:linear-gradient(to right,${accent},${accentDark});"></div>
 
-    <div class="email-body" style="padding: 32px;">
-      ${originalSubject ? `
-        <div style="background: #f9fafb; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; border-left: 3px solid ${accent};">
-          <p style="color: #6b7280; font-size: 12px; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Re: ${originalSubject}</p>
-        </div>
-      ` : ""}
+      ${brandHeader(b, accent, accentDark, textColor, true)}
 
-      ${opening}
+      <div class="email-body" style="padding:0 36px 32px;">
+        ${originalSubject ? `
+          <div style="background:#f8fafc;border-radius:8px;padding:10px 16px;margin-bottom:20px;border-left:3px solid ${accent};">
+            <p style="color:#64748b;font-size:11px;margin:0;text-transform:uppercase;letter-spacing:0.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">Re: ${originalSubject}</p>
+          </div>
+        ` : ""}
 
-      ${context ? contextBox(context, accent, accentDark, true) : ""}
+        ${opening}
 
-      ${closing}
+        ${context ? contextBox(context, accent, accentDark) : ""}
 
-      ${b.signature ? `
-        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #f0f0f0;">
-          <p style="color: #374151; line-height: 1.6; margin: 0; font-size: 14px;">${b.signature.replace(/\n/g, "<br>")}</p>
-        </div>
-      ` : ""}
+        ${closing}
+
+        ${b.signature ? `
+          <div style="margin-top:28px;padding-top:20px;border-top:1px solid #f1f5f9;">
+            <p style="color:#334155;line-height:1.7;margin:0;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">${b.signature.replace(/\n/g, "<br>")}</p>
+          </div>
+        ` : ""}
+      </div>
+
+      ${emailFooter(b, accent, unsubUrl)}
     </div>
-
-    ${emailFooter(b, accent, unsubUrl)}
   </div>
 </body>
 </html>`;
@@ -387,7 +389,7 @@ export function brandedFollowUpEmail({
 }
 
 // =============================================
-// Branded Cold Intro Template
+// Branded Cold Intro Template (Premium)
 // =============================================
 
 export function brandedColdIntroEmail({
@@ -409,7 +411,7 @@ export function brandedColdIntroEmail({
 }): { html: string; text: string } {
   const b = { ...DEFAULT_BRANDING, ...rawBranding };
   const accent = b.accentColor || DEFAULT_BRANDING.accentColor!;
-  const accentDark = darken(accent, 0.15);
+  const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#1a1a1a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
   const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
@@ -417,43 +419,47 @@ export function brandedColdIntroEmail({
   const { opening, closing } = splitBody(emailBody);
 
   const html = `${EMAIL_HEAD}
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f3f4f6; margin: 0; padding: 40px 16px;">
-  <div class="email-container" style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
-    
-    ${brandHeader(b, accent, accentDark, textColor)}
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f8fafc;margin:0;padding:0;">
+  <div style="padding:32px 16px;">
+    <div class="email-container" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 12px rgba(0,0,0,0.04);">
+      
+      <div class="accent-stripe" style="height:3px;background:linear-gradient(to right,${accent},${accentDark});"></div>
 
-    <div class="email-body" style="padding: 36px 32px;">
+      ${brandHeader(b, accent, accentDark, textColor)}
 
-      ${opening}
+      <div class="email-body" style="padding:0 36px 36px;">
 
-      ${context ? contextBox(context, accent, accentDark) : ""}
+        ${opening}
 
-      ${closing}
+        ${context ? contextBox(context, accent, accentDark) : ""}
 
-      ${socialProof ? `
-      <div style="background: #f9fafb; border-radius: 10px; padding: 16px 20px; margin: 24px 0 0;">
-        <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0; font-style: italic;">
-          "${socialProof}"
-        </p>
+        ${closing}
+
+        ${socialProof ? `
+        <div style="margin-top:24px;padding:16px 20px;background:#f8fafc;border-radius:8px;border-left:3px solid ${withAlpha(accent, 0.3)};">
+          <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0;font-style:italic;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+            "${socialProof}"
+          </p>
+        </div>
+        ` : ""}
+
+        ${b.signature ? `
+          <div style="margin-top:28px;padding-top:20px;border-top:1px solid #f1f5f9;">
+            <p style="color:#334155;line-height:1.7;margin:0;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">${b.signature.replace(/\n/g, "<br>")}</p>
+          </div>
+        ` : ""}
+
+        ${b.ctaText && b.ctaUrl ? `
+          <div style="margin-top:28px;">
+            <a href="${b.ctaUrl}" style="display:inline-block;background:${accent};color:${textColor};padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;letter-spacing:0.2px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+              ${b.ctaText} &rarr;
+            </a>
+          </div>
+        ` : ""}
       </div>
-      ` : ""}
 
-      ${b.signature ? `
-        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #f0f0f0;">
-          <p style="color: #374151; line-height: 1.6; margin: 0; font-size: 14px;">${b.signature.replace(/\n/g, "<br>")}</p>
-        </div>
-      ` : ""}
-
-      ${b.ctaText && b.ctaUrl ? `
-        <div style="text-align: center; margin: 28px 0 0;">
-          <a href="${b.ctaUrl}" style="display: inline-block; background: ${accent}; color: ${textColor}; padding: 14px 36px; border-radius: 10px; font-weight: 600; font-size: 15px; text-decoration: none; letter-spacing: 0.2px;">
-            ${b.ctaText} &rarr;
-          </a>
-        </div>
-      ` : ""}
+      ${emailFooter(b, accent, unsubUrl)}
     </div>
-
-    ${emailFooter(b, accent, unsubUrl)}
   </div>
 </body>
 </html>`;
