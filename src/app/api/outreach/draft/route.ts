@@ -246,16 +246,27 @@ EMAIL RULES:
       // Use defaults if branding load fails
     }
 
-    // Generate context/reason line for the branded template
+    // Generate qualification-based context for the branded template
+    // This explains WHY we're reaching out and HOW we qualified this investor
     const contextParts2: string[] = [];
-    if (investorType) contextParts2.push(`${investorType.replace(/_/g, ' ')} investor`);
-    if (fitScore && parseInt(String(fitScore)) >= 70) contextParts2.push(`${fitScore}% fit with your startup`);
-    if (investorSectors?.length) contextParts2.push(`focuses on ${investorSectors.slice(0, 3).join(', ')}`);
-    if (investorStages?.length) contextParts2.push(`invests at ${investorStages.slice(0, 2).join(' & ')} stage`);
-    if (checkSize) contextParts2.push(`typical check: ${checkSize}`);
-    const contextLine = contextParts2.length > 0
-      ? `${investorName || 'This investor'} is a ${contextParts2.join(' who ')} — a strong match for your current round.`
-      : `We identified ${investorName || 'this investor'} as a strong potential match based on your startup profile.`;
+    if (fitScore && parseInt(String(fitScore)) >= 70) {
+      contextParts2.push(`${fitScore}% fit score`);
+    }
+    if (investorType) {
+      contextParts2.push(`${investorType.replace(/_/g, ' ')} type`);
+    }
+    if (investorSectors?.length) {
+      contextParts2.push(`focuses on ${investorSectors.slice(0, 3).join(', ')}`);
+    }
+    if (investorStages?.length) {
+      contextParts2.push(`invests at ${investorStages.slice(0, 2).join(' & ')} stage`);
+    }
+    if (checkSize) {
+      contextParts2.push(`typical check: ${checkSize}`);
+    }
+    const qualificationReason = contextParts2.length > 0
+      ? `We matched ${investorName || 'this investor'} based on: ${contextParts2.join(', ')}. Their investment thesis and portfolio align with what we are building.`
+      : `We identified ${investorName || 'this investor'} as a strong match based on your startup profile and their investment focus.`;
 
     // Generate branded HTML template
     const finalSubject = subject || emailBody.split(/\n/)[0].substring(0, 60);
@@ -263,7 +274,7 @@ EMAIL RULES:
       emailBody,
       subject: finalSubject,
       investorName: investorName || "there",
-      context: contextLine,
+      context: qualificationReason,
       branding,
       unsubscribeEmail: user.email,
     });

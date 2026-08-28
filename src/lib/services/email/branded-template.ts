@@ -3,6 +3,14 @@
 // =============================================
 // Beautiful, user-branded HTML templates for investor outreach.
 // Pure HTML/CSS — works in all email clients (Gmail, Outlook, Apple Mail).
+//
+// LAYOUT:
+//   Header (brand logo + name)
+//   ├── Opening paragraphs (greeting + intro)
+//   ├── "Why We're Reaching Out" context box  ← MIDDLE
+//   ├── Closing paragraphs (conclusion + CTA)
+//   ├── Signature
+//   └── Footer (CAN-SPAM)
 
 export interface UserBranding {
   brandName?: string | null;
@@ -86,7 +94,7 @@ function getInitials(name: string): string {
 // Format body paragraphs to HTML
 // =============================================
 
-function formatBody(emailBody: string): string {
+function formatParagraphs(emailBody: string): string[] {
   return emailBody
     .split(/\n\n+/)
     .map((para) => {
@@ -94,8 +102,61 @@ function formatBody(emailBody: string): string {
       if (!trimmed) return "";
       return `<p style="color: #374151; line-height: 1.75; margin: 0 0 16px; font-size: 15px;">${trimmed.replace(/\n/g, "<br>")}</p>`;
     })
-    .filter(Boolean)
+    .filter(Boolean);
+}
+
+// Split email body into opening (first 2 paragraphs) and closing (rest)
+function splitBody(emailBody: string): { opening: string; closing: string } {
+  const paragraphs = emailBody
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (paragraphs.length <= 2) {
+    return { opening: emailBody, closing: "" };
+  }
+
+  // First 2 paragraphs = opening, rest = closing
+  const opening = paragraphs
+    .slice(0, 2)
+    .map(
+      (p) =>
+        `<p style="color: #374151; line-height: 1.75; margin: 0 0 16px; font-size: 15px;">${p.replace(/\n/g, "<br>")}</p>`
+    )
     .join("\n");
+
+  const closing = paragraphs
+    .slice(2)
+    .map(
+      (p) =>
+        `<p style="color: #374151; line-height: 1.75; margin: 0 0 16px; font-size: 15px;">${p.replace(/\n/g, "<br>")}</p>`
+    )
+    .join("\n");
+
+  return { opening, closing };
+}
+
+// =============================================
+// Context Box (reusable)
+// =============================================
+
+function contextBox(
+  context: string,
+  accent: string,
+  accentDark: string,
+  compact: boolean = false
+): string {
+  const pad = compact ? "16px 20px" : "20px 24px";
+  const margin = compact ? "0 0 20px" : "0 0 28px";
+  return `
+      <div style="background: ${withAlpha(accent, 0.06)}; border: 1px solid ${withAlpha(accent, 0.15)}; border-radius: 12px; padding: ${pad}; margin: ${margin};">
+        <p style="color: ${accentDark}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 6px;">
+          Why We're Reaching Out
+        </p>
+        <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0;">
+          ${context}
+        </p>
+      </div>`;
 }
 
 // =============================================
@@ -179,8 +240,6 @@ const EMAIL_HEAD = `<!DOCTYPE html>
     @media only screen and (max-width: 600px) {
       .email-container { width: 100% !important; min-width: 100% !important; }
       .email-body { padding: 24px 20px !important; }
-      .brand-header { padding: 28px 20px !important; }
-      .context-box { padding: 16px !important; }
     }
   </style>
 </head>`;
@@ -188,6 +247,7 @@ const EMAIL_HEAD = `<!DOCTYPE html>
 // =============================================
 // Branded Outreach Template
 // =============================================
+// Layout: Header → Opening (2 paras) → Context Box → Closing → Signature → Footer
 
 export function brandedOutreachEmail({
   emailBody,
@@ -211,7 +271,8 @@ export function brandedOutreachEmail({
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
   const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
 
-  const formattedBody = formatBody(emailBody);
+  // Split body into opening and closing for context box insertion
+  const { opening, closing } = splitBody(emailBody);
 
   const html = `${EMAIL_HEAD}
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f3f4f6; margin: 0; padding: 40px 16px;">
@@ -221,19 +282,11 @@ export function brandedOutreachEmail({
 
     <div class="email-body" style="padding: 36px 32px;">
 
-      <!-- Why We're Reaching Out -->
-      ${context ? `
-      <div class="context-box" style="background: ${withAlpha(accent, 0.06)}; border: 1px solid ${withAlpha(accent, 0.2)}; border-radius: 12px; padding: 20px 24px; margin: 0 0 28px;">
-        <p style="color: ${accentDark}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 8px;">
-          Why We're Reaching Out
-        </p>
-        <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0;">
-          ${context}
-        </p>
-      </div>
-      ` : ""}
+      ${opening}
 
-      ${formattedBody}
+      ${context ? contextBox(context, accent, accentDark) : ""}
+
+      ${closing}
 
       ${b.signature ? `
         <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #f0f0f0;">
@@ -255,8 +308,11 @@ export function brandedOutreachEmail({
 </body>
 </html>`;
 
-  // Plain text version
-  const text = `${context ? `[Why We're Reaching Out]\n${context}\n\n` : ""}${emailBody}\n\n---\n${brandName} | ${b.tagline}\n${b.website || ""}\n\nSent via Capital OS | ${COMPANY_ADDRESS}\nUnsubscribe: ${unsubUrl}`;
+  // Plain text version — context in the middle
+  const plainParas = emailBody.split(/\n\n+/).filter(Boolean);
+  const openingText = plainParas.slice(0, 2).join("\n\n");
+  const closingText = plainParas.slice(2).join("\n\n");
+  const text = `${openingText}\n\n${context ? `[Why We're Reaching Out]\n${context}\n\n` : ""}${closingText}\n\n---\n${brandName} | ${b.tagline}\n${b.website || ""}\n\nSent via Capital OS | ${COMPANY_ADDRESS}\nUnsubscribe: ${unsubUrl}`;
 
   return { html, text };
 }
@@ -289,7 +345,7 @@ export function brandedFollowUpEmail({
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
   const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
 
-  const formattedBody = formatBody(emailBody);
+  const { opening, closing } = splitBody(emailBody);
 
   const html = `${EMAIL_HEAD}
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f3f4f6; margin: 0; padding: 40px 16px;">
@@ -304,14 +360,11 @@ export function brandedFollowUpEmail({
         </div>
       ` : ""}
 
-      ${context ? `
-      <div style="background: ${withAlpha(accent, 0.06)}; border: 1px solid ${withAlpha(accent, 0.2)}; border-radius: 12px; padding: 16px 20px; margin: 0 0 24px;">
-        <p style="color: ${accentDark}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 6px;">Context</p>
-        <p style="color: #374151; font-size: 13px; line-height: 1.6; margin: 0;">${context}</p>
-      </div>
-      ` : ""}
+      ${opening}
 
-      ${formattedBody}
+      ${context ? contextBox(context, accent, accentDark, true) : ""}
+
+      ${closing}
 
       ${b.signature ? `
         <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #f0f0f0;">
@@ -325,7 +378,10 @@ export function brandedFollowUpEmail({
 </body>
 </html>`;
 
-  const textContent = `${context ? `[Context]\n${context}\n\n` : ""}${emailBody}\n\n---\n${brandName} | ${b.tagline}\nUnsubscribe: ${unsubUrl}`;
+  const plainParas = emailBody.split(/\n\n+/).filter(Boolean);
+  const openingText = plainParas.slice(0, 2).join("\n\n");
+  const closingText = plainParas.slice(2).join("\n\n");
+  const textContent = `${openingText}\n\n${context ? `[Why We're Reaching Out]\n${context}\n\n` : ""}${closingText}\n\n---\n${brandName} | ${b.tagline}\nUnsubscribe: ${unsubUrl}`;
 
   return { html, text: textContent };
 }
@@ -358,7 +414,7 @@ export function brandedColdIntroEmail({
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
   const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
 
-  const formattedBody = formatBody(emailBody);
+  const { opening, closing } = splitBody(emailBody);
 
   const html = `${EMAIL_HEAD}
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f3f4f6; margin: 0; padding: 40px 16px;">
@@ -368,21 +424,12 @@ export function brandedColdIntroEmail({
 
     <div class="email-body" style="padding: 36px 32px;">
 
-      <!-- Why We're Reaching Out -->
-      ${context ? `
-      <div class="context-box" style="background: ${withAlpha(accent, 0.06)}; border: 1px solid ${withAlpha(accent, 0.2)}; border-radius: 12px; padding: 20px 24px; margin: 0 0 28px;">
-        <p style="color: ${accentDark}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 8px;">
-          Why We're Reaching Out
-        </p>
-        <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0;">
-          ${context}
-        </p>
-      </div>
-      ` : ""}
+      ${opening}
 
-      ${formattedBody}
+      ${context ? contextBox(context, accent, accentDark) : ""}
 
-      <!-- Social Proof -->
+      ${closing}
+
       ${socialProof ? `
       <div style="background: #f9fafb; border-radius: 10px; padding: 16px 20px; margin: 24px 0 0;">
         <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0; font-style: italic;">
@@ -411,7 +458,10 @@ export function brandedColdIntroEmail({
 </body>
 </html>`;
 
-  const text = `${context ? `[Why We're Reaching Out]\n${context}\n\n` : ""}${emailBody}${socialProof ? `\n\n"${socialProof}"` : ""}\n\n---\n${brandName} | ${b.tagline}\n${b.website || ""}\n\nSent via Capital OS | ${COMPANY_ADDRESS}\nUnsubscribe: ${unsubUrl}`;
+  const plainParas = emailBody.split(/\n\n+/).filter(Boolean);
+  const openingText = plainParas.slice(0, 2).join("\n\n");
+  const closingText = plainParas.slice(2).join("\n\n");
+  const text = `${openingText}\n\n${context ? `[Why We're Reaching Out]\n${context}\n\n` : ""}${closingText}${socialProof ? `\n\n"${socialProof}"` : ""}\n\n---\n${brandName} | ${b.tagline}\n${b.website || ""}\n\nSent via Capital OS | ${COMPANY_ADDRESS}\nUnsubscribe: ${unsubUrl}`;
 
   return { html, text };
 }
