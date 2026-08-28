@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital OS — Executive Summary</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #fff;
+    color: #1a1a2e;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Header Bar ── */
+  .header {
+    background: linear-gradient(135deg, #0a1628 0%, #0f2027 50%, #112240 100%);
+    padding: 28px 40px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 18px;
+    color: #0a1628;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span {
+    color: #84cc16;
+  }
+
+  .header-meta {
+    text-align: right;
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .header-meta strong {
+    color: rgba(255,255,255,0.85);
+    font-weight: 500;
+  }
+
+  /* ── Accent Stripe ── */
+  .accent-stripe {
+    height: 4px;
+    background: linear-gradient(90deg, #84cc16, #65a30d, #4d7c0f);
+  }
+
+  /* ── Content ── */
+  .content {
+    padding: 28px 40px 20px;
+  }
+
+  /* ── Tagline ── */
+  .tagline {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+
+  .tagline-sub {
+    font-size: 12.5px;
+    color: #64748b;
+    margin-bottom: 22px;
+    line-height: 1.5;
+  }
+
+  /* ── Stats Row ── */
+  .stats-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+  }
+
+  .stat-value.accent {
+    color: #65a30d;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    font-weight: 500;
+  }
+
+  /* ── Two Column Layout ── */
+  .two-col {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 18px;
+  }
+
+  .col {
+    flex: 1;
+  }
+
+  /* ── Section Headers ── */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #65a30d;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+  }
+
+  /* ── Problem / Solution ── */
+  .problem-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .problem-list li {
+    font-size: 11.5px;
+    color: #334155;
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .problem-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .problem-list.problem li::before {
+    background: #ef4444;
+  }
+
+  .solution-list li::before {
+    background: #84cc16 !important;
+  }
+
+  /* ── How It Works ── */
+  .steps {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .step {
+    flex: 1;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+
+  .step-num {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    color: #fff;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .step-title {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 2px;
+  }
+
+  .step-desc {
+    font-size: 9.5px;
+    color: #64748b;
+    line-height: 1.4;
+  }
+
+  /* ── Pricing Table ── */
+  .pricing-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .price-card {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+
+  .price-card.featured {
+    border-color: #84cc16;
+    background: linear-gradient(180deg, #f7fee7 0%, #fff 100%);
+  }
+
+  .price-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 2px;
+  }
+
+  .price-amount {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .price-amount span {
+    font-size: 11px;
+    font-weight: 400;
+    color: #64748b;
+  }
+
+  .price-detail {
+    font-size: 9.5px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+
+  /* ── Competitive Table ── */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    margin-bottom: 18px;
+  }
+
+  .comp-table th {
+    background: #f1f5f9;
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 2px solid #e2e8f0;
+    font-size: 9.5px;
+  }
+
+  .comp-table th:first-child {
+    border-radius: 6px 0 0 0;
+  }
+
+  .comp-table th:last-child {
+    border-radius: 0 6px 0 0;
+  }
+
+  .comp-table th.highlight {
+    background: #0f172a;
+    color: #84cc16;
+  }
+
+  .comp-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #475569;
+  }
+
+  .comp-table td.highlight {
+    background: #f7fee7;
+    font-weight: 500;
+  }
+
+  .comp-table tr:last-child td:first-child {
+    border-radius: 0 0 0 6px;
+  }
+
+  .comp-table tr:last-child td:last-child {
+    border-radius: 0 0 6px 0;
+  }
+
+  .check { color: #16a34a; font-weight: 700; }
+  .cross { color: #dc2626; }
+
+  /* ── The Ask ── */
+  .ask-box {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    border-radius: 10px;
+    padding: 18px 22px;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .ask-left {
+    flex: 1;
+  }
+
+  .ask-amount {
+    font-size: 28px;
+    font-weight: 800;
+    color: #84cc16;
+    letter-spacing: -0.5px;
+  }
+
+  .ask-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+
+  .ask-right {
+    flex: 2;
+    display: flex;
+    gap: 16px;
+  }
+
+  .ask-item {
+    flex: 1;
+  }
+
+  .ask-pct {
+    font-size: 16px;
+    font-weight: 700;
+    color: #84cc16;
+  }
+
+  .ask-desc {
+    font-size: 10px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.4;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 14px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-left {
+    font-size: 10.5px;
+    color: #475569;
+  }
+
+  .footer-left strong {
+    color: #0f172a;
+  }
+
+  .footer-right {
+    display: flex;
+    gap: 20px;
+  }
+
+  .footer-link {
+    font-size: 10px;
+    color: #64748b;
+    text-decoration: none;
+  }
+
+  .footer-link strong {
+    color: #65a30d;
+    font-weight: 600;
+  }
+
+  .demo-badge {
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    color: #0a1628;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-decoration: none;
+    letter-spacing: 0.3px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-area">
+      <div class="logo-icon">CO</div>
+      <div class="logo-text">Capital <span>OS</span></div>
+    </div>
+    <div class="header-meta">
+      <strong>Executive Summary</strong><br>
+      Pre-Seed · August 2026
+    </div>
+  </div>
+  <div class="accent-stripe"></div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Tagline -->
+    <div class="tagline">The AI-Powered Fundraising Operating System</div>
+    <div class="tagline-sub">Capital OS replaces the fragmented, spreadsheet-driven process of raising capital with one intelligent platform that discovers investors, qualifies opportunities, generates materials, and manages outreach.</div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value accent">46,093</div>
+        <div class="stat-label">Verified Investors</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value accent">41,346</div>
+        <div class="stat-label">Verified Emails</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">53</div>
+        <div class="stat-label">Platform Pages</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">69</div>
+        <div class="stat-label">API Routes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">50K+</div>
+        <div class="stat-label">Lines of Code</div>
+      </div>
+    </div>
+
+    <!-- Problem + Solution -->
+    <div class="two-col">
+      <div class="col">
+        <div class="section-title">The Problem</div>
+        <ul class="problem-list problem">
+          <li>Founders use 5+ disconnected tools for fundraising — none talk to each other</li>
+          <li>Finding the right investors takes 40-60 hours of manual research per round</li>
+          <li>Most outreach is generic mass-email with &lt;2% response rates</li>
+          <li>No system exists to match companies against investor theses automatically</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="section-title">Our Solution</div>
+        <ul class="problem-list solution-list">
+          <li>One platform: discovery → qualification → materials → outreach → tracking</li>
+          <li>AI scores every investor against your specific company profile</li>
+          <li>Personalized emails that sound human, not AI-generated templates</li>
+          <li>46K+ verified investors with emails, stages, sectors, and check sizes</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="section-title">How It Works</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Profile</div>
+        <div class="step-desc">7-step onboarding builds your company intelligence</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Discover</div>
+        <div class="step-desc">AI finds and scores investors that match your company</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Qualify</div>
+        <div class="step-desc">Multi-dimensional fit scoring with explanations</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-title">Draft</div>
+        <div class="step-desc">AI writes personalized emails per investor</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-title">Send</div>
+        <div class="step-desc">Branded emails with tracking and follow-ups</div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-title">Track</div>
+        <div class="step-desc">Pipeline, campaigns, open rates, reply rates</div>
+      </div>
+    </div>
+
+    <!-- Pricing -->
+    <div class="section-title">Business Model</div>
+    <div class="pricing-row">
+      <div class="price-card">
+        <div class="price-name">Free</div>
+        <div class="price-amount">$0</div>
+        <div class="price-detail">50 credits · 100 investors · 1 campaign</div>
+      </div>
+      <div class="price-card featured">
+        <div class="price-name">Workspace</div>
+        <div class="price-amount">$49<span>/mo</span></div>
+        <div class="price-detail">500 credits · 5K investors · 5 campaigns</div>
+      </div>
+      <div class="price-card">
+        <div class="price-name">Workspace Pro</div>
+        <div class="price-amount">$199<span>/mo</span></div>
+        <div class="price-detail">2,000 credits · 50K investors · Unlimited</div>
+      </div>
+    </div>
+
+    <!-- Competitive + Ask -->
+    <div class="two-col">
+      <div class="col">
+        <div class="section-title">Competitive Advantage</div>
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th class="highlight">Capital OS</th>
+              <th>Crunchbase</th>
+              <th>Apollo</th>
+              <th>PitchBook</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>AI fit scoring</td>
+              <td class="highlight"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td>AI email drafting</td>
+              <td class="highlight"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td>Campaign sequences</td>
+              <td class="highlight"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td>Pitch deck generation</td>
+              <td class="highlight"><span class="check">✓</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+              <td><span class="cross">✗</span></td>
+            </tr>
+            <tr>
+              <td>Pricing</td>
+              <td class="highlight">$0–199/mo</td>
+              <td>$0–99/mo</td>
+              <td>$0–99/mo</td>
+              <td>$20K+/yr</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col">
+        <div class="section-title">The Ask</div>
+        <div class="ask-box" style="margin-bottom: 12px;">
+          <div class="ask-left">
+            <div class="ask-label">Pre-Seed Round</div>
+            <div class="ask-amount">$150K–$250K</div>
+          </div>
+        </div>
+        <div style="font-size: 10.5px; color: #475569; line-height: 1.6;">
+          <div style="margin-bottom: 4px;"><strong style="color: #65a30d;">40%</strong> Product & Engineering</div>
+          <div style="margin-bottom: 4px;"><strong style="color: #65a30d;">25%</strong> Data & Infrastructure</div>
+          <div style="margin-bottom: 4px;"><strong style="color: #65a30d;">20%</strong> Marketing & Growth</div>
+          <div><strong style="color: #65a30d;">15%</strong> Operations & Legal</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-left">
+      <strong>Joshua Onyekachukwu</strong> · Founder & CEO<br>
+      onyekachukwujoshua39@gmail.com
+    </div>
+    <div class="footer-right">
+      <a href="https://capital-os-nine.vercel.app/" class="demo-badge">LIVE DEMO →</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
