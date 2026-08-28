@@ -4,6 +4,10 @@
 
 Capital OS is an **AI-powered fundraising operating system** for startup founders. It replaces the fragmented, spreadsheet-driven process of raising capital with an intelligent, connected platform that understands a founder's company, discovers relevant investors, qualifies opportunities, generates materials, and manages outreach — all in one place.
 
+## Live Demo
+
+**https://capital-os-nine.vercel.app/**
+
 ## The Problem
 
 Startup fundraising is broken:
@@ -18,13 +22,30 @@ Capital OS solves this by becoming the **single operating system for the entire 
 
 ## Target Users
 
-**Primary:** Startup founders who are currently raising or planning to raise capital.
+**Primary:** Startup founders who are currently raising or planning to raise capital (pre-seed through Series B).
 
 **Secondary:** Startup advisors, accelerators, and early-stage fund managers who help founders with fundraising.
 
 ## Core Value Proposition
 
 > Tell us about your company. Capital OS understands your business, discovers the right investors, helps you prepare your materials, and assists you in reaching out — intelligently and personally.
+
+## Platform Stats (August 28, 2026)
+
+| Metric | Value |
+|--------|-------|
+| **Verified investors in database** | 46,093 |
+| **With email addresses** | 46,093 (100%) |
+| **Verified emails** | 41,346 (89.7%) |
+| **Source files** | 272 |
+| **Lines of code** | 50,463 |
+| **Pages** | 53 |
+| **API routes** | 69 |
+| **Components** | 39 |
+| **Service modules** | 31 |
+| **Email template variants** | 7 |
+| **SQL migrations** | 18 |
+| **Platform score** | 85/100 production-ready |
 
 ## Product Philosophy
 
@@ -46,41 +67,89 @@ Capital OS solves this by becoming the **single operating system for the entire 
 7. Relationship Tracking → Fundraising Success
 ```
 
+## Architecture Overview
+
+Capital OS uses a **modern serverless architecture**:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        Your Browser                              │
+│                   (Next.js 14 App Router)                        │
+├────────────────────────┬─────────────────────────────────────────┤
+│  Supabase              │  NVIDIA NIM                             │
+│  (Auth + PostgreSQL)   │  (Nemotron-3.5 AI)                      │
+│                        │                                         │
+│  • Auth (Email + OAuth)│  • Investor Research                    │
+│  • 46K+ Investors      │  • Email Drafting                       │
+│  • Campaigns           │  • Fit Scoring                          │
+│  • Email Tracking      │  • Pitch Deck Generation                │
+│  • Documents           │  • AI Copilot                           │
+│  • RLS Security        │  • Key Rotation (5 keys)                │
+└────────────────────────┴─────────────────────────────────────────┘
+```
+
 ## Current Status
 
-Capital OS is in **active development**. The foundation is built:
+Capital OS is **beta-ready**. The full platform is built and functional:
 
-- ✅ Authentication & user management
-- ✅ Landing page (Real Estate Agent design adaptation)
-- ✅ Dashboard with real Supabase data
-- ✅ Investor intelligence pipeline (ingestion, normalization, deduplication, qualification)
-- ✅ CSV bulk import
-- ✅ SEC EDGAR scraper
-- ✅ AI Copilot (NVIDIA NIM)
-- ✅ AI-powered investor research summaries
-- ✅ AI email drafting
-- ✅ Email OAuth integration (Google/Microsoft)
-- ✅ Onboarding flow (7 steps)
-- ✅ Billing architecture (Model A — Fundraising Capacity)
-- ⏳ Pitch deck generation engine (planned)
-- ⏳ Stripe integration (architecture only)
-- ⏳ Advanced analytics (planned)
+### ✅ Fully Built
+
+- Authentication & user management (email/password + Google OAuth + Microsoft OAuth)
+- Landing page with professional design
+- 7-step onboarding wizard
+- Investor database (46,093 verified investors with emails)
+- AI-powered investor discovery with multi-dimensional fit scoring
+- AI investor research summaries
+- AI email drafting (personalized, natural-sounding)
+- 7 branded email templates with open/click tracking
+- Campaign management with drip sequences and follow-ups
+- Pipeline Kanban board (7 stages)
+- AI Copilot (natural language assistant)
+- Pitch deck generation (AI-powered, PPTX + PDF export)
+- Email health dashboard (warm-up, deliverability, domain verification)
+- Full admin dashboard (14 pages)
+- Stripe founding member payments
+- Waitlist system
+- CAN-SPAM compliant emails
+- Performance caching layer
+- Security (RLS policies, admin auth, rate limiting)
+
+### 🟡 In Progress
+
+- Google OAuth production configuration
+- Email generation speed optimization (~100s → targeting <30s)
+- Investor database growth toward 200K+
+- Design system standardization
+
+### 🔵 Planned
+
+- Mobile app
+- Team collaboration
+- API for external integrations
+- Meeting scheduling
+- Multi-language support
+
+## Revenue Model
+
+| Plan | Price | Credits/mo | Investor DB |
+|------|-------|-----------|-------------|
+| **Free** | $0 | 50 | 100 |
+| **Workspace** | $49/mo | 500 | 5,000 |
+| **Workspace Pro** | $199/mo | 2,000 | 50,000 |
 
 ## Documentation
 
-This documentation system is the **single source of truth** for the entire Capital OS project. It covers product, architecture, database, AI, pricing, security, development status, and decision history.
-
-| Section | Description |
-|---------|-------------|
+| Document | Description |
+|----------|-------------|
 | [Product Vision](./01-product-vision.md) | Why Capital OS exists, product principles, user journeys |
 | [System Architecture](./02-system-architecture.md) | How all components connect |
 | [Database Architecture](./03-database-architecture.md) | Complete data model |
 | [Investor Intelligence](./04-investor-intelligence.md) | The investor data pipeline |
 | [Company Intelligence](./05-company-intelligence.md) | How we understand each company |
 | [AI Architecture](./06-ai-architecture.md) | All AI-powered components |
-| [Pricing & Billing](./07-pricing-billing.md) | Model A, credits, plans |
+| [Pricing & Billing](./07-pricing-billing.md) | Credits, plans, unit economics |
 | [Onboarding](./08-onboarding.md) | The onboarding experience |
-| [Pitch Deck Engine](./09-pitch-deck-engine.md) | Future deck generation system |
+| [Pitch Deck Engine](./09-pitch-deck-engine.md) | Deck generation system |
 | [Email & Outreach](./10-email-outreach.md) | Email integration and outreach |
 | [Security](./11-security.md) | Authentication, RLS, tokens |
 | [Infrastructure](./12-infrastructure.md) | Hosting, deployment, env |
@@ -93,4 +162,4 @@ This documentation system is the **single source of truth** for the entire Capit
 
 ---
 
-*Last updated: August 22, 2026*
+*Last updated: August 28, 2026*

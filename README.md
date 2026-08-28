@@ -2,15 +2,28 @@
 
 **AI-Powered Fundraising Operating System for Startup Founders**
 
+**Live Demo:** https://capital-os-nine.vercel.app/
+
 Capital OS helps founders discover relevant investors, understand their investment thesis, qualify investor fit, prepare personalized outreach, and manage the entire fundraising process from one place.
 
 > "Tell us about your company. Capital OS understands your business, discovers the right investors, helps you prepare your materials, and assists you in reaching out — intelligently and personally."
 
 ---
 
+## Platform Stats
+
+| Metric | Value |
+|--------|-------|
+| Verified investors | 46,093 |
+| Verified emails | 41,346 |
+| Pages | 53 |
+| API routes | 69 |
+| Lines of code | 50,463 |
+| Platform score | 85/100 |
+
 ## Architecture Overview
 
-Capital OS uses a **hybrid architecture** — Supabase handles auth + investor data (122K+ records) while CockroachDB is kept as a backup data store.
+Capital OS uses a **modern serverless architecture** — Supabase handles auth + investor data while NVIDIA NIM provides AI capabilities.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -471,20 +484,20 @@ const stats = getPoolStats();
 | Plan | Price | Credits/mo | Investor DB |
 |------|-------|-----------|-------------|
 | **Free** | $0 | 50 | 100 |
-| **Workspace** | $29/mo | 500 | 5,000 |
-| **Workspace Pro** | $79/mo | 2,000 | 50,000 |
+| **Workspace** | $49/mo | 500 | 5,000 |
+| **Workspace Pro** | $199/mo | 2,000 | 50,000 |
 
 Credit costs (per operation):
 
 | Operation | Credits |
 |-----------|---------|
-| Investor search | 1 |
-| AI match scoring | 2 |
-| AI research | 3 |
-| AI email draft | 2 |
-| Email send | 1 |
-| Fit analysis | 2 |
-| CSV import | 1 per 100 rows |
+| Investor research | 5 |
+| Email draft | 3 |
+| Fit analysis | 4 |
+| Pitch deck generate | 25 |
+| Deep enrichment | 8 |
+| Company intelligence | 6 |
+| Email sequence | 5 |
 
 ---
 
@@ -545,6 +558,7 @@ Comprehensive documentation in the `docs/` directory:
 | [Decision Log](docs/16-decision-log.md) | Architecture & product decisions |
 | [Open Issues](docs/17-open-issues.md) | Known risks and tech debt |
 | [Change Log](docs/18-changelog.md) | Chronological history |
+| [Pitch Deck Content](PITCH-DECK-CONTENT.md) | Complete pitch deck content for investor conversations |
 
 ---
 
