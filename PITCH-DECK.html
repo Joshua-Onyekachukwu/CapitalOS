@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital OS — Pitch Deck</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .slide {
+    width: 297mm;
+    height: 210mm;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+
+  .slide:last-child {
+    page-break-after: auto;
+  }
+
+  /* ═══════════════════════════════════════
+     SLIDE 1 — TITLE
+     ═══════════════════════════════════════ */
+  .slide-title {
+    background: linear-gradient(160deg, #0a1628 0%, #0f2027 40%, #112240 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px;
+  }
+
+  .slide-title .logo-badge {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 32px;
+    color: #0a1628;
+    margin-bottom: 32px;
+    letter-spacing: -1px;
+  }
+
+  .slide-title h1 {
+    font-size: 52px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -2px;
+    margin-bottom: 8px;
+    line-height: 1.1;
+  }
+
+  .slide-title h1 span {
+    color: #84cc16;
+  }
+
+  .slide-title .subtitle {
+    font-size: 20px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 400;
+    margin-bottom: 48px;
+    max-width: 600px;
+    line-height: 1.5;
+  }
+
+  .slide-title .meta-row {
+    display: flex;
+    gap: 40px;
+    color: rgba(255,255,255,0.4);
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  .slide-title .meta-row strong {
+    color: rgba(255,255,255,0.7);
+    font-weight: 500;
+  }
+
+  .title-accent {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #84cc16, #65a30d, #4d7c0f);
+  }
+
+  /* ═══════════════════════════════════════
+     SLIDE LAYOUT — DARK
+     ═══════════════════════════════════════ */
+  .slide-dark {
+    background: linear-gradient(160deg, #0a1628 0%, #0f2027 40%, #112240 100%);
+    padding: 56px 72px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slide-dark .slide-num {
+    position: absolute;
+    top: 32px;
+    right: 40px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.25);
+    font-weight: 500;
+  }
+
+  .slide-dark .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #84cc16;
+    margin-bottom: 12px;
+  }
+
+  .slide-dark h2 {
+    font-size: 38px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+    line-height: 1.15;
+  }
+
+  .slide-dark .slide-subtitle {
+    font-size: 15px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 36px;
+    max-width: 700px;
+    line-height: 1.5;
+  }
+
+  .slide-dark .slide-body {
+    flex: 1;
+    display: flex;
+    gap: 40px;
+  }
+
+  .slide-dark .accent-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #84cc16, #65a30d, #4d7c0f);
+  }
+
+  /* ═══════════════════════════════════════
+     SLIDE LAYOUT — LIGHT
+     ═══════════════════════════════════════ */
+  .slide-light {
+    background: #ffffff;
+    padding: 56px 72px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slide-light .slide-num {
+    position: absolute;
+    top: 32px;
+    right: 40px;
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  .slide-light .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #65a30d;
+    margin-bottom: 12px;
+  }
+
+  .slide-light h2 {
+    font-size: 38px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+    line-height: 1.15;
+  }
+
+  .slide-light .slide-subtitle {
+    font-size: 15px;
+    color: #64748b;
+    margin-bottom: 36px;
+    max-width: 700px;
+    line-height: 1.5;
+  }
+
+  .slide-light .slide-body {
+    flex: 1;
+    display: flex;
+    gap: 40px;
+  }
+
+  .slide-light .accent-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #84cc16, #65a30d, #4d7c0f);
+  }
+
+  /* ═══════════════════════════════════════
+     COMMON COMPONENTS
+     ═══════════════════════════════════════ */
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .stats-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .stats-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+  .stats-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .stat-card-dark {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 24px 20px;
+    text-align: center;
+  }
+
+  .stat-card-dark .stat-value {
+    font-size: 32px;
+    font-weight: 900;
+    color: #84cc16;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .stat-card-dark .stat-value.white {
+    color: #fff;
+  }
+
+  .stat-card-dark .stat-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  .stat-card-light {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px 20px;
+    text-align: center;
+  }
+
+  .stat-card-light .stat-value {
+    font-size: 32px;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .stat-card-light .stat-value.accent {
+    color: #65a30d;
+  }
+
+  .stat-card-light .stat-label {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  /* Lists */
+  .pain-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .pain-list li {
+    font-size: 15px;
+    color: rgba(255,255,255,0.8);
+    padding: 10px 0;
+    padding-left: 24px;
+    position: relative;
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .pain-list li:last-child {
+    border-bottom: none;
+  }
+
+  .pain-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 16px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+  }
+
+  .pain-list.green li::before {
+    background: #84cc16;
+  }
+
+  .pain-list li strong {
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* Steps */
+  .steps-row {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .step-card {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 28px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .step-card .step-num {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    color: #0a1628;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 14px;
+  }
+
+  .step-card .step-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .step-card .step-desc {
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.5;
+  }
+
+  /* Tables */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .comp-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0;
+    color: #64748b;
+  }
+
+  .comp-table th.hl {
+    background: #0f172a;
+    color: #84cc16;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .comp-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #475569;
+  }
+
+  .comp-table td.hl {
+    background: #f7fee7;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .comp-table .yes { color: #16a34a; font-weight: 700; }
+  .comp-table .no { color: #dc2626; font-weight: 600; }
+
+  /* Pricing */
+  .pricing-row {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+  }
+
+  .price-card {
+    flex: 1;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .price-card.featured {
+    border-color: #84cc16;
+    background: linear-gradient(180deg, #f7fee7 0%, #fff 100%);
+    transform: scale(1.02);
+  }
+
+  .price-card .price-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .price-card .price-amount {
+    font-size: 42px;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .price-card .price-period {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 16px;
+  }
+
+  .price-card .price-features {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+    width: 100%;
+  }
+
+  .price-card .price-features li {
+    font-size: 13px;
+    color: #475569;
+    padding: 6px 0;
+    padding-left: 20px;
+    position: relative;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .price-card .price-features li:last-child {
+    border-bottom: none;
+  }
+
+  .price-card .price-features li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #16a34a;
+    font-weight: 700;
+  }
+
+  /* Ask Box */
+  .ask-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 40px;
+    flex: 1;
+  }
+
+  .ask-main {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .ask-main .ask-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .ask-main .ask-amount {
+    font-size: 48px;
+    font-weight: 900;
+    color: #84cc16;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .ask-main .ask-type {
+    font-size: 16px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+  }
+
+  .use-of-funds {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    justify-content: center;
+  }
+
+  .fund-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .fund-pct {
+    font-size: 24px;
+    font-weight: 800;
+    color: #84cc16;
+    width: 60px;
+    text-align: right;
+  }
+
+  .fund-bar-wrap {
+    flex: 1;
+  }
+
+  .fund-bar-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .fund-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .fund-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #84cc16, #65a30d);
+    border-radius: 4px;
+  }
+
+  .fund-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 2px;
+  }
+
+  /* Footer */
+  .slide-footer {
+    position: absolute;
+    bottom: 16px;
+    left: 72px;
+    right: 72px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+  }
+
+  .slide-footer.dark {
+    color: rgba(255,255,255,0.3);
+  }
+
+  .slide-footer.light {
+    color: #94a3b8;
+  }
+
+  .slide-footer .demo-link {
+    color: #84cc16;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  /* Two col */
+  .two-col { display: flex; gap: 40px; flex: 1; }
+  .col { flex: 1; display: flex; flex-direction: column; }
+
+  /* Roadmap */
+  .roadmap-row {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .roadmap-card {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 24px 20px;
+  }
+
+  .roadmap-card .rm-phase {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #84cc16;
+    margin-bottom: 8px;
+  }
+
+  .roadmap-card .rm-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+
+  .roadmap-card .rm-items {
+    list-style: none;
+    padding: 0;
+  }
+
+  .roadmap-card .rm-items li {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    padding: 4px 0;
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .roadmap-card .rm-items li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: #84cc16;
+    font-weight: 700;
+  }
+
+  /* Team */
+  .team-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .team-avatar {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 800;
+    color: #0a1628;
+    margin: 0 auto 16px;
+  }
+
+  .team-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .team-role {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 16px;
+  }
+
+  .team-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.6;
+  }
+
+  /* Thank you */
+  .slide-thankyou {
+    background: linear-gradient(160deg, #0a1628 0%, #0f2027 40%, #112240 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px;
+  }
+
+  .slide-thankyou h2 {
+    font-size: 56px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -2px;
+    margin-bottom: 12px;
+  }
+
+  .slide-thankyou .ty-sub {
+    font-size: 18px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 48px;
+  }
+
+  .contact-row {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+
+  .contact-item {
+    text-align: center;
+  }
+
+  .contact-item .ci-label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  .contact-item .ci-value {
+    font-size: 15px;
+    color: #84cc16;
+    font-weight: 600;
+  }
+
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    color: #0a1628;
+    padding: 14px 36px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    letter-spacing: 0.3px;
+  }
+
+  /* Market sizing */
+  .market-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    flex: 1;
+  }
+
+  .market-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 28px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .market-card .mc-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .market-card .mc-value {
+    font-size: 36px;
+    font-weight: 900;
+    color: #84cc16;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+  }
+
+  .market-card .mc-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.5;
+  }
+
+  .market-card.light {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+  }
+
+  .market-card.light .mc-label { color: #64748b; }
+  .market-card.light .mc-value { color: #65a30d; }
+  .market-card.light .mc-desc { color: #64748b; }
+
+  /* Traction timeline */
+  .traction-row {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .traction-card {
+    flex: 1;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px 20px;
+    text-align: center;
+  }
+
+  .traction-card .tc-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .traction-card .tc-value {
+    font-size: 28px;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+
+  .traction-card .tc-value.accent {
+    color: #65a30d;
+  }
+
+  .traction-card .tc-label {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 1 — TITLE
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-title">
+  <div class="logo-badge">CO</div>
+  <h1>Capital <span>OS</span></h1>
+  <div class="subtitle">The AI-Powered Fundraising Operating System for Startup Founders</div>
+  <div class="meta-row">
+    <span><strong>Pre-Seed</strong> · August 2026</span>
+    <span><strong>Joshua Onyekachukwu</strong> · Founder & CEO</span>
+  </div>
+  <div class="title-accent"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 2 — THE PROBLEM
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-dark">
+  <div class="slide-num">02</div>
+  <div class="section-label">The Problem</div>
+  <h2>Raising capital is broken</h2>
+  <div class="slide-subtitle">Founders spend 40-60% of their time on fundraising logistics instead of building their companies.</div>
+  <div class="slide-body">
+    <div class="col" style="flex:1.2">
+      <ul class="pain-list">
+        <li><strong>Fragmented tools.</strong> Spreadsheets, email, Google Docs, CRM, LinkedIn — none of them talk to each other.</li>
+        <li><strong>Manual research.</strong> Finding the right investors means hours scrolling through Crunchbase, AngelList, and LinkedIn.</li>
+        <li><strong>Generic outreach.</strong> Most founders send the same mass email to 200 investors. Investors can tell.</li>
+        <li><strong>No intelligence.</strong> No system tells a founder "these 12 investors are the best match for your company."</li>
+        <li><strong>No system.</strong> Fundraising is a process, not a single event. But founders have no unified way to manage it.</li>
+      </ul>
+    </div>
+    <div class="col" style="flex:0.8; justify-content:center;">
+      <div class="stats-grid cols-2" style="gap:14px;">
+        <div class="stat-card-dark">
+          <div class="stat-value">40-60%</div>
+          <div class="stat-label">Time on fundraising</div>
+        </div>
+        <div class="stat-card-dark">
+          <div class="stat-value">&lt;2%</div>
+          <div class="stat-label">Cold email response rate</div>
+        </div>
+        <div class="stat-card-dark">
+          <div class="stat-value">5+</div>
+          <div class="stat-label">Disconnected tools</div>
+        </div>
+        <div class="stat-card-dark">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Intelligent systems</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer dark">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 3 — THE SOLUTION
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-dark">
+  <div class="slide-num">03</div>
+  <div class="section-label">The Solution</div>
+  <h2>The operating system for raising capital</h2>
+  <div class="slide-subtitle">One intelligent platform that replaces the entire fragmented fundraising stack.</div>
+  <div class="slide-body">
+    <ul class="pain-list green" style="flex:1">
+      <li><strong>Understands your company.</strong> Tell us about your business once. Capital OS remembers and uses that intelligence across everything.</li>
+      <li><strong>Discovers the right investors.</strong> 46,000+ verified investors. AI scores and ranks every investor against your specific company profile.</li>
+      <li><strong>Qualifies every opportunity.</strong> Multi-dimensional fit scoring: stage, sector, geography, check size, thesis alignment, portfolio overlap.</li>
+      <li><strong>Generates personalized outreach.</strong> AI writes emails that sound like you wrote them. Each one is specific to the investor and their thesis.</li>
+      <li><strong>Manages the full pipeline.</strong> From first discovery to meeting to close. Track every investor through every stage. Never lose momentum.</li>
+    </ul>
+  </div>
+  <div class="slide-footer dark">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 4 — HOW IT WORKS
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-dark">
+  <div class="slide-num">04</div>
+  <div class="section-label">How It Works</div>
+  <h2>From sign-up to sent email in minutes</h2>
+  <div class="slide-subtitle">A 6-step workflow that replaces months of manual fundraising work.</div>
+  <div class="steps-row">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-title">Profile</div>
+      <div class="step-desc">7-step onboarding builds your company intelligence</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-title">Discover</div>
+      <div class="step-desc">AI finds and scores investors that match your company</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-title">Qualify</div>
+      <div class="step-desc">Multi-dimensional fit scoring with explanations</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-title">Draft</div>
+      <div class="step-desc">AI writes personalized emails per investor</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">5</div>
+      <div class="step-title">Send</div>
+      <div class="step-desc">Branded emails with tracking and follow-ups</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">6</div>
+      <div class="step-title">Track</div>
+      <div class="step-desc">Pipeline, campaigns, open rates, reply rates</div>
+    </div>
+  </div>
+  <div class="slide-footer dark">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 5 — THE PLATFORM
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-light">
+  <div class="slide-num">05</div>
+  <div class="section-label">The Platform</div>
+  <h2>What we've built</h2>
+  <div class="slide-subtitle">A fully functional platform with 53 pages, 69 API routes, and 50,000+ lines of code.</div>
+  <div class="stats-grid cols-5" style="margin-bottom:32px;">
+    <div class="stat-card-light">
+      <div class="stat-value accent">46,093</div>
+      <div class="stat-label">Verified Investors</div>
+    </div>
+    <div class="stat-card-light">
+      <div class="stat-value accent">41,346</div>
+      <div class="stat-label">Verified Emails</div>
+    </div>
+    <div class="stat-card-light">
+      <div class="stat-value">53</div>
+      <div class="stat-label">Pages</div>
+    </div>
+    <div class="stat-card-light">
+      <div class="stat-value">69</div>
+      <div class="stat-label">API Routes</div>
+    </div>
+    <div class="stat-card-light">
+      <div class="stat-value">50K+</div>
+      <div class="stat-label">Lines of Code</div>
+    </div>
+  </div>
+  <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:14px;">
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:20px; margin-bottom:6px;">🔍</div>
+      <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:3px;">Investor Discovery</div>
+      <div style="font-size:11px; color:#64748b;">AI-powered search with multi-dimensional fit scoring</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:20px; margin-bottom:6px;">🤖</div>
+      <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:3px;">AI Copilot</div>
+      <div style="font-size:11px; color:#64748b;">Natural-language assistant for investor intelligence</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:20px; margin-bottom:6px;">✉️</div>
+      <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:3px;">Branded Emails</div>
+      <div style="font-size:11px; color:#64748b;">7 premium templates with open/click tracking</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:20px; margin-bottom:6px;">📊</div>
+      <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:3px;">Campaigns</div>
+      <div style="font-size:11px; color:#64748b;">Drip sequences with follow-ups and stop-on-reply</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:20px; margin-bottom:6px;">📋</div>
+      <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:3px;">Pipeline</div>
+      <div style="font-size:11px; color:#64748b;">Kanban board tracking investors through 7 stages</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:20px; margin-bottom:6px;">🎯</div>
+      <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:3px;">Pitch Decks</div>
+      <div style="font-size:11px; color:#64748b;">AI-generated PPTX and PDF with customization</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:20px; margin-bottom:6px;">🏥</div>
+      <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:3px;">Email Health</div>
+      <div style="font-size:11px; color:#64748b;">Warm-up, deliverability monitoring, domain verification</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:20px; margin-bottom:6px;">⚙️</div>
+      <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:3px;">Admin System</div>
+      <div style="font-size:11px; color:#64748b;">14 pages: data health, import, enrichment, monitoring</div>
+    </div>
+  </div>
+  <div class="slide-footer light">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 6 — MARKET OPPORTUNITY
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-dark">
+  <div class="slide-num">06</div>
+  <div class="section-label">Market Opportunity</div>
+  <h2>A $15B+ market with no clear winner</h2>
+  <div class="slide-subtitle">150,000+ startups raise capital each year. The tools they use haven't evolved.</div>
+  <div class="market-grid" style="margin-bottom:32px;">
+    <div class="market-card">
+      <div class="mc-label">Total Addressable Market</div>
+      <div class="mc-value">$15B+</div>
+      <div class="mc-desc">All startups raising capital globally, including tools, services, and advisory</div>
+    </div>
+    <div class="market-card">
+      <div class="mc-label">Serviceable Market</div>
+      <div class="mc-value">$3B</div>
+      <div class="mc-desc">Early-stage startups in US & Europe using digital fundraising tools</div>
+    </div>
+    <div class="market-card">
+      <div class="mc-label">Obtainable (Year 1-3)</div>
+      <div class="mc-value">$5-24M</div>
+      <div class="mc-desc">10,000 active founders at $49-$199/mo</div>
+    </div>
+  </div>
+  <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:14px;">
+    <div class="stat-card-dark">
+      <div class="stat-value">150K+</div>
+      <div class="stat-label">Startups raise yearly</div>
+    </div>
+    <div class="stat-card-dark">
+      <div class="stat-value">$300B+</div>
+      <div class="stat-label">VC deployed annually</div>
+    </div>
+    <div class="stat-card-dark">
+      <div class="stat-value">$5-50K</div>
+      <div class="stat-label">Spent per round on tools</div>
+    </div>
+    <div class="stat-card-dark">
+      <div class="stat-value">0</div>
+      <div class="stat-label">All-in-one platforms</div>
+    </div>
+  </div>
+  <div class="slide-footer dark">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 7 — COMPETITIVE LANDSCAPE
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-light">
+  <div class="slide-num">07</div>
+  <div class="section-label">Competitive Landscape</div>
+  <h2>We replace the entire stack</h2>
+  <div class="slide-subtitle">No existing platform combines investor intelligence, AI outreach, and campaign management for founders.</div>
+  <div class="slide-body" style="flex-direction:column; gap:24px;">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th style="width:22%">Feature</th>
+          <th class="hl" style="width:18%">Capital OS</th>
+          <th style="width:15%">Crunchbase</th>
+          <th style="width:15%">Apollo</th>
+          <th style="width:15%">PitchBook</th>
+          <th style="width:15%">HubSpot</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Investor database</strong></td>
+          <td class="hl"><span class="yes">✓ 46K+</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>AI fit scoring</strong></td>
+          <td class="hl"><span class="yes">✓ Multi-dimensional</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>AI email drafting</strong></td>
+          <td class="hl"><span class="yes">✓ Personalized</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>Campaign sequences</strong></td>
+          <td class="hl"><span class="yes">✓ Drip + follow-up</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="yes">✓ Generic</span></td>
+        </tr>
+        <tr>
+          <td><strong>Pitch deck generation</strong></td>
+          <td class="hl"><span class="yes">✓ AI-powered</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>Pipeline tracking</strong></td>
+          <td class="hl"><span class="yes">✓ Kanban</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="yes">✓ Generic</span></td>
+        </tr>
+        <tr>
+          <td><strong>Email health & warm-up</strong></td>
+          <td class="hl"><span class="yes">✓ Full system</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>Built for founders</strong></td>
+          <td class="hl"><span class="yes">✓ Purpose-built</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗</span></td>
+          <td><span class="no">✗ Enterprise</span></td>
+          <td><span class="no">✗ Generic</span></td>
+        </tr>
+        <tr>
+          <td><strong>Pricing</strong></td>
+          <td class="hl"><strong>$0–199/mo</strong></td>
+          <td>$0–99/mo</td>
+          <td>$0–99/mo</td>
+          <td>$20K+/yr</td>
+          <td>$0–100+/mo</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="slide-footer light">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 8 — BUSINESS MODEL
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-light">
+  <div class="slide-num">08</div>
+  <div class="section-label">Business Model</div>
+  <h2>Credit-based pricing that scales with usage</h2>
+  <div class="slide-subtitle">Free tier gets founders in. Credits create natural expansion. The more they use it, the more they need it.</div>
+  <div class="pricing-row" style="margin-bottom:28px;">
+    <div class="price-card">
+      <div class="price-name">Free</div>
+      <div class="price-amount">$0</div>
+      <div class="price-period">forever</div>
+      <ul class="price-features">
+        <li>50 AI credits/month</li>
+        <li>100 investor database</li>
+        <li>1 active campaign</li>
+        <li>1 pitch deck</li>
+        <li>3 AI research reports</li>
+      </ul>
+    </div>
+    <div class="price-card featured">
+      <div class="price-name">Workspace</div>
+      <div class="price-amount">$49</div>
+      <div class="price-period">per month</div>
+      <ul class="price-features">
+        <li>500 AI credits/month</li>
+        <li>5,000 investor database</li>
+        <li>5 active campaigns</li>
+        <li>3 pitch decks</li>
+        <li>30 AI research reports</li>
+        <li>1 email account connected</li>
+      </ul>
+    </div>
+    <div class="price-card">
+      <div class="price-name">Workspace Pro</div>
+      <div class="price-amount">$199</div>
+      <div class="price-period">per month</div>
+      <ul class="price-features">
+        <li>2,000 AI credits/month</li>
+        <li>50,000 investor database</li>
+        <li>Unlimited campaigns</li>
+        <li>Unlimited pitch decks</li>
+        <li>Unlimited research</li>
+        <li>3 email accounts</li>
+        <li>5 team seats</li>
+      </ul>
+    </div>
+  </div>
+  <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:14px;">
+    <div class="stat-card-light">
+      <div class="stat-value accent" style="font-size:24px;">~90%</div>
+      <div class="stat-label">Gross Margin</div>
+    </div>
+    <div class="stat-card-light">
+      <div class="stat-value accent" style="font-size:24px;">$5</div>
+      <div class="stat-label">AI Cost / Workspace / mo</div>
+    </div>
+    <div class="stat-card-light">
+      <div class="stat-value accent" style="font-size:24px;">$588</div>
+      <div class="stat-label">LTV (12-month)</div>
+    </div>
+    <div class="stat-card-light">
+      <div class="stat-value accent" style="font-size:24px;">&lt;$100</div>
+      <div class="stat-label">Target CAC</div>
+    </div>
+  </div>
+  <div class="slide-footer light">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 9 — TRACTION
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-light">
+  <div class="slide-num">09</div>
+  <div class="section-label">Traction & Data</div>
+  <h2>What we have today</h2>
+  <div class="slide-subtitle">The platform is built. The data is growing. The pipeline to 200K+ investors is ready.</div>
+  <div class="traction-row" style="margin-bottom:28px;">
+    <div class="traction-card">
+      <div class="tc-icon">🔍</div>
+      <div class="tc-value accent">46,093</div>
+      <div class="tc-label">Verified Investors</div>
+    </div>
+    <div class="traction-card">
+      <div class="tc-icon">✉️</div>
+      <div class="tc-value accent">41,346</div>
+      <div class="tc-label">Verified Emails</div>
+    </div>
+    <div class="traction-card">
+      <div class="tc-icon">📊</div>
+      <div class="tc-value">8</div>
+      <div class="tc-label">Data Sources</div>
+    </div>
+    <div class="traction-card">
+      <div class="tc-icon">🏗️</div>
+      <div class="tc-value">53</div>
+      <div class="tc-label">Platform Pages</div>
+    </div>
+    <div class="traction-card">
+      <div class="tc-icon">⚡</div>
+      <div class="tc-value">69</div>
+      <div class="tc-label">API Routes</div>
+    </div>
+  </div>
+  <div style="margin-bottom:12px; font-size:14px; font-weight:700; color:#0f172a;">Data Growth Path to 200K+ Investors</div>
+  <div style="display:grid; grid-template-columns: repeat(5,1fr); gap:12px;">
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; text-align:center;">
+      <div style="font-size:18px; font-weight:800; color:#65a30d;">26K</div>
+      <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">EDGAR Funds</div>
+      <div style="font-size:9px; color:#16a34a; margin-top:2px;">✅ Imported</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; text-align:center;">
+      <div style="font-size:18px; font-weight:800; color:#65a30d;">18K</div>
+      <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">FishTank VC</div>
+      <div style="font-size:9px; color:#16a34a; margin-top:2px;">✅ Imported</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; text-align:center;">
+      <div style="font-size:18px; font-weight:800; color:#65a30d;">25K</div>
+      <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Apollo</div>
+      <div style="font-size:9px; color:#16a34a; margin-top:2px;">✅ Imported</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; text-align:center;">
+      <div style="font-size:18px; font-weight:800; color:#ea580c;">+50K</div>
+      <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">EDGAR XML</div>
+      <div style="font-size:9px; color:#ea580c; margin-top:2px;">🟡 Script Ready</div>
+    </div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; text-align:center;">
+      <div style="font-size:18px; font-weight:800; color:#ea580c;">+30K</div>
+      <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Enrichment</div>
+      <div style="font-size:9px; color:#ea580c; margin-top:2px;">🟡 Script Ready</div>
+    </div>
+  </div>
+  <div class="slide-footer light">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 10 — ROADMAP
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-dark">
+  <div class="slide-num">10</div>
+  <div class="section-label">Product Roadmap</div>
+  <h2>Where we're going</h2>
+  <div class="slide-subtitle">From beta launch to market expansion in 12 months.</div>
+  <div class="roadmap-row">
+    <div class="roadmap-card">
+      <div class="rm-phase">Phase 1 · Now</div>
+      <div class="rm-title">Beta Launch</div>
+      <ul class="rm-items">
+        <li>Full platform live</li>
+        <li>46K+ verified investors</li>
+        <li>AI outreach working</li>
+        <li>Email tracking active</li>
+        <li>Founding member tier</li>
+      </ul>
+    </div>
+    <div class="roadmap-card">
+      <div class="rm-phase">Phase 2 · Months 1-3</div>
+      <div class="rm-title">Growth</div>
+      <ul class="rm-items">
+        <li>100K+ investors</li>
+        <li>Fix Google OAuth</li>
+        <li>Real testimonials</li>
+        <li>Optimize email speed</li>
+        <li>First paying users</li>
+      </ul>
+    </div>
+    <div class="roadmap-card">
+      <div class="rm-phase">Phase 3 · Months 3-6</div>
+      <div class="rm-title">Scale</div>
+      <ul class="rm-items">
+        <li>200K+ investors</li>
+        <li>Workspace + Pro plans</li>
+        <li>VC team scraping</li>
+        <li>Email verification</li>
+        <li>Design system polish</li>
+      </ul>
+    </div>
+    <div class="roadmap-card">
+      <div class="rm-phase">Phase 4 · Months 6-12</div>
+      <div class="rm-title">Expansion</div>
+      <ul class="rm-items">
+        <li>Deck marketplace</li>
+        <li>Meeting scheduling</li>
+        <li>Team collaboration</li>
+        <li>Public API</li>
+        <li>Seed round ready</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-footer dark">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 11 — THE ASK
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-dark">
+  <div class="slide-num">11</div>
+  <div class="section-label">The Ask</div>
+  <h2>Pre-Seed: $150K – $250K</h2>
+  <div class="slide-subtitle">Fuel to reach 100K investors, 500 active users, and $5K+ MRR in 6 months.</div>
+  <div class="ask-grid">
+    <div class="ask-main">
+      <div class="ask-label">Raising</div>
+      <div class="ask-amount">$150-250K</div>
+      <div class="ask-type">Pre-Seed Round</div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px; justify-content:center;">
+      <div class="fund-bar-wrap">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <div class="fund-bar-label">Product & Engineering</div>
+          <div class="fund-pct" style="font-size:16px; font-weight:800; color:#84cc16;">40%</div>
+        </div>
+        <div class="fund-bar"><div class="fund-bar-fill" style="width:40%"></div></div>
+        <div class="fund-desc">Hire 1-2 engineers, optimize AI, build mobile</div>
+      </div>
+      <div class="fund-bar-wrap">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <div class="fund-bar-label">Data & Infrastructure</div>
+          <div class="fund-pct" style="font-size:16px; font-weight:800; color:#84cc16;">25%</div>
+        </div>
+        <div class="fund-bar"><div class="fund-bar-fill" style="width:25%"></div></div>
+        <div class="fund-desc">Database scaling, API costs, investor data acquisition</div>
+      </div>
+      <div class="fund-bar-wrap">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <div class="fund-bar-label">Marketing & Growth</div>
+          <div class="fund-pct" style="font-size:16px; font-weight:800; color:#84cc16;">20%</div>
+        </div>
+        <div class="fund-bar"><div class="fund-bar-fill" style="width:20%"></div></div>
+        <div class="fund-desc">Content marketing, founder communities, partnerships</div>
+      </div>
+      <div class="fund-bar-wrap">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <div class="fund-bar-label">Operations & Legal</div>
+          <div class="fund-pct" style="font-size:16px; font-weight:800; color:#84cc16;">15%</div>
+        </div>
+        <div class="fund-bar"><div class="fund-bar-fill" style="width:15%"></div></div>
+        <div class="fund-desc">Legal, accounting, tools, buffer</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer dark">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 12 — MILESTONES
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-dark">
+  <div class="slide-num">12</div>
+  <div class="section-label">Milestones</div>
+  <h2>What this money buys</h2>
+  <div class="slide-subtitle">Clear milestones tied to measurable outcomes over 12 months.</div>
+  <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:16px; flex:1; align-content:center;">
+    <div class="stat-card-dark" style="padding:28px 20px;">
+      <div style="font-size:11px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; font-weight:600;">Month 1-2</div>
+      <div class="stat-value" style="font-size:28px;">100</div>
+      <div class="stat-label">Active beta users</div>
+    </div>
+    <div class="stat-card-dark" style="padding:28px 20px;">
+      <div style="font-size:11px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; font-weight:600;">Month 2-3</div>
+      <div class="stat-value" style="font-size:28px;">100K+</div>
+      <div class="stat-label">Investors in database</div>
+    </div>
+    <div class="stat-card-dark" style="padding:28px 20px;">
+      <div style="font-size:11px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; font-weight:600;">Month 3-4</div>
+      <div class="stat-value" style="font-size:28px;">$1K+</div>
+      <div class="stat-label">Monthly recurring revenue</div>
+    </div>
+    <div class="stat-card-dark" style="padding:28px 20px;">
+      <div style="font-size:11px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; font-weight:600;">Month 6-9</div>
+      <div class="stat-value" style="font-size:28px;">$5K+</div>
+      <div class="stat-label">MRR · Seed ready</div>
+    </div>
+  </div>
+  <div style="margin-top:24px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:20px 28px; display:flex; gap:32px; align-items:center;">
+    <div style="font-size:13px; color:rgba(255,255,255,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap;">Why now</div>
+    <div style="font-size:13px; color:rgba(255,255,255,0.7); line-height:1.6;">
+      AI costs dropped 10x in 12 months. The fundraising market is growing. The infrastructure exists. And every founder we've talked to spends too much time on logistics instead of building.
+    </div>
+  </div>
+  <div class="slide-footer dark">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 13 — TEAM
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-dark">
+  <div class="slide-num">13</div>
+  <div class="section-label">Team</div>
+  <h2>Built by a founder who lived the problem</h2>
+  <div class="slide-subtitle" style="text-align:center; max-width:600px; margin:0 auto 36px;">One person built the entire platform: product, engineering, AI, design, data pipeline, and go-to-market.</div>
+  <div style="display:flex; justify-content:center;">
+    <div class="team-card">
+      <div class="team-avatar">JO</div>
+      <div class="team-name">Joshua Onyekachukwu</div>
+      <div class="team-role">Founder & CEO</div>
+      <div class="team-desc">
+        Designed and built the entire Capital OS platform — from database architecture to AI integration to production deployment. Responsible for product, engineering, and go-to-market strategy.
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer dark">
+    <span>Capital OS · Pre-Seed Pitch Deck</span>
+    <span class="demo-link">capital-os-nine.vercel.app</span>
+  </div>
+  <div class="accent-bar"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 14 — THANK YOU
+     ═══════════════════════════════════════════════ -->
+<div class="slide slide-thankyou">
+  <div class="slide-num" style="position:absolute; top:32px; right:40px; font-size:11px; color:rgba(255,255,255,0.25);">14</div>
+  <h2>Thank You</h2>
+  <div class="ty-sub">Let's build the operating system for fundraising together.</div>
+  <div class="contact-row">
+    <div class="contact-item">
+      <div class="ci-label">Email</div>
+      <div class="ci-value">onyekachukwujoshua39@gmail.com</div>
+    </div>
+    <div class="contact-item">
+      <div class="ci-label">Demo</div>
+      <div class="ci-value">capital-os-nine.vercel.app</div>
+    </div>
+    <div class="contact-item">
+      <div class="ci-label">Stage</div>
+      <div class="ci-value">Pre-Seed · $150-250K</div>
+    </div>
+  </div>
+  <a href="https://capital-os-nine.vercel.app/" class="cta-btn">Try the Live Demo →</a>
+  <div class="title-accent"></div>
+</div>
+
+</body>
+</html>
