@@ -1,208 +1,122 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-/**
- * CONVEX = Full Investor Archive + App State
- * 
- * Strategy:
- * - Supabase: Hot data (50K most-searched, active investors)
- * - Convex: Full archive (all investors, 1M+ when needed)
- * 
- * When user searches:
- * 1. Search Supabase first (fast, <50ms)
- * 2. If not found, search Convex (slower, but complete)
- * 
- * Background jobs keep both in sync.
- */
-
 export default defineSchema({
-  // ════════════════════════════════════════════════════════════════
-  // FULL INVESTOR ARCHIVE (1M+ records)
-  // Every investor ever scraped, with all details.
-  // ════════════════════════════════════════════════════════════════
+  // Raw scraped investors — staging area before qualification
+  raw_investors: defineTable({
+    // Source tracking
+    source: v.string(), // "edgar", "fishtank", "apollo", "web_scrape", "crunchbase"
+    sourceUrl: v.optional(v.string()),
+    sourceId: v.optional(v.string()), // Original ID from source
+    scrapedAt: v.string(), // ISO timestamp
 
-  investors: defineTable({
-    // ── Identity ──
-    fullName: v.string(),
+    // Raw data preserved from scraping
+    rawData: v.any(), // Original scraped payload
+
+    // Parsed fields (may be incomplete)
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
-    jobTitle: v.optional(v.string()),
-    investorType: v.string(),
-    
-    // ── Company ──
-    companyName: v.optional(v.string()),
-    companyWebsite: v.optional(v.string()),
-    linkedinUrl: v.optional(v.string()),
-    
-    // ── Location ──
-    country: v.optional(v.string()),
-    city: v.optional(v.string()),
-    
-    // ── Contact ──
+    fullName: v.string(),
     email: v.optional(v.string()),
-    phone: v.optional(v.string()),
-    
-    // ── Investment ──
-    minCheckSize: v.optional(v.number()),
-    maxCheckSize: v.optional(v.number()),
-    fundSize: v.optional(v.number()),
-    aum: v.optional(v.number()),
+    jobTitle: v.optional(v.string()),
+    firmName: v.optional(v.string()),
+    investorType: v.optional(v.string()),
+    linkedinUrl: v.optional(v.string()),
+    website: v.optional(v.string()),
+    city: v.optional(v.string()),
+    country: v.optional(v.string()),
+
+    // Investment preferences (parsed from raw)
     investmentStages: v.optional(v.array(v.string())),
     investmentSectors: v.optional(v.array(v.string())),
-    investmentGeographies: v.optional(v.array(v.string())),
-    
-    // ── History ──
-    numberOfInvestments: v.optional(v.number()),
-    numberOfExits: v.optional(v.number()),
-    lastInvestmentDate: v.optional(v.string()),
-    
-    // ── Scores ──
-    fitScore: v.optional(v.number()),
-    dataQualityScore: v.optional(v.number()),
-    
-    // ── Status ──
-    outreachReadiness: v.optional(v.string()),
-    
-    // ── Source ──
-    source: v.string(),
-    sourceId: v.optional(v.string()),
-    
-    // ── Sync ──
-    inSupabase: v.boolean(), // true = also in Supabase hot data
-    
-    // ── Timestamps ──
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_investorType", ["investorType"])
-    .index("by_country", ["country"])
-    .index("by_source", ["source"])
-    .index("by_score", ["fitScore"])
-    .index("by_supabase", ["inSupabase"])
-    .index("by_created", ["createdAt"]),
+    checkSizeMin: v.optional(v.number()),
+    checkSizeMax: v.optional(v.number()),
+    portfolioCompanies: v.optional(v.array(v.string())),
 
-  // ════════════════════════════════════════════════════════════════
-  // APP STATE (jobs, metrics, notifications)
-  // ════════════════════════════════════════════════════════════════
-
-  researchJobs: defineTable({
-    supabaseInvestorId: v.string(),
-    investorName: v.string(),
-    status: v.union(
-      v.literal("queued"),
-      v.literal("scraping"),
-      v.literal("enriching"),
-      v.literal("scoring"),
-      v.literal("completed"),
-      v.literal("failed")
-    ),
-    progress: v.number(),
-    steps: v.array(v.object({
-      name: v.string(),
-      status: v.union(v.literal("pending"), v.literal("running"), v.literal("done"), v.literal("failed")),
-    })),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
-    createdAt: v.number(),
-  })
-    .index("by_status", ["status"])
-    .index("by_created", ["createdAt"]),
-
-  dashboardMetrics: defineTable({
-    key: v.string(),
-    value: v.number(),
-    label: v.string(),
-    updatedAt: v.number(),
-  })
-    .index("by_key", ["key"]),
-
-  notifications: defineTable({
-    userId: v.string(),
-    type: v.string(),
-    title: v.string(),
-    message: v.string(),
-    read: v.boolean(),
-    createdAt: v.number(),
-  })
-    .index("by_user", ["userId", "read"]),
-
-  scrapingJobs: defineTable({
-    source: v.string(),
-    status: v.union(
-      v.literal("queued"),
-      v.literal("running"),
-      v.literal("completed"),
-      v.literal("failed")
-    ),
-    totalRecords: v.number(),
-    processedRecords: v.number(),
-    insertedRecords: v.number(),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
-  })
-    .index("by_status", ["status"]),
-
-  // ════════════════════════════════════════════════════════════════
-  // RAW INVESTOR STAGING — Unqualified scraped records
-  // Keeps Supabase free tier from being overwhelmed.
-  // Only qualified investors are promoted to Supabase.
-  // ════════════════════════════════════════════════════════════════
-
-  rawInvestors: defineTable({
-    rawData: v.any(),
-    fullName: v.string(),
-    firstName: v.optional(v.string()),
-    lastName: v.optional(v.string()),
-    companyName: v.optional(v.string()),
-    email: v.optional(v.string()),
-    phone: v.optional(v.string()),
-    website: v.optional(v.string()),
-    linkedinUrl: v.optional(v.string()),
-    country: v.optional(v.string()),
-    city: v.optional(v.string()),
-    investorType: v.optional(v.string()),
-    source: v.string(),
-    sourceId: v.optional(v.string()),
-    sourceUrl: v.optional(v.string()),
-    scrapedAt: v.number(),
+    // Processing status
     status: v.union(
       v.literal("scraped"),
+      v.literal("deduplicating"),
       v.literal("deduplicated"),
+      v.literal("normalizing"),
       v.literal("normalized"),
+      v.literal("enriching"),
       v.literal("enriched"),
+      v.literal("scoring"),
       v.literal("scored"),
+      v.literal("qualifying"),
       v.literal("qualified"),
-      v.literal("promoted"),
+      v.literal("synced"),
       v.literal("rejected"),
       v.literal("error")
     ),
-    dedupeKey: v.string(),
-    isDuplicate: v.boolean(),
-    duplicateOf: v.optional(v.string()),
-    emailInferred: v.boolean(),
-    emailVerified: v.boolean(),
-    emailSource: v.optional(v.string()),
-    emailConfidence: v.optional(v.string()),
-    qualificationScore: v.optional(v.number()),
-    syncedToSupabase: v.boolean(),
-    supabaseId: v.optional(v.string()),
-    syncedAt: v.optional(v.number()),
-    lastError: v.optional(v.string()),
+
+    // Deduplication
+    deduplicationKey: v.string(), // Normalized key for dedup
+    duplicateOf: v.optional(v.string()), // ID of the canonical record
+
+    // Quality
+    dataQualityScore: v.number(), // 0-100
+    confidence: v.number(), // 0-100
+
+    // Processing metadata
+    lastProcessedAt: v.optional(v.string()),
+    processingError: v.optional(v.string()),
     retryCount: v.number(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+
+    // Enrichment
+    enrichedAt: v.optional(v.string()),
+    enrichmentSource: v.optional(v.string()),
+    emailVerified: v.boolean(),
+    emailVerificationStatus: v.optional(v.union(
+      v.literal("verified"),
+      v.literal("likely"),
+      v.literal("inferred"),
+      v.literal("unverified"),
+      v.literal("invalid")
+    )),
+    emailVerifiedAt: v.optional(v.string()),
   })
     .index("by_status", ["status"])
     .index("by_source", ["source"])
-    .index("by_dedupeKey", ["dedupeKey"])
-    .index("by_synced", ["syncedToSupabase"])
-    .index("by_created", ["createdAt"]),
+    .index("by_dedup_key", ["deduplicationKey"])
+    .index("by_status_and_source", ["status", "source"])
+    .index("by_email", ["email"]),
 
-  // ════════════════════════════════════════════════════════════════
-  // ENRICHMENT QUEUE
-  // ════════════════════════════════════════════════════════════════
+  // Qualification pipeline runs
+  pipeline_runs: defineTable({
+    runType: v.string(), // "dedup", "normalize", "enrich", "score", "qualify", "sync"
+    status: v.union(
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    startedAt: v.string(),
+    completedAt: v.optional(v.string()),
+    recordsProcessed: v.number(),
+    recordsSucceeded: v.number(),
+    recordsFailed: v.number(),
+    recordsSkipped: v.number(),
+    errorLog: v.optional(v.array(v.string())),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_type", ["runType"])
+    .index("by_status", ["status"]),
 
-  enrichmentJobs: defineTable({
+  // Sync log — tracks what was promoted to Supabase
+  sync_log: defineTable({
+    rawInvestorId: v.string(), // Convex raw_investors._id
+    supabaseInvestorId: v.optional(v.string()),
+    direction: v.union(v.literal("to_supabase"), v.literal("from_supabase")),
+    status: v.union(v.literal("pending"), v.literal("synced"), v.literal("failed")),
+    syncedAt: v.optional(v.string()),
+    error: v.optional(v.string()),
+  })
+    .index("by_raw_id", ["rawInvestorId"])
+    .index("by_status", ["status"]),
+
+  // Scrape jobs — track scraping runs
+  scrape_jobs: defineTable({
     source: v.string(),
     status: v.union(
       v.literal("queued"),
@@ -210,33 +124,14 @@ export default defineSchema({
       v.literal("completed"),
       v.literal("failed")
     ),
+    startedAt: v.optional(v.string()),
+    completedAt: v.optional(v.string()),
     totalRecords: v.number(),
-    processedRecords: v.number(),
-    enrichedRecords: v.number(),
-    failedRecords: v.number(),
-    qualifiedRecords: v.number(),
-    promotedRecords: v.number(),
-    error: v.optional(v.string()),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
+    newRecords: v.number(),
+    duplicateRecords: v.number(),
+    errorCount: v.number(),
+    errors: v.optional(v.array(v.string())),
   })
-    .index("by_status", ["status"])  
-    .index("by_source", ["source"]),
-
-  // ════════════════════════════════════════════════════════════════
-  // DATA QUALITY METRICS — Daily snapshots
-  // ════════════════════════════════════════════════════════════════
-
-  dataQualityMetrics: defineTable({
-    date: v.string(),
-    totalRaw: v.number(),
-    totalQualified: v.number(),
-    totalPromoted: v.number(),
-    withEmail: v.number(),
-    emailVerified: v.number(),
-    emailInferred: v.number(),
-    bySource: v.any(),
-    createdAt: v.number(),
-  })
-    .index("by_date", ["date"]),
+    .index("by_source", ["source"])
+    .index("by_status", ["status"]),
 });

@@ -1,285 +1,292 @@
 #!/usr/bin/env node
 /**
- * EDGAR 13F-HR XML Parser v2
+ * EDGAR 13F-HR XML Parser
  * 
- * Downloads and parses SEC 13F-HR filing XML documents to extract
+ * Downloads actual filing XML documents from EDGAR and extracts
  * individual partner/principal names from institutional fund managers.
  * 
- * The SEC EDGAR Full-Text Search API provides filing links.
- * 13F-HR filings contain a cover page with fund manager names and
- * sometimes individual partner/principal information.
- * 
- * Usage:
- *   node scripts/edgar-xml-parser-v2.js [--limit 100] [--offset 0] [--resume]
+ * Usage: node scripts/edgar-xml-parser-v2.js [--limit 100] [--dry-run]
  */
 
-require("dotenv").config({ path: ".env.local" });
-const { createClient } = require("@supabase/supabase-js");
-const https = require("https");
 const fs = require("fs");
 const path = require("path");
+const https = require("https");
 
-const sp = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const DATA_DIR = path.join(__dirname, "..", "data-backups");
+const EDGAR_DIR = path.join(DATA_DIR, "edgar-xml");
+const OUTPUT_FILE = path.join(DATA_DIR, "edgar-partners.json");
+const RATE_LIMIT_MS = 100; // EDGAR requires 10 req/sec max
 
-const CHECKPOINT_FILE = path.join(__dirname, "../data-backups/edgar-parser-checkpoint.json");
-const RESULTS_FILE = path.join(__dirname, "../data-backups/edgar-parsed-contacts.json");
+// Parse CLI args
+const args = process.argv.slice(2);
+const limit = parseInt(args.find((a, i) => args[i - 1] === "--limit") || "200");
+const dryRun = args.includes("--dry-run");
 
-const LIMIT = parseInt(process.argv.find((_, i, a) => a[i - 1] === "--limit") || "50");
-const OFFSET = parseInt(process.argv.find((_, i, a) => a[i - 1] === "--offset") || "0");
-const RESUME = process.argv.includes("--resume");
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
-const EDGAR_USER_AGENT = "CapitalOS/1.0 (hello@capitalos.io)";
-
-function fetchURL(url, timeout = 15000) {
+function fetchUrl(url) {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("timeout")), timeout);
-    https.get(url, {
+    const req = https.get(url, {
       headers: {
-        "User-Agent": EDGAR_USER_AGENT,
-        "Accept": "application/xml,text/xml,*/*",
+        "User-Agent": "CapitalOS/1.0 (research@capitalos.io)",
+        "Accept": "application/xml,text/xml",
       },
     }, (res) => {
-      clearTimeout(timer);
-      if ([301, 302, 303, 307].includes(res.statusCode) && res.headers.location) {
-        fetchURL(res.headers.location, timeout).then(resolve).catch(reject);
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        fetchUrl(res.headers.location).then(resolve).catch(reject);
         return;
       }
       let data = "";
-      res.on("data", (chunk) => { data += chunk; });
+      res.on("data", (chunk) => data += chunk);
       res.on("end", () => resolve(data));
-      res.on("error", reject);
-    }).on("error", (e) => { clearTimeout(timer); reject(e); });
+    });
+    req.on("error", reject);
+    req.setTimeout(15000, () => { req.destroy(); reject(new Error("timeout")); });
   });
 }
 
-function extractFromXML(xml) {
-  const contacts = [];
-
-  // Pattern 1: <coverPage> section with filer information
-  const coverPattern = /<coverPage>([\s\S]*?)<\/coverPage>/gi;
-  let match;
-  while ((match = coverPattern.exec(xml)) !== null) {
-    const cover = match[1];
-    
-    // Extract filer name
-    const filerPattern = /<filerName>([\s\S]*?)<\/filerName>/gi;
-    let filerMatch;
-    while ((filerMatch = filerPattern.exec(cover)) !== null) {
-      contacts.push({
-        name: filerMatch[1].trim(),
-        role: "Filer",
-        source: "13f-cover",
-      });
-    }
-
-    // Extract signatory name (the person who signed the filing)
-    const signatoryPattern = /<signatoryName>([\s\S]*?)<\/signatoryName>/gi;
-    let sigMatch;
-    while ((sigMatch = signatoryPattern.exec(cover)) !== null) {
-      contacts.push({
-        name: sigMatch[1].trim(),
-        role: "Signatory",
-        source: "13f-signatory",
-      });
-    }
-
-    // Extract authorized person
-    const authPattern = /<authorizedPerson[^>]*>[\s\S]*?<name>([\s\S]*?)<\/name>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<\/authorizedPerson>/gi;
-    let authMatch;
-    while ((authMatch = authPattern.exec(cover)) !== null) {
-      contacts.push({
-        name: authMatch[1].trim(),
-        role: authMatch[2].trim(),
-        source: "13f-authorized",
+function parseFilingXml(xml) {
+  const names = [];
+  
+  // Pattern 1: <nameOfIssuer> + <titleOfClass> + <cusip> + <value>
+  // But we want the filer name, not the holdings
+  const filerMatch = xml.match(/<filerName>([^<]+)<\/filerName>/i) 
+    || xml.match(/<conformedName>([^<]+)<\/conformedName>/i);
+  
+  // Pattern 2: Look for <reportingOwner> or <associates>
+  const ownerMatches = xml.matchAll(/<reportingOwner[^>]*>[\s\S]*?<\/reportingOwner>/gi);
+  for (const match of ownerMatches) {
+    const block = match[0];
+    const nameMatch = block.match(/<rptOwnerName>([^<]+)<\/rptOwnerName>/i)
+      || block.match(/<name>([^<]+)<\/name>/i);
+    if (nameMatch) {
+      names.push({
+        name: nameMatch[1].trim(),
+        role: "reporting_owner",
       });
     }
   }
 
-  // Pattern 2: <reportingOwner> or <primaryDoc> information
-  const ownerPattern = /<reportingOwner[^>]*>[\s\S]*?<name>([\s\S]*?)<\/name>[\s\S]*?<\/reportingOwner>/gi;
-  while ((match = ownerPattern.exec(xml)) !== null) {
-    contacts.push({
-      name: match[1].trim(),
-      role: "Reporting Owner",
-      source: "13f-owner",
-    });
+  // Pattern 3: <associates> block
+  const assocMatches = xml.matchAll(/<associates>[\s\S]*?<\/associates>/gi);
+  for (const match of assocMatches) {
+    const block = match[0];
+    const nameMatch = block.match(/<associateName>([^<]+)<\/associateName>/i)
+      || block.match(/<name>([^<]+)<\/name>/i);
+    const titleMatch = block.match(/<title>([^<]+)<\/title>/i);
+    if (nameMatch) {
+      names.push({
+        name: nameMatch[1].trim(),
+        role: titleMatch ? titleMatch[1].trim() : "associate",
+      });
+    }
   }
 
-  // Pattern 3: Individual names in <name> tags near <title> with partner/CEO/MD keywords
-  const nameTitlePattern = /<name>([^<]+)<\/name>[\s\S]{0,200}?<title>([^<]*(?:Partner|Principal|Managing|Director|CEO|CTO|CIO|Chief|Head)[^<]*)<\/title>/gi;
-  while ((match = nameTitlePattern.exec(xml)) !== null) {
-    contacts.push({
-      name: match[1].trim(),
-      role: match[2].trim(),
-      source: "13f-name-title",
-    });
+  // Pattern 4: <principals> block (common in 13F)
+  const principalMatches = xml.matchAll(/<principals>[\s\S]*?<\/principals>/gi);
+  for (const match of principalMatches) {
+    const block = match[0];
+    // Extract individual principal entries
+    const entries = block.matchAll(/<principal[^>]*>[\s\S]*?<\/principal>/gi);
+    for (const entry of entries) {
+      const entryBlock = entry[0];
+      const nameMatch = entryBlock.match(/<name>([^<]+)<\/name>/i);
+      const titleMatch = entryBlock.match(/<title>([^<]+)<\/title>/i);
+      if (nameMatch) {
+        names.push({
+          name: nameMatch[1].trim(),
+          role: titleMatch ? titleMatch[1].trim() : "principal",
+        });
+      }
+    }
   }
 
-  // Pattern 4: Reverse — title before name
-  const titleNamePattern = /<title>([^<]*(?:Partner|Principal|Managing|Director|CEO|CTO|CIO|Chief|Head)[^<]*)<\/title>[\s\S]{0,200}?<name>([^<]+)<\/name>/gi;
-  while ((match = titleNamePattern.exec(xml)) !== null) {
-    contacts.push({
-      name: match[2].trim(),
-      role: match[1].trim(),
-      source: "13f-title-name",
-    });
+  // Pattern 5: Generic name extraction from XML
+  if (names.length === 0) {
+    const genericNames = xml.matchAll(/<(?:person|officer|director|partner|member|manager|principal)[^>]*>\s*<(?:name|personName|fullName)>([^<]+)<\/(?:name|personName|fullName)>/gi);
+    for (const match of genericNames) {
+      const name = match[1].trim();
+      if (name.length > 3 && name.length < 100 && !name.includes("<")) {
+        names.push({ name, role: "extracted" });
+      }
+    }
   }
 
-  // Pattern 5: Person names in structured data blocks
-  const personPattern = /<(?:person|individual|officer|director)[^>]*>[\s\S]*?<firstName>([^<]+)<\/firstName>[\s\S]*?<lastName>([^<]+)<\/lastName>/gi;
-  while ((match = personPattern.exec(xml)) !== null) {
-    contacts.push({
-      name: `${match[1].trim()} ${match[2].trim()}`,
-      firstName: match[1].trim(),
-      lastName: match[2].trim(),
-      role: "Person",
-      source: "13f-person",
-    });
-  }
-
-  return contacts;
+  return {
+    filerName: filerMatch ? filerMatch[1].trim() : null,
+    principals: names,
+  };
 }
 
-function parseName(fullName) {
-  // Handle "First Last" or "First M Last" or "FIRST LAST"
-  const parts = fullName.split(/\s+/);
-  if (parts.length >= 2) {
-    return {
-      firstName: parts[0],
-      lastName: parts.slice(1).join(" "),
-    };
-  }
-  return { firstName: fullName, lastName: "" };
-}
-
-function inferEmail(firstName, lastName, domain) {
-  const fn = firstName.toLowerCase().replace(/[^a-z]/g, "");
-  const ln = lastName.toLowerCase().replace(/[^a-z]/g, "");
-  if (!fn || !ln) return null;
-  return `${fn}.${ln}@${domain}`;
-}
-
-function getDomainFromUrl(url) {
-  try { return new URL(url).hostname.replace(/^www\./, ""); }
-  catch { return null; }
+function generateDeduplicationKey(firstName, lastName, firmName) {
+  const fn = (firstName || "").toLowerCase().replace(/[^a-z]/g, "");
+  const ln = (lastName || "").toLowerCase().replace(/[^a-z]/g, "");
+  const firm = (firmName || "").toLowerCase().replace(/[^a-z]/g, "");
+  return `${fn}.${ln}.${firm}`;
 }
 
 async function main() {
-  const checkpoint = RESUME
-    ? (() => { try { return JSON.parse(fs.readFileSync(CHECKPOINT_FILE, "utf8")); } catch { return { lastOffset: 0, processed: 0, found: 0, errors: 0 }; } })()
-    : { lastOffset: OFFSET, processed: 0, found: 0, errors: 0 };
+  console.log("=== EDGAR 13F-HR XML Parser ===\n");
 
-  console.log("=".repeat(60));
-  console.log("EDGAR 13F-HR XML Parser v2");
-  console.log("=".repeat(60));
-  console.log(`Offset: ${checkpoint.lastOffset}, Limit: ${LIMIT}\n`);
+  // Check for existing raw EDGAR data
+  const edgarFiles = fs.readdirSync(EDGAR_DIR).filter(f => f.endsWith(".json"));
+  console.log(`Found ${edgarFiles.length} EDGAR filing files in ${EDGAR_DIR}`);
 
-  // Get investors from 13F filings that don't have individual names yet
-  const { data: investors } = await sp
-    .from("investors")
-    .select("id, full_name, company_name, company_website, source, source_url")
-    .eq("source", "edgar-13f")
-    .is("first_name", null)
-    .not("company_name", "is", null)
-    .range(checkpoint.lastOffset, checkpoint.lastOffset + LIMIT - 1);
-
-  if (!investors?.length) {
-    console.log("No more investors to process.");
-    return;
+  // Also check the main backup
+  const backupFile = path.join(DATA_DIR, "edgar-backup-investors.json");
+  let existingFunds = [];
+  if (fs.existsSync(backupFile)) {
+    existingFunds = JSON.parse(fs.readFileSync(backupFile, "utf-8"));
+    console.log(`Found ${existingFunds.length} existing EDGAR fund records`);
   }
 
-  console.log(`Processing ${investors.length} EDGAR 13F-HR filings...\n`);
+  // Load existing partners if any
+  let existingPartners = [];
+  if (fs.existsSync(OUTPUT_FILE)) {
+    existingPartners = JSON.parse(fs.readFileSync(OUTPUT_FILE, "utf-8"));
+    console.log(`Found ${existingPartners.length} previously extracted partners`);
+  }
 
-  let allContacts = [];
-  let processed = checkpoint.processed;
-  let found = checkpoint.found;
-  let errors = checkpoint.errors;
+  const existingKeys = new Set(existingPartners.map(p => p.deduplicationKey));
+  const newPartners = [];
+  let processed = 0;
+  let skipped = 0;
+  let errors = 0;
 
-  for (let i = 0; i < investors.length; i++) {
-    const inv = investors[i];
-    process.stdout.write(`[${i + 1}/${investors.length}] ${inv.company_name?.substring(0, 40)}... `);
-
+  // Process existing EDGAR XML files
+  for (const file of edgarFiles.slice(0, limit)) {
     try {
-      // Try to fetch the actual SEC filing XML
-      if (inv.source_url?.includes("sec.gov")) {
-        const xml = await fetchURL(inv.source_url, 10000);
-        if (xml && xml.includes("<")) {
-          const contacts = extractFromXML(xml);
-          
-          if (contacts.length > 0) {
-            // Get domain from company website
-            const domain = getDomainFromUrl(inv.company_website);
+      const filePath = path.join(EDGAR_DIR, file);
+      const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      
+      if (data.xml) {
+        const parsed = parseFilingXml(data.xml);
+        
+        if (parsed.principals.length > 0) {
+          for (const principal of parsed.principals) {
+            const nameParts = principal.name.split(",").map(s => s.trim());
+            let firstName = nameParts.length > 1 ? nameParts[1] : nameParts[0];
+            let lastName = nameParts.length > 1 ? nameParts[0] : "";
             
-            for (const contact of contacts) {
-              const name = parseName(contact.name);
-              const email = domain ? inferEmail(name.firstName, name.lastName, domain) : null;
-              
-              allContacts.push({
-                fullName: contact.name,
-                firstName: name.firstName,
-                lastName: name.lastName,
-                jobTitle: contact.role,
-                companyName: inv.company_name,
-                email,
-                emailSource: email ? "inferred" : null,
-                website: inv.company_website,
-                source: "edgar-xml-parse",
-                sourceId: inv.id,
-                sourceUrl: inv.source_url,
-              });
+            // Also handle "First Last" format
+            if (!principal.name.includes(",")) {
+              const spaceParts = principal.name.split(" ");
+              firstName = spaceParts[0];
+              lastName = spaceParts.slice(1).join(" ");
             }
+
+            const dedupKey = generateDeduplicationKey(firstName, lastName, parsed.filerName);
             
-            found += contacts.length;
-            console.log(`✓ Found ${contacts.length} contacts`);
-          } else {
-            console.log("— No individual names in filing");
+            if (!existingKeys.has(dedupKey)) {
+              existingKeys.add(dedupKey);
+              newPartners.push({
+                firstName,
+                lastName,
+                fullName: principal.name,
+                firmName: parsed.filerName || data.companyName || null,
+                role: principal.role,
+                source: "edgar_13f_hr",
+                sourceUrl: data.filingUrl || null,
+                sourceId: data.accessionNumber || file,
+                scrapedAt: new Date().toISOString(),
+                deduplicationKey: dedupKey,
+                status: "scraped",
+                dataQualityScore: parsed.filerName ? 60 : 30,
+                confidence: 70,
+                retryCount: 0,
+                emailVerified: false,
+              });
+            } else {
+              skipped++;
+            }
           }
-        } else {
-          console.log("— Could not fetch XML");
         }
-      } else {
-        // No direct SEC URL — just the firm name
-        console.log("— No SEC URL");
+        processed++;
       }
-    } catch (e) {
+    } catch (err) {
       errors++;
-      console.log(`✗ ${e.message}`);
+      if (errors <= 5) console.error(`  Error processing ${file}: ${err.message}`);
     }
 
-    processed++;
-
-    // Save checkpoint every 10
-    if ((i + 1) % 10 === 0) {
-      fs.writeFileSync(CHECKPOINT_FILE, JSON.stringify({
-        lastOffset: checkpoint.lastOffset + i + 1,
-        processed,
-        found,
-        errors,
-      }, null, 2));
+    if (processed % 50 === 0 && processed > 0) {
+      console.log(`  Processed: ${processed}, New: ${newPartners.length}, Skipped: ${skipped}, Errors: ${errors}`);
     }
-
-    // Rate limit — SEC requires 10 req/sec max
-    await new Promise(r => setTimeout(r, 200));
+    await sleep(RATE_LIMIT_MS);
   }
 
-  // Save results
-  const existing = fs.existsSync(RESULTS_FILE)
-    ? JSON.parse(fs.readFileSync(RESULTS_FILE, "utf8"))
-    : [];
-  
-  fs.writeFileSync(RESULTS_FILE, JSON.stringify([...existing, ...allContacts], null, 2));
+  // Also try to extract partners from the raw fund records
+  console.log("\nExtracting partners from existing fund records...");
+  for (const fund of existingFunds.slice(0, limit * 10)) {
+    if (!fund.companyName && !fund.filer_name) continue;
+    
+    const fundName = fund.companyName || fund.filer_name || "";
+    // Extract individual names from any name fields
+    const nameFields = [fund.contactName, fund.personName, fund.officerName].filter(Boolean);
+    
+    for (const nameField of nameFields) {
+      const nameParts = nameField.split(",").map(s => s.trim());
+      let firstName = nameParts.length > 1 ? nameParts[1] : nameParts[0];
+      let lastName = nameParts.length > 1 ? nameParts[0] : "";
+      
+      if (!nameField.includes(",")) {
+        const spaceParts = nameField.split(" ");
+        firstName = spaceParts[0];
+        lastName = spaceParts.slice(1).join(" ");
+      }
 
-  console.log("\n\n" + "=".repeat(60));
-  console.log("RESULTS");
-  console.log("=".repeat(60));
-  console.log(`Processed: ${processed}`);
-  console.log(`Contacts found: ${allContacts.length}`);
-  console.log(`Total contacts: ${found}`);
+      const dedupKey = generateDeduplicationKey(firstName, lastName, fundName);
+      
+      if (!existingKeys.has(dedupKey)) {
+        existingKeys.add(dedupKey);
+        newPartners.push({
+          firstName,
+          lastName,
+          fullName: nameField,
+          firmName: fundName,
+          role: "fund_principal",
+          source: "edgar_fund_record",
+          sourceUrl: null,
+          sourceId: fund.id || null,
+          scrapedAt: new Date().toISOString(),
+          deduplicationKey: dedupKey,
+          status: "scraped",
+          dataQualityScore: 40,
+          confidence: 50,
+          retryCount: 0,
+          emailVerified: false,
+        });
+      }
+    }
+  }
+
+  // Combine and save
+  const allPartners = [...existingPartners, ...newPartners];
+  
+  if (!dryRun) {
+    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(allPartners, null, 2));
+    console.log(`\nSaved ${allPartners.length} total partners to ${OUTPUT_FILE}`);
+  } else {
+    console.log(`\n[DRY RUN] Would save ${allPartners.length} total partners`);
+  }
+
+  console.log("\n=== Results ===");
+  console.log(`Processed: ${processed} XML files`);
+  console.log(`New partners extracted: ${newPartners.length}`);
+  console.log(`Skipped (duplicates): ${skipped}`);
   console.log(`Errors: ${errors}`);
-  console.log(`Results: ${RESULTS_FILE}`);
+  console.log(`Total partners: ${allPartners.length}`);
+  
+  // Summary by role
+  const roleCounts = {};
+  for (const p of newPartners) {
+    roleCounts[p.role] = (roleCounts[p.role] || 0) + 1;
+  }
+  console.log("\nBy role:");
+  for (const [role, count] of Object.entries(roleCounts).sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${role}: ${count}`);
+  }
 }
 
 main().catch(console.error);

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
+import { NotificationPanel } from "@/components/Dashboard/NotificationPanel";
 
 interface DashboardHeaderProps {
   user?: {
@@ -89,13 +90,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
 
         {/* Right side */}
         <div className="flex items-center gap-[12px]">
-          {/* Notifications — link to settings */}
-          <Link
-            href="/dashboard/settings"
-            className="relative flex items-center justify-center w-[36px] h-[36px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <i className="ri-notification-3-line text-[18px] text-gray-500"></i>
-          </Link>
+          <NotificationPanel />
 
           {/* User menu dropdown */}
           <div className="relative" ref={menuRef}>

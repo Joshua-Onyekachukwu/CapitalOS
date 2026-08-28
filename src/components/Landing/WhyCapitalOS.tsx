@@ -42,7 +42,7 @@ const WhyCapitalOS: React.FC = () => {
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-[24px]">
           {/* Text content — second on mobile, first on desktop */}
-          <div className="order-2 lg:order-1 mt-[85px] lg:mt-0 ltr:xl:pr-[35px] rtl:xl:pl-[35px]">
+          <div className="order-2 lg:order-1 lg:mt-0 ltr:xl:pr-[35px] rtl:xl:pl-[35px]">
             <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
               WHY CAPITAL OS
             </span>
