@@ -138,18 +138,27 @@ async function main() {
   const dryRun = args.includes("--dry-run");
 
   // Load existing investors to find firms with websites
-  const investorsFile = path.join(DATA_DIR, "investors-backup.json");
+  const possibleFiles = [
+    "investors-backup.json",
+    "investors-backup-2026-08-25T05-48-56.json",
+    "investors-full-backup-2026-08-27T00-29-35-757Z.csv",
+  ];
   let investors = [];
-  if (fs.existsSync(investorsFile)) {
-    investors = JSON.parse(fs.readFileSync(investorsFile, "utf-8"));
+  for (const file of possibleFiles) {
+    const filePath = path.join(DATA_DIR, file);
+    if (fs.existsSync(filePath) && file.endsWith(".json")) {
+      investors = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      console.log(`Loaded ${investors.length} investors from ${file}`);
+      break;
+    }
   }
 
   // Get unique firms with real websites
   const firmsWithWebsites = new Map();
   for (const inv of investors) {
-    const website = inv.website || inv.company_url || inv.firm_website;
+    const website = inv.company_website || inv.website || inv.company_url || inv.firm_website;
     if (website && website.startsWith("http") && !website.includes("null")) {
-      const firmName = inv.firm_name || inv.companyName || inv.full_name;
+      const firmName = inv.company_name || inv.firm_name || inv.full_name;
       if (!firmsWithWebsites.has(firmName)) {
         firmsWithWebsites.set(firmName, website);
       }

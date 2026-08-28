@@ -149,12 +149,32 @@ async function main() {
   const dryRun = args.includes("--dry-run");
 
   // Get investors without emails
-  const { data: investors, count } = await sp
-    .from("investors")
-    .select("id, full_name, first_name, last_name, email, firm_name, website, investor_type")
-    .or("email.is.null,email.eq.")
-    .order("fit_score", { ascending: false })
-    .limit(limit);
+  // First try Supabase, fallback to local backup
+  let investors = [];
+  try {
+    const { data } = await sp
+      .from("investors")
+      .select("id, full_name, first_name, last_name, email, firm_name, website, investor_type")
+      .or("email.is.null,email.eq.")
+      .order("fit_score", { ascending: false })
+      .limit(limit);
+    investors = data || [];
+  } catch {
+    // Fallback to local backup
+    const possibleFiles = [
+      "investors-backup-2026-08-25T05-48-56.json",
+      "investors-backup.json",
+    ];
+    for (const file of possibleFiles) {
+      const filePath = require("path").join(__dirname, "..", "data-backups", file);
+      if (require("fs").existsSync(filePath)) {
+        const allData = JSON.parse(require("fs").readFileSync(filePath, "utf-8"));
+        investors = allData.filter(d => !d.email || d.email === "").slice(0, limit);
+        console.log(`Loaded ${investors.length} investors from local backup`);
+        break;
+      }
+    }
+  }
 
   console.log(`Found ${investors?.length || 0} investors without emails`);
   console.log(`Batch size: ${batchSize}`);
