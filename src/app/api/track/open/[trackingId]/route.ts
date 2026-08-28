@@ -1,11 +1,10 @@
 // =============================================
-// Email Open Tracking Pixel
+// Email Open Tracking Pixel (Supabase)
 // =============================================
 // Returns a 1x1 transparent GIF and records the open event.
-// Called when an email client loads the embedded pixel.
 
 import { NextRequest, NextResponse } from "next/server";
-import { recordOpen } from "@/lib/services/email/tracking";
+import { recordOpen } from "@/lib/services/email/tracking-supabase";
 
 // 1x1 transparent GIF (43 bytes)
 const TRANSPARENT_GIF = new Uint8Array([
@@ -24,12 +23,10 @@ export async function GET(
   const { trackingId } = await params;
 
   if (trackingId && trackingId.length >= 8) {
-    // Record the open event (fire and forget — don't block the response)
     const userAgent = request.headers.get("user-agent") || undefined;
     const forwarded = request.headers.get("x-forwarded-for");
     const ipAddress = forwarded?.split(",")[0]?.trim() || undefined;
 
-    // Use waitUntil if available, otherwise just fire
     try {
       await recordOpen(trackingId, userAgent, ipAddress);
     } catch {
@@ -37,7 +34,6 @@ export async function GET(
     }
   }
 
-  // Return the transparent GIF with aggressive caching headers
   return new NextResponse(TRANSPARENT_GIF, {
     status: 200,
     headers: {

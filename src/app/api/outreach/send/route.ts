@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
     if (validated instanceof NextResponse) return validated;
 
     const { investorId, subject, bodyHtml, bodyText } = validated;
+
+    // Generate tracking ID and inject tracking into HTML
+    const { generateTrackingId, injectTracking } = await import("@/lib/services/email/tracking-supabase");
+    const trackingId = generateTrackingId();
+    const trackedHtml = injectTracking(bodyHtml, trackingId, true);
     const userId = user.id;
 
     const sp = createClient(
@@ -50,7 +55,7 @@ export async function POST(request: NextRequest) {
       userId,
       to: investorEmail,
       subject,
-      bodyHtml,
+      bodyHtml: trackedHtml,
       bodyText: bodyText || bodyHtml.replace(/<[^>]*>/g, ""),
     });
 
@@ -58,7 +63,7 @@ export async function POST(request: NextRequest) {
       result = await sendEmailViaSmtp({
         to: investorEmail,
         subject,
-        bodyHtml,
+        bodyHtml: trackedHtml,
         bodyText: bodyText || bodyHtml.replace(/<[^>]*>/g, ""),
       });
     }
@@ -77,6 +82,9 @@ export async function POST(request: NextRequest) {
           status: "sent",
           sent_at: new Date().toISOString(),
           ai_generated: true,
+          tracking_id: trackingId,
+          open_count: 0,
+          click_count: 0,
         });
       } catch {
         // email_messages table may not exist — non-critical
