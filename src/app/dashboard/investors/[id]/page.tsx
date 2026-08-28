@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { DataHistory } from "@/components/Dashboard/DataHistory";
 import { CommunicationTimeline } from "@/components/Outreach/CommunicationTimeline";
 import { EmailComposeModal } from "@/components/Outreach/EmailComposeModal";
+import { toast } from "sonner";
 
 interface InvestorData {
   id: string;
@@ -156,7 +157,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           body: JSON.stringify({ investorId }),
         });
         setIsSaved(false);
-        setToast({ message: "Removed from saved investors", type: "success" });
+        toast.success("Removed from saved investors");
       } else {
         await fetch("/api/investors/saved", {
           method: "POST",
@@ -164,11 +165,11 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           body: JSON.stringify({ investorId }),
         });
         setIsSaved(true);
-        setToast({ message: "Investor saved!", type: "success" });
+        toast.success("Investor saved!");
       }
     } catch (err) {
       console.error("Save toggle failed:", err);
-      setToast({ message: "Failed to save investor", type: "error" });
+      toast.error("Failed to save investor");
     } finally {
       setSavingInvestor(false);
     }

@@ -91,8 +91,43 @@ export async function chatCompletion({
         const errorBody = await response.text();
         lastError = new Error(`NVIDIA API error ${response.status}: ${errorBody}`);
 
-        // Don't retry on auth errors (401, 403) or model-gone (410)
-        if (response.status === 401 || response.status === 403 || response.status === 410) {
+        // On 410 (model gone) or 503 (unavailable), try fallback model
+        if ((response.status === 410 || response.status === 503) && config.fallbackModel && attempt === maxRetries - 1) {
+          try {
+            const fallbackResponse = await fetch(`${baseUrl}/chat/completions`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model: config.fallbackModel,
+                messages: allMessages,
+                max_tokens: config.maxTokens,
+                temperature: config.temperature,
+                stream: false,
+              }),
+            });
+            if (fallbackResponse.ok) {
+              const fallbackData = await fallbackResponse.json();
+              const fallbackChoice = fallbackData.choices?.[0];
+              if (fallbackChoice?.message?.content) {
+                return {
+                  content: fallbackChoice.message.content,
+                  model: config.fallbackModel,
+                  usage: {
+                    promptTokens: fallbackData.usage?.prompt_tokens ?? 0,
+                    completionTokens: fallbackData.usage?.completion_tokens ?? 0,
+                    totalTokens: fallbackData.usage?.total_tokens ?? 0,
+                  },
+                };
+              }
+            }
+          } catch { /* fallback also failed */ }
+        }
+
+        // Don't retry on auth errors (401, 403)
+        if (response.status === 401 || response.status === 403) {
           throw lastError;
         }
 

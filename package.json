@@ -35,6 +35,7 @@
     "react-dom": "19.2.8",
     "recharts": "^3.10.1",
     "remixicon": "^4.9.1",
+    "sonner": "^2.0.8",
     "stripe": "^22.5.0",
     "swiper": "^14.1.0",
     "tailwind-merge": "^2.6.0",

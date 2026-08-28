@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { toast } from "sonner";
 
 interface UserProfile {
   full_name: string;
@@ -154,9 +155,11 @@ export default function SettingsPage() {
       } else {
         setSaveSuccess(true);
         setUser((prev) => (prev ? { ...prev, full_name: fullName } : prev));
+        toast.success("Profile updated successfully");
       }
     } catch {
       setSaveError("Failed to save changes.");
+      toast.error("Failed to save changes");
     } finally {
       setSaving(false);
     }

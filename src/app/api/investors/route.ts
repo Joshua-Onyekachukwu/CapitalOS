@@ -40,39 +40,35 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // ── Count query (use select with no range to get total) ──
-    let countQ = supabase
-      .from("investors")
-      .select("id", { count: "exact" });
+    // Helper to apply common filters
+    const applyFilters = (q: any) => {
+      if (search) q = q.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,job_title.ilike.%${search}%`);
+      if (type) q = q.eq("investor_type", type);
+      if (country) q = q.eq("country", country);
+      if (readiness) q = q.eq("outreach_readiness", readiness);
+      if (verified === "true") q = q.eq("is_verified", true);
+      if (minScore) q = q.gte("fit_score", parseInt(minScore));
+      if (hasEmail === "true") q = q.not("email", "is", null).neq("email", "");
+      return q;
+    };
 
-    if (search) countQ = countQ.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,job_title.ilike.%${search}%`);
-    if (type) countQ = countQ.eq("investor_type", type);
-    if (country) countQ = countQ.eq("country", country);
-    if (readiness) countQ = countQ.eq("outreach_readiness", readiness);
-    if (verified === "true") countQ = countQ.eq("is_verified", true);
-    if (minScore) countQ = countQ.gte("fit_score", parseInt(minScore));
-    if (hasEmail === "true") countQ = countQ.not("email", "is", null).neq("email", "");
-    countQ = countQ.limit(0);
+    // Run count and data queries in parallel
+    const [countResult, dataResult] = await Promise.all([
+      // Count query
+      applyFilters(
+        supabase.from("investors").select("id", { count: "exact", head: true })
+      ),
+      // Data query
+      applyFilters(
+        supabase.from("investors")
+          .select("*")
+          .order(sortBy, { ascending: sortDir, nullsFirst: false })
+          .range(offset, offset + limit - 1)
+      ),
+    ]);
 
-    const { count } = await countQ;
-
-    // ── Data query ──
-    let dataQ = supabase
-      .from("investors")
-      .select("*");
-
-    if (search) dataQ = dataQ.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,job_title.ilike.%${search}%`);
-    if (type) dataQ = dataQ.eq("investor_type", type);
-    if (country) dataQ = dataQ.eq("country", country);
-    if (readiness) dataQ = dataQ.eq("outreach_readiness", readiness);
-    if (verified === "true") dataQ = dataQ.eq("is_verified", true);
-    if (minScore) dataQ = dataQ.gte("fit_score", parseInt(minScore));
-    if (hasEmail === "true") dataQ = dataQ.not("email", "is", null).neq("email", "");
-
-    dataQ = dataQ.order(sortBy, { ascending: sortDir, nullsFirst: false });
-    dataQ = dataQ.range(offset, offset + limit - 1);
-
-    const { data: investors, error } = await dataQ;
+    const { count } = countResult;
+    const { data: investors, error } = dataResult;
 
     if (error) {
       console.error("Supabase query error:", error);

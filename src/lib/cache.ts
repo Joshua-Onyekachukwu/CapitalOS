@@ -1,132 +1,92 @@
-/**
- * In-Memory Cache with TTL + LRU Eviction
- *
- * Production-grade caching for API routes that run expensive DB queries.
- * Designed to reduce CockroachDB load on frequently-accessed endpoints.
- *
- * Features:
- *   - TTL-based expiration (configurable per entry)
- *   - LRU eviction when max entries reached
- *   - Cache key generation from request URL + params
- *   - Selective invalidation by prefix (e.g., invalidate all "facets" caches)
- *   - Hit/miss metrics for observability
- *   - Thread-safe (single-process, no distributed locks)
- *
- * Usage:
- *   import { cache, cacheKey } from "@/lib/cache";
- *
- *   const data = await cache.getOrSet(
- *     cacheKey(request.url),
- *     () => expensiveDbQuery(),
- *     { ttlMs: 60_000 }  // 60 seconds
- *   );
- *
- * Production swap: Replace with @upstash/redis when moving to multi-server.
- */
+// =============================================
+// In-Memory Cache with TTL
+// =============================================
+// Lightweight caching layer for API responses and computed data.
+// Prevents repeated expensive DB queries and AI calls.
 
 interface CacheEntry<T> {
   value: T;
   expiresAt: number;
-  lastAccessed: number;
-}
-
-interface CacheConfig {
-  ttlMs: number;       // Time-to-live in milliseconds
-  maxEntries: number;   // Max entries before LRU eviction
-}
-
-interface CacheMetrics {
   hits: number;
-  misses: number;
-  sets: number;
-  evictions: number;
-  invalidations: number;
 }
 
-// ── Default Configuration ──
-
-const DEFAULT_TTL_MS = 60_000;        // 60 seconds
-const DEFAULT_MAX_ENTRIES = 500;       // Reasonable for API caches
-const CLEANUP_INTERVAL_MS = 30_000;    // Run cleanup every 30s
-
-// ── Cache Class ──
-
-class Cache {
+class MemoryCache {
   private store = new Map<string, CacheEntry<any>>();
-  private metrics: CacheMetrics = {
-    hits: 0,
-    misses: 0,
-    sets: 0,
-    evictions: 0,
-    invalidations: 0,
-  };
-  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+  private defaultTTL = 60_000; // 1 minute default
+  private maxEntries = 500;
+  private stats = { hits: 0, misses: 0, sets: 0, evictions: 0 };
 
-  constructor() {
-    // Periodic cleanup of expired entries
-    if (typeof setInterval !== "undefined") {
-      this.cleanupTimer = setInterval(() => this.cleanup(), CLEANUP_INTERVAL_MS);
-    }
-  }
-
-  /**
-   * Get a value from cache, or compute it and store it.
-   * Returns cached value on hit, computed value on miss.
-   */
-  async getOrSet<T>(
-    key: string,
-    compute: () => Promise<T>,
-    config?: Partial<CacheConfig>
-  ): Promise<T> {
-    const ttlMs = config?.ttlMs ?? DEFAULT_TTL_MS;
-    const maxEntries = config?.maxEntries ?? DEFAULT_MAX_ENTRIES;
-
-    // Check cache
+  get<T>(key: string): T | null {
     const entry = this.store.get(key);
-    if (entry && Date.now() < entry.expiresAt) {
-      // Cache hit — update access time for LRU
-      entry.lastAccessed = Date.now();
-      this.metrics.hits++;
-      return entry.value as T;
+    if (!entry) {
+      this.stats.misses++;
+      return null;
     }
-
-    // Cache miss
-    this.metrics.misses++;
-
-    // Compute value
-    const value = await compute();
-
-    // Store in cache
-    this.set(key, value, { ttlMs, maxEntries });
-
-    return value;
+    if (Date.now() > entry.expiresAt) {
+      this.store.delete(key);
+      this.stats.misses++;
+      return null;
+    }
+    entry.hits++;
+    this.stats.hits++;
+    return entry.value as T;
   }
 
-  /**
-   * Store a value in cache.
-   */
-  set<T>(key: string, value: T, config?: Partial<CacheConfig>): void {
-    const ttlMs = config?.ttlMs ?? DEFAULT_TTL_MS;
-    const maxEntries = config?.maxEntries ?? DEFAULT_MAX_ENTRIES;
-
-    // Evict if at capacity
-    if (this.store.size >= maxEntries && !this.store.has(key)) {
-      this.evict(maxEntries);
+  set<T>(key: string, value: T, ttlMs?: number): void {
+    // Evict oldest if at capacity
+    if (this.store.size >= this.maxEntries) {
+      let oldestKey = "";
+      let oldestTime = Infinity;
+      for (const [k, v] of this.store) {
+        if (v.expiresAt < oldestTime) {
+          oldestTime = v.expiresAt;
+          oldestKey = k;
+        }
+      }
+      if (oldestKey) {
+        this.store.delete(oldestKey);
+        this.stats.evictions++;
+      }
     }
 
     this.store.set(key, {
       value,
-      expiresAt: Date.now() + ttlMs,
-      lastAccessed: Date.now(),
+      expiresAt: Date.now() + (ttlMs || this.defaultTTL),
+      hits: 0,
     });
-
-    this.metrics.sets++;
+    this.stats.sets++;
   }
 
-  /**
-   * Invalidate all entries whose key starts with the given prefix.
-   * Useful when data changes and cached results are stale.
-   */
+  invalidate(pattern: string): number {
+    let count = 0;
+    const regex = new RegExp("^" + pattern.replace("*", ".*") + "$");
+    for (const key of this.store.keys()) {
+      if (regex.test(key)) {
+        this.store.delete(key);
+        count++;
+      }
+    }
+    return count;
+  }
+
+  clear(): void {
+    this.store.clear();
+  }
+
+  // Get-or-set: return cached value or compute, cache, and return
+  async getOrSet<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    options?: { ttlMs?: number }
+  ): Promise<T> {
+    const cached = this.get<T>(key);
+    if (cached !== null) return cached;
+    const value = await fetcher();
+    this.set(key, value, options?.ttlMs);
+    return value;
+  }
+
+  // Invalidate by prefix
   invalidatePrefix(prefix: string): number {
     let count = 0;
     for (const key of this.store.keys()) {
@@ -135,140 +95,70 @@ class Cache {
         count++;
       }
     }
-    this.metrics.invalidations += count;
     return count;
   }
 
-  /**
-   * Invalidate a specific key.
-   */
-  invalidate(key: string): boolean {
-    const deleted = this.store.delete(key);
-    if (deleted) this.metrics.invalidations++;
-    return deleted;
-  }
-
-  /**
-   * Clear the entire cache.
-   */
-  clear(): void {
-    const size = this.store.size;
-    this.store.clear();
-    this.metrics.invalidations += size;
-  }
-
-  /**
-   * Get cache metrics for observability.
-   */
-  getMetrics(): CacheMetrics & { size: number; hitRate: string } {
-    const total = this.metrics.hits + this.metrics.misses;
-    const hitRate = total > 0
-      ? `${((this.metrics.hits / total) * 100).toFixed(1)}%`
-      : "0%";
+  // Get metrics for admin dashboard
+  getMetrics() {
     return {
-      ...this.metrics,
+      ...this.stats,
       size: this.store.size,
-      hitRate,
+      hitRate:
+        this.stats.hits + this.stats.misses > 0
+          ? Math.round(
+              (this.stats.hits / (this.stats.hits + this.stats.misses)) * 100
+            )
+          : 0,
+      maxEntries: this.maxEntries,
     };
   }
 
-  /**
-   * Remove expired entries and enforce LRU eviction.
-   */
-  private cleanup(): void {
-    const now = Date.now();
-
-    // Remove expired entries
-    for (const [key, entry] of this.store) {
-      if (now > entry.expiresAt) {
-        this.store.delete(key);
-      }
-    }
-  }
-
-  /**
-   * LRU eviction: remove the least recently accessed entry.
-   */
-  private evict(maxEntries: number): void {
-    let oldestKey: string | null = null;
-    let oldestTime = Infinity;
-
-    for (const [key, entry] of this.store) {
-      if (entry.lastAccessed < oldestTime) {
-        oldestTime = entry.lastAccessed;
-        oldestKey = key;
-      }
-    }
-
-    if (oldestKey) {
-      this.store.delete(oldestKey);
-      this.metrics.evictions++;
-    }
-  }
-
-  /**
-   * Shutdown the cleanup timer (for graceful process exit).
-   */
-  shutdown(): void {
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
-      this.cleanupTimer = null;
-    }
+  getStats() {
+    return {
+      ...this.stats,
+      size: this.store.size,
+      hitRate:
+        this.stats.hits + this.stats.misses > 0
+          ? Math.round(
+              (this.stats.hits / (this.stats.hits + this.stats.misses)) * 100
+            )
+          : 0,
+    };
   }
 }
 
-// ── Singleton Instance ──
+// Singleton cache instance
+export const cache = new MemoryCache();
 
-export const cache = new Cache();
-
-// ── Cache Key Generators ──
-
-/**
- * Generate a cache key from a request URL.
- * Strips the origin and normalizes query params for consistent keys.
- */
-export function cacheKey(url: string, prefix?: string): string {
-  try {
-    const parsed = new URL(url);
-    // Sort search params for consistent keys
-    const params = new URLSearchParams(parsed.searchParams);
-    const sorted = new URLSearchParams([...params.entries()].sort());
-    const paramStr = sorted.toString();
-    return prefix
-      ? `${prefix}:${parsed.pathname}:${paramStr}`
-      : `${parsed.pathname}:${paramStr}`;
-  } catch {
-    // Fallback for malformed URLs
-    return prefix ? `${prefix}:${url}` : url;
-  }
+// Helper: create a user-scoped cache key
+export function userCacheKey(userId: string, scope: string): string {
+  return `user:${userId}:${scope}`;
 }
 
-/**
- * Generate a cache key from user ID + prefix.
- * Used for user-scoped caches like cockpit.
- */
-export function userCacheKey(userId: string, prefix: string): string {
-  return `${prefix}:user:${userId}`;
+// Helper: generic cache key builder
+export function cacheKey(...parts: (string | number)[]): string {
+  return parts.join(":");
 }
 
-// ── Cache TTL Constants ──
-
+// Cache TTLs (in milliseconds)
 export const CACHE_TTL = {
-  /** Facets: 60 seconds — data changes infrequently */
-  facets: 60_000,
-  /** Cockpit: 30 seconds — dashboard should be fairly fresh */
-  cockpit: 30_000,
-  /** Search results: 15 seconds — users expect near-real-time */
-  search: 15_000,
-  /** Static metadata: 5 minutes — sectors, stages, etc. */
-  metadata: 300_000,
-  /** Campaign list: 30 seconds */
-  campaigns: 30_000,
-} as const;
+  short: 30_000,      // 30 seconds — fast-changing data
+  medium: 60_000,     // 1 minute — moderate change frequency
+  cockpit: 90_000,    // 90 seconds — dashboard cockpit data
+  long: 300_000,      // 5 minutes — slow-changing data
+  veryLong: 900_000,  // 15 minutes — rarely changes
+};
 
-// ── Graceful Shutdown ──
+// Helper: cached fetch with getOrSet pattern
+export async function cachedFetch<T>(
+  key: string,
+  fetcher: () => Promise<T>,
+  ttlMs: number = CACHE_TTL.medium
+): Promise<T> {
+  const cached = cache.get<T>(key);
+  if (cached !== null) return cached;
 
-if (typeof process !== "undefined") {
-  process.once("SIGTERM", () => cache.shutdown());
-  process.once("SIGINT", () => cache.shutdown());
+  const value = await fetcher();
+  cache.set(key, value, ttlMs);
+  return value;
 }

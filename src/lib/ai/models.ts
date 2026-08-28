@@ -15,6 +15,7 @@ export type AiTask =
 
 interface ModelConfig {
   model: string;
+  fallbackModel?: string;
   maxTokens: number;
   temperature: number;
   description: string;
@@ -46,15 +47,16 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Subject+body generated in a single call with structured markers
   email_drafting: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
+    fallbackModel: "nvidia/llama-3.1-nemotron-70b-instruct",
     maxTokens: 2048,
     temperature: 0.7,
     description: "Personalized outreach email generation",
   },
 
   // Research summarization — condensing large amounts of data
-  // Using Nemotron Lightning (fast, reliable, well-tested)
   research_summary: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
+    fallbackModel: "nvidia/llama-3.1-nemotron-70b-instruct",
     maxTokens: 2048,
     temperature: 0.3,
     description: "Investor research and profile summarization",
@@ -63,6 +65,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Fit analysis — explaining why an investor matches
   fit_analysis: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
+    fallbackModel: "nvidia/llama-3.1-nemotron-70b-instruct",
     maxTokens: 2048,
     temperature: 0.2,
     description: "Detailed investor-startup fit explanations",
@@ -71,6 +74,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Pipeline analysis — strategic insights on fundraising progress
   pipeline_analysis: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
+    fallbackModel: "nvidia/llama-3.1-nemotron-70b-instruct",
     maxTokens: 2048,
     temperature: 0.3,
     description: "Fundraising pipeline strategy and analytics",
