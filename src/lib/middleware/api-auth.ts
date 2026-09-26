@@ -83,8 +83,9 @@ export async function requireAdmin(request?: NextRequest): Promise<AuthUser | Ne
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const isAdminMeta = user.app_metadata?.role === "admin" || user.user_metadata?.role === "admin";
-      if (isAdminMeta) return authUser;
+      // Only app_metadata is trusted for authorization. user_metadata is user-editable
+      // and must never grant server-side privileges.
+      if (user.app_metadata?.role === "admin") return authUser;
     }
   } catch {
     // Fall through to env check

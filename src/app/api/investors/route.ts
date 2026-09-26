@@ -19,20 +19,30 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // ── Filters ──
-    const search = sp.get("search") || "";
+    const search = sp.get("search") || sp.get("query") || "";
     const type = sp.get("type") || "";
     const country = sp.get("country") || "";
+    const city = sp.get("city") || "";
     const readiness = sp.get("readiness") || "";
     const verified = sp.get("verified") || "";
-    const minScore = sp.get("minScore") || "";
+    const minScore = sp.get("minScore") || sp.get("minFitScore") || "";
     const maxScore = sp.get("maxScore") || "";
     const hasEmail = sp.get("hasEmail") || "";
     const hasLinkedin = sp.get("hasLinkedin") || "";
+    const minQuality = sp.get("minQuality") || "";
+    const firmId = sp.get("firmId") || "";
+    const stage = sp.get("stage") || "";        // single stage value
+    const sector = sp.get("sector") || "";      // single sector value
+    // Array params — "sectors" and "stages" can be comma-separated or multiple values
+    const sectorsParam = sp.get("sectors") || "";
+    const stagesParam = sp.get("stages") || "";
+    const sectors = sectorsParam ? sectorsParam.split(",").map((s) => s.trim()).filter(Boolean) : [];
+    const stages = stagesParam ? stagesParam.split(",").map((s) => s.trim()).filter(Boolean) : [];
 
     // ── Sorting ──
     const validSorts = ["created_at", "fit_score", "full_name", "data_quality_score", "portfolio_count"];
     const sortBy = validSorts.includes(sp.get("sortBy") || "") ? sp.get("sortBy")! : "created_at";
-    const sortDir = sp.get("sortDir") === "asc";
+    const sortDir = sp.get("sortDir") === "asc" || sp.get("sortDirection") === "asc";
 
     // Use service role key (bypasses RLS for public investor data)
     const supabase = createClient(
@@ -42,13 +52,23 @@ export async function GET(request: NextRequest) {
 
     // Helper to apply common filters
     const applyFilters = (q: any) => {
-      if (search) q = q.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,job_title.ilike.%${search}%`);
+      if (search) q = q.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,job_title.ilike.%${search}%,firm_name.ilike.%${search}%`);
       if (type) q = q.eq("investor_type", type);
-      if (country) q = q.eq("country", country);
+      if (country) q = q.ilike("country", `%${country}%`);
+      if (city) q = q.ilike("city", `%${city}%`);
       if (readiness) q = q.eq("outreach_readiness", readiness);
       if (verified === "true") q = q.eq("is_verified", true);
       if (minScore) q = q.gte("fit_score", parseInt(minScore));
+      if (minQuality) q = q.gte("data_quality_score", parseInt(minQuality));
       if (hasEmail === "true") q = q.not("email", "is", null).neq("email", "");
+      if (hasLinkedin === "true") q = q.not("linkedin_url", "is", null).neq("linkedin_url", "");
+      if (firmId) q = q.eq("current_firm_id", firmId);
+      // Single stage/sector values (from main investor list filters)
+      if (stage) q = q.contains("investment_stages", [stage]);
+      if (sector) q = q.contains("investment_sectors", [sector]);
+      // Array overlap — any of the specified values must be in the array columns
+      if (stages.length > 0) q = q.overlaps("investment_stages", stages);
+      if (sectors.length > 0) q = q.overlaps("investment_sectors", sectors);
       return q;
     };
 

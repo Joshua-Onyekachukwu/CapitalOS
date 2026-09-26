@@ -218,7 +218,7 @@ node scripts/edgar-bulk-fast.js --stats
 NEXT_PUBLIC_SUPABASE_URL=https://wdvhraurmpvncrgnmmbf.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...           # Public anon key
 SUPABASE_SERVICE_ROLE_KEY=eyJ...               # Secret service role key
-SUPABASE_DB_PASSWORD=+LyJ.n6AeYnNW/C          # Database password
+SUPABASE_DB_PASSWORD=<see .env.local>          # Database password
 ```
 
 ### Required for Convex (Real-time)
@@ -259,7 +259,7 @@ EMAIL_FROM=your-email@gmail.com
 
 | Account | Email | Password |
 |---------|-------|----------|
-| **Admin** | semek@capitalOS.io | CapitalOS2024! |
+| **Admin** | semek@capitalOS.io | (set via Supabase dashboard) |
 
 ### Google OAuth
 - Configured in Supabase Authentication → Providers → Google

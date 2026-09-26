@@ -732,6 +732,30 @@ export default function InvestorDiscoverPage() {
                               Collapse
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                await fetch("/api/investors/pipeline", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ investorId: investor.id, stage: "qualified" }),
+                                });
+                                // Update local state to show it was added
+                                setResults((prev) =>
+                                  prev.map((r) =>
+                                    r.id === investor.id
+                                      ? { ...r, outreach_readiness: "needs_verification" }
+                                      : r
+                                  )
+                                );
+                              } catch { /* silent */ }
+                            }}
+                          >
+                            <i className="ri-add-circle-line text-[14px]"></i>
+                            Add to Pipeline
+                          </Button>
                           <Link href={`/dashboard/investors/${investor.id}`}>
                             <Button size="sm" variant="ghost" fullWidth>
                               Profile

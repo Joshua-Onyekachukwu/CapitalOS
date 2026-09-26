@@ -43,6 +43,9 @@ Thumbs.db
 *.tsbuildinfo
 tsconfig.tsbuildinfo
 
+# Freebuff runtime logs
+.freebuff*/
+
 # Misc
 *.pem
 *.key

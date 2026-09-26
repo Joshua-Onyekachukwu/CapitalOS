@@ -35,14 +35,22 @@ export const rawInvestors = defineTable({
   // ── Processing status ──
   status: v.union(
     v.literal("scraped"),
+    v.literal("deduplicating"),
     v.literal("deduplicated"),
+    v.literal("normalizing"),
     v.literal("normalized"),
+    v.literal("enriching"),
     v.literal("enriched"),
+    v.literal("scoring"),
     v.literal("scored"),
+    v.literal("qualifying"),
     v.literal("qualified"),
     v.literal("promoted"),
     v.literal("rejected"),
-    v.literal("error")
+    v.literal("error"),
+    v.literal("queued"),
+    v.literal("processing"),
+    v.literal("synced")
   ),
 
   // ── Deduplication ──

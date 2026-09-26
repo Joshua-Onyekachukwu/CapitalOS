@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { DataHistory } from "@/components/Dashboard/DataHistory";
 import { CommunicationTimeline } from "@/components/Outreach/CommunicationTimeline";
 import { EmailComposeModal } from "@/components/Outreach/EmailComposeModal";
-import { toast } from "sonner";
+import { toast as sonnerToast } from "sonner";
 
 interface InvestorData {
   id: string;
@@ -79,15 +79,6 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
   const [showOutreach, setShowOutreach] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [savingInvestor, setSavingInvestor] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-
-  // Auto-dismiss toast
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
 
   const fetchInvestor = useCallback(async () => {
     setLoading(true);
@@ -157,7 +148,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           body: JSON.stringify({ investorId }),
         });
         setIsSaved(false);
-        toast.success("Removed from saved investors");
+        sonnerToast.success("Removed from saved investors");
       } else {
         await fetch("/api/investors/saved", {
           method: "POST",
@@ -165,11 +156,11 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           body: JSON.stringify({ investorId }),
         });
         setIsSaved(true);
-        toast.success("Investor saved!");
+        sonnerToast.success("Investor saved!");
       }
     } catch (err) {
       console.error("Save toggle failed:", err);
-      toast.error("Failed to save investor");
+      sonnerToast.error("Failed to save investor");
     } finally {
       setSavingInvestor(false);
     }
@@ -249,20 +240,6 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div>
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[200] animate-in slide-in-from-bottom-2">
-          <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-green-600 text-white"
-              : "bg-red-600 text-white"
-          }`}>
-            <i className={`${toast.type === "success" ? "ri-check-line" : "ri-error-warning-line"} text-lg`}></i>
-            {toast.message}
-          </div>
-        </div>
-      )}
-
       <PageHeader
         title=""
         actions={
