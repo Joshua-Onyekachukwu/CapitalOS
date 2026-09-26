@@ -23,7 +23,8 @@ interface SendEmailParams {
   bodyHtml: string;
   bodyText?: string;
   cc?: string[];
-  attachments?: Array<{ name: string; content: string; mimeType: string }>;
+  /** Base64-encoded file contents — passed through to Gmail/Graph/SMTP */
+  attachments?: Array<{ filename: string; content: string; mimeType?: string }>;
   enableTracking?: boolean;
 }
 
@@ -37,26 +38,67 @@ async function sendViaGmail(
   accessToken: string,
   params: SendEmailParams
 ): Promise<SendResult> {
-  const boundary = `boundary_${Date.now()}`;
+  const textPart = params.bodyText || params.bodyHtml.replace(/<[^>]*>/g, "");
   let mimeMessage = "";
 
-  mimeMessage += `To: ${params.to}\r\n`;
-  if (params.cc?.length) {
-    mimeMessage += `Cc: ${params.cc.join(", ")}\r\n`;
+  if (params.attachments?.length) {
+    // multipart/mixed wrapping multipart/alternative + attachments
+    const outerBoundary = `mixed_${Date.now()}`;
+    const innerBoundary = `alt_${Date.now()}`;
+
+    mimeMessage += `To: ${params.to}\r\n`;
+    if (params.cc?.length) {
+      mimeMessage += `Cc: ${params.cc.join(", ")}\r\n`;
+    }
+    mimeMessage += `Subject: ${params.subject}\r\n`;
+    mimeMessage += `MIME-Version: 1.0\r\n`;
+    mimeMessage += `Content-Type: multipart/mixed; boundary="${outerBoundary}"\r\n\r\n`;
+
+    mimeMessage += `--${outerBoundary}\r\n`;
+    mimeMessage += `Content-Type: multipart/alternative; boundary="${innerBoundary}"\r\n\r\n`;
+
+    mimeMessage += `--${innerBoundary}\r\n`;
+    mimeMessage += `Content-Type: text/plain; charset="UTF-8"\r\n\r\n`;
+    mimeMessage += `${textPart}\r\n\r\n`;
+
+    mimeMessage += `--${innerBoundary}\r\n`;
+    mimeMessage += `Content-Type: text/html; charset="UTF-8"\r\n\r\n`;
+    mimeMessage += `${params.bodyHtml}\r\n\r\n`;
+
+    mimeMessage += `--${innerBoundary}--\r\n`;
+
+    for (const att of params.attachments) {
+      // RFC 2045: base64 lines must be <= 76 chars
+      const wrapped = att.content.replace(/(.{76})/g, "$1\r\n");
+      mimeMessage += `--${outerBoundary}\r\n`;
+      mimeMessage += `Content-Type: ${att.mimeType || "application/octet-stream"}; name="${att.filename}"\r\n`;
+      mimeMessage += `Content-Transfer-Encoding: base64\r\n`;
+      mimeMessage += `Content-Disposition: attachment; filename="${att.filename}"\r\n\r\n`;
+      mimeMessage += `${wrapped}\r\n`;
+    }
+
+    mimeMessage += `--${outerBoundary}--`;
+  } else {
+    const boundary = `boundary_${Date.now()}`;
+
+    mimeMessage += `To: ${params.to}\r\n`;
+    if (params.cc?.length) {
+      mimeMessage += `Cc: ${params.cc.join(", ")}\r\n`;
+    }
+    mimeMessage += `Subject: ${params.subject}\r\n`;
+    mimeMessage += `MIME-Version: 1.0\r\n`;
+    mimeMessage += `Content-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n`;
+
+    mimeMessage += `--${boundary}\r\n`;
+    mimeMessage += `Content-Type: text/plain; charset="UTF-8"\r\n\r\n`;
+    mimeMessage += `${textPart}\r\n\r\n`;
+
+    mimeMessage += `--${boundary}\r\n`;
+    mimeMessage += `Content-Type: text/html; charset="UTF-8"\r\n\r\n`;
+    mimeMessage += `${params.bodyHtml}\r\n\r\n`;
+
+    mimeMessage += `--${boundary}--`;
   }
-  mimeMessage += `Subject: ${params.subject}\r\n`;
-  mimeMessage += `MIME-Version: 1.0\r\n`;
-  mimeMessage += `Content-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n`;
-
-  mimeMessage += `--${boundary}\r\n`;
-  mimeMessage += `Content-Type: text/plain; charset="UTF-8"\r\n\r\n`;
-  mimeMessage += `${params.bodyText || params.bodyHtml.replace(/<[^>]*>/g, "")}\r\n\r\n`;
-
-  mimeMessage += `--${boundary}\r\n`;
-  mimeMessage += `Content-Type: text/html; charset="UTF-8"\r\n\r\n`;
-  mimeMessage += `${params.bodyHtml}\r\n\r\n`;
-
-  mimeMessage += `--${boundary}--`;
 
   const encodedMessage = Buffer.from(mimeMessage)
     .toString("base64")
@@ -104,6 +146,12 @@ async function sendViaMicrosoft(
     ],
     ccRecipients: params.cc?.map((addr) => ({
       emailAddress: { address: addr },
+    })),
+    attachments: params.attachments?.map((att) => ({
+      "@odata.type": "#microsoft.graph.fileAttachment",
+      name: att.filename,
+      contentType: att.mimeType || "application/octet-stream",
+      contentBytes: att.content,
     })),
   };
 

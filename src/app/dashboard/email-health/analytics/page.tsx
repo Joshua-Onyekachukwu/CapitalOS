@@ -72,7 +72,7 @@ export default function EmailAnalyticsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0e19]">
       <PageHeader
         title="Email Analytics"
-        subtitle="Track opens, clicks, replies, and delivery performance across all your outreach."
+        description="Track opens, clicks, replies, and delivery performance across all your outreach."
       />
 
       <div className="max-w-[1200px] mx-auto px-[16px] py-[24px]">

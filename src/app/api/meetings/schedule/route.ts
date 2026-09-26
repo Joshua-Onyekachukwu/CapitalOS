@@ -47,16 +47,20 @@ export async function POST(request: NextRequest) {
     const schedulingUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/schedule/${schedulingToken}`;
 
     // Log the meeting request
-    await sp.from("audit_log").insert({
-      user_id: user.id,
-      action: "meeting_scheduled",
-      details: {
-        investorId,
-        investorEmail,
-        investorName,
-        preferredTime,
-      },
-    }).then(() => {}).catch(() => {}); // Non-critical
+    try {
+      await sp.from("audit_log").insert({
+        user_id: user.id,
+        action: "meeting_scheduled",
+        details: {
+          investorId,
+          investorEmail,
+          investorName,
+          preferredTime,
+        },
+      });
+    } catch {
+      // Non-critical
+    }
 
     return NextResponse.json({
       success: true,

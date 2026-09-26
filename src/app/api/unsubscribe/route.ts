@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const normalized = email.toLowerCase().trim();
 
     // Write to the same table the suppression checker reads from
-    await sp.from("email_suppression_list").upsert(
+    const primaryUpsert = await sp.from("email_suppression_list").upsert(
       {
         user_id: "global",
         email_address: normalized,
@@ -27,9 +27,10 @@ export async function GET(request: NextRequest) {
         suppressed_at: new Date().toISOString(),
       },
       { onConflict: "user_id,email_address" }
-    ).catch(() => {
+    );
+    if (primaryUpsert.error) {
       // Fallback: try the other table name in case schema differs
-      return sp.from("email_suppression").upsert(
+      await sp.from("email_suppression").upsert(
         {
           email: normalized,
           reason: "unsubscribe",
@@ -38,14 +39,13 @@ export async function GET(request: NextRequest) {
         },
         { onConflict: "email" }
       );
-    });
+    }
 
     // Mark all outbound emails to this address as unsubscribed
     await sp
       .from("email_messages")
       .update({ unsubscribed: true })
-      .eq("to_address", normalized)
-      .catch(() => {});
+      .eq("to_address", normalized);
   }
 
   // Redirect to the unsubscribe confirmation page
@@ -88,12 +88,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Mark email_messages as unsubscribed
+    // Mark email_messages as unsubscribed (non-critical)
     await sp
       .from("email_messages")
       .update({ unsubscribed: true })
-      .eq("to_address", normalized)
-      .catch(() => {});
+      .eq("to_address", normalized);
 
     return NextResponse.json({
       success: true,

@@ -27,6 +27,12 @@ interface SmtpSendParams {
   bodyText?: string;
   cc?: string[];
   replyTo?: string;
+  attachments?: {
+    filename: string;
+    content: string; // base64-encoded file contents
+    contentType?: string;
+    encoding?: string;
+  }[];
   /** User-specific SMTP config. If null, uses global env config. */
   smtpConfig?: SmtpConfig;
 }
@@ -156,9 +162,13 @@ export async function sendEmailViaSmtp(
       replyTo: params.replyTo,
     };
 
-    // Add attachments if provided
+    // Add attachments if provided (content is base64 — decode for nodemailer)
     if (params.attachments && params.attachments.length > 0) {
-      mailOptions.attachments = params.attachments;
+      mailOptions.attachments = params.attachments.map((a) => ({
+        filename: a.filename,
+        content: Buffer.from(a.content, "base64"),
+        contentType: a.contentType,
+      }));
     }
 
     const info = await transport.sendMail(mailOptions);

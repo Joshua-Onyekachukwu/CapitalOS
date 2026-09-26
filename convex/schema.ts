@@ -28,7 +28,7 @@ const syncLog = defineTable({
   error: v.optional(v.string()),
 }).index("by_raw_id", ["rawInvestorId"]).index("by_status", ["status"]);
 
-const scrapeJobs = defineTable({
+const scrapingJobs = defineTable({
   source: v.string(),
   status: v.union(
     v.literal("queued"),
@@ -103,7 +103,7 @@ export default defineSchema({
   dataQualityMetrics,
   pipeline_runs: pipelineRun,
   sync_log: syncLog,
-  scrapeJobs,
+  scrapingJobs,
   dashboardMetrics,
   notifications,
   researchJobs,

@@ -250,7 +250,7 @@ async function handleInsert(sql: string, params: any[]): Promise<any[]> {
   const isUpsert = /ON\s+CONFLICT/i.test(sql);
   const conflictMatch = sql.match(/ON\s+CONFLICT\s*\(([^)]+)\)/i);
 
-  let builder = sp().from(table);
+  let builder: any = sp().from(table);
   if (isUpsert) {
     builder = builder.upsert(rows, {
       onConflict: conflictMatch
@@ -297,7 +297,7 @@ async function handleUpdate(sql: string, params: any[]): Promise<any[]> {
   }
 
   // Apply WHERE conditions
-  let builder = sp().from(table).update(updates);
+  let builder: any = (sp().from(table) as any).update(updates);
   builder = applySimpleWhere(builder, whereClause, params);
 
   if (/RETURNING/i.test(sql)) {

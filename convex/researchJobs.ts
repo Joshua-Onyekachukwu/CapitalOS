@@ -10,11 +10,14 @@ export const list = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let q = ctx.db.query("researchJobs");
     if (args.status) {
-      q = q.withIndex("by_status", (q) => q.eq("status", args.status as any));
+      return await ctx.db
+        .query("researchJobs")
+        .withIndex("by_status", (q) => q.eq("status", args.status as any))
+        .order("desc")
+        .take(args.limit ?? 50);
     }
-    return await q.order("desc").take(args.limit ?? 50);
+    return await ctx.db.query("researchJobs").order("desc").take(args.limit ?? 50);
   },
 });
 

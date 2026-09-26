@@ -19,6 +19,7 @@ interface AnalyticsData {
   emailsReplied: number;
   activeCampaigns: number;
   avgFitScore: number;
+  withLinkedIn?: number;
   topSectors: Array<{ sector: string; count: number }>;
   topCountries: Array<{ country: string; count: number }>;
   readinessBreakdown: Array<{ stage: string; count: number }>;

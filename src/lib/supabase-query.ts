@@ -78,13 +78,13 @@ export async function query<T = any>(
 
       // Handle ON CONFLICT (upsert)
       const isUpsert = /ON\s+CONFLICT/i.test(normalized);
-      let builder = sp.from(table).upsert(rows, { onConflict: isUpsert ? undefined : undefined });
+      let builder: any = (sp.from(table) as any).upsert(rows, { onConflict: isUpsert ? undefined : undefined });
       // For upserts with specific conflict columns, extract them
       if (isUpsert) {
         const conflictMatch = normalized.match(/ON\s+CONFLICT\s*\(([^)]+)\)/i);
         if (conflictMatch) {
           // Supabase upsert with onConflict
-          builder = sp.from(table).upsert(rows, {
+          builder = (sp.from(table) as any).upsert(rows, {
             onConflict: conflictMatch[1].split(",").map((c) => c.trim()).join(","),
             ignoreDuplicates: false,
           });
@@ -106,9 +106,9 @@ export async function query<T = any>(
       const whereClause = updateMatch[3];
 
       const updates = parseSetClause(setClause, params || []);
-      const { whereParams, whereConditions } = parseWhereClause(whereClause, params || updates._extraParamCount || 0);
+      const { whereParams, whereConditions } = parseWhereClause(whereClause, params && params.length > 0 ? params.length : updates._extraParamCount || 0);
 
-      let builder = sp.from(table).update(updates.values);
+      let builder: any = (sp.from(table) as any).update(updates.values);
 
       // Apply WHERE conditions using eq/neq/etc
       for (const cond of whereConditions) {
@@ -128,9 +128,9 @@ export async function query<T = any>(
     if (deleteMatch) {
       const table = deleteMatch[1];
       const whereClause = deleteMatch[2];
-      const { whereConditions } = parseWhereClause(whereClause, params || []);
+      const { whereConditions } = parseWhereClause(whereClause, params ? params.length : 0);
 
-      let builder = sp.from(table).delete();
+      let builder: any = (sp.from(table) as any).delete();
       for (const cond of whereConditions) {
         if (cond.operator === "eq") builder = builder.eq(cond.column, cond.value);
         else if (cond.operator === "in") builder = builder.in(cond.column, cond.value);

@@ -48,7 +48,7 @@ export function RealtimeDashboard() {
           label="Scraping Jobs"
           value={scrapingJobs?.total ?? 0}
           icon="⚡"
-          pulse={scrapingJobs?.total > 0}
+          pulse={(scrapingJobs?.total ?? 0) > 0}
         />
       </div>
 

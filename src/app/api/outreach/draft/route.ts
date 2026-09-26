@@ -60,7 +60,7 @@ function extractEmailFromResponse(raw: string): string {
   if (fullEmailMatch && fullEmailMatch[1].length > 40) {
     let email = fullEmailMatch[1].trim();
     // Trim at verification markers
-    email = email.replace(/\n\s*(?:Check|Verify|Word count|Final|Let'|Revised|\*\*|Total|\(\d+\)).*/is, "").trim();
+    email = email.replace(/\n\s*(?:Check|Verify|Word count|Final|Let'|Revised|\*\*|Total|\(\d+\))[\s\S]*/i, "").trim();
     if (email.length > 30 && email.length < 1500) return email;
   }
 
@@ -88,7 +88,7 @@ function extractEmailFromResponse(raw: string): string {
     .map(p => p.trim());
   if (emailLike.length > 0) {
     let lastEmail = emailLike[emailLike.length - 1];
-    lastEmail = lastEmail.replace(/\n\s*(?:Check|Verify|\(\d+\)|Total|Draft).*/is, "").trim();
+    lastEmail = lastEmail.replace(/\n\s*(?:Check|Verify|\(\d+\)|Total|Draft)[\s\S]*/i, "").trim();
     return lastEmail;
   }
 
@@ -185,7 +185,7 @@ Rules:
         const reasoningPatterns = [ /\n\s*(?:Check|Verify|Word count|Final|Let|Revised|I need|Wait|Actually|No |Ensure|The email|Note|\*\*|\d+\.|I'll|I can|Maybe|Hmm|So the|Actually|Wait,|Draft:)/i ];
         for (const pattern of reasoningPatterns) {
           const match = emailBody.match(pattern);
-          if (match && match.index > 50) {
+          if (match && match.index !== undefined && match.index > 50) {
             emailBody = emailBody.substring(0, match.index).trim();
           }
         }

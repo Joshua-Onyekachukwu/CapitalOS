@@ -24,6 +24,17 @@ const TEST_TIMEOUT = 60_000;
 
 const BASE_URL = process.env.TEST_URL || "http://localhost:3456";
 
+// ── Server availability gate ──
+// This is an integration suite: it requires a running dev server at BASE_URL.
+// When no server is reachable (CI, offline unit runs), the whole suite
+// self-skips instead of hanging on ~200 TCP connection timeouts.
+const serverAvailable = await fetch(`${BASE_URL}/api/auth/google`, {
+  method: "GET",
+  signal: AbortSignal.timeout(3000),
+})
+  .then(() => true)
+  .catch(() => false);
+
 // ── Helpers ──
 
 async function req(path: string, options: RequestInit = {}): Promise<Response> {
@@ -46,7 +57,7 @@ async function reqWithOrigin(path: string, origin: string, options: RequestInit 
 // 1. AUTHENTICATION — Every protected route returns 401
 // ══════════════════════════════════════════════════════
 
-describe("1. AUTHENTICATION — All protected routes require auth", () => {
+describe.skipIf(!serverAvailable)("1. AUTHENTICATION — All protected routes require auth", () => {
   // All routes that MUST require authentication
   const PROTECTED_ROUTES: Array<{ method: string; path: string; desc: string }> = [
     // ── Investors ──
@@ -138,7 +149,7 @@ describe("1. AUTHENTICATION — All protected routes require auth", () => {
 // 2. RATE LIMITING — All data routes have rate limits
 // ══════════════════════════════════════════════════════
 
-describe("2. RATE LIMITING — All data routes have rate limits", () => {
+describe.skipIf(!serverAvailable)("2. RATE LIMITING — All data routes have rate limits", () => {
   // Routes that should have rate limiting
   const RATE_LIMITED_ROUTES = [
     { method: "POST", path: "/api/copilot", desc: "Copilot (AI)", burst: 25 },
@@ -175,7 +186,7 @@ describe("2. RATE LIMITING — All data routes have rate limits", () => {
 // 3. ADMIN GATING — Admin routes require admin role
 // ══════════════════════════════════════════════════════
 
-describe("3. ADMIN GATING — Admin routes require admin role", () => {
+describe.skipIf(!serverAvailable)("3. ADMIN GATING — Admin routes require admin role", () => {
   const ADMIN_ROUTES = [
     { method: "GET", path: "/api/admin/cache", desc: "Cache metrics" },
     { method: "POST", path: "/api/admin/cache", desc: "Cache invalidate" },
@@ -212,7 +223,7 @@ describe("3. ADMIN GATING — Admin routes require admin role", () => {
 // 4. IDOR PROTECTION — userId from body is not trusted
 // ══════════════════════════════════════════════════════
 
-describe("4. IDOR PROTECTION — userId from body is not trusted", () => {
+describe.skipIf(!serverAvailable)("4. IDOR PROTECTION — userId from body is not trusted", () => {
   it("outreach/send should not accept userId from body", async () => {
     const res = await req("/api/outreach/send", {
       method: "POST",
@@ -286,7 +297,7 @@ describe("4. IDOR PROTECTION — userId from body is not trusted", () => {
 // 5. CORS — Cross-origin requests handled correctly
 // ══════════════════════════════════════════════════════
 
-describe("5. CORS — Cross-origin requests handled correctly", () => {
+describe.skipIf(!serverAvailable)("5. CORS — Cross-origin requests handled correctly", () => {
   const ALLOWED_ORIGINS = [
     "http://localhost:3456",
     "https://capital-os.vercel.app",
@@ -326,7 +337,7 @@ describe("5. CORS — Cross-origin requests handled correctly", () => {
 // 6. SECURITY HEADERS — All required headers present
 // ══════════════════════════════════════════════════════
 
-describe("6. SECURITY HEADERS — All required headers present", () => {
+describe.skipIf(!serverAvailable)("6. SECURITY HEADERS — All required headers present", () => {
   const REQUIRED_HEADERS = [
     { name: "x-frame-options", expected: "DENY" },
     { name: "x-content-type-options", expected: "nosniff" },
@@ -351,7 +362,7 @@ describe("6. SECURITY HEADERS — All required headers present", () => {
 // 7. INPUT VALIDATION — Invalid inputs rejected
 // ══════════════════════════════════════════════════════
 
-describe("7. INPUT VALIDATION — Invalid inputs rejected", () => {
+describe.skipIf(!serverAvailable)("7. INPUT VALIDATION — Invalid inputs rejected", () => {
   it("investors route should reject invalid page numbers", async () => {
     const res = await req("/api/investors?page=-1&limit=999");
     expect([400, 401]).toContain(res.status);
@@ -394,7 +405,7 @@ describe("7. INPUT VALIDATION — Invalid inputs rejected", () => {
 // 8. ERROR HANDLING — No internal details leaked
 // ══════════════════════════════════════════════════════
 
-describe("8. ERROR HANDLING — No internal details leaked", () => {
+describe.skipIf(!serverAvailable)("8. ERROR HANDLING — No internal details leaked", () => {
   it("should not leak database errors in responses", async () => {
     const res = await req("/api/investors");
     const body = await res.json();
@@ -434,7 +445,7 @@ describe("8. ERROR HANDLING — No internal details leaked", () => {
 // 9. HTTP METHODS — Proper method handling
 // ══════════════════════════════════════════════════════
 
-describe("9. HTTP METHODS — Proper method handling", () => {
+describe.skipIf(!serverAvailable)("9. HTTP METHODS — Proper method handling", () => {
   it("GET endpoints should not return 200 for POST", async () => {
     const getOnlyRoutes = [
       "/api/investors",
@@ -480,7 +491,7 @@ describe("9. HTTP METHODS — Proper method handling", () => {
 // 10. SECURITY SUMMARY — Final verification
 // ══════════════════════════════════════════════════════
 
-describe("10. SECURITY SUMMARY — Final verification", () => {
+describe.skipIf(!serverAvailable)("10. SECURITY SUMMARY — Final verification", () => {
   it("all protected routes should return 401 without auth", async () => {
     // Quick smoke test: verify 5 critical routes (GET only)
     const critical = [

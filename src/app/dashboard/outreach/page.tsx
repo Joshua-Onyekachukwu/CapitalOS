@@ -16,6 +16,11 @@ interface InvestorRecord {
   investor_type: string;
   fit_score: number;
   email: string | null;
+  investment_sectors?: string[] | null;
+  investment_stages?: string[] | null;
+  min_check_size?: number | null;
+  max_check_size?: number | null;
+  fund_size?: number | null;
   fit_score_breakdown?: Record<string, unknown>;
 }
 

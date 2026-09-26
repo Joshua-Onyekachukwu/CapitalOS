@@ -80,12 +80,15 @@ export const listByStatus = query({
     offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const offset = args.offset ?? 0;
+    const limit = args.limit ?? 50;
+    // Convex OrderedQuery has no .skip() — over-fetch then slice
+    const rows = await ctx.db
       .query("rawInvestors")
       .withIndex("by_status", (q) => q.eq("status", args.status as any))
       .order("desc")
-      .skip(args.offset ?? 0)
-      .take(args.limit ?? 50);
+      .take(offset + limit);
+    return rows.slice(offset);
   },
 });
 

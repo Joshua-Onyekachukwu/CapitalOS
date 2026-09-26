@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       bodyText: bodyText || bodyHtml.replace(/<[^>]*>/g, ""),
       attachments: attachments?.map((a: { name: string; content: string; mimeType: string }) => ({
         filename: a.name,
-        content: Buffer.from(a.content, "base64"),
-        contentType: a.mimeType,
+        content: a.content,
+        mimeType: a.mimeType,
       })),
     };
 
