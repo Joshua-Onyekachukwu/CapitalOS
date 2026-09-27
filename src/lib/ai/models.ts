@@ -29,6 +29,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Investor matching — needs fast, accurate classification
   investor_matching: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
+    fallbackModel: "nvidia/nemotron-3-super-120b-a12b",
     maxTokens: 2048,
     temperature: 0.1,
     description: "High-accuracy investor-startup matching",
@@ -37,6 +38,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Investor scoring — structured scoring with reasoning
   investor_scoring: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
+    fallbackModel: "nvidia/nemotron-3-super-120b-a12b",
     maxTokens: 4096,
     temperature: 0.2,
     description: "Multi-factor investor scoring with explanations",
@@ -47,7 +49,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // The prompt already constrains to 120 words, no need for 2048 tokens
   email_drafting: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
-    fallbackModel: "nvidia/llama-3.1-nemotron-70b-instruct",
+    fallbackModel: "nvidia/nemotron-3-super-120b-a12b",
     maxTokens: 512,
     temperature: 0.7,
     description: "Personalized outreach email generation",
@@ -56,7 +58,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Research summarization — condensing large amounts of data
   research_summary: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
-    fallbackModel: "nvidia/llama-3.1-nemotron-70b-instruct",
+    fallbackModel: "nvidia/nemotron-3-super-120b-a12b",
     maxTokens: 2048,
     temperature: 0.3,
     description: "Investor research and profile summarization",
@@ -65,7 +67,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Fit analysis — explaining why an investor matches
   fit_analysis: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
-    fallbackModel: "nvidia/llama-3.1-nemotron-70b-instruct",
+    fallbackModel: "nvidia/nemotron-3-super-120b-a12b",
     maxTokens: 2048,
     temperature: 0.2,
     description: "Detailed investor-startup fit explanations",
@@ -74,7 +76,7 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
   // Pipeline analysis — strategic insights on fundraising progress
   pipeline_analysis: {
     model: "nvidia/nemotron-3.5-lightning-30b-a3b",
-    fallbackModel: "nvidia/llama-3.1-nemotron-70b-instruct",
+    fallbackModel: "nvidia/nemotron-3-super-120b-a12b",
     maxTokens: 2048,
     temperature: 0.3,
     description: "Fundraising pipeline strategy and analytics",

@@ -8,12 +8,17 @@
 
 const BASE_URL = process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1";
 
-// Collect all valid keys from env (server-side only)
+// Collect all valid keys from env (server-side only).
+// Accepts both NVIDIA_API_KEY (single) and NVIDIA_API_KEY_1..N (pool).
 function getKeyPool(): string[] {
   const keys: string[] = [];
+  const single = process.env.NVIDIA_API_KEY;
+  if (single && single.startsWith("nvapi-")) {
+    keys.push(single);
+  }
   for (let i = 1; i <= 10; i++) {
     const key = process.env[`NVIDIA_API_KEY_${i}`];
-    if (key && key.startsWith("nvapi-")) {
+    if (key && key.startsWith("nvapi-") && !keys.includes(key)) {
       keys.push(key);
     }
   }
