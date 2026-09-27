@@ -275,16 +275,13 @@ export async function POST(request: NextRequest) {
         };
       });
 
-      // Bulk upsert in chunks — one HTTP round-trip per 500 rows instead of one per investor
-      const CHUNK_SIZE = 500;
-      for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
-        const { error: upsertError } = await sp
-          .from("investors")
-          .upsert(rows.slice(i, i + CHUNK_SIZE), { onConflict: "id" });
-        if (upsertError) {
-          console.error(`Fit analysis batch upsert error (chunk ${Math.floor(i / CHUNK_SIZE)}):`, upsertError);
-          return NextResponse.json({ error: "Failed to save scores" }, { status: 500 });
-        }
+      // Apply all score updates in a single statement via bulk_update_fit_scores.
+      // (PostgREST upserts would write NULLs into NOT NULL columns like full_name
+      // for partial rows, so a plain .upsert() here cannot work.)
+      const { error: rpcError } = await sp.rpc("bulk_update_fit_scores", { payload: rows });
+      if (rpcError) {
+        console.error("Fit analysis bulk update error:", rpcError);
+        return NextResponse.json({ error: "Failed to save scores" }, { status: 500 });
       }
 
       cache.invalidatePrefix("facets:");
