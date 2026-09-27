@@ -107,25 +107,31 @@ export default function InvestorDiscoverPage() {
   const [batchAnalyzing, setBatchAnalyzing] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
+  const [parsedFilters, setParsedFilters] = useState<{ stages: string[]; sectors: string[]; countries: string[]; investor_types: string[] } | null>(null);
+
   const handleSearch = useCallback(async () => {
     setIsSearching(true);
     setShowResults(true);
 
     try {
-      const params = new URLSearchParams();
-      if (query) params.set("query", query);
-      if (sector) params.set("sectors", sector);
-      if (stage) params.set("stages", stage);
-      if (geography) params.set("country", geography);
-      params.set("sortBy", sortBy);
-      params.set("sortDirection", "desc");
-      params.set("limit", "50");
-
-      const response = await fetch(`/api/investors?${params.toString()}`);
+      const response = await fetch("/api/investors/discover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          sector,
+          stage,
+          country: geography,
+          sortBy,
+          sortDirection: "desc",
+          limit: 50,
+        }),
+      });
       const data = await response.json();
 
       setResults(data.investors || []);
       setTotal(data.total || 0);
+      setParsedFilters(data.parsed || null);
     } catch (err) {
       console.error("Search failed:", err);
       setResults([]);
@@ -488,7 +494,7 @@ export default function InvestorDiscoverPage() {
           <CardBody className="py-[50px]">
             <div className="text-center">
               <div className="w-[48px] h-[48px] border-4 border-lime-500 border-t-transparent rounded-full animate-spin mx-auto mb-[16px]"></div>
-              <h3 className="!text-[16px] !font-semibold !mb-[6px]">Searching 1M+ investors...</h3>
+              <h3 className="!text-[16px] !font-semibold !mb-[6px]">Searching the investor database...</h3>
               <p className="text-[14px] text-gray-500 !mb-0">Matching against your criteria and scoring fit.</p>
             </div>
           </CardBody>
@@ -499,14 +505,33 @@ export default function InvestorDiscoverPage() {
       {showResults && !isSearching && (
         <div>
           <div className="flex items-center justify-between mb-[16px]">
-            <h3 className="!text-[16px] !font-semibold !mb-0">
-              {total.toLocaleString()} investor{total !== 1 ? "s" : ""} found
-              {analyzedCount > 0 && (
-                <span className="text-[13px] font-normal text-gray-400 ml-[8px]">
-                  ({analyzedCount} analyzed)
-                </span>
+            <div>
+              <h3 className="!text-[16px] !font-semibold !mb-0">
+                {total.toLocaleString()} investor{total !== 1 ? "s" : ""} found
+                {analyzedCount > 0 && (
+                  <span className="text-[13px] font-normal text-gray-400 ml-[8px]">
+                    ({analyzedCount} analyzed)
+                  </span>
+                )}
+              </h3>
+              {parsedFilters && (
+                <div className="flex items-center gap-[6px] flex-wrap mt-[6px]">
+                  <span className="text-[12px] text-gray-400">Understood as:</span>
+                  {parsedFilters.stages.map((s) => (
+                    <span key={`s-${s}`} className="text-[11px] px-[8px] py-[2px] rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">{s.replace(/_/g, " ")}</span>
+                  ))}
+                  {parsedFilters.sectors.map((s) => (
+                    <span key={`sec-${s}`} className="text-[11px] px-[8px] py-[2px] rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">{s}</span>
+                  ))}
+                  {parsedFilters.countries.map((c) => (
+                    <span key={`c-${c}`} className="text-[11px] px-[8px] py-[2px] rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400">{c}</span>
+                  ))}
+                  {parsedFilters.investor_types.map((t) => (
+                    <span key={`t-${t}`} className="text-[11px] px-[8px] py-[2px] rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">{t.replace(/_/g, " ")}</span>
+                  ))}
+                </div>
               )}
-            </h3>
+            </div>
           </div>
 
           {results.length === 0 ? (

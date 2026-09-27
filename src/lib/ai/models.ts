@@ -11,7 +11,8 @@ export type AiTask =
   | "email_drafting"
   | "research_summary"
   | "fit_analysis"
-  | "pipeline_analysis";
+  | "pipeline_analysis"
+  | "query_parsing";
 
 interface ModelConfig {
   model: string;
@@ -71,6 +72,16 @@ const MODEL_CONFIG: Record<AiTask, ModelConfig> = {
     maxTokens: 2048,
     temperature: 0.2,
     description: "Detailed investor-startup fit explanations",
+  },
+
+  // Query parsing — turn a founder's natural-language search into structured
+  // filters. Tiny structured output, latency-critical (user is waiting).
+  query_parsing: {
+    model: "nvidia/nemotron-3.5-lightning-30b-a3b",
+    fallbackModel: "nvidia/nemotron-3-super-120b-a12b",
+    maxTokens: 256,
+    temperature: 0,
+    description: "Parse natural-language investor search into structured filters",
   },
 
   // Pipeline analysis — strategic insights on fundraising progress
