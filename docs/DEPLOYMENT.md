@@ -64,9 +64,10 @@ Every push to `main` runs `.github/workflows/deploy.yml`:
 
 1. **verify** — typecheck + test suite; the deploy job is skipped if these fail.
 2. **deploy** — `scripts/sync-vercel-env.mjs` compares a SHA-256 fingerprint of
-   the Supabase secret values against the repo variable
-   `VERCEL_ENV_FINGERPRINT` (the Vercel API never returns plaintext, so the
-   fingerprint lives in GitHub). On drift it:
+   the Supabase secret values against the `CI_ENV_FINGERPRINT` plain env var
+   stored on the Vercel project (the Vercel API never returns plaintext for
+   encrypted values, so the fingerprint lives on Vercel itself as a readable
+   plain var). On drift it:
    - upserts `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
      `SUPABASE_SERVICE_ROLE_KEY` on Vercel (production + preview), then
    - creates a production deployment from the pushed commit and waits for READY
@@ -77,10 +78,9 @@ Every push to `main` runs `.github/workflows/deploy.yml`:
 
 Required repo **secrets**: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-`SUPABASE_SERVICE_ROLE_KEY`. The workflow's `GITHUB_TOKEN` needs the
-`actions: write` permission (granted in the workflow) to update the
-fingerprint variable. Rotate a secret by updating it in GitHub; the next push
-deploys a build with the new value baked in.
+`SUPABASE_SERVICE_ROLE_KEY`. Rotate a secret by updating it in GitHub; the
+next push deploys a build with the new value baked in. To force a rebuild
+without rotating anything, run the workflow with `FORCE_REDEPLOY=1`.
 
 ### Initial Setup
 

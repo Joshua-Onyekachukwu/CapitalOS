@@ -32,9 +32,6 @@ jobs:
     name: Sync env & deploy production
     needs: verify
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: write # manage the VERCEL_ENV_FINGERPRINT repo variable
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -52,5 +49,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/sync-vercel-env.mjs

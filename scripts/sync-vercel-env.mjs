@@ -3,11 +3,12 @@
  * Keep the Vercel project's Supabase env vars in sync with the repo secrets,
  * and guarantee a fresh production build whenever they change.
  *
- * Why the fingerprint variable: the Vercel REST API never returns plaintext
- * for stored env values (decrypt=true still returns an encrypted envelope),
- * so "read Vercel and compare" is impossible. Instead we persist a SHA-256
- * fingerprint of the desired values in a GitHub repo *variable*
- * (VERCEL_ENV_FINGERPRINT, written via the Actions variables API). A run
+ * Why the fingerprint var: the Vercel REST API never returns plaintext for
+ * stored encrypted env values, so "read Vercel and compare" is impossible
+ * for secrets. Instead we persist a SHA-256 fingerprint of the desired
+ * values as a dedicated PLAIN env var (CI_ENV_FINGERPRINT) on the Vercel
+ * project itself — plain values are readable via the API, so drift
+ * detection needs no external state and no extra GitHub permissions. A run
  * deploys only when the fingerprint of the current secrets differs from the
  * stored one — i.e. exactly when someone rotated a secret in the repo.
  *
@@ -15,7 +16,7 @@
  * bundle baked with a dead Supabase project ref: NEXT_PUBLIC_* values are
  * inlined at build time, so env changes without a rebuild are invisible.
  *
- * Usage (in GitHub Actions; GITHUB_TOKEN needs actions:write):
+ * Usage (in GitHub Actions):
  *   node scripts/sync-vercel-env.mjs                 # full flow
  *   node scripts/sync-vercel-env.mjs --dry-run       # report only, no writes
  *   FORCE_REDEPLOY=1 node scripts/sync-vercel-env.mjs  # ignore stored fingerprint
@@ -24,19 +25,18 @@
  *   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
  *   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
  *   SUPABASE_SERVICE_ROLE_KEY
- *   GITHUB_REPOSITORY, GITHUB_TOKEN (set automatically in Actions)
+ *   GITHUB_REPOSITORY (set automatically in Actions)
  * Optional:
  *   GITHUB_SHA (Actions sets it), FORCE_REDEPLOY=1
  */
 
+import crypto from "node:crypto";
+
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has("--dry-run");
 
-import crypto from "node:crypto";
-
 const API_VERCEL = "https://api.vercel.com";
-const API_GH = "https://api.github.com";
-const FINGERPRINT_VAR = "VERCEL_ENV_FINGERPRINT";
+const FINGERPRINT_VAR = "CI_ENV_FINGERPRINT";
 const DEPLOY_WAIT_MS = 10 * 60 * 1000;
 const DEPLOY_POLL_MS = 10_000;
 
@@ -48,7 +48,6 @@ const required = [
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "GITHUB_REPOSITORY",
-  "GITHUB_TOKEN",
 ];
 const missing = required.filter((k) => !process.env[k]);
 if (missing.length) {
@@ -59,7 +58,6 @@ if (missing.length) {
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const TEAM = process.env.VERCEL_ORG_ID;
 const PROJECT = process.env.VERCEL_PROJECT_ID;
-const GH_TOKEN = process.env.GITHUB_TOKEN;
 const [GH_OWNER, GH_REPO] = process.env.GITHUB_REPOSITORY.split("/");
 const REF = process.env.GITHUB_SHA || "main";
 const FORCE = process.env.FORCE_REDEPLOY === "1" || process.env.FORCE_REDEPLOY === "true";
@@ -73,12 +71,6 @@ const DESIRED = [
 ].map((v) => ({ ...v, value: process.env[v.key] }));
 
 const vercelHeaders = { Authorization: `Bearer ${VERCEL_TOKEN}`, "Content-Type": "application/json" };
-const ghHeaders = {
-  Authorization: `Bearer ${GH_TOKEN}`,
-  Accept: "application/vnd.github+json",
-  "X-GitHub-Api-Version": "2022-11-28",
-  "Content-Type": "application/json",
-};
 const teamQ = `teamId=${TEAM}`;
 
 async function vercel(path, init) {
@@ -90,17 +82,9 @@ async function vercel(path, init) {
   return body;
 }
 
-async function github(path, init = {}) {
-  const res = await fetch(`${API_GH}${path}`, {
-    ...init,
-    headers: { ...ghHeaders, ...(init.headers || {}) },
-  });
-  if (res.status === 404) return { status: 404, body: null };
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(`github ${init?.method || "GET"} ${path} -> HTTP ${res.status}: ${JSON.stringify(body?.message || body)}`);
-  }
-  return { status: res.status, body };
+async function listEnvs() {
+  const data = await vercel(`/v9/projects/${PROJECT}/env?${teamQ}`, { headers: vercelHeaders });
+  return new Map((data.envs || []).map((e) => [e.key, e]));
 }
 
 function fingerprint() {
@@ -109,24 +93,35 @@ function fingerprint() {
 }
 
 async function getStoredFingerprint() {
-  const { status, body } = await github(
-    `/repos/${GH_OWNER}/${GH_REPO}/actions/variables/${FINGERPRINT_VAR}`
-  );
-  return status === 200 ? body?.value : null;
+  try {
+    const envs = await listEnvs();
+    const fpVar = envs.get(FINGERPRINT_VAR);
+    return fpVar?.value ?? null; // plain type -> readable via API
+  } catch {
+    return null;
+  }
 }
 
 async function storeFingerprint(fp) {
-  const path = `/repos/${GH_OWNER}/${GH_REPO}/actions/variables/${FINGERPRINT_VAR}`;
-  const { status } = await github(path, {
-    method: "PUT",
-    headers: ghHeaders,
-    body: JSON.stringify({ value: fp }),
+  const envs = await listEnvs();
+  const existing = envs.get(FINGERPRINT_VAR);
+  const body = JSON.stringify({
+    key: FINGERPRINT_VAR,
+    value: fp,
+    type: "plain",
+    target: ["production", "preview"],
   });
-  if (status === 404) {
-    await github(`/repos/${GH_OWNER}/${GH_REPO}/actions/variables`, {
+  if (existing?.id) {
+    await vercel(`/v9/projects/${PROJECT}/env/${existing.id}?${teamQ}`, {
+      method: "PATCH",
+      headers: vercelHeaders,
+      body,
+    });
+  } else {
+    await vercel(`/v9/projects/${PROJECT}/env?${teamQ}&upsert=true`, {
       method: "POST",
-      headers: ghHeaders,
-      body: JSON.stringify({ name: FINGERPRINT_VAR, value: fp }),
+      headers: vercelHeaders,
+      body,
     });
   }
 }
@@ -204,7 +199,7 @@ async function main() {
   }
 
   await storeFingerprint(fp);
-  console.log(`Fingerprint persisted to repo variable ${FINGERPRINT_VAR}.`);
+  console.log(`Fingerprint persisted as Vercel env var ${FINGERPRINT_VAR}.`);
   console.log("Production is now built from the current commit with the current secrets.");
 }
 
