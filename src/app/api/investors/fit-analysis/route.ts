@@ -248,39 +248,49 @@ export async function POST(request: NextRequest) {
         geography: profile.location || "",
       };
 
-      // Get active investors from Supabase (paginated)
-      const { data: investors } = await sp
+      // Get active investors from Supabase — only the columns scoring needs
+      const { data: investors, error: investorsError } = await sp
         .from("investors")
-        .select("*")
+        .select("id, investment_sectors, investment_stages, investment_geographies, country, email, linkedin_url, job_title, is_verified, min_check_size, max_check_size, last_investment_date, bio")
         .order("created_at")
-        .limit(5000);
+        .range(0, 4999);
 
+      if (investorsError) {
+        console.error("Fit analysis batch fetch error:", investorsError);
+        return NextResponse.json({ error: "Failed to load investors" }, { status: 500 });
+      }
       if (!investors?.length) return NextResponse.json({ error: "No investors found" }, { status: 404 });
 
-      let scored = 0;
       let ready = 0;
 
-      for (const investor of investors) {
-        const result = computeFitScore(investor as any, startup);
-
-        await sp
-          .from("investors")
-          .update({
-            fit_score: result.overallScore,
-            fit_score_breakdown: { factors: result.factors, confidence: result.confidence, dataQuality: result.dataQuality },
-            data_quality_score: result.dataQuality,
-            outreach_readiness: result.outreachReadiness,
-          })
-          .eq("id", investor.id);
-
-        scored++;
+      const rows = investors.map((investor: Record<string, unknown>) => {
+        const result = computeFitScore(investor, startup);
         if (result.outreachReadiness === "ready") ready++;
+        return {
+          id: investor.id as string,
+          fit_score: result.overallScore,
+          fit_score_breakdown: { factors: result.factors, confidence: result.confidence, dataQuality: result.dataQuality },
+          data_quality_score: result.dataQuality,
+          outreach_readiness: result.outreachReadiness,
+        };
+      });
+
+      // Bulk upsert in chunks — one HTTP round-trip per 500 rows instead of one per investor
+      const CHUNK_SIZE = 500;
+      for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+        const { error: upsertError } = await sp
+          .from("investors")
+          .upsert(rows.slice(i, i + CHUNK_SIZE), { onConflict: "id" });
+        if (upsertError) {
+          console.error(`Fit analysis batch upsert error (chunk ${Math.floor(i / CHUNK_SIZE)}):`, upsertError);
+          return NextResponse.json({ error: "Failed to save scores" }, { status: 500 });
+        }
       }
 
       cache.invalidatePrefix("facets:");
       cache.invalidate(userCacheKey(user.id, "cockpit"));
 
-      return NextResponse.json({ success: true, scored, ready, total: investors.length });
+      return NextResponse.json({ success: true, scored: rows.length, ready, total: rows.length });
     }
 
     if (action === "individual_score" || action === "ai_analysis") {
