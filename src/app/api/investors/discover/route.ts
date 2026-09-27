@@ -26,24 +26,34 @@ const ALLOWED_TYPES = ["venture_capital", "angel_investor", "family_office", "fu
 
 const SYSTEM_PROMPT = `Parse the user's investor search request into JSON filters.
 
-Return ONLY minified JSON, no other text. Shape:
-{"keywords":["..."],"stages":[],"sectors":[],"countries":[],"investor_types":[],"has_email":false}
+Return ONLY minified JSON, no other text.
+
+Examples:
+Input: seed stage investors in the United States focused on robotics or industrial automation
+Output: {"keywords":["robotics","industrial automation"],"stages":["seed"],"sectors":["robotics"],"countries":["United States"],"investor_types":[],"has_email":false}
+
+Input: European fintech VCs with emails I can contact for our $5M Series A
+Output: {"keywords":["fintech"],"stages":["series_a"],"sectors":["fintech"],"countries":["Europe"],"investor_types":["venture_capital"],"has_email":true}
+
+Input: family offices writing $500k checks in healthcare
+Output: {"keywords":["healthcare"],"stages":[],"sectors":["healthcare"],"countries":[],"investor_types":["family_office"],"has_email":false}
 
 Field rules:
-- keywords: 2-4 search words or short phrases describing the investor, firm, or thesis (e.g. "robotics", "industrial automation"). Empty array if none.
+- keywords: 2-4 concrete search words or phrases describing the investor, firm, or thesis. Use real words — never placeholders.
 - stages: only values from ${JSON.stringify(ALLOWED_STAGES)}
-- sectors: lowercase sector words the investor should invest in (e.g. "fintech", "healthcare", "saas")
-- countries: country names the investor should be based in or invest in
+- sectors: lowercase sector words the investor should invest in
+- countries: country names, or "Europe" for a European focus
 - investor_types: only values from ${JSON.stringify(ALLOWED_TYPES)}
 - has_email: true only if the user explicitly asks for contactable investors or emails
-- Omit empty arrays. Never invent values that are not implied by the request.`;
+- Include every field even if empty. Never invent values not implied by the request.`;
 
 function sanitizeArray(values: unknown, allowed?: string[], max = 6): string[] {
   if (!Array.isArray(values)) return [];
   const cleaned = values
     .filter((v): v is string => typeof v === "string")
     .map((v) => v.trim().toLowerCase().replace(/[,()]/g, " ").trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((v) => v.length > 1 && !/^[.\s]*$|^\.\.|^n\/a$|^none$|^unknown$|^example$/.test(v));
   const unique = [...new Set(cleaned)];
   return allowed ? unique.filter((v) => allowed.includes(v)).slice(0, max) : unique.slice(0, max);
 }
@@ -113,16 +123,17 @@ export async function POST(request: NextRequest) {
     // ── Parse natural language into structured filters (best effort) ──
     let parsed: ParsedQuery | null = null;
     if (query.length > 3) {
-      try {
-        const result = await chatCompletion({
-          task: "query_parsing",
-          systemPrompt: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: query }],
-          maxRetries: 1,
-        });
-        parsed = parseModelOutput(result.content);
-      } catch {
-        parsed = null; // fall back to plain text search below
+      for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
+        try {
+          const result = await chatCompletion({
+            task: "query_parsing",
+            systemPrompt: SYSTEM_PROMPT,
+            messages: [{ role: "user", content: query }],
+          });
+          parsed = parseModelOutput(result.content);
+        } catch {
+          parsed = null; // fall back to keyword extraction below
+        }
       }
     }
 
@@ -134,9 +145,19 @@ export async function POST(request: NextRequest) {
     // ── Build the database query ──
     const baseSelect = "id, full_name, job_title, country, city, fit_score, fit_score_breakdown, investor_type, investment_stages, investment_sectors, email, linkedin_url, outreach_readiness, bio, is_verified, data_quality_score";
 
-    // Text search: keywords go to name/title/bio, the raw query as a safety net
+    // Text search: keywords go to name/title/bio. When AI parsing failed,
+    // extract meaningful words from the query (never search the raw sentence
+    // as one blob — it can never match).
+    const STOPWORDS = new Set(["the", "and", "for", "with", "that", "this", "who", "can", "lead", "leads", "invest", "investing", "investors", "investor", "based", "focused", "focus", "stage", "sector", "seed", "series", "fund", "funds", "startup", "startups", "looking", "want", "need", "into", "from", "your", "our", "are", "will", "about", "million", "raise", "raising"]);
     const searchTerms = parsed ? [...parsed.keywords] : [];
-    if (!parsed && query) searchTerms.push(query.replace(/[,()]/g, " ").trim());
+    if (!parsed && query) {
+      const words = query
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, " ")
+        .split(/\s+/)
+        .filter((w) => w.length > 3 && !STOPWORDS.has(w) && !/^\d+$/.test(w));
+      searchTerms.push(...[...new Set(words)].slice(0, 4));
+    }
 
     // Sector matching helper — sector arrays are sparsely populated in this
     // dataset, so match the array OR sector keywords in bio/job_title.
