@@ -57,17 +57,36 @@ WHERE relname IN ('company_profiles','company_documents','company_team_members')
 
 ## Phase D — Restore investor data (new projects only; skipped for revived projects that still have data)
 
-1. Prefer regenerating via the EDGAR scraper (free, current data):
+1. Restore from on-disk backups (fastest, ~25 s for 12k rows):
+
+   ```bash
+   npx tsx src/scripts/restore-investors.ts [csvPath]
+   ```
+
+   Requires `SUPABASE_SERVICE_ROLE_KEY` + `NEXT_PUBLIC_SUPABASE_URL` in
+   `.env.local`. Accepts both key formats (legacy JWT `eyJ…` or modern
+   `sb_secret_…`) and live-probes the REST API before importing.
+2. Or regenerate via the EDGAR scraper (free, current data):
    `node scripts/edgar-bulk-fast.js` after configuring env.
-2. Or restore from on-disk backups:
-   `backups/edgar-mega/mega-all-investors-2026-08-26.csv` (largest full dataset).
-   Use the import pipeline (`src/scripts/import-csv-fast.ts`) or Supabase CSV import.
-3. Verify:
+3. The import is **idempotent** — dedup runs on `(source, source_id)` via the
+   `investors_source_unique` unique index (`ON CONFLICT DO NOTHING`), so
+   re-runs report `Inserted: 0, Duplicates: N` instead of creating dupes.
+   EDGAR CSVs carry no email/linkedin columns, so those dedup paths never apply.
+4. Stage values outside the `investment_stage` enum (e.g. `buyout`) are
+   dropped by `normalizeStage` — canonical allowlist, must match the DB enum.
+5. Verify:
 
 ```sql
 SELECT count(*), count(email) FROM investors;
 SELECT source, count(*) FROM investors GROUP BY source;
+SELECT count(*) - count(DISTINCT (source, source_id)) AS dupe_identities FROM investors WHERE source_id IS NOT NULL; -- expect 0
 ```
+
+**Status (2026-09-27, project tvekoojdilkjptjzpvqo):** 12,203 investors restored
+from `mega-all-investors-2026-08-26.csv` — all active, all with stage data,
+0 duplicate identities. Verified via SQL after a double-import was detected and
+cleaned (the original run double-inserted because dedup keyed on email/linkedin
+only, absent in this CSV).
 
 ## Phase E — Wire the app
 
@@ -93,6 +112,11 @@ FROM company_profiles ORDER BY created_at DESC LIMIT 1;
 4. Reload `/dashboard` → company card shows the real name + readiness score.
 5. `/dashboard/investors` returns results (data restored).
 6. Log out → log back in → profile persists.
+
+**Status (2026-09-27):** production signup verified broken at the browser level
+(`ERR_NAME_NOT_RESOLVED` to the old dead project from the deployed bundle) →
+Phase E step 2 (Vercel redeploy) is the gate for this phase. Local + direct-API
+signup against the new project works (HTTP 200).
 
 **Known-good code path (verified in code, not yet against a live DB):**
 `onboarding/page.tsx` → `updateCompanyProfile()` server action →

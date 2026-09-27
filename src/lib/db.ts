@@ -79,6 +79,11 @@ export async function query<T = any>(
     return [];
   } catch (err: any) {
     console.error(`[db] Query error: ${err.message?.substring(0, 200)}`, { sql: sql.substring(0, 150) });
+    // Writes must fail loudly — silently returning [] made failed INSERTs/UPDATEs
+    // look successful (the investor restore counted 12k phantom rows this way).
+    // Reads keep the degrade-to-[] behavior so one bad query can't take down a
+    // page render (documented tech debt, audit §5.2).
+    if (/^(INSERT|UPDATE|DELETE)\b/i.test(sql)) throw err;
     return [];
   }
 }
@@ -262,16 +267,12 @@ async function handleInsert(sql: string, params: any[]): Promise<any[]> {
     builder = builder.insert(rows);
   }
 
-  // Handle RETURNING
-  if (/RETURNING/i.test(sql)) {
-    const { data, error } = await builder.select();
-    if (error) throw error;
-    return data || [];
-  }
-
-  const { error } = await builder.select();
+  // Both branches chain .select() → PostgREST return=representation.
+  // For upserts with DO NOTHING this returns only the rows actually inserted
+  // (conflicts excluded), letting callers count real inserts vs skips.
+  const { data, error } = await builder.select();
   if (error) throw error;
-  return [];
+  return data || [];
 }
 
 async function handleUpdate(sql: string, params: any[]): Promise<any[]> {
@@ -467,8 +468,8 @@ function applySimpleWhere(builder: any, whereStr: string, params: any[]): any {
 function resolveParamValue(val: string, params: any[]): any {
   const trimmed = val.trim();
 
-  // $N param
-  const paramMatch = trimmed.match(/^\$(\d+)(?:::\w+)?$/);
+  // $N param (with optional cast incl. array types like ::text[])
+  const paramMatch = trimmed.match(/^\$(\d+)(?:::[\w[\]]+)?$/);
   if (paramMatch) return params[parseInt(paramMatch[1]) - 1];
 
   // String literal
@@ -497,8 +498,8 @@ function resolveParamValue(val: string, params: any[]): any {
 function parseParamValues(valuesStr: string, params: any[]): any[] {
   const parts = valuesStr.split(",").map((v) => v.trim());
   return parts.map((part) => {
-    // $N::type
-    const castMatch = part.match(/^\$(\d+)::\w+$/);
+    // $N::type (cast suffix may include array brackets, e.g. ::text[])
+    const castMatch = part.match(/^\$(\d+)::[\w[\]]+$/);
     if (castMatch) return params[parseInt(castMatch[1]) - 1];
 
     // $N

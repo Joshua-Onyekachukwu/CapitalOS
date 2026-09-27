@@ -191,8 +191,48 @@ describe("db shim — failure modes", () => {
       ["%capital%"]
     );
 
-    expect(opsOf("ilike")[0].args).toEqual(["full_name", "%capital%"]);
-    expect(opsOf("not")[0].args).toEqual(["email", "is", null]);
+    expect(opsOf("ilike")[opsOf("ilike").length - 1].args).toEqual(["full_name", "%capital%"]);
+    expect(opsOf("not")[opsOf("not").length - 1].args).toEqual(["email", "is", null]);
+  });
+
+  it("resolves $N::text[] array casts to the actual array param (regression: restore sent literal \"$15::text[]\")", async () => {
+    await query(
+      `INSERT INTO investors (full_name, investment_stages) VALUES ($1, $2::text[])`,
+      ["Jane Investor", ["Seed", "Series A"]]
+    );
+
+    const inserted = opsOf("insert")[opsOf("insert").length - 1].args[0];
+    expect(inserted[0]).toEqual({
+      full_name: "Jane Investor",
+      investment_stages: ["Seed", "Series A"],
+    });
+  });
+
+  it("INSERT with a real Supabase error throws instead of returning [] (regression: phantom 12k-row restore)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mock.client.__setResult(null, { message: "malformed array literal", code: "22P02" });
+
+    await expect(
+      query(`INSERT INTO investors (full_name) VALUES ($1)`, ["x"])
+    ).rejects.toThrow();
+    expect(errSpy).toHaveBeenCalled(); // still logged
+  });
+
+  it("UPDATE with a real Supabase error throws too", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mock.client.__setResult(null, { message: "check_violation", code: "23514" });
+
+    await expect(
+      query(`UPDATE investors SET is_active = $1 WHERE id = $2`, [false, "x"])
+    ).rejects.toThrow();
+  });
+
+  it("SELECT still degrades to [] on error (documented read-path behavior)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mock.client.__setResult(null, { message: "relation does not exist", code: "42P01" });
+
+    await expect(query(`SELECT * FROM nope_table WHERE id = $1`, ["x"])).resolves.toEqual([]);
+    expect(errSpy).toHaveBeenCalled();
   });
 });
 

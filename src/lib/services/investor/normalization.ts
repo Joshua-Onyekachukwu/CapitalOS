@@ -58,9 +58,24 @@ const STAGE_MAP: Record<string, string> = {
   "pre-ipo": "pre_ipo",
 };
 
-export function normalizeStage(stage: string): string {
+export function normalizeStage(stage: string): string | undefined {
   const lower = stage.toLowerCase().trim();
-  return STAGE_MAP[lower] || lower.replace(/\s+/g, "_");
+  if (!lower) return undefined;
+
+  // Canonical allowlist — must match the investment_stage enum in the DB
+  // exactly. Values that cannot be mapped onto it are DROPPED rather than
+  // passed through: Postgres enum columns reject unknown values, which
+  // previously failed whole import batches on stray values like "buyout"
+  // (found during the 2026-09 EDGAR restore).
+  const CANONICAL_STAGES = new Set([
+    "pre_seed", "seed", "series_a", "series_b", "series_c",
+    "growth", "late_stage", "pre_ipo",
+  ]);
+
+  const mapped = STAGE_MAP[lower];
+  if (mapped && CANONICAL_STAGES.has(mapped)) return mapped;
+  if (CANONICAL_STAGES.has(lower)) return lower;
+  return undefined;
 }
 
 // =============================================
@@ -247,7 +262,7 @@ export function normalizeInvestor(
     investorType: raw.investorType
       ? normalizeInvestorType(raw.investorType)
       : "angel_investor",
-    investmentStages: (raw.investmentStages || []).map(normalizeStage),
+    investmentStages: [...new Set((raw.investmentStages || []).map(normalizeStage).filter((s): s is string => !!s))],
     investmentSectors: (raw.investmentSectors || []).map(normalizeSector),
     investmentGeographies: (raw.investmentGeographies || []).map(
       normalizeCountry

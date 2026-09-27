@@ -131,7 +131,8 @@ function csvRowToProviderResult(row: CsvRow, source: string) {
 
 export async function importCsvToSupabase(
   csvContent: string,
-  source: string = "csv_import"
+  source: string = "csv_import",
+  options?: { onConflict?: string }
 ): Promise<ImportResult> {
   const result: ImportResult = {
     totalRows: 0,
@@ -299,12 +300,19 @@ export async function importCsvToSupabase(
       }
 
       try {
-        await query(
+        const conflictClause = options?.onConflict
+          ? ` ON CONFLICT (${options.onConflict}) DO NOTHING`
+          : "";
+        const insertedRows = await query(
           `INSERT INTO investors (full_name, first_name, last_name, email, phone, linkedin_url, job_title, bio, location, country, city, investor_type, investment_stages, investment_sectors, investment_geographies, min_check_size, max_check_size, currency, portfolio_count, website_url, avatar_url, source, source_id, source_provider, data_quality_score, outreach_readiness, is_active)
-           VALUES ${valuePlaceholders.join(", ")}`,
+           VALUES ${valuePlaceholders.join(", ")}${conflictClause}`,
           params
         );
-        result.inserted += batch.length;
+        // handleInsert returns the rows PostgREST actually inserted — with
+        // ON CONFLICT DO NOTHING, skipped duplicates are excluded.
+        const realInserted = Array.isArray(insertedRows) ? insertedRows.length : batch.length;
+        result.inserted += realInserted;
+        result.duplicates += batch.length - realInserted;
       } catch (err: any) {
         result.errors.push(`Batch insert error: ${err.message}`);
         result.failed += batch.length;
