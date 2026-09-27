@@ -31,7 +31,7 @@ function extractEmailFromResponse(raw: string): string {
   }
 
   // STRATEGY 1: If it looks like a clean email already (no reasoning), return it
-  const greetingOnly = /^(?:Hi|Dear|Hello|Hey)\s+[A-Z][a-z]+[,.]?\s*\n/i;
+  const greetingOnly = /^(?:Hi|Dear|Hello|Hey)\s+(?:[A-Z][a-z]+|\[[^\]]+\])[,.]?\s*\n/i;
   if (greetingOnly.test(text) && text.length < 1500 && !/here'?s a thinking|let me (?:analyze|consider|draft|\d)|\*\*\d+\./i.test(text)) {
     return text;
   }
@@ -67,7 +67,7 @@ function extractEmailFromResponse(raw: string): string {
   // STRATEGY 4: Find standalone email blocks (greeting on own line)
   const lines = text.split(/\n/);
   for (let i = 0; i < lines.length; i++) {
-    if (/^\s*(Hi|Dear|Hello|Hey)\s+[A-Z][a-z]+[,.]?\s*$/.test(lines[i].trim())) {
+    if (/^\s*(Hi|Dear|Hello|Hey)\s+(?:[A-Z][a-z]+|\[[^\]]+\])[,.]?\s*$/.test(lines[i].trim())) {
       // Collect lines until we hit a non-email line
       const emailLines = [lines[i].trim()];
       for (let j = i + 1; j < lines.length; j++) {
@@ -92,7 +92,12 @@ function extractEmailFromResponse(raw: string): string {
     return lastEmail;
   }
 
-  return text;
+  // Never leak SUBJECT:/BODY: markers into the body
+  text = text
+    .replace(/^.*?SUBJECT:.*$/gim, "")
+    .replace(/^\s*BODY:\s*$/gim, "")
+    .trim();
+  return text || raw.trim();
 }
 
 export async function POST(request: NextRequest) {
@@ -111,6 +116,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "investorName is required" }, { status: 400 });
     }
 
+    // Load founder identity + branding up front — feeds both the AI prompt and the email template
+    let branding: UserBranding | undefined;
+    let founderName = "";
+    let companyName = "";
+    let founderContext = "";
+    try {
+      const sp = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      const { data: profile } = await sp
+        .from("company_profiles")
+        .select("company_name, founder_name, one_liner, round_type, email_brand_name, email_tagline, email_accent_color, email_logo_url, email_website, email_footer_text, email_cta_text, email_cta_url, email_signature")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        founderName = (profile.founder_name || "").trim();
+        companyName = (profile.company_name || profile.email_brand_name || "").trim();
+        branding = {
+          brandName: profile.email_brand_name || profile.company_name || "Capital OS",
+          tagline: profile.email_tagline || "AI-Powered Fundraising",
+          accentColor: profile.email_accent_color || "#84cc16",
+          logoUrl: profile.email_logo_url,
+          website: profile.email_website || profile.company_name,
+          footerText: profile.email_footer_text,
+          ctaText: profile.email_cta_text || "Let's Connect",
+          ctaUrl: profile.email_cta_url,
+          signature: profile.email_signature,
+        };
+        const identityBits: string[] = [];
+        if (founderName) identityBits.push(`Founder: ${founderName}`);
+        if (companyName) identityBits.push(`Company: ${companyName}`);
+        if (profile.one_liner) identityBits.push(`What we do: ${profile.one_liner}`);
+        if (profile.round_type) identityBits.push(`Raising: ${profile.round_type}`);
+        founderContext = identityBits.join("\n");
+      }
+    } catch {
+      // Use defaults if branding load fails
+    }
+
     const toneMap: Record<string, string> = {
       warm: "Warm but professional. Friendly, genuine, not pushy.",
       professional: "Direct and business-like. Respect their time.",
@@ -124,15 +170,17 @@ export async function POST(request: NextRequest) {
 OUTPUT — exactly this format, nothing else:
 SUBJECT: <subject line>
 BODY:
-<Hi [Name], email body under 100 words>
+<Hi <FirstName>, email body under 100 words>
 
 Rules:
-- Greeting: Hi [FirstName],
+- Greeting: Hi <FirstName>, using the investor's real first name
 - Open with something specific about them
 - One sentence why you're reaching out
 - One low-pressure CTA
 - Under 100 words total
-- No signature, no analysis, no explanation`;
+- Sign off with the founder's real first name${founderName ? ` (${founderName})` : ""} — never a placeholder
+- NEVER use bracketed placeholders like [Name], [Your Name] or [Fund Name] — use the real details provided below; if a detail is unknown, write around it
+- No analysis, no explanation, no word counts${founderContext ? `\r\n\r\nFOUNDER CONTEXT (use these real details):\r\n${founderContext}` : ""}`;
 
     const contextParts: string[] = [];
     if (investorName) contextParts.push(`Investor: ${investorName}`);
@@ -176,29 +224,49 @@ Rules:
       const afterSubject = raw.substring(lastSubjectIdx + subjectLine.length);
 
       // Find the email greeting pattern after BODY: or directly
-      const greetingMatch = afterSubject.match(/(?:BODY:\s*\n\s*)?((?:Hi|Dear|Hello|Hey)\s+[A-Z][a-z]+[,.]?)/i);
+      const greetingMatch = afterSubject.match(/(?:BODY:\s*\n\s*)?((?:Hi|Dear|Hello|Hey)\s+(?:[A-Z][a-z]+|\[[^\]]+\])[,.]?)/i);
       if (greetingMatch) {
         const emailStart = afterSubject.indexOf(greetingMatch[0]);
         emailBody = afterSubject.substring(emailStart).replace(/^BODY:\s*\n\s*/i, "").trim();
+      } else {
+        // No recognizable greeting — take everything after the BODY: label (or the SUBJECT: line)
+        const bodyIdx = afterSubject.search(/BODY:\s*\n/i);
+        emailBody = (bodyIdx >= 0 ? afterSubject.substring(bodyIdx) : afterSubject)
+          .replace(/^BODY:\s*\n\s*/i, "")
+          .trim();
+      }
 
-        // Trim at reasoning patterns
-        const reasoningPatterns = [ /\n\s*(?:Check|Verify|Word count|Final|Let|Revised|I need|Wait|Actually|No |Ensure|The email|Note|\*\*|\d+\.|I'll|I can|Maybe|Hmm|So the|Actually|Wait,|Draft:)/i ];
-        for (const pattern of reasoningPatterns) {
-          const match = emailBody.match(pattern);
-          if (match && match.index !== undefined && match.index > 50) {
-            emailBody = emailBody.substring(0, match.index).trim();
-          }
-        }
-
-        // Trim at last sentence with proper punctuation
-        const lastPeriod = emailBody.lastIndexOf(".");
-        const lastExcl = emailBody.lastIndexOf("!");
-        const lastQ = emailBody.lastIndexOf("?");
-        const lastSentence = Math.max(lastPeriod, lastExcl, lastQ);
-        if (lastSentence > 50 && lastSentence < emailBody.length - 5) {
-          emailBody = emailBody.substring(0, lastSentence + 1).trim();
+      // Trim at reasoning patterns
+      const reasoningPatterns = [ /\n\s*(?:Check|Verify|Word count|Final|Let|Revised|I need|Wait|Actually|No |Ensure|The email|Note|\*\*|\d+\.|I'll|I can|Maybe|Hmm|So the|Draft:)/i ];
+      for (const pattern of reasoningPatterns) {
+        const match = emailBody.match(pattern);
+        if (match && match.index !== undefined && match.index > 50) {
+          emailBody = emailBody.substring(0, match.index).trim();
         }
       }
+
+      // Trim at last sentence with proper punctuation
+      const lastPeriod = emailBody.lastIndexOf(".");
+      const lastExcl = emailBody.lastIndexOf("!");
+      const lastQ = emailBody.lastIndexOf("?");
+      const lastSentence = Math.max(lastPeriod, lastExcl, lastQ);
+      if (lastSentence > 50 && lastSentence < emailBody.length - 5) {
+        emailBody = emailBody.substring(0, lastSentence + 1).trim();
+      }
+    }
+
+    // Sanitize bracketed placeholders the model may have literalized
+    const investorFirstName = (investorName || "").split(/[\s,]+/)[0] || "there";
+    emailBody = emailBody
+      .replace(/\[(?:Investor(?:'s)? Name|FirstName|First name)\]/gi, investorFirstName)
+      .replace(/\[(?:Your |Founder )?Name\]/gi, founderName || investorFirstName)
+      .replace(/\[(?:Fund|Company|Startup|Your Fund|Your Company|Your Startup)(?: Name)?\]/gi, companyName)
+      .replace(/\[[^\]]{2,40}\]/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/\n(Best|Regards|Sincerely|Cheers),?\s*$/i, "")
+      .trim();
+    if (subject) {
+      subject = subject.replace(/\[[^\]]{2,40}\]/g, companyName || investorFirstName).trim();
     }
 
     // Fallback: use extraction function if structured extraction failed
@@ -212,36 +280,6 @@ Rules:
 
     if (!emailBody || emailBody.length < 20) {
       return NextResponse.json({ error: "Could not generate email. Please try again." }, { status: 500 });
-    }
-
-    // Load user branding from company_profiles
-    let branding: UserBranding | undefined;
-    try {
-      const sp = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
-      const { data: profile } = await sp
-        .from("company_profiles")
-        .select("email_brand_name, email_tagline, email_accent_color, email_logo_url, email_website, email_footer_text, email_cta_text, email_cta_url, email_signature, company_name")
-        .eq("user_id", user.id)
-        .single();
-
-      if (profile) {
-        branding = {
-          brandName: profile.email_brand_name || profile.company_name || "Capital OS",
-          tagline: profile.email_tagline || "AI-Powered Fundraising",
-          accentColor: profile.email_accent_color || "#84cc16",
-          logoUrl: profile.email_logo_url,
-          website: profile.email_website || profile.company_name,
-          footerText: profile.email_footer_text,
-          ctaText: profile.email_cta_text || "Let's Connect",
-          ctaUrl: profile.email_cta_url,
-          signature: profile.email_signature,
-        };
-      }
-    } catch {
-      // Use defaults if branding load fails
     }
 
     // Generate qualification-based context for the branded template
