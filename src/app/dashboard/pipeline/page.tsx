@@ -76,7 +76,7 @@ function InvestorCard({
 }: {
   investor: PipelineInvestor;
   stages: PipelineStage[];
-  onMove: (investorId: string, stage: string) => void;
+  onMove: (investorId: string, stage: string, fromStage?: string) => void;
   moving: boolean;
 }) {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
@@ -150,7 +150,7 @@ function InvestorCard({
                   <button
                     key={s.id}
                     onClick={() => {
-                      onMove(investor.id, s.id);
+                      onMove(investor.id, s.id, investor.pipeline_stage);
                       setShowMoveMenu(false);
                     }}
                     className="w-full flex items-center gap-[8px] px-[12px] py-[7px] text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
@@ -177,9 +177,10 @@ export default function PipelinePage() {
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
   const [hasPipelineStage, setHasPipelineStage] = useState(false);
 
-  // Load the stage summary (counts only — fast)
-  const loadSummary = useCallback(async () => {
-    setSummaryLoading(true);
+  // Load the stage summary (counts only — fast). Background mode skips the
+  // skeleton flash when reconciling after a move.
+  const loadSummary = useCallback(async (background = false) => {
+    if (!background) setSummaryLoading(true);
     try {
       const res = await fetch("/api/investors/pipeline");
       if (!res.ok) throw new Error("Failed to load pipeline");
@@ -189,7 +190,7 @@ export default function PipelinePage() {
     } catch (err) {
       console.error("Pipeline summary error:", err);
     } finally {
-      setSummaryLoading(false);
+      if (!background) setSummaryLoading(false);
     }
   }, []);
 
@@ -234,7 +235,11 @@ export default function PipelinePage() {
     }
   }, [expandedStage, stageData, loadStage]);
 
-  const handleMove = async (investorId: string, toStage: string) => {
+  const handleMove = async (
+    investorId: string,
+    toStage: string,
+    fromStage?: string
+  ) => {
     setMovingId(investorId);
     try {
       const res = await fetch("/api/investors/pipeline", {
@@ -244,11 +249,46 @@ export default function PipelinePage() {
       });
       if (!res.ok) throw new Error("Failed to move investor");
 
+      let unchanged = false;
+      try {
+        unchanged = (await res.json())?.unchanged === true;
+      } catch {
+        /* response body is optional */
+      }
+
+      // The card lives in the drawer of its current stage
+      const from = fromStage || expandedStage || undefined;
+
+      // Optimistic update: adjust the stage counters and drop the card from
+      // the open drawer immediately, without waiting on the slow summary GET.
+      if (!unchanged && from && from !== toStage) {
+        setStages((prev) =>
+          prev.map((s) => {
+            if (s.id === from) return { ...s, count: Math.max(0, s.count - 1) };
+            if (s.id === toStage) return { ...s, count: s.count + 1 };
+            return s;
+          })
+        );
+        setStageData((prev) => {
+          const sd = prev[from];
+          if (!sd?.investors) return prev;
+          return {
+            ...prev,
+            [from]: {
+              ...sd,
+              investors: sd.investors.filter((i) => i.id !== investorId),
+            },
+          };
+        });
+      }
+
       const toStageName = stages.find((s) => s.id === toStage)?.label || toStage;
       toast.success(`Moved to ${toStageName}`);
 
-      // Refresh summary counts and reset all loaded stage data so they refetch
-      await loadSummary();
+      // Reconcile counters with the server in the background (no skeleton
+      // flash), and reset loaded stage data so the open drawer refetches via
+      // the expanded-stage effect (explicit loadStage here would double-fetch).
+      loadSummary(true);
       setStageData((prev) => {
         const updated = { ...prev };
         Object.keys(updated).forEach((k) => {
@@ -256,10 +296,6 @@ export default function PipelinePage() {
         });
         return updated;
       });
-      // Reload current expanded stage
-      if (expandedStage) {
-        loadStage(expandedStage);
-      }
     } catch {
       toast.error("Failed to move investor. Please try again.");
     } finally {
