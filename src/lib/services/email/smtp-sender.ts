@@ -5,6 +5,7 @@
 // 2. Per-User: uses custom SMTP settings from email_accounts table
 
 import nodemailer from "nodemailer";
+import { decryptToken } from "@/lib/services/email/crypto";
 
 // =============================================
 // Types
@@ -243,11 +244,24 @@ export async function sendEmailWithUserSmtp(
     let smtpConfig: SmtpConfig | undefined;
 
     if (account.smtp_host && account.smtp_user && account.smtp_pass_encrypted) {
+      // Passwords are stored AES-256-GCM encrypted (iv:tag:ciphertext). Legacy
+      // rows saved before encryption are detected by format and still work.
+      let smtpPass = account.smtp_pass_encrypted;
+      if (/^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i.test(account.smtp_pass_encrypted)) {
+        try {
+          smtpPass = decryptToken(account.smtp_pass_encrypted);
+        } catch {
+          return {
+            success: false,
+            error: "Stored SMTP credentials could not be decrypted — re-save your email account in Settings.",
+          };
+        }
+      }
       smtpConfig = {
         host: account.smtp_host,
         port: account.smtp_port || 587,
         user: account.smtp_user,
-        pass: account.smtp_pass_encrypted,
+        pass: smtpPass,
         secure: account.smtp_secure ?? true,
         fromName: account.display_name,
         fromEmail: account.email_address,

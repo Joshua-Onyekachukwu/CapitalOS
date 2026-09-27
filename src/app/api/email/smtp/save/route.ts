@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { encryptToken } from "@/lib/services/email/crypto";
 import { createClient } from "@supabase/supabase-js";
 
 /**
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
         smtp_host: host,
         smtp_port: parseInt(String(port || "587")),
         smtp_user: smtpUser,
-        smtp_pass_encrypted: pass, // TODO: encrypt at rest
+        smtp_pass_encrypted: encryptToken(pass),
         smtp_secure: secure === true || secure === "true",
         custom_domain: domain || fromEmail.split("@")[1],
       })
