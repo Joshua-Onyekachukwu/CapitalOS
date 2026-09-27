@@ -1,512 +1,114 @@
-# Capital OS — Complete System Documentation
+# Capital OS — System Handbook
 
-## Architecture Overview
+> **Last verified against code:** September 26, 2026. This replaces the older
+> version whose architecture tables and credentials no longer matched reality.
+> Deep-dive documents: `ARCHITECTURE.md` (design), `docs/DATABASE-SETUP-RUNBOOK.md`
+> (provisioning/restore), `docs/19-phase1-audit.md` (current known issues).
 
-Capital OS uses a **hybrid architecture** with three layers, each handling what it does best:
+## What this system is
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    FRONTEND                         │
-│              Next.js / React / Vercel               │
-│              Port: 3456 (dev)                       │
-└──────────────────────┬──────────────────────────────┘
-                       │
-          ┌────────────┴────────────┐
-          │                         │
-     SUPABASE                   CONVEX
-   THE BRAIN                  THE NERVES
-   500MB Free                 3GB Free
-          │                         │
-   Auth ✅                   Jobs ✅
-   Investors (32K+)         Metrics ✅
-   Contacts ✅               Notifications ✅
-   Campaigns ✅              Campaign state ✅
-   Audit logs ✅             Workflow state ✅
-          │
-          ▼
-    PYTHON WORKERS
-    THE MUSCLES
-    (EDGAR scraping,
-     enrichment,
-     ML scoring)
-```
+An AI-powered fundraising operating system for startup founders. Founders sign
+up, describe their company, discover and qualify investors from an 83K+ record
+database, generate personalized outreach, send tracked emails, and manage every
+relationship through an 11-stage fundraising pipeline.
 
----
+## Live components
 
-## Layer 1: Supabase — Permanent Data Store
+| Component | Provider/Ref | Status (2026-09-26) | Notes |
+|---|---|---|---|
+| Web app | Vercel — `capital-os-nine.vercel.app` | deployed | env vars in Vercel project settings |
+| Database + Auth | Supabase | **was destroyed; being re-provisioned** | see runbook; free tier auto-pauses inactive projects |
+| Real-time state | Convex — `exciting-bat-92.convex.cloud` | healthy | jobs, metrics, notifications |
+| AI | NVIDIA NIM (`integrate.api.nvidia.com`) | configured | keys rotate in `src/lib/ai/keys.ts`; `AI_MOCK_MODE` for offline |
+| Email | Gmail API / Microsoft Graph / SMTP | configured per-user | OAuth tokens AES-256-GCM encrypted at rest |
+| Repo | GitHub `Joshua-Onyekachukwu/CapitalOS` | active | `main`; CI absent (planned) |
 
-### What It Holds
-- **Authentication** — User login, sessions, OAuth (Google)
-- **Investor Database** — 32,787+ records with all details
-- **Campaigns** — Email outreach records
-- **Audit Logs** — Security and activity tracking
+> ⚠️ **Incident record (Sept 26, 2026):** production signup failed with
+> "Failed to fetch" — the Supabase projects referenced by the deployment had
+> been removed/paused (NXDOMAIN on both refs). Investor data survives in
+> `backups/edgar*/` and can be regenerated from SEC EDGAR. Free-tier Supabase
+> projects pause after ~7 days of inactivity: **if production is idle, pause
+> protection = periodically restore/use the project or upgrade the plan.**
 
-### Project Details
-| Detail | Value |
-|--------|-------|
-| **Project** | capitalos |
-| **URL** | `https://wdvhraurmpvncrgnmmbf.supabase.co` |
-| **Plan** | Free (500MB database) |
-| **Investors** | 32,837 records |
-| **Storage Used** | ~46MB of 500MB |
+## Environments & configuration
 
-### Investors Table Schema (Supabase)
-```sql
-investors (
-  id UUID PRIMARY KEY,
-  full_name TEXT,
-  first_name TEXT,
-  last_name TEXT,
-  job_title TEXT,
-  investor_type TEXT,          -- angel_investor, venture_capital, private_equity, etc.
-  company_name TEXT,
-  company_website TEXT,
-  linkedin_url TEXT,
-  personal_website TEXT,
-  country TEXT,
-  city TEXT,
-  location TEXT,
-  email TEXT,
-  phone TEXT,
-  min_check_size NUMERIC,
-  max_check_size NUMERIC,
-  fund_size NUMERIC,
-  aum NUMERIC,
-  investment_stages TEXT[],    -- pre_seed, seed, series_a, etc.
-  investment_sectors TEXT[],   -- fintech, saas, healthtech, etc.
-  investment_geographies TEXT[],
-  investment_thesis TEXT,
-  number_of_investments INTEGER,
-  number_of_exits INTEGER,
-  last_investment_date DATE,
-  fit_score INTEGER,
-  data_quality_score INTEGER,
-  outreach_readiness TEXT,
-  is_verified BOOLEAN,
-  source TEXT,                 -- edgar_13f_hr, edgar_form_d, edgar_ncen, generated, apollo_csv
-  source_id TEXT,
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-)
-```
+All secrets live in `.env.local` (gitignored) and Vercel env settings. Never
+commit them; the historical versions of `SYSTEM.md`/`env-convex.json` that
+contained real credentials were redacted in commit `41a064f`.
 
-### Data Sources in Supabase
-| Source | Count | Quality | Description |
-|--------|-------|---------|-------------|
-| EDGAR 13F-HR | 5,880 | 70/100 | Institutional investors (hedge funds, mutual funds) |
-| EDGAR Form D | 8,645 | 55/100 | Private placement funds (VC, PE, angels) |
-| EDGAR N-CEN | 2,035 | 65/100 | SEC-registered investment funds |
-| Generated | 16,127 | varies | Test data with synthetic profiles |
-| Apollo CSV | 100 | 85/100 | Test import from Apollo |
-| **Total** | **32,787** | | |
+| Variable | Used by | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | app + scripts | service key server-only |
+| `SUPABASE_DB_PASSWORD` | migration/backup scripts | direct Postgres path |
+| `NVIDIA_API_KEY` / `NVIDIA_API_KEY_1..N` | AI client | rotation supported |
+| `AI_MOCK_MODE` | AI client | `true` = no external AI calls |
+| `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT`, `CONVEX_DEPLOY_KEY` | Convex | codegen needs the latter two |
+| `GOOGLE_CLIENT_ID/SECRET`, `MICROSOFT_CLIENT_ID/SECRET` | OAuth senders | token refresh |
+| `EMAIL_TOKEN_ENCRYPTION_KEY` | crypto.ts | hex key; falls back to derived key |
+| `NEXT_PUBLIC_APP_URL` | links, tracking, unsubscribe | set to production URL |
+| `COCKROACH_ADMIN_EMAILS` | admin allowlist | legacy name, still the admin gate input |
 
-### Physical Backups (on disk)
-| File | Records | Location |
-|------|---------|----------|
-| 13F-HR investors | 5,880 | `backups/edgar/13f-hr-investors-2026-08-24.csv` |
-| Form D investors | 5,304 | `backups/edgar/form-d-investors-2026-08-24.csv` |
-| N-CEN funds | 2,035 | `backups/edgar/ncen-funds-2026-08-24.csv` |
+## Auth & authorization model
 
-### How to Query Supabase
+- Supabase Auth: email/password + Google + Microsoft OAuth.
+- `src/middleware.ts` protects `/dashboard/**`, `/onboarding`, etc.
+- API routes: `requireAuth` (any user) / `requireAdmin` (role metadata +
+  email allowlist) from `src/lib/middleware/api-auth.ts`.
+- Row security: RLS policies per tenant table via `supabase-rls-fix.sql`;
+  server actions use the cookie-authenticated client so RLS applies.
+- Known gap (Phase 2): pipeline stage state lives on the shared `investors`
+  table until `user_pipeline_entries` lands.
+
+## Data flows (operator view)
+
+1. **Ingestion:** `node scripts/edgar-bulk-fast.js [--13f|--form-d|--stats]` →
+   normalize → Supabase `investors` → CSV/JSON backup in `backups/`.
+2. **Fit scoring:** `npx tsx src/scripts/qualify-investors.ts` (deterministic,
+   explainable; writes `fit_score`, breakdown, `outreach_readiness`).
+3. **Outreach:** draft (NIM) → founder approval → send (Gmail/Graph/SMTP with
+   compliance footer + tracking) → `email_messages` + tracking events →
+   reply polling updates health metrics.
+4. **Real-time:** Convex mutations from pipelines/jobs; dashboards subscribe.
+
+## Verification & tests
+
 ```bash
-# Count all investors
-curl "https://wdvhraurmpvncrgnmmbf.supabase.co/rest/v1/investors?select=id" \
-  -H "apikey: YOUR_ANON_KEY" -H "Prefer: count=exact"
-
-# Search by type
-curl "https://wdvhraurmpvncrgnmmbf.supabase.co/rest/v1/investors?investor_type=eq.venture_capital&limit=10" \
-  -H "apikey: YOUR_ANON_KEY"
+npm run typecheck    # must be 0 errors
+npm test             # 44 offline unit tests; integration suite self-skips
+npm run build        # production build gate
 ```
 
----
+Test map: `db-shim.test.ts` (SQL translation contract + documented failure
+modes), `email-sender.test.ts` (provider routing, MIME attachments, refresh,
+compliance), `email-crypto.test.ts`, `email-tracking.test.ts`,
+`fit-scoring.test.ts`, `security.test.ts` (integration; needs dev server on
+:3456, auto-skips otherwise).
 
-## Layer 2: Convex — Real-time Application Engine
+## Routine operations
 
-### What It Holds
-- **Research Job Progress** — Real-time scraping status
-- **Dashboard Metrics** — Live counts (no polling)
-- **Notifications** — Instant alerts
-- **Scraping Job Status** — Background job tracking
-- **Campaign State** — Live email tracking
-
-### Project Details
-| Detail | Value |
-|--------|-------|
-| **Project** | CapitalOS (exciting-bat-92) |
-| **URL** | `https://exciting-bat-92.convex.cloud` |
-| **Dashboard** | https://dashboard.convex.dev/t/CapitalOS/capitalos/exciting-bat-92 |
-| **Plan** | Free (3GB database) |
-| **Region** | US East (N. Virginia) |
-
-### Convex Tables
-| Table | Purpose | Max Size |
-|-------|---------|----------|
-| `investors` | Full investor archive (for 1M+ scale) | ~1.5GB |
-| `researchJobs` | Real-time job progress | ~10MB |
-| `dashboardMetrics` | Live dashboard stats | ~1MB |
-| `notifications` | User notifications | ~50MB |
-| `scrapingJobs` | EDGAR/Apollo job tracking | ~10MB |
-
-### Convex Functions
-| Function | Type | Purpose |
-|----------|------|---------|
-| `investors:search` | Query | Search investors with filters |
-| `investors:count` | Query | Get total count |
-| `investors:stats` | Query | Get stats by source/type |
-| `researchJobs:create` | Mutation | Create a new research job |
-| `researchJobs:updateProgress` | Mutation | Update job progress |
-| `dashboard:setMetric` | Mutation | Update dashboard metric |
-| `dashboard:getMetric` | Query | Get a metric value |
-| `notifications:create` | Mutation | Send a notification |
-| `scrapingJobs:create` | Mutation | Start a scraping job |
-
-### How to Query Convex
-```bash
-# Count investors
-curl -X POST https://exciting-bat-92.convex.cloud/api/query \
-  -H "Content-Type: application/json" \
-  -d '{"path":"investors:count","args":{}}'
-
-# Get dashboard metric
-curl -X POST https://exciting-bat-92.convex.cloud/api/query \
-  -H "Content-Type: application/json" \
-  -d '{"path":"dashboard:getMetric","args":{"key":"total_investors"}}'
-```
-
----
-
-## Layer 3: Python Workers — Compute Engine
-
-### What It Does
-- **EDGAR Scraping** — SEC Form D, 13F-HR, N-CEN filings (free, no API key)
-- **Data Enrichment** — Fill missing fields from multiple sources
-- **ML Scoring** — Investor fit analysis and lead scoring
-- **Deduplication** — Entity resolution across sources
-
-### Scraping Scripts
-| Script | Purpose | Command |
-|--------|---------|---------|
-| `scripts/edgar-bulk-fast.js` | EDGAR bulk scraper | `node scripts/edgar-bulk-fast.js` |
-| `scripts/qualify-investors.ts` | Score all investors | `npx tsx src/scripts/qualify-investors.ts` |
-| `scripts/migrate-to-supabase.js` | CockroachDB → Supabase | `node scripts/migrate-to-supabase.js` |
-| `scripts/check-cols.js` | Check DB columns | `node scripts/check-cols.js` |
-
-### EDGAR Scraper Options
-```bash
-# All sources, 10 years
-node scripts/edgar-bulk-fast.js
-
-# Just 13F-HR
-node scripts/edgar-bulk-fast.js --13f
-
-# Just Form D
-node scripts/edgar-bulk-fast.js --form-d
-
-# Last year only
-node scripts/edgar-bulk-fast.js --days 365
-
-# Check database stats
-node scripts/edgar-bulk-fast.js --stats
-```
-
----
-
-## Environment Variables
-
-### Required for Supabase (Auth + Data)
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://wdvhraurmpvncrgnmmbf.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...           # Public anon key
-SUPABASE_SERVICE_ROLE_KEY=eyJ...               # Secret service role key
-SUPABASE_DB_PASSWORD=<see .env.local>          # Database password
-```
-
-### Required for Convex (Real-time)
-```bash
-NEXT_PUBLIC_CONVEX_URL=https://exciting-bat-92.convex.cloud
-CONVEX_DEPLOY_KEY=dev:exciting-bat-92|eyJ...   # Deploy key
-```
-
-### Required for CockroachDB (Legacy Source)
-```bash
-DATABASE_URL=postgresql://...@...:26257/defaultdb?sslmode=verify-full
-```
-
-### Required for AI/NVIDIA
-```bash
-NVIDIA_API_KEY_1=...
-NVIDIA_API_KEY_2=...
-AI_MOCK_MODE=true                            # Set false when keys are ready
-```
-
-### Admin Access
-```bash
-COCKROACH_ADMIN_EMAILS=semek@capitalOS.io
-```
-
-### Email (Gmail SMTP)
-```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-16-char-app-password
-EMAIL_FROM=your-email@gmail.com
-```
-
----
-
-## Login Credentials
-
-| Account | Email | Password |
-|---------|-------|----------|
-| **Admin** | semek@capitalOS.io | (set via Supabase dashboard) |
-
-### Google OAuth
-- Configured in Supabase Authentication → Providers → Google
-- Requires Google Cloud project with OAuth credentials
-- See `docs/GOOGLE_SETUP.md` for setup instructions
-
----
-
-## How Data Flows
-
-### Flow 1: Scraping New Investors
-```
-EDGAR API (free)
-    ↓
-edgar-bulk-fast.js (Node.js worker)
-    ↓
-Parse & normalize
-    ↓
-Supabase REST API (POST /rest/v1/investors)
-    ↓
-Physical backup (CSV + JSON)
-    ↓
-Convex mutation (update dashboard metrics)
-    ↓
-Dashboard shows real-time progress
-```
-
-### Flow 2: User Searches Investors
-```
-User types search query
-    ↓
-Next.js API route (/api/investors)
-    ↓
-Supabase REST API (with filters)
-    ↓
-Results returned (< 100ms)
-    ↓
-Dashboard displays results
-```
-
-### Flow 3: Sending Outreach
-```
-User clicks "Send Email"
-    ↓
-Convex mutation (create job)
-    ↓
-Python worker (generate personalized email)
-    ↓
-SMTP (Gmail)
-    ↓
-Supabase (log email event)
-    ↓
-Convex (update campaign metrics)
-    ↓
-Dashboard shows real-time status
-```
-
----
-
-## Speed & Performance
-
-| Operation | Target | How |
-|-----------|--------|-----|
-| Dashboard load | < 200ms | Convex reactive queries |
-| Investor search | < 100ms | PostgreSQL indexes |
-| Investor detail | < 50ms | Primary key lookup |
-| Campaign metrics | < 100ms | Convex real-time |
-| Job progress | Instant | Convex subscriptions |
-| Scrape 1K investors | < 5 min | Node.js parallel |
-| Enrich 1 investor | < 30s | AI + external APIs |
-
----
-
-## Scaling Path
-
-### Phase 1: Now (Free Tiers)
-```
-Supabase Free: 500MB → 32K investors (9% used)
-Convex Free: 3GB → app state only
-Cost: $0/month
-```
-
-### Phase 2: Growth (100K investors)
-```
-Still fits in Supabase Free (143MB of 500MB)
-Convex: still free
-Cost: $0/month
-```
-
-### Phase 3: Scale (1M+ investors)
-```
-Supabase Pro: $25/month → 8GB (scales to 60TB)
-Convex Free: still enough for app state
-Cost: ~$25/month
-```
-
-### Phase 4: Enterprise
-```
-Supabase Team: custom
-Convex Pro: $25/month → 50GB
-Dedicated Python workers
-Cost: ~$100-200/month
-```
-
----
-
-## Backup Strategy
-
-### Automatic Backups
-1. **EDGAR Scraper** saves CSV + JSON to `backups/edgar/` after every run
-2. **Git** tracks all code changes
-3. **Supabase** has daily backups on Pro plan
-
-### Manual Backup Commands
-```bash
-# Backup Supabase data
-node scripts/migrate-to-supabase.js --stats
-
-# Export to CSV
-curl "https://wdvhraurmpvncrgnmmbf.supabase.co/rest/v1/investors?select=*" \
-  -H "apikey: YOUR_KEY" > backup.csv
-
-# Backup Convex data
-npx convex export
-```
-
-### Restore Process
-```bash
-# Restore from CSV
-node scripts/migrate-to-supabase.js --fresh  # Drops and recreates table
-# Then re-run EDGAR scraper to refill data
-node scripts/edgar-bulk-fast.js
-```
-
----
-
-## Monitoring
-
-### Real-time Dashboard (Convex)
-- Total investors count
-- Active jobs
-- Emails sent today
-- Campaign progress
-- Error alerts
-
-### Supabase Dashboard
-- Database size: https://supabase.com/dashboard
-- Query performance
-- Auth activity
-- Storage usage
-
-### Convex Dashboard
-- Function calls
-- Database I/O
-- Error rates
-- Deployment history
-
----
+| Task | Command / procedure |
+|---|---|
+| Run locally | `npm run dev` → http://localhost:3456 |
+| Regenerate Convex types | `CONVEX_DEPLOYMENT=… CONVEX_DEPLOY_KEY=… npx convex codegen` (run from repo root) |
+| Restore paused Supabase | dashboard → Restore → run runbook Phase C checks |
+| Full DB provisioning | `docs/DATABASE-SETUP-RUNBOOK.md` (follow order exactly; `supabase-production-fixes.sql` is destructive) |
+| Redeploy | push to `main` (Vercel auto-deploy) after env/schema changes are in place |
 
 ## Troubleshooting
 
-### "Could not find column" Error
-The Supabase table schema doesn't match the data being inserted.
-**Fix:** Run `supabase-schema.sql` in Supabase SQL Editor, then re-run migration.
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| "Failed to fetch" on auth | Supabase project paused/removed | restore project; verify with `nslookup <ref>.supabase.co` |
+| Onboarding doesn't persist | RLS policies missing on `company_profiles` | run `supabase-rls-fix.sql`; verify via runbook Phase C |
+| Query returns `[]` unexpectedly | SQL outside shim's subset, or Supabase error logged | check server logs for `[db]`; prefer typed client for new code |
+| Convex type errors | stale generated types | re-run codegen with deployment env |
+| Attachments not received | fixed Sept 2026 (MIME/Graph); verify version deployed | regression tests exist in `email-sender.test.ts` |
 
-### Supabase "Hot Standover" Error
-Database is overwhelmed by disk I/O.
-**Fix:** Restart project from Supabase Dashboard → Settings → General → Restart.
+## Known incomplete work (honest status)
 
-### Migration Fails
-Check that `SUPABASE_SERVICE_ROLE_KEY` is set in `.env.local`.
-Run with `--stats` first to verify CockroachDB connection.
-
-### Convex Not Updating
-Check that `NEXT_PUBLIC_CONVEX_URL` is set in `.env.local`.
-Run `npx convex dev` to verify deployment.
-
-### Server Won't Start
-```bash
-# Clean and restart
-rm -rf .next
-npm run dev
-```
-
----
-
-## File Structure
-
-```
-Capital OS/
-├── src/
-│   ├── app/                    # Next.js pages
-│   │   ├── (auth)/            # Login, signup
-│   │   ├── dashboard/         # User dashboard
-│   │   ├── api/               # API routes
-│   │   └── layout.tsx         # Root layout (ConvexProvider)
-│   ├── components/
-│   │   ├── ConvexProvider.tsx  # Convex connection
-│   │   ├── Landing/           # Marketing pages
-│   │   └── RealtimeDashboard.tsx  # Convex-powered dashboard
-│   └── lib/
-│       ├── db.ts              # CockroachDB connection
-│       └── supabase/          # Supabase client
-├── convex/
-│   ├── schema.ts              # Convex database schema
-│   ├── investors.ts           # Investor queries/mutations
-│   ├── researchJobs.ts        # Job tracking
-│   ├── dashboard.ts           # Live metrics
-│   ├── notifications.ts       # Real-time alerts
-│   ├── scrapingJobs.ts        # Scraping progress
-│   └── actions.ts             # External API calls
-├── scripts/
-│   ├── edgar-bulk-fast.js     # EDGAR scraper
-│   ├── migrate-to-supabase.js # Migration tool
-│   ├── qualify-investors.ts   # Scoring system
-│   └── check-cols.js          # Schema checker
-├── backups/
-│   └── edgar/                 # Physical data backups
-├── supabase-schema.sql        # Supabase table schema
-├── ARCHITECTURE.md            # Architecture overview
-├── ARCHITECTURE_FINAL.md      # Detailed architecture
-└── SYSTEM.md                  # This file
-```
-
----
-
-## Key Commands
-
-```bash
-# Start dev server
-npm run dev                    # Runs on port 3456
-
-# Check Supabase data
-node scripts/migrate-to-supabase.js --stats
-
-# Scrape more investors
-node scripts/edgar-bulk-fast.js
-
-# Score all investors
-npx tsx src/scripts/qualify-investors.ts
-
-# Run security tests
-npm test -- src/__tests__/security.test.ts
-
-# Deploy Convex changes
-npx convex dev
-
-# Check environment
-node -e "require('dotenv').config({path:'.env.local'}); console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)"
-```
+- Shell pages: `/dashboard/meetings`, `/dashboard/ai-activity` (UI without real data).
+- Billing: architecture + ledger done; Stripe adapter stubbed.
+- Search: `ilike`-based; tsvector upgrade planned.
+- No CI pipeline yet (build/typecheck/test gates run locally).
+- Docs elsewhere in `docs/` may predate the Supabase-primary migration — treat
+  this file, `ARCHITECTURE.md`, the runbook, and the audit as authoritative.

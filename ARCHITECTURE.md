@@ -1,235 +1,142 @@
 # Capital OS — Architecture
 
-## System Overview
+> **Last verified against code:** September 26, 2026 (Phase 1 audit).
+> Where older docs disagreed, this document follows the code.
+
+## One-paragraph summary
+
+Capital OS is a Next.js 16 (App Router) application deployed on Vercel.
+**Supabase is the primary datastore and auth provider.** Convex provides
+real-time job/metric/notification state. NVIDIA NIM provides LLM completions
+behind a small client abstraction. EDGAR/Apollo/CSV pipelines feed the investor
+database; Gmail / Microsoft Graph / SMTP send outbound email with open/click
+tracking. A legacy CockroachDB deployment was replaced by Supabase; its
+`query()/queryAs()` API is preserved through a SQL→Postgrest translation shim.
+
+## System diagram
 
 ```
-                     NEXT.JS / VERCEL
-                            │
-                            ▼
-                       CONVEX
-                Application / Realtime Layer
-                            │
-             ┌──────────────┴──────────────┐
-             │                             │
-             ▼                             ▼
-         SUPABASE                      PYTHON
-       Data Platform                   Workers
-             │                             │
-     ┌───────┼───────────┐         ┌───────┼───────┐
-     │       │           │         │       │       │
-   Auth   PostgreSQL   Storage   Scraping  ML   AI/NVIDIA
-     │       │           │         │       │       │
-     ▼       ▼           ▼         ▼       ▼       ▼
-  Users  Investors    PDFs/HTML  EDGAR  Scoring  Enrichment
-  Login  Companies    Documents  Apollo Dedup    Analysis
-  RLS    Contacts     Pitch Decks
-         Campaigns    Exports
+                        BROWSER (React 19, Tailwind 4)
+                                   │
+                    ┌──────────────┴──────────────┐
+                    │   Next.js 16 App Router     │
+                    │   53 pages · 70 API routes  │
+                    └──────┬──────────────┬───────┘
+                           │              │
+             server actions│              │REST (service role)
+                           ▼              ▼
+                ┌────────────────┐   ┌────────────────┐
+                │    SUPABASE    │   │     CONVEX     │
+                │  (permanent)   │   │  (real-time)   │
+                ├────────────────┤   ├────────────────┤
+                │ Auth+OAuth     │   │ researchJobs   │
+                │ PostgreSQL     │   │ scrapingJobs   │
+                │ 30+ tables+RLS │   │ dashboardMetrics│
+                │ Storage (docs) │   │ notifications  │
+                └────────────────┘   └────────────────┘
+                           ▲              ▲
+        SQL→Postgrest shim │              │ subscriptions
+        (src/lib/db.ts)    │              │
+                ┌──────────┴──────────┐   │
+                │  services/actions   ├───┘
+                │  (business logic)   │
+                └──────────┬──────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+   NVIDIA NIM client   Email senders   Ingestion pipelines
+   (key rotation,      Gmail API       EDGAR · Apollo · CSV
+   mock mode)          MS Graph SMTP   normalization · dedup
+                                       fit scoring
 ```
 
-## What Each Layer Does
+## Data ownership rules
 
-### 🟦 Supabase — THE SOURCE OF TRUTH
+| Concern | Owner | Notes |
+|---|---|---|
+| Users, sessions, OAuth identities | Supabase Auth | email/password + Google + Microsoft |
+| Investors, firms, taxonomy | Supabase `public` schema | shared read, 83K+ rows |
+| Per-user data (profiles, saved investors, campaigns, emails, documents) | Supabase tenant tables | **RLS enforced** via `auth.uid()` policies (`supabase-rls-fix.sql`) |
+| Billing (plans, credits, ledger) | Supabase | architecture complete; Stripe adapter stubbed |
+| Job progress, live metrics, notifications | Convex | reactive queries; no polling |
+| AI completions | NVIDIA NIM via `src/lib/ai/` | key rotation, retries, `AI_MOCK_MODE` |
+| Files (decks, documents) | Supabase Storage | PDF/PPTX generation via pptxgenjs + pdf-lib |
+| Outbound email | Gmail API / MS Graph / SMTP | AES-256-GCM encrypted OAuth tokens; CAN-SPAM footer; open/click tracking |
+| Investor acquisition | Node pipelines (`scripts/`, `src/scripts/`) | SEC EDGAR scraping; CSV/Apollo import; backups in `backups/` |
 
-**Permanent, relational data. PostgreSQL.**
+## The SQL→Supabase shim (important, and temporary)
 
-| Data | Why |
-|------|-----|
-| Users & Auth | Login, sessions, RLS |
-| Investors (1M+) | Core business data, relational queries |
-| Investor Firms | Fund data, partners, AUM |
-| Contacts | Individual investor contacts |
-| Companies | Portfolio companies |
-| Investment History | Portfolio, exits, check sizes |
-| Intelligence | Scores, signals, activity |
-| Outreach | Campaigns, emails, replies |
-| Audit Logs | Security, compliance |
+`src/lib/db.ts` preserves the legacy CockroachDB API (`query`, `queryAs`,
+`execute`, `transaction`, plus `getPoolStats`/`closePool` stubs) by regex-parsing
+raw SQL and translating the recognized subset into Postgrest calls. Services
+across the codebase depend on it.
 
-**Limits:**
-- Free: 500MB database, 1GB storage
-- Pro ($25/month): 8GB database (scales to 60TB), 100GB storage
-- **You need Pro for 1M+ investors**
+**Current behavior (pinned by tests in `src/__tests__/db-shim.test.ts`):**
 
-### 🟩 Convex — THE LIVE APPLICATION ENGINE
+- SELECT / INSERT / UPDATE / DELETE / COUNT are translated.
+- WHERE operators: `= $N`, `= 'lit'`, `= true/false/NULL/number`, `IN (...)`,
+  `!= $N`, `> >= < <= $N` and numeric literals, `ILIKE/LIKE $N`,
+  `IS NULL / IS NOT NULL`; `AND`-joined.
+- ORDER BY / LIMIT / OFFSET translated. `NOW()` and literal resolution supported.
+- SQL outside the supported subset **logs a warning and returns `[]`**.
+- Supabase errors are **logged and returned as `[]`** rather than thrown.
 
-**Real-time state, jobs, notifications. NOT the primary database.**
+Phase 2 plan: migrate data access to the typed Postgrest query builder (or direct
+SQL via a Postgres connection) and delete the parser. Until then, this failure
+mode is a **known landmine** — new code should prefer the typed client directly.
 
-| Data | Why |
-|------|-----|
-| Research Jobs | Real-time progress tracking |
-| Dashboard Metrics | Live stats (no polling) |
-| Notifications | Real-time alerts |
-| Scraping Jobs | Background job progress |
-| Campaign State | Live email tracking |
-| Workflow State | Temporary processing state |
+## Request flows
 
-**Limits:**
-- Free: 3GB database, 6GB storage
-- Pro: 50GB database, 100GB storage
-- **Perfect for app state (~500MB-1GB)**
+### Discovery → fit (read path)
+`/dashboard/investors` → `/api/investors` (requireAuth) → Supabase `investors`
+with filters/facets → deterministic fit scoring (`computeFitScore`, 7 factors:
+sector 25%, stage 20%, geography 15%, check size 15%, data completeness 10%,
+contactability 10%, recent activity 5%) with per-factor explanations.
 
-### 🟨 Object Storage — THE RAW DATA LAYER
+### Onboarding (write path)
+`/onboarding` wizard → `updateCompanyProfile` server action →
+cookie-authenticated Supabase client → RLS (`auth.uid() = user_id`) →
+`company_profiles` (24 columns; `UNIQUE(user_id)`; readiness score computed
+server-side). Setup order and verification queries: see
+`docs/DATABASE-SETUP-RUNBOOK.md`.
 
-**Large files, documents, scraped content.**
+### Outreach (external side effects)
+Draft: `/api/outreach/draft` → NVIDIA NIM → response parsed into subject/body
+(fallback extraction strategies) → founder reviews. Send: `/api/outreach/send` →
+`sendEmail` → health guard + suppression check → provider (Gmail multipart
+MIME with attachment parts / Graph `fileAttachment` / SMTP) → CAN-SPAM footer +
+tracking pixel/link injection → `email_messages` logged. Founder approval is
+always required; nothing is auto-sent.
 
-| Data | Why |
-|------|-----|
-| PDFs | Pitch decks, reports |
-| HTML Snapshots | Scraped web pages |
-| Documents | Raw files |
-| Datasets | CSV/JSON exports |
-| Exports | Generated files |
+### Pipeline (per-user tracking)
+`/dashboard/pipeline` → `/api/investors/pipeline` → stage summary + moves.
+Stage definitions live in `src/lib/services/pipeline/stages.ts` (single source
+of truth; route files may only export handlers). **Known flaw (Phase 2):**
+stage state currently rides on the shared `investors` table (`pipeline_stage`,
+legacy `outreach_readiness`), so per-founder isolation is incomplete until the
+`user_pipeline_entries` migration lands.
 
-**Use Supabase Storage (100GB on Pro) or Cloudflare R2.**
+## Environments
 
-### 🟥 Python Workers — THE COMPUTE ENGINE
+| Env | Stack | Notes |
+|---|---|---|
+| Local | `npm run dev` (port 3456) | `.env.local`; `AI_MOCK_MODE=true` avoids AI costs |
+| Production | Vercel (`capital-os-nine.vercel.app`) | env vars set in Vercel; redeploy after changes |
+| Supabase | free tier | **Projects get auto-paused on inactivity — this took production down once (Sept 2026). Restore = dashboard → Restore, then run `docs/DATABASE-SETUP-RUNBOOK.md` Phase C verification.** |
+| Convex | free tier (`exciting-bat-92`) | `npx convex codegen` needs `CONVEX_DEPLOYMENT` + `CONVEX_DEPLOY_KEY` |
 
-**Heavy processing, ML, scraping, enrichment.**
+## Key source map
 
-| Task | Why |
-|------|-----|
-| EDGAR Scraping | SEC filings (free) |
-| Apollo Scraping | Investor data (API) |
-| Deduplication | Entity resolution |
-| ML Scoring | Investment fit analysis |
-| AI Enrichment | Thesis analysis, scoring |
-| Batch Processing | Large-scale operations |
-
-**Run on: Vercel Serverless, Railway, or dedicated server.**
-
-## Data Flow
-
-### 1. Scraping Pipeline
-
-```
-Python Worker
-    ↓
-EDGAR/Apollo API
-    ↓
-Raw Data Processing
-    ↓
-Deduplication & Normalization
-    ↓
-Supabase PostgreSQL
-    ↓
-Convex (job status update)
-    ↓
-Dashboard (real-time progress)
-```
-
-### 2. Investor Research
-
-```
-User clicks "Research Investor"
-    ↓
-Convex Mutation (create job)
-    ↓
-Convex Action (trigger worker)
-    ↓
-Python Worker
-    ↓
-Website/LinkedIn Scraping
-    ↓
-AI Analysis
-    ↓
-Supabase (update investor record)
-    ↓
-Convex (update job status)
-    ↓
-Dashboard (real-time progress)
-```
-
-### 3. Outreach Campaign
-
-```
-User creates campaign
-    ↓
-Supabase (store campaign)
-    ↓
-Python Worker (send emails)
-    ↓
-Supabase (update status)
-    ↓
-Convex (live campaign state)
-    ↓
-Dashboard (real-time metrics)
-```
-
-## Why This Architecture
-
-### Supabase for Data
-
-- **PostgreSQL**: Full SQL, joins, indexes, RLS
-- **Relational**: Investors → Firms → Contacts → Portfolio
-- **Scalable**: 8GB → 60TB on Pro/Team
-- **Portable**: Standard PostgreSQL, no vendor lock-in
-- **Proven**: Battle-tested for production workloads
-
-### Convex for Realtime
-
-- **Reactive queries**: No polling needed
-- **Live updates**: Dashboard changes instantly
-- **Job tracking**: Real-time progress bars
-- **Notifications**: Instant alerts
-- **Simple**: No WebSocket management
-
-### Python for Compute
-
-- **Heavy scraping**: EDGAR, Apollo, LinkedIn
-- **ML/AI**: Scoring, classification, enrichment
-- **Batch processing**: Large-scale operations
-- **Flexible**: Any library, any API
-
-## Scaling Path
-
-### Current (Free Tier)
-
-```
-Supabase Free: 500MB (32K investors)
-Convex Free: 3GB (app state)
-```
-
-### Growth (Pro Tier — $25/month)
-
-```
-Supabase Pro: 8GB (1M+ investors)
-Convex Pro: 50GB (app state)
-```
-
-### Scale (Team/Enterprise)
-
-```
-Supabase Team: 60TB (10M+ investors)
-Convex Enterprise: Custom limits
-Dedicated compute: Python workers on AWS/GCP
-```
-
-## Environment Variables
-
-### Supabase (Auth + Data)
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
-```
-
-### Convex (App State + Realtime)
-
-```bash
-NEXT_PUBLIC_CONVEX_URL=https://YOUR_DEPLOYMENT.convex.cloud
-CONVEX_DEPLOY_KEY=dev:YOUR_DEPLOYMENT|YOUR_KEY
-```
-
-### Database (CockroachDB — Legacy)
-
-```bash
-DATABASE_URL=postgresql://USER:PASS@HOST:26257/defaultdb
-```
-
-## Key Decisions
-
-1. **Supabase owns all permanent data** — investors, contacts, campaigns
-2. **Convex owns all live state** — jobs, metrics, notifications
-3. **No data duplication** — Convex references Supabase IDs, doesn't copy data
-4. **Python handles all heavy compute** — scraping, ML, enrichment
-5. **Object storage for raw files** — PDFs, HTML, documents
+| Path | Role |
+|---|---|
+| `src/app/(auth)/`, `src/middleware.ts` | auth pages + route protection |
+| `src/app/api/**` | 70 REST routes (requireAuth / requireAdmin) |
+| `src/lib/actions/*.ts` | server actions (auth → data) |
+| `src/lib/services/investor/` | ingestion, normalization, dedup, fit scoring |
+| `src/lib/services/email/` | senders, crypto, tracking, suppression, health |
+| `src/lib/services/pipeline/stages.ts` | pipeline stage definitions |
+| `src/lib/db.ts` | SQL→Postgrest shim (see above) |
+| `src/lib/ai/` | NIM client: key rotation, models, retries |
+| `convex/` | real-time jobs/metrics/notifications |
+| `supabase/migrations/`, `supabase-*.sql` | schema + RLS (apply per runbook) |
+| `scripts/`, `src/scripts/` | EDGAR/CSV/Apollo data tooling |

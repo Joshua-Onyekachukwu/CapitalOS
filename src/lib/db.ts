@@ -355,6 +355,35 @@ function applySimpleWhere(builder: any, whereStr: string, params: any[]): any {
       continue;
     }
 
+    // column = <bare literal> — true / false / NULL / number
+    // (BUGFIX: previously matched nothing, silently dropping the filter —
+    // e.g. `WHERE is_active = true` returned unfiltered rows)
+    const litEq = trimmed.match(/^(\w+)\s*=\s*(TRUE|FALSE|NULL|-?\d+(?:\.\d+)?)$/i);
+    if (litEq) {
+      builder = builder.eq(litEq[1], resolveParamValue(litEq[2], params));
+      continue;
+    }
+
+    // column IN ($N) or IN ('a','b') or IN (1,2)
+    const inMatch = trimmed.match(/^(\w+)\s+IN\s*\((.+)\)$/i);
+    if (inMatch) {
+      const rawItems = inMatch[2].split(",").map((s) => s.trim());
+      // Single $N param expands to an array
+      if (rawItems.length === 1 && /^\$\d+$/.test(rawItems[0])) {
+        builder = builder.in(inMatch[1], params[parseInt(rawItems[0].slice(1)) - 1]);
+      } else {
+        builder = builder.in(inMatch[1], rawItems.map((s) => resolveParamValue(s, params)));
+      }
+      continue;
+    }
+
+    // column != $N / <> $N
+    const paramNeq = trimmed.match(/^(\w+)\s*(?:!=|<>)\s*\$(\d+)$/);
+    if (paramNeq) {
+      builder = builder.neq(paramNeq[1], params[parseInt(paramNeq[2]) - 1]);
+      continue;
+    }
+
     // column != 'string' or column <> 'string'
     const neq = trimmed.match(/^(\w+)\s*(?:!=|<>)\s*'([^']*)'$/);
     if (neq) {
@@ -366,6 +395,23 @@ function applySimpleWhere(builder: any, whereStr: string, params: any[]): any {
     const gte = trimmed.match(/^(\w+)\s*>=\s*\$(\d+)$/);
     if (gte) {
       builder = builder.gte(gte[1], params[parseInt(gte[2]) - 1]);
+      continue;
+    }
+
+    // numeric comparisons against $N params
+    const paramGt = trimmed.match(/^(\w+)\s*>\s*\$(\d+)$/);
+    if (paramGt) {
+      builder = builder.gt(paramGt[1], params[parseInt(paramGt[2]) - 1]);
+      continue;
+    }
+    const paramLt = trimmed.match(/^(\w+)\s*<\s*\$(\d+)$/);
+    if (paramLt) {
+      builder = builder.lt(paramLt[1], params[parseInt(paramLt[2]) - 1]);
+      continue;
+    }
+    const paramLte = trimmed.match(/^(\w+)\s*<=\s*\$(\d+)$/);
+    if (paramLte) {
+      builder = builder.lte(paramLte[1], params[parseInt(paramLte[2]) - 1]);
       continue;
     }
 

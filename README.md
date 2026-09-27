@@ -2,577 +2,156 @@
 
 **AI-Powered Fundraising Operating System for Startup Founders**
 
-**Live Demo:** https://capital-os-nine.vercel.app/
+Capital OS helps founders discover relevant investors, understand investor fit
+(with explanations, not just scores), prepare personalized outreach, and manage
+the entire fundraising pipeline from one place.
 
-Capital OS helps founders discover relevant investors, understand their investment thesis, qualify investor fit, prepare personalized outreach, and manage the entire fundraising process from one place.
-
-> "Tell us about your company. Capital OS understands your business, discovers the right investors, helps you prepare your materials, and assists you in reaching out — intelligently and personally."
-
----
-
-## Platform Stats
-
-| Metric | Value |
-|--------|-------|
-| Verified investors | 46,093 |
-| Verified emails | 41,346 |
-| Pages | 53 |
-| API routes | 69 |
-| Lines of code | 50,463 |
-| Platform score | 85/100 |
-
-## Architecture Overview
-
-Capital OS uses a **modern serverless architecture** — Supabase handles auth + investor data while NVIDIA NIM provides AI capabilities.
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        Your Browser                              │
-│                   (Next.js 15 App Router)                        │
-├────────────────────────────────┬─────────────────────────────────┤
-│  Supabase (Auth + Data)        │  CockroachDB (Backup)           │
-│                                │                                 │
-│  • Login / Signup              │  • Historical data backup       │
-│  • 122K+ Investors (hot)       │  • 10GB free storage            │
-│  • OAuth (Google, Microsoft)   │  • Restore capability           │
-│  • Campaigns & Sequences       │  • Migration scripts            │
-│  • Email Accounts & Messages   │  • Graceful fallback if down    │
-│  • Documents & Team Members    │                                 │
-│  • AI-powered fit scoring      │  DATABASE_URL not set = skip    │
-│                                │                                 │
-│  @supabase/ssr                 │  pg (node-postgres)             │
-│  @supabase/supabase-js         │                                 │
-│                                │  src/lib/db.ts                  │
-│  NEXT_PUBLIC_SUPABASE_*        │  DATABASE_URL                   │
-└────────────────────────────────┴─────────────────────────────────┘
-```
-
-### Why Hybrid?
-
-| Factor | Hybrid (Supabase Auth + CockroachDB) | CockroachDB Only |
-|--------|--------------------------------------|-------------------|
-| Auth effort | Zero — already working | Weeks (login, signup, OAuth, sessions) |
-| Code changes | Swap data queries gradually | Rewrite all + build auth from scratch |
-| Security risk | Low — battle-tested auth | Higher — custom auth risks |
-| Time to working app | Days | Weeks to months |
+> **Project status (Sept 26, 2026):** Phase 1 stabilization complete — 0 type
+> errors, 44 passing unit tests, production build green. Backend re-provisioning
+> in progress after the original Supabase projects were removed; see
+> `docs/DATABASE-SETUP-RUNBOOK.md` and `docs/19-phase1-audit.md`.
 
 ---
 
-## Quick Start
+## What it does
 
-```bash
-# Clone
-git clone https://github.com/Joshua-Onyekachukwu/CapitalOS.git
-cd "Capital OS"
+1. **Discover** — search an 83K+ investor database (SEC EDGAR 13F/Form D/N-CEN,
+   Apollo, CSV imports) by stage, sector, geography, and check size.
+2. **Qualify** — deterministic 7-factor fit scoring with a written explanation
+   per factor; AI research summaries per investor.
+3. **Prepare** — AI-drafted, investor-specific outreach emails (founder approves
+   everything; nothing auto-sends). Branded templates, attachments, tracking.
+4. **Send** — Gmail / Microsoft Graph / SMTP with OAuth, CAN-SPAM compliance,
+   open/click tracking, reply detection, health scoring and warmup.
+5. **Manage** — 11-stage fundraising pipeline, campaigns, sequences, analytics,
+   admin suite, credit-based billing architecture (Stripe adapter stubbed).
 
-# Install
-npm install
-
-# Environment
-cp .env.example .env.local
-# Edit .env.local with your credentials (see Environment Variables below)
-
-# Dev server
-npm run dev
-```
-
-Open [http://localhost:3456](http://localhost:3456).
-
----
-
-## Environment Variables
-
-### Required
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | CockroachDB connection string | `postgresql://user:pass@host:26257/defaultdb?sslmode=verify-full` |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | `https://xyz.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | `eyJhbGci...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server only) | `eyJhbGci...` |
-
-### Optional
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NVIDIA_API_KEY` | NVIDIA NIM API key for AI features | — |
-| `AI_MOCK_MODE` | Use mock AI responses (no API calls) | `true` |
-| `NEXT_PUBLIC_APP_URL` | App URL | `http://localhost:3456` |
-
-### Database Setup
-
-```bash
-# 1. Create CockroachDB schema + seed data
-npx tsx scripts/setup-cockroachdb.ts
-
-# 2. Seed realistic investor/firm/company data
-node scripts/seed-real-data.js
-
-# 3. Enable Row-Level Security
-npx tsx scripts/enable-rls.ts
-```
-
-### Supabase Migrations
-
-Run these in Supabase SQL Editor in order:
-
-1. `supabase/migrations/001_profiles_and_triggers.sql`
-2. `supabase/migrations/002_investor_intelligence.sql`
-3. `supabase/migrations/003_intelligence_pipeline.sql`
-4. `supabase/migrations/004_company_intelligence_billing.sql`
-5. `supabase/migrations/005_billing_state_threads_jobs.sql`
-6. `supabase/migrations/006_search_intelligence_enhancements.sql`
-7. `supabase/migrations/007_followup_sequences.sql`
-8. `supabase/migrations/008_email_tracking.sql`
-
----
-
-## Tech Stack
+## Tech stack (as built)
 
 | Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 16 (App Router), React, TypeScript, Tailwind CSS |
-| Icons | Remix Icon |
-| Auth | Supabase Auth (email/password, OAuth) |
-| Database | CockroachDB Serverless (PostgreSQL-compatible) |
-| DB Driver | node-postgres (`pg`) with connection pooling |
-| AI | NVIDIA NIM API (Llama 3.3 Nemotron Super 49B) |
-| Email | Google Gmail API + Microsoft Graph (OAuth) |
+|---|---|
+| Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4 |
+| Auth | Supabase Auth (email/password, Google, Microsoft OAuth) |
+| Database | **Supabase (PostgreSQL)** with RLS on all tenant tables |
+| Data access | Typed Postgrest clients + legacy `query()` shim (`src/lib/db.ts`) |
+| Real-time | Convex (job progress, metrics, notifications) |
+| AI | NVIDIA NIM (Llama 3.3 Nemotron) with key rotation + mock mode |
+| Email | Gmail API, Microsoft Graph, SMTP (nodemailer) |
+| Files | Supabase Storage; PPTX/PDF via pptxgenjs + pdf-lib |
 | Hosting | Vercel |
-| Charts | Recharts |
-| DnD | @dnd-kit (pitch deck slide reorder) |
-| Source Control | GitHub |
+| Tests | Vitest (44 offline unit tests; integration suite self-skips) |
 
----
+> Historical note: earlier versions of this README described a CockroachDB
+> primary. That migration to Supabase is complete; `ARCHITECTURE.md` reflects
+> the verified current design.
 
-## Data Flow
+## Quick start
 
-### 1. Authentication Flow (Supabase)
+```bash
+git clone https://github.com/Joshua-Onyekachukwu/CapitalOS.git
+cd CapitalOS            # repo root ("capital os" locally)
+npm install
 
-```
-Browser → Next.js Middleware → Supabase Auth
-                                    │
-                    ┌───────────────┴───────────────┐
-                    │  Authenticated?                │
-                    │  YES → pass through            │
-                    │  NO  → redirect to /login      │
-                    └───────────────────────────────┘
-```
+cp .env.example .env.local
+# fill in Supabase URL/keys etc. — see table below
 
-- `src/lib/supabase/middleware.ts` — protects `/dashboard/*`, `/investors/*`, `/campaigns/*`
-- `src/lib/supabase/server.ts` — server-side auth client
-- `src/lib/supabase/client.ts` — browser-side auth client
-- `src/lib/auth.ts` — `getCurrentUser()` / `requireUser()` helper
-
-### 2. Data Flow (CockroachDB)
-
-```
-Dashboard Page (client)
-        │
-        │  fetch("/api/...")
-        ▼
-API Route (server)
-        │
-        │  import { query, queryAs } from "@/lib/db"
-        ▼
-CockroachDB Pool (pg)
-        │
-        │  SET app.user_id → RLS policies
-        │  SELECT / INSERT / UPDATE / DELETE
-        ▼
-CockroachDB Serverless Cluster
+npm run dev             # http://localhost:3456
 ```
 
-Key files:
+### Environment variables
 
-| File | Purpose |
-|------|---------|
-| `src/lib/db.ts` | Connection pool, retry logic, circuit breaker |
-| `src/lib/auth.ts` | Gets current Supabase user (used by server actions) |
-| `src/app/api/*/route.ts` | API routes that query CockroachDB |
-| `src/lib/actions/*.ts` | Server actions (combine auth + data) |
-| `src/lib/services/*.ts` | Business logic services |
+| Variable | Required | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | yes | database + auth |
+| `NVIDIA_API_KEY` (+ `_1`, `_2`, …) | for AI features | LLM calls; rotate multiple keys |
+| `AI_MOCK_MODE` | no (`true` default) | offline/mock AI responses |
+| `NEXT_PUBLIC_CONVEX_URL` | for real-time features | Convex deployment |
+| `CONVEX_DEPLOYMENT` / `CONVEX_DEPLOY_KEY` | for `npx convex codegen` | type regeneration |
+| `EMAIL_TOKEN_ENCRYPTION_KEY` | production | AES-256-GCM key for OAuth tokens |
+| `GOOGLE_*` / `MICROSOFT_*` client id/secret | for OAuth email sending | token refresh |
+| `NEXT_PUBLIC_APP_URL` | production | absolute links (tracking, unsubscribe) |
 
-### 3. How Queries Work
+### Database setup
 
-```typescript
-// PUBLIC DATA — no user context needed
-import { query } from "@/lib/db";
-const investors = await query('SELECT * FROM investors WHERE is_active = true');
+Follow **`docs/DATABASE-SETUP-RUNBOOK.md`** — it is the authoritative, ordered
+procedure (schema migrations → RLS policies → data restore → verification).
+Never run `supabase-production-fixes.sql` against a project you've just restored
+data into; it contains destructive dedup statements.
 
-// TENANT-SCOPED DATA — always filter by user_id
-import { queryAs } from "@/lib/db";
-const saved = await queryAs(
-  user.id,
-  'SELECT * FROM saved_investors WHERE user_id = $1',
-  [user.id]
-);
+## Development
 
-// TRANSACTION — automatic retry on transient failures
-import { transaction } from "@/lib/db";
-const result = await transaction(async (tx) => {
-  const [{ id }] = await tx.query('INSERT INTO ... RETURNING id');
-  await tx.query('UPDATE ... WHERE id = $1', [id]);
-  return id;
-});
+```bash
+npm run dev         # dev server (port 3456)
+npm run build       # production build
+npm run typecheck   # tsc --noEmit — must be 0 errors
+npm test            # vitest (offline suites)
+npm run lint        # eslint
+npm run format      # prettier
 ```
 
-### 4. Pitch Deck Generation Flow
+Convex type regeneration (from repo root):
 
-```
-User clicks "Generate" → /api/deck/generate
-        │
-        ├─ 1. Fetch company profile (CockroachDB)
-        ├─ 2. Call NVIDIA AI for slide content
-        ├─ 3. Generate PPTX via pptxgenjs
-        ├─ 4. Convert to PDF via LibreOffice
-        ├─ 5. Upload both to Supabase Storage
-        └─ 6. Save document record (CockroachDB)
+```bash
+CONVEX_DEPLOYMENT=<ref> CONVEX_DEPLOY_KEY=<key> npx convex codegen
 ```
 
-### 5. Email Outreach Flow
-
-```
-User sends email → /api/outreach/send
-        │
-        ├─ 1. Fetch investor + email account (CockroachDB)
-        ├─ 2. Decrypt OAuth token (AES-256-GCM)
-        ├─ 3. Send via Gmail API or Microsoft Graph
-        ├─ 4. Log email_message record (CockroachDB)
-        └─ 5. Deduct credits (CockroachDB)
-```
-
-### 6. Investor Intelligence Pipeline
-
-```
-CSV Import / EDGAR Scraper / Apollo API
-        │
-        ├─ 1. raw_records (staging)
-        ├─ 2. Normalization (field mapping, dedup)
-        ├─ 3. investors (canonical)
-        ├─ 4. Duplicate detection
-        ├─ 5. Qualification scoring
-        └─ 6. Fit scoring (vs company profile)
-```
-
----
-
-## Project Structure
+## Project structure
 
 ```
 src/
 ├── app/
-│   ├── (auth)/                    # Login, signup, password reset
-│   ├── api/                       # API routes
-│   │   ├── admin/                 # Admin data import
-│   │   ├── auth/                  # OAuth callbacks (Google, Microsoft)
-│   │   ├── campaigns/             # Campaign sequence execution
-│   │   ├── dashboard/             # Dashboard data APIs
-│   │   │   ├── admin/             # Admin health data
-│   │   │   ├── analytics/         # Analytics aggregation
-│   │   │   └── settings/          # Profile updates
-│   │   ├── deck/                  # Pitch deck generation
-│   │   ├── investors/             # Investor CRUD + search
-│   │   └── outreach/              # Email sending
-│   ├── dashboard/                 # Main app (13+ pages)
-│   │   ├── analytics/             # Data health + charts
-│   │   ├── campaigns/             # Outreach campaigns
-│   │   ├── cockpit/               # Main dashboard view
-│   │   ├── decks/                 # Pitch deck management
-│   │   ├── documents/             # Document library
-│   │   ├── investors/             # Investor browser + detail
-│   │   └── settings/              # User settings
-│   ├── onboarding/                # 7-step company setup
-│   └── page.tsx                   # Landing page
-├── components/
-│   ├── Dashboard/                 # Sidebar, header, shared
-│   ├── Landing/                   # Landing page sections
-│   ├── Layout/                    # Navbar, footer, GoTop
-│   └── ui/                        # 11 reusable UI primitives
+│   ├── (auth)/            # login, signup, password reset
+│   ├── admin/             # admin console pages
+│   ├── api/               # 70 REST routes (auth, investors, outreach, deck, …)
+│   ├── dashboard/         # 18 main app pages (cockpit, investors, pipeline, …)
+│   ├── onboarding/        # 7-step company setup wizard
+│   └── page.tsx           # landing
+├── components/            # Dashboard/, Landing/, Outreach/, ui/ primitives
 ├── lib/
-│   ├── actions/                   # Server actions
-│   │   ├── campaigns.ts           # Campaign CRUD
-│   │   ├── company.ts             # Company profile + documents
-│   │   ├── email.ts               # Email management
-│   │   ├── email-sequences.ts     # Sequence CRUD
-│   │   └── investor-research.ts   # AI research generation
-│   ├── ai/                        # NVIDIA AI client
-│   ├── auth.ts                    # Supabase auth helper
-│   ├── billing/                   # Plans, credits, entitlements
-│   │   ├── credits.ts             # Credit balance + deduction
-│   │   ├── plans.ts               # Plan lookup
-│   │   └── provider.ts            # Billing provider abstraction
-│   ├── db.ts                      # CockroachDB pool + retry
-│   ├── middleware/                 # Auth middleware (Supabase)
-│   ├── services/
-│   │   ├── campaigns/             # Sequence scheduling
-│   │   ├── email/                 # OAuth, encryption, sending
-│   │   ├── investor/              # Ingestion, matching, qualification
-│   │   └── scrapers/              # SEC EDGAR scraper
-│   ├── supabase/                  # Supabase client/server/middleware
-│   └── validators/                # Auth validation
-├── scripts/                       # DB scripts (CockroachDB)
-│   ├── db.ts                      # Standalone DB helper for scripts
-│   ├── enable-rls.ts              # Enable RLS on all tables
-│   ├── seed-real-data.js          # Seed 5K investors, 106 firms
-│   └── setup-cockroachdb.ts       # Create schema + indexes
-└── scripts/                       # Root-level scripts
-    ├── seed-real-data.js          # Data seeding
-    └── enable-rls.ts              # RLS setup
+│   ├── actions/           # server actions (auth → data)
+│   ├── ai/                # NIM client: key rotation, models, retries
+│   ├── billing/           # plans, credits, ledger
+│   ├── db.ts              # SQL→Postgrest shim (legacy API preserved)
+│   ├── services/          # investor/, email/, deck/, intelligence/, pipeline/
+│   └── supabase/          # client/server/middleware helpers
+└── scripts/               # EDGAR/CSV/Apollo ingestion & verification tooling
+convex/                    # real-time schema + functions
+supabase/                  # migrations 001–008
+supabase-*.sql             # RLS fix, pipeline stage, tracking, etc.
+backups/                   # investor data backups (gitignored)
+docs/                      # product/engineering docs + runbooks
 ```
 
----
+## Key patterns
 
-## Database Scripts
+- **Server actions** (`src/lib/actions/*`): `requireUser()` → cookie-authenticated
+  Supabase client → RLS enforces tenancy → typed return values.
+- **API routes** (`src/app/api/**/route.ts`): `requireAuth`/`requireAdmin` guard
+  every protected route; Zod validation on inputs.
+- **Pipeline stages** are defined once in `src/lib/services/pipeline/stages.ts`
+  (Next.js route files may only export handlers — don't re-export constants there).
+- **No fake functionality**: UI must not claim actions the backend doesn't
+  perform; status docs distinguish Planned / In progress / Executed / Verified.
 
-### Setup & Migration
+## Documentation map
 
-| Script | Command | Description |
-|--------|---------|-------------|
-| Setup schema | `npx tsx scripts/setup-cockroachdb.ts` | Creates all 34 tables, 65 indexes, 12 enums, seed data |
-| Seed data | `node scripts/seed-real-data.js` | Inserts 5K investors, 106 firms, 40 companies |
-| Enable RLS | `npx tsx scripts/enable-rls.ts` | Enables RLS on 20 tenant-protected tables |
-
-### Data Management
-
-| Script | Location | Description |
-|--------|----------|-------------|
-| Import Apollo CSV | `npx tsx src/scripts/import-apollo-csv.ts` | Import investor data from Apollo export |
-| Fast CSV import | `npx tsx src/scripts/import-csv-fast.ts` | Bulk import test with validation |
-| Generate investors | `npx tsx src/scripts/generate-investors.ts` | Generate 100K+ synthetic investors |
-| Generate full dataset | `npx tsx src/scripts/generate-full-dataset.ts` | Generate firms + investors + employment history |
-| Seed sectors | `npx tsx src/scripts/seed-sectors.ts` | Insert investor sector taxonomy |
-| Cleanup DB | `npx tsx src/scripts/cleanup-db.ts` | Remove test data |
-
-### Quality & Verification
-
-| Script | Location | Description |
-|--------|----------|-------------|
-| Check count | `npx tsx src/scripts/check-count.ts` | Quick row count verification |
-| Verify migration | `npx tsx src/scripts/verify-migration.ts` | Schema + data verification |
-| Verify qualification | `npx tsx src/scripts/verify-qualification.ts` | Check qualification scores |
-| Qualify investors | `npx tsx src/scripts/qualify-investors.ts` | Run qualification pipeline |
-| Run bulk score | `npx tsx src/scripts/run-bulk-score.ts` | Batch fit scoring |
-
-### Testing
-
-| Script | Location | Description |
-|--------|----------|-------------|
-| Test Apollo pipeline | `npx tsx src/scripts/test-apollo-pipeline.ts` | End-to-end pipeline test |
-| Test fresh import | `npx tsx src/scripts/test-fresh-import.ts` | Clean import test |
-| Test stress import | `npx tsx src/scripts/test-stress-import.ts` | High-volume import test |
-| EDGAR scrape | `npx tsx src/scripts/edgar-scrape.ts` | SEC EDGAR Form D scraper |
-| Process EDGAR bulk | `npx tsx src/scripts/process-edgar-bulk.ts` | Process scraped EDGAR data |
-
----
-
-## Database Schema
-
-### CockroachDB Tables (34 total)
-
-**Public/Shared Data (no RLS):**
-
-| Table | Rows | Description |
-|-------|------|-------------|
-| `investors` | 5,000 | Canonical investor records |
-| `investor_firms` | 106 | VC/PE/Angel firms |
-| `investor_sectors` | 24 | Sector taxonomy |
-| `investor_employment_history` | 2,991 | Investor ↔ firm links |
-| `investor_data_sources` | — | Data provenance |
-| `investor_profiles` | — | Enriched profiles |
-| `data_providers` | — | Provider registry |
-| `raw_records` | — | Ingestion staging |
-| `duplicate_candidates` | — | Dedup candidates |
-| `data_change_log` | — | Audit trail |
-| `firm_aliases` | — | Firm name variants |
-| `billing_plans` | 3 | Plan definitions |
-| `credit_costs` | 8 | Credit cost catalog |
-| `campaign_investors` | — | Campaign ↔ investor |
-
-**Tenant-Protected Tables (RLS enabled):**
-
-| Table | Tenant Key | Description |
-|-------|-----------|-------------|
-| `profiles` | `id` | User profiles |
-| `company_profiles` | `user_id` | Company information |
-| `company_documents` | `company_id` → `company_profiles.user_id` | Documents |
-| `company_team_members` | `company_id` → `company_profiles.user_id` | Team members |
-| `saved_investors` | `user_id` | User-saved investors |
-| `email_accounts` | `user_id` | OAuth email configs |
-| `email_messages` | `user_id` | Sent/received emails |
-| `email_threads` | `user_id` | Email threads |
-| `email_tracking_events` | `user_id` | Open/click tracking |
-| `campaign_sequences` | `user_id` | Outreach sequences |
-| `campaign_sequence_steps` | `sequence_id` → `campaign_sequences.user_id` | Sequence steps |
-| `campaign_sequence_enrollments` | `user_id` | Enrolled investors |
-| `campaign_sequence_emails` | `user_id` | Sequence emails |
-| `data_acquisition_jobs` | `created_by` | Import/scrape jobs |
-| `background_jobs` | `user_id` | Async jobs |
-| `user_subscriptions` | `user_id` | Plan subscriptions |
-| `credit_ledger` | `user_id` | Credit transactions |
-| `billing_events` | `user_id` | Billing audit log |
-| `admin_audit_log` | `user_id` | Admin operations |
-| `investor_search_history` | `user_id` | Search queries |
-
-### Row-Level Security (RLS)
-
-RLS is enforced via a two-layer defense:
-
-1. **Session variable**: `SET app.user_id = $1` — read by `app.current_user_id()` function
-2. **Application filtering**: Queries always include `WHERE user_id = $1`
-
-```sql
--- RLS policy example (saved_investors)
-CREATE POLICY saved_investors_select ON saved_investors
-  FOR SELECT USING (
-    app.current_user_id() IS NOT NULL
-    AND user_id = app.current_user_id()
-  );
-```
-
-**Note**: CockroachDB Serverless does not fully enforce RLS SELECT policies using session variables. Application-level filtering is the primary isolation mechanism; RLS serves as defense-in-depth.
-
----
-
-## Connection Pool & Resilience
-
-`src/lib/db.ts` provides production-grade CockroachDB connectivity:
-
-### Pool Configuration
-
-| Setting | Value | Rationale |
-|---------|-------|-----------|
-| `max` | 15 | CockroachDB Serverless tenant limit |
-| `min` | 2 | Keep warm connections ready |
-| `idleTimeoutMillis` | 25,000 | Release before CRDB timeout |
-| `connectionTimeoutMillis` | 8,000 | Fail fast on connection issues |
-| `application_name` | `"capital-os"` | Visible in CRDB SQL stats |
-
-### Retry Logic
-
-- **3 attempts** with exponential backoff (200ms → 400ms → 800ms)
-- Random jitter to avoid thundering herd
-- Retries on: connection drops (`08006`), timeouts (`XX000`), network errors
-
-### Circuit Breaker
-
-- Opens after **5 consecutive failures** — blocks all queries
-- Auto-resets after **30 seconds** — tests with limited requests
-- Prevents cascading failures during CRDB outages
-
-### Graceful Shutdown
-
-```bash
-# Automatic on SIGTERM/SIGINT
-process.once("SIGTERM", shutdownHandler);
-process.once("SIGINT", shutdownHandler);
-```
-
-### Monitoring
-
-```typescript
-import { getPoolStats } from "@/lib/db";
-
-const stats = getPoolStats();
-// { totalCount: 15, idleCount: 12, waitingCount: 0, circuitBreaker: { state: "closed", failures: 0 } }
-```
-
----
-
-## Billing & Credits
-
-| Plan | Price | Credits/mo | Investor DB |
-|------|-------|-----------|-------------|
-| **Free** | $0 | 50 | 100 |
-| **Workspace** | $49/mo | 500 | 5,000 |
-| **Workspace Pro** | $199/mo | 2,000 | 50,000 |
-
-Credit costs (per operation):
-
-| Operation | Credits |
-|-----------|---------|
-| Investor research | 5 |
-| Email draft | 3 |
-| Fit analysis | 4 |
-| Pitch deck generate | 25 |
-| Deep enrichment | 8 |
-| Company intelligence | 6 |
-| Email sequence | 5 |
-
----
-
-## Development
-
-### Commands
-
-```bash
-npm run dev          # Start dev server
-npm run build        # Production build
-npm run start        # Start production server
-npm run typecheck    # TypeScript type checking
-npm run lint         # ESLint
-```
-
-### Key Patterns
-
-**Server Actions** (`src/lib/actions/*.ts`):
-- Use `"use server"` directive
-- Get user via `requireUser()` from `src/lib/auth.ts`
-- Query data via `queryAs()` from `src/lib/db.ts`
-- Return typed data (never raw Supabase results)
-
-**API Routes** (`src/app/api/*/route.ts`):
-- Export `GET` / `POST` handlers
-- Use `query()` or `queryAs()` for data access
-- Return `NextResponse.json()`
-
-**Dashboard Pages** (`src/app/dashboard/*/page.tsx`):
-- `"use client"` components
-- Fetch data via API routes (`fetch("/api/...")`)
-- Never import `@supabase/supabase-js` directly
-
----
-
-## Documentation
-
-Comprehensive documentation in the `docs/` directory:
-
-| Document | Description |
-|----------|-------------|
-| [Executive Overview](docs/00-executive-overview.md) | What Capital OS is, why it exists |
-| [Product Vision](docs/01-product-vision.md) | Principles, user journeys, use cases |
-| [System Architecture](docs/02-system-architecture.md) | How all components connect |
-| [Database Architecture](docs/03-database-architecture.md) | Complete data model |
-| [Investor Intelligence](docs/04-investor-intelligence.md) | The investor data pipeline |
-| [Company Intelligence](docs/05-company-intelligence.md) | How we understand each company |
-| [AI Architecture](docs/06-ai-architecture.md) | All AI-powered components |
-| [Pricing & Billing](docs/07-pricing-billing.md) | Model A, credits, plans |
-| [Onboarding](docs/08-onboarding.md) | The 7-step onboarding experience |
-| [Pitch Deck Engine](docs/09-pitch-deck-engine.md) | Deck generation system |
-| [Email & Outreach](docs/10-email-outreach.md) | Email integration and outreach |
-| [Security](docs/11-security.md) | Authentication, RLS, tokens |
-| [Infrastructure](docs/12-infrastructure.md) | Hosting, deployment, env |
-| [Frontend & Backend](docs/13-frontend-backend.md) | Code architecture |
-| [Feature Status](docs/14-feature-status.md) | What's built, what's planned |
-| [Development Roadmap](docs/15-development-roadmap.md) | Phases 1-7+ |
-| [Decision Log](docs/16-decision-log.md) | Architecture & product decisions |
-| [Open Issues](docs/17-open-issues.md) | Known risks and tech debt |
-| [Change Log](docs/18-changelog.md) | Chronological history |
-| [Pitch Deck Content](PITCH-DECK-CONTENT.md) | Complete pitch deck content for investor conversations |
-
----
+| Document | Contents |
+|---|---|
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | verified system design, data ownership, shim behavior |
+| [`SYSTEM.md`](SYSTEM.md) | operator handbook: environments, incidents, ops, troubleshooting |
+| [`docs/DATABASE-SETUP-RUNBOOK.md`](docs/DATABASE-SETUP-RUNBOOK.md) | ordered provisioning + RLS + restore + verification |
+| [`docs/19-phase1-audit.md`](docs/19-phase1-audit.md) | Phase 1 audit: defects found/fixed, known issues, Phase 2 plan |
+| [`docs/14-feature-status.md`](docs/14-feature-status.md) | feature matrix |
+| `docs/00…18-*.md` | product/architecture deep dives (older; verify against code) |
 
 ## Security
 
-- **RLS** on 20 tenant-protected tables (defense-in-depth)
-- **Application-level filtering** as primary data isolation
-- **OAuth tokens** encrypted with AES-256-GCM
-- **API keys** server-side only (never exposed to browser)
-- **Credit enforcement** — operations require sufficient credits (server-side)
-- **Audit logging** for admin operations
-- **Connection pooling** with circuit breaker prevents cascading failures
-
----
+- RLS on all tenant tables (`supabase-rls-fix.sql`; verified via runbook).
+- OAuth tokens encrypted (AES-256-GCM) before storage.
+- Server-only keys; anon key exposure is expected and policy-protected.
+- Admin routes gated by role metadata + email allowlist.
+- Rate limiting on AI/expensive endpoints; CAN-SPAM compliance on all sends.
+- Credit enforcement server-side per operation.
 
 ## License
 

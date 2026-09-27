@@ -10,34 +10,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { createClient } from "@supabase/supabase-js";
-
-// ── Stage definitions — single source of truth ──
-export const PIPELINE_STAGES = [
-  { id: "discovered",    label: "Discovered",    color: "bg-gray-400",    description: "Found in database" },
-  { id: "qualified",     label: "Qualified",     color: "bg-blue-500",    description: "Reviewed and looks relevant" },
-  { id: "researching",   label: "Researching",   color: "bg-indigo-500",  description: "Deep research in progress" },
-  { id: "outreach",      label: "Outreach Ready", color: "bg-lime-500",   description: "Ready to contact" },
-  { id: "contacted",     label: "Contacted",     color: "bg-purple-500",  description: "First email sent" },
-  { id: "meeting",       label: "Meeting",       color: "bg-amber-500",   description: "Meeting scheduled or held" },
-  { id: "follow_up",     label: "Follow-up",     color: "bg-orange-500",  description: "Post-meeting follow-up" },
-  { id: "due_diligence", label: "Due Diligence", color: "bg-cyan-500",    description: "Investor is diligencing" },
-  { id: "term_sheet",    label: "Term Sheet",    color: "bg-green-600",   description: "Term sheet received" },
-  { id: "closed",        label: "Closed",        color: "bg-green-700",   description: "Investment closed" },
-  { id: "passed",        label: "Passed",        color: "bg-red-400",     description: "Investor passed or not a fit" },
-] as const;
-
-export type PipelineStageId = (typeof PIPELINE_STAGES)[number]["id"];
-
-// Maps outreach_readiness → pipeline_stage for migration/fallback
-const READINESS_TO_STAGE: Record<string, PipelineStageId> = {
-  not_ready:            "discovered",
-  needs_verification:   "qualified",
-  ready:                "outreach",
-  contacted:            "contacted",
-  do_not_contact:       "passed",
-  low_priority:         "discovered",
-  interested:           "meeting",
-};
+import {
+  PIPELINE_STAGES,
+  READINESS_TO_STAGE,
+  STAGE_TO_READINESS,
+  isPipelineStageId,
+  type PipelineStageId,
+} from "@/lib/services/pipeline/stages";
 
 function getSp() {
   return createClient(
@@ -183,10 +162,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "investorId and stage are required" }, { status: 400 });
     }
 
-    const validStage = PIPELINE_STAGES.find((s) => s.id === stage);
-    if (!validStage) {
+    if (!isPipelineStageId(stage)) {
       return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
     }
+    const stageId: PipelineStageId = stage;
 
     // Try updating pipeline_stage first
     let hasPipelineStage = false;
@@ -197,23 +176,8 @@ export async function POST(request: NextRequest) {
       hasPipelineStage = false;
     }
 
-    // Map stage to outreach_readiness for fallback / always sync
-    const readinessMap: Record<string, string> = {
-      discovered:    "not_ready",
-      qualified:     "needs_verification",
-      researching:   "needs_verification",
-      outreach:      "ready",
-      contacted:     "contacted",
-      meeting:       "interested",
-      follow_up:     "contacted",
-      due_diligence: "interested",
-      term_sheet:    "interested",
-      closed:        "contacted",
-      passed:        "do_not_contact",
-    };
-
     const updateData: Record<string, string> = {
-      outreach_readiness: readinessMap[stage] || "not_ready",
+      outreach_readiness: STAGE_TO_READINESS[stageId],
     };
 
     if (hasPipelineStage) {
@@ -227,17 +191,16 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    // Log the stage change (optional — non-fatal if table doesn't exist)
-    try {
-      await sp.from("pipeline_events").insert({
-        investor_id: investorId,
-        user_id: user.id,
-        from_stage: null,
-        to_stage: stage,
-        created_at: new Date().toISOString(),
-      });
-    } catch {
-      // pipeline_events table not yet created — non-critical
+    // Log the stage change — non-critical if the events table isn't provisioned yet
+    const eventResult = await sp.from("pipeline_events").insert({
+      investor_id: investorId,
+      user_id: user.id,
+      from_stage: null,
+      to_stage: stage,
+      created_at: new Date().toISOString(),
+    });
+    if (eventResult.error && process.env.NODE_ENV !== "production") {
+      console.warn("[pipeline] event log skipped:", eventResult.error.message);
     }
 
     return NextResponse.json({ success: true, investorId, stage });
