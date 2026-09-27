@@ -248,18 +248,25 @@ export async function POST(request: NextRequest) {
         geography: profile.location || "",
       };
 
-      // Get active investors from Supabase — only the columns scoring needs
+      // Score one page at a time — Supabase caps a single fetch at 1000 rows,
+      // and the client loops with nextOffset until done (keeps us well clear
+      // of serverless timeout limits regardless of table size).
+      const PAGE_SIZE = 1000;
+      const offset = Math.max(0, parseInt(body.offset) || 0);
+
       const { data: investors, error: investorsError } = await sp
         .from("investors")
         .select("id, investment_sectors, investment_stages, investment_geographies, country, email, linkedin_url, job_title, is_verified, min_check_size, max_check_size, last_investment_date, bio")
         .order("created_at")
-        .range(0, 4999);
+        .range(offset, offset + PAGE_SIZE - 1);
 
       if (investorsError) {
         console.error("Fit analysis batch fetch error:", investorsError);
         return NextResponse.json({ error: "Failed to load investors" }, { status: 500 });
       }
-      if (!investors?.length) return NextResponse.json({ error: "No investors found" }, { status: 404 });
+      if (!investors?.length) {
+        return NextResponse.json({ success: true, scored: 0, ready: 0, total: 0, done: true, nextOffset: offset });
+      }
 
       let ready = 0;
 
@@ -284,10 +291,25 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to save scores" }, { status: 500 });
       }
 
-      cache.invalidatePrefix("facets:");
-      cache.invalidate(userCacheKey(user.id, "cockpit"));
+      if (offset === 0) {
+        cache.invalidatePrefix("facets:");
+        cache.invalidate(userCacheKey(user.id, "cockpit"));
+      }
 
-      return NextResponse.json({ success: true, scored: rows.length, ready, total: rows.length });
+      const { count: totalInvestors } = await sp
+        .from("investors")
+        .select("id", { count: "exact", head: true });
+
+      const nextOffset = offset + rows.length;
+      return NextResponse.json({
+        success: true,
+        scored: rows.length,
+        ready,
+        total: rows.length,
+        totalInvestors: totalInvestors || rows.length,
+        nextOffset,
+        done: nextOffset >= (totalInvestors || 0),
+      });
     }
 
     if (action === "individual_score" || action === "ai_analysis") {

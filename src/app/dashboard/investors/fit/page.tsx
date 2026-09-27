@@ -92,17 +92,35 @@ export default function FitDashboardPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const [batchTotal, setBatchTotal] = useState(0);
+
   const runBatchScoring = async () => {
     setScoring(true);
     setScoredCount(0);
+    setBatchTotal(0);
     try {
-      const res = await fetch("/api/investors/fit-analysis", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "batch_score" }),
-      });
-      const data = await res.json();
-      setScoredCount(data.scored || 0);
+      // Score in server-sized pages until done, showing live progress
+      let offset = 0;
+      let done = false;
+      let scoredSoFar = 0;
+      while (!done) {
+        const res = await fetch("/api/investors/fit-analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "batch_score", offset }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          console.error("Batch scoring failed:", data.error || res.status);
+          break;
+        }
+        offset = data.nextOffset ?? offset + (data.scored || 0);
+        scoredSoFar += data.scored || 0;
+        setScoredCount(scoredSoFar);
+        if (data.totalInvestors) setBatchTotal(data.totalInvestors);
+        done = data.done !== false;
+        if (data.scored === 0) break; // safety: never loop forever
+      }
       // Reload data
       await loadData();
     } catch (err) {
@@ -145,7 +163,7 @@ export default function FitDashboardPage() {
         actions={
           <Button onClick={runBatchScoring} disabled={scoring} variant={scoring ? "outline" : "primary"}>
             {scoring ? (
-              <><i className="ri-loader-4-line animate-spin text-[16px] mr-[6px]"></i> Scoring...</>
+              <><i className="ri-loader-4-line animate-spin text-[16px] mr-[6px]"></i> Scoring{batchTotal ? ` ${scoredCount.toLocaleString()}/${batchTotal.toLocaleString()}` : "..."}</>
             ) : (
               <><i className="ri-radar-line text-[16px] mr-[6px]"></i> Run Fit Analysis</>
             )}
