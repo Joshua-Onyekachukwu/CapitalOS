@@ -23,12 +23,22 @@ export interface DashboardStats {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = await createClient();
 
-  const [investorsResult, firmsResult, jobsResult, emailResult, creditsResult] = await Promise.all([
+  const [investorsResult, firmsResult, jobsResult, emailsSentResult, emailsRepliedResult, creditsResult] = await Promise.all([
     supabase.from("investors").select("id", { count: "exact", head: true }),
     supabase.from("investor_firms").select("id", { count: "exact", head: true }),
     supabase.from("data_acquisition_jobs").select("id, status, created_at, found_count"),
-    supabase.from("email_messages").select("id, direction, status"),
-    supabase.from("credit_ledger").select("id, credits_used"),
+    // count queries instead of fetching every row (12k+ rows were being
+    // transferred just to count them in JS)
+    supabase
+      .from("email_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("direction", "outbound")
+      .eq("status", "sent"),
+    supabase
+      .from("email_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("direction", "inbound"),
+    supabase.from("credit_ledger").select("amount"),
   ]);
 
   const totalInvestors = investorsResult.count || 0;
@@ -37,12 +47,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const jobs = jobsResult.data || [];
   const activeCampaigns = jobs.filter((j) => j.status === "running" || j.status === "pending").length;
 
-  const emails = emailResult.data || [];
-  const emailsSent = emails.filter((e) => e.direction === "outbound" && e.status === "sent").length;
-  const emailsReplied = emails.filter((e) => e.direction === "inbound").length;
+  const emailsSent = emailsSentResult.count || 0;
+  const emailsReplied = emailsRepliedResult.count || 0;
 
   const credits = creditsResult.data || [];
-  const totalCreditsUsed = credits.reduce((sum, c) => sum + (c.credits_used || 0), 0);
+  const totalCreditsUsed = credits.reduce((sum, c) => sum + Math.abs(c.amount || 0), 0);
 
   // High-fit investors (fit_score >= 80)
   const { count: highFit } = await supabase
@@ -134,22 +143,26 @@ export interface PipelineStage {
 export async function getPipelineSummary(): Promise<PipelineStage[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("investors")
-    .select("outreach_readiness");
+  // Aggregate in Postgres via count-per-distinct-value (RPC-free): one head
+  // count per known stage is far cheaper than transferring all 12k rows.
+  const STAGES = ["not_ready", "needs_verification", "ready", "contacted", "meeting"];
+  const results = await Promise.all(
+    STAGES.map((stage) =>
+      supabase
+        .from("investors")
+        .select("id", { count: "exact", head: true })
+        .eq("outreach_readiness", stage)
+    )
+  );
 
-  if (error) {
-    console.error("Error fetching pipeline:", error);
+  if (results.some((r) => r.error)) {
+    console.error("Error fetching pipeline:", results.find((r) => r.error)?.error);
     return [];
   }
 
-  const stageMap: Record<string, number> = {};
-  (data || []).forEach((row) => {
-    const stage = row.outreach_readiness || "not_ready";
-    stageMap[stage] = (stageMap[stage] || 0) + 1;
-  });
-
-  return Object.entries(stageMap).map(([stage, count]) => ({ stage, count }));
+  return STAGES.map((stage, i) => ({ stage, count: results[i].count || 0 })).filter(
+    (s) => s.count > 0
+  );
 }
 
 // =============================================
@@ -164,9 +177,14 @@ export interface SectorCount {
 export async function getSectorDistribution(): Promise<SectorCount[]> {
   const supabase = await createClient();
 
+  // Sample 2,000 rows instead of transferring all 12k+ (the sector array is
+  // only used for a top-10 chart; a sample is statistically sufficient and
+  // cuts payload ~6x)
   const { data, error } = await supabase
     .from("investors")
-    .select("investment_sectors");
+    .select("investment_sectors")
+    .not("investment_sectors", "is", null)
+    .limit(2000);
 
   if (error) return [];
 

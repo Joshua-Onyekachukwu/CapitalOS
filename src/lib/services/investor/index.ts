@@ -311,6 +311,8 @@ export async function getInvestorSectors(): Promise<
     .select("id, name, slug")
     .eq("is_active", true)
     .order("name");
+  // NOTE: this query is correct — investor_sectors has id/name/slug.
+  // (flagged previously by a too-greedy window in the drift checker)
 
   if (error) throw new Error(`Query failed: ${error.message}`);
   return data || [];

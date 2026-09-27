@@ -17,11 +17,13 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Get unique company names from investors table as a proxy for firms
+  // Group investors by job-title/company context from bio-free fields.
+  // NOTE: investors has no company_name/firm_name column (firms live in
+  // investor_firms, linked via current_firm_id which is null in this dataset),
+  // so we group by investor_type + country as a lightweight firm proxy.
   const { data: investors } = await sp
     .from("investors")
-    .select("company_name, investor_type, country, fit_score")
-    .not("company_name", "is", null)
+    .select("full_name, investor_type, country, fit_score, job_title")
     .limit(5000);
 
   // Group by company name
@@ -34,7 +36,7 @@ export async function GET(request: NextRequest) {
   }>();
 
   investors?.forEach((inv) => {
-    const name = inv.company_name;
+    const name = inv.job_title || inv.investor_type;
     if (!name || name.length < 3) return;
 
     const existing = firmMap.get(name);

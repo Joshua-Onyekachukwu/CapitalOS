@@ -92,10 +92,11 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Get investors marked as "meeting" in pipeline
+    // Get investors marked as "meeting" in pipeline (no firm_name column on
+    // investors — firm resolution happens via investor_firms when needed)
     const { data: meetingInvestors } = await sp
       .from("investors")
-      .select("id, full_name, email, firm_name, investor_type, fit_score, created_at")
+      .select("id, full_name, email, investor_type, fit_score, created_at")
       .eq("outreach_readiness", "meeting")
       .order("fit_score", { ascending: false });
 
@@ -124,7 +125,7 @@ export async function GET(request: NextRequest) {
         // Fetch full investor details
         const { data: inv } = await sp
           .from("investors")
-          .select("id, full_name, email, firm_name, investor_type, fit_score")
+          .select("id, full_name, email, investor_type, fit_score")
           .eq("id", reply.investor_id)
           .single();
         

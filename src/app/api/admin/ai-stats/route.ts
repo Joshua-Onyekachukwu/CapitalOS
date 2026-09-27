@@ -18,28 +18,30 @@ export async function GET(request: NextRequest) {
   );
 
   try {
-    // Get AI activity from credit_ledger or ai_activity tables
+    // Get AI activity from credit_ledger (real columns: operation, amount,
+    // tokens_used — there is no status column; 'errors' are proxied by
+    // refund-style positive amounts)
     const { data: activities } = await sp
       .from("credit_ledger")
-      .select("operation_type, credits_used, created_at")
+      .select("operation, amount, tokens_used, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
 
     const totalOperations = activities?.length || 0;
-    const creditsUsed = activities?.reduce((sum, a) => sum + (a.credits_used || 0), 0) || 0;
+    const creditsUsed = activities?.reduce((sum, a) => sum + Math.abs(a.amount || 0), 0) || 0;
 
-    // Model usage breakdown
+    // Model usage breakdown by operation
     const modelUsage: Record<string, number> = {};
     activities?.forEach((a) => {
-      const model = a.operation_type || "unknown";
+      const model = a.operation || "unknown";
       modelUsage[model] = (modelUsage[model] || 0) + 1;
     });
 
-    // Recent errors
+    // Recent "errors": refunds/credits (positive amounts) in the last 7 days
     const { count: recentErrors } = await sp
       .from("credit_ledger")
       .select("*", { count: "exact", head: true })
-      .eq("status", "failed")
+      .gt("amount", 0)
       .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
     return NextResponse.json({

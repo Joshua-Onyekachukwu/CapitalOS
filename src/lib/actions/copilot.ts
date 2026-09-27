@@ -44,7 +44,7 @@ async function buildContext(): Promise<string> {
   // ── Top investors by fit score ──
   const { data: topInvestors } = await sp
     .from("investors")
-    .select("full_name, investor_type, fit_score, email, company_name, country, investment_sectors, investment_stages, outreach_readiness")
+    .select("full_name, investor_type, fit_score, email, job_title, country, investment_sectors, investment_stages, outreach_readiness")
     .not("fit_score", "is", null)
     .order("fit_score", { ascending: false })
     .limit(15);
@@ -117,7 +117,7 @@ async function buildContext(): Promise<string> {
   // ── Startup profile ──
   const { data: profiles } = await sp
     .from("company_profiles")
-    .select("company_name, industry, company_stage, one_liner, currently_raising, funding_amount, round_type, city, country")
+    .select("company_name, industry, company_stage, one_liner, currently_raising, funding_amount, round_type, location")
     .limit(1);
   const profile = profiles?.[0];
 
@@ -125,7 +125,7 @@ async function buildContext(): Promise<string> {
   const investorList = topInvestors
     ?.map(
       (i) =>
-        `• ${i.full_name} — ${i.investor_type?.replace(/_/g, " ") || "Unknown"}${i.company_name ? ` at ${i.company_name}` : ""}${i.country ? `, ${i.country}` : ""} — fit: ${i.fit_score || 0}%${i.email ? " (has email)" : ""}`
+        `• ${i.full_name} — ${i.investor_type?.replace(/_/g, " ") || "Unknown"}${i.job_title ? ` (${i.job_title})` : ""}${i.country ? `, ${i.country}` : ""} — fit: ${i.fit_score || 0}%${i.email ? " (has email)" : ""}`
     )
     .join("\n") || "No scored investors yet.";
 
@@ -137,7 +137,7 @@ Description: ${profile.one_liner || "Not set"}
 Currently raising: ${profile.currently_raising ? "Yes" : "No"}
 Funding target: ${profile.funding_amount || "Not set"}
 Round type: ${profile.round_type || "Not set"}
-Location: ${profile.city || ""}${profile.country ? `, ${profile.country}` : ""}`
+Location: ${profile.location || ""}`
     : "No startup profile configured yet.";
 
   return `You are the Capital OS AI Copilot — an intelligent, experienced fundraising advisor embedded in the founder's workspace. You have direct access to their investor database, pipeline, and startup profile.

@@ -15,7 +15,7 @@ export async function GET(_request: NextRequest) {
     // Get investors in "meeting" or "interested" pipeline stage
     const { data, error } = await sp
       .from("investors")
-      .select("id, full_name, investor_type, fit_score, outreach_readiness, email, current_firm_id, company_name")
+      .select("id, full_name, investor_type, fit_score, outreach_readiness, email, current_firm_id")
       .in("outreach_readiness", ["contacted", "ready"])
       .order("fit_score", { ascending: false })
       .limit(50);
@@ -25,7 +25,7 @@ export async function GET(_request: NextRequest) {
     const investors = (data || []).map((inv) => ({
       id: inv.id,
       full_name: inv.full_name,
-      firm_name: inv.company_name || null,
+      firm_name: null,
       investor_type: inv.investor_type,
       fit_score: inv.fit_score,
       outreach_readiness: inv.outreach_readiness,

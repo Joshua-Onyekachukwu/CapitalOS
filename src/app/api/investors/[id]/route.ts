@@ -58,9 +58,11 @@ export async function GET(
     }
 
     // Filter similar investors by same type, excluding this one
+    // (no firm_name column on investors — firm name is resolved client-side
+    // from the `firm` object when current_firm_id is set)
     const { data: similarData } = await supabase
       .from("investors")
-      .select("id, full_name, investor_type, fit_score, firm_name, country, email")
+      .select("id, full_name, investor_type, fit_score, country, email")
       .eq("investor_type", investor.investor_type)
       .neq("id", id)
       .order("fit_score", { ascending: false })

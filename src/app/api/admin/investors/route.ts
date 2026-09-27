@@ -24,15 +24,18 @@ export async function GET(request: NextRequest) {
     let query = sp
       .from("investors")
       .select(
-        "id, full_name, company_name, investor_type, email, fit_score, investment_sectors, investment_stages, location, source, created_at",
+        "id, full_name, job_title, investor_type, email, fit_score, investment_sectors, investment_stages, location, source, created_at",
         { count: "exact" }
       );
 
-    // Apply search filter
+    // Apply search filter (only columns that exist on investors)
     if (search) {
-      query = query.or(
-        `full_name.ilike.%${search}%,company_name.ilike.%${search}%,email.ilike.%${search}%`
-      );
+      const safe = search.replace(/[,()]/g, " ").trim();
+      if (safe) {
+        query = query.or(
+          `full_name.ilike.%${safe}%,email.ilike.%${safe}%,job_title.ilike.%${safe}%`
+        );
+      }
     }
 
     // Apply type filter
