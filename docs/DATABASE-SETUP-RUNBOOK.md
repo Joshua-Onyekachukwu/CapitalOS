@@ -113,10 +113,20 @@ FROM company_profiles ORDER BY created_at DESC LIMIT 1;
 5. `/dashboard/investors` returns results (data restored).
 6. Log out → log back in → profile persists.
 
-**Status (2026-09-27):** production signup verified broken at the browser level
-(`ERR_NAME_NOT_RESOLVED` to the old dead project from the deployed bundle) →
-Phase E step 2 (Vercel redeploy) is the gate for this phase. Local + direct-API
-signup against the new project works (HTTP 200).
+**Status (2026-09-27): COMPLETE — full E2E passed on production.**
+Root cause of the outage: the Supabase env vars on Vercel still pointed at the
+dead project (git push alone never fixes baked `NEXT_PUBLIC_*` values — a
+redeploy is required). Fix applied via Vercel CLI: replaced
+`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` /
+`SUPABASE_SERVICE_ROLE_KEY` on the Production target, then
+`vercel redeploy <latest-prod-url> --target production`. Verified the new bundle
+embeds the new ref + anon key (chunk `(auth)/signup` → supabase client chunk).
+E2E on capital-os-nine.vercel.app with `buffy.qa+prod-e2e-20260927@gmail.com`:
+signup ✓ → email confirm via SQL (Supabase requires confirmation) → login ✓ →
+dashboard shows 12,203 investors ✓ → 7-step onboarding completed ✓ →
+investor search ("Point72" → 5 results) ✓ → pipeline move Discovered→Qualified
+✓ (DB-verified: `user_pipeline_entries` + `pipeline_events` rows for the prod
+user; note the stage-card counters lag until reload — server state is correct).
 
 **Known-good code path (verified in code, not yet against a live DB):**
 `onboarding/page.tsx` → `updateCompanyProfile()` server action →
