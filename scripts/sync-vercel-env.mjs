@@ -84,7 +84,12 @@ async function vercel(path, init) {
 
 async function listEnvs() {
   const data = await vercel(`/v9/projects/${PROJECT}/env?${teamQ}`, { headers: vercelHeaders });
-  return new Map((data.envs || []).map((e) => [e.key, e]));
+  const byKey = new Map();
+  for (const e of data.envs || []) {
+    if (!byKey.has(e.key)) byKey.set(e.key, []);
+    byKey.get(e.key).push(e);
+  }
+  return byKey;
 }
 
 function fingerprint() {
@@ -95,7 +100,7 @@ function fingerprint() {
 async function getStoredFingerprint() {
   try {
     const envs = await listEnvs();
-    const fpVar = envs.get(FINGERPRINT_VAR);
+    const fpVar = envs.get(FINGERPRINT_VAR)?.[0];
     return fpVar?.value ?? null; // plain type -> readable via API
   } catch {
     return null;
@@ -104,7 +109,7 @@ async function getStoredFingerprint() {
 
 async function storeFingerprint(fp) {
   const envs = await listEnvs();
-  const existing = envs.get(FINGERPRINT_VAR);
+  const existing = envs.get(FINGERPRINT_VAR)?.[0];
   const body = JSON.stringify({
     key: FINGERPRINT_VAR,
     value: fp,
@@ -127,32 +132,42 @@ async function storeFingerprint(fp) {
 }
 
 async function upsertEnvVars() {
-  // NOTE: POST with upsert=true does NOT overwrite an existing name+target
-  // combo (it 403s with ENV_ALREADY_EXISTS), so PATCH existing records by id
-  // and only POST-create when the key is entirely absent.
+  // Vercel keys one env RECORD per (name, target-set): PATCHing a
+  // production-only record to also target preview 400s when a separate
+  // preview record already exists, and POST with upsert=true 403s on any
+  // existing name+target combo. So: PATCH only when there is exactly one
+  // record already targeting [production, preview]; otherwise DELETE all
+  // records for the key and create one clean record covering both targets.
   const envs = await listEnvs();
+  const wantTargets = JSON.stringify(["production", "preview"]);
   for (const d of DESIRED) {
-    const existing = envs.get(d.key);
-    const payload = JSON.stringify({
-      value: d.value,
-      type: d.type,
-      target: ["production", "preview"],
-    });
-    if (existing?.id) {
-      await vercel(`/v9/projects/${PROJECT}/env/${existing.id}?${teamQ}`, {
+    const records = envs.get(d.key) || [];
+    const singleBoth =
+      records.length === 1 &&
+      JSON.stringify([...(records[0].target || [])].sort()) === wantTargets;
+
+    if (singleBoth) {
+      await vercel(`/v9/projects/${PROJECT}/env/${records[0].id}?${teamQ}`, {
         method: "PATCH",
         headers: vercelHeaders,
-        body: payload,
+        body: JSON.stringify({ value: d.value, type: d.type }),
       });
-      console.log(`  patched ${d.key} (value updated, targets -> production + preview)`);
-    } else {
-      await vercel(`/v9/projects/${PROJECT}/env?${teamQ}`, {
-        method: "POST",
-        headers: vercelHeaders,
-        body: JSON.stringify({ key: d.key, ...JSON.parse(payload) }),
-      });
-      console.log(`  created ${d.key} (production + preview)`);
+      console.log(`  patched ${d.key} (value updated)`);
+      continue;
     }
+
+    for (const r of records) {
+      await vercel(`/v9/projects/${PROJECT}/env/${r.id}?${teamQ}`, {
+        method: "DELETE",
+        headers: vercelHeaders,
+      });
+    }
+    await vercel(`/v9/projects/${PROJECT}/env?${teamQ}`, {
+      method: "POST",
+      headers: vercelHeaders,
+      body: JSON.stringify({ key: d.key, value: d.value, type: d.type, target: ["production", "preview"] }),
+    });
+    console.log(`  recreated ${d.key} as a single production+preview record (was ${records.length} record(s))`);
   }
 }
 
