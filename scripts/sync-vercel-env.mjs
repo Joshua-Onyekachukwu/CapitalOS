@@ -127,13 +127,32 @@ async function storeFingerprint(fp) {
 }
 
 async function upsertEnvVars() {
+  // NOTE: POST with upsert=true does NOT overwrite an existing name+target
+  // combo (it 403s with ENV_ALREADY_EXISTS), so PATCH existing records by id
+  // and only POST-create when the key is entirely absent.
+  const envs = await listEnvs();
   for (const d of DESIRED) {
-    await vercel(`/v9/projects/${PROJECT}/env?${teamQ}&upsert=true`, {
-      method: "POST",
-      headers: vercelHeaders,
-      body: JSON.stringify({ key: d.key, value: d.value, type: d.type, target: ["production", "preview"] }),
+    const existing = envs.get(d.key);
+    const payload = JSON.stringify({
+      value: d.value,
+      type: d.type,
+      target: ["production", "preview"],
     });
-    console.log(`  upserted ${d.key} (production + preview)`);
+    if (existing?.id) {
+      await vercel(`/v9/projects/${PROJECT}/env/${existing.id}?${teamQ}`, {
+        method: "PATCH",
+        headers: vercelHeaders,
+        body: payload,
+      });
+      console.log(`  patched ${d.key} (value updated, targets -> production + preview)`);
+    } else {
+      await vercel(`/v9/projects/${PROJECT}/env?${teamQ}`, {
+        method: "POST",
+        headers: vercelHeaders,
+        body: JSON.stringify({ key: d.key, ...JSON.parse(payload) }),
+      });
+      console.log(`  created ${d.key} (production + preview)`);
+    }
   }
 }
 
