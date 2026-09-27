@@ -52,7 +52,20 @@ export async function GET(request: NextRequest) {
 
     // Helper to apply common filters
     const applyFilters = (q: any) => {
-      if (search) q = q.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,job_title.ilike.%${search}%,firm_name.ilike.%${search}%`);
+      // NOTE: only columns that actually exist on `investors` — referencing a
+      // phantom column (e.g. firm_name) makes PostgREST reject the whole .or()
+      // with 42703, which surfaced as "0 results for every search". Firm search
+      // would need an embedded-resource query on investor_firms; this dataset
+      // has no firm names on investor rows (current_firm_id is null).
+      // Commas/parens are stripped: they would break the .or() list syntax.
+      if (search) {
+        const safe = search.replace(/[,()]/g, " ").trim();
+        if (safe) {
+          q = q.or(
+            `full_name.ilike.%${safe}%,email.ilike.%${safe}%,job_title.ilike.%${safe}%,bio.ilike.%${safe}%`
+          );
+        }
+      }
       if (type) q = q.eq("investor_type", type);
       if (country) q = q.ilike("country", `%${country}%`);
       if (city) q = q.ilike("city", `%${city}%`);
@@ -88,6 +101,12 @@ export async function GET(request: NextRequest) {
     ]);
 
     const { count } = countResult;
+    if (countResult.error) {
+      // A failed count previously fell through as `undefined` → UI showed a
+      // misleading "0 total". Fail loudly instead.
+      console.error("Supabase count query error:", countResult.error);
+      return NextResponse.json({ error: "Failed to count investors" }, { status: 500 });
+    }
     const { data: investors, error } = dataResult;
 
     if (error) {
