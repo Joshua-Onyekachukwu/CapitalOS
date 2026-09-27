@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const reply = await chatWithCopilot(messages);
+    const reply = await chatWithCopilot(messages, user.id);
     return NextResponse.json({ reply });
   } catch (err) {
     return NextResponse.json(

@@ -230,11 +230,12 @@ export async function POST(request: NextRequest) {
     );
 
     if (action === "batch_score") {
-      // Get startup profile from Supabase
+      // Get the CALLING USER's startup profile (service-role client bypasses
+      // RLS — an unscoped read would score against another tenant's profile)
       const { data: profiles } = await sp
         .from("company_profiles")
         .select("*")
-        .order("created_at", { ascending: false })
+        .eq("user_id", user.id)
         .limit(1);
 
       if (!profiles?.length) {
@@ -324,11 +325,11 @@ export async function POST(request: NextRequest) {
 
       if (invError || !investor) return NextResponse.json({ error: "Investor not found" }, { status: 404 });
 
-      // Get startup profile from Supabase
+      // Get the CALLING USER's startup profile (service-role client bypasses RLS)
       const { data: profiles } = await sp
         .from("company_profiles")
         .select("*")
-        .order("created_at", { ascending: false })
+        .eq("user_id", user.id)
         .limit(1);
 
       if (!profiles?.length) {

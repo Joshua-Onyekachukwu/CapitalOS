@@ -15,7 +15,7 @@ export interface CopilotMessage {
  * Build comprehensive context about the user's account, investors, and pipeline
  * so the AI can give specific, actionable answers.
  */
-async function buildContext(): Promise<string> {
+async function buildContext(userId: string): Promise<string> {
   const sp = (await import("@supabase/supabase-js")).createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -87,21 +87,23 @@ async function buildContext(): Promise<string> {
     .map(([name, count]) => `${name} (${count})`)
     .join(", ");
 
-  // ── Recent outreach activity ──
+  // ── Recent outreach activity (scoped to the calling user) ──
   let emailMessages = 0;
   try {
     const { count } = await sp
       .from("email_messages")
-      .select("*", { count: "exact", head: true });
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
     emailMessages = count || 0;
   } catch { /* table may not exist */ }
 
-  // ── Campaigns ──
+  // ── Campaigns (scoped to the calling user) ──
   let campaigns = 0;
   try {
     const { count } = await sp
       .from("campaigns")
-      .select("*", { count: "exact", head: true });
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
     campaigns = count || 0;
   } catch { /* table may not exist */ }
 
@@ -110,14 +112,17 @@ async function buildContext(): Promise<string> {
   try {
     const { count } = await sp
       .from("saved_investors")
-      .select("*", { count: "exact", head: true });
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
     savedCount = count || 0;
   } catch { /* table may not exist */ }
 
-  // ── Startup profile ──
+  // ── Startup profile (scoped to the calling user — service-role client
+  // bypasses RLS, so an unscoped read here leaked other users' profiles) ──
   const { data: profiles } = await sp
     .from("company_profiles")
     .select("company_name, industry, company_stage, one_liner, currently_raising, funding_amount, round_type, location")
+    .eq("user_id", userId)
     .limit(1);
   const profile = profiles?.[0];
 
@@ -214,13 +219,10 @@ When relevant, guide the user to the right page:
 
 /**
  * Main copilot chat function — builds context and calls AI
- */
-export async function chatWithCopilot(
-  messages: CopilotMessage[]
-): Promise<string> {
+ */export async function chatWithCopilot(messages: CopilotMessage[], userId: string): Promise<string> {
   try {
     console.log("[Copilot] Building context...");
-    const context = await buildContext();
+    const context = await buildContext(userId);
     console.log("[Copilot] Context built, length:", context.length, "chars");
 
     const { chatCompletion } = await import("@/lib/ai");
