@@ -18,21 +18,9 @@ interface InvestorCandidate {
   country: string | null;
   investment_sectors: string[] | null;
   investment_stages: string[] | null;
-}  type Step = "details" | "investors" | "emails" | "sequence" | "launch";
+}
 
-  // Follow-up sequence state
-  const [sequenceName, setSequenceName] = useState("");
-  const [sequenceSteps, setSequenceSteps] = useState<Array<{
-    step_type: string;
-    subject_template: string;
-    body_template: string;
-    delay_days: number;
-    tone: string;
-  }>>([
-    { step_type: "initial", subject_template: "", body_template: "", delay_days: 0, tone: "professional" },
-  ]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [stopOnReply, setStopOnReply] = useState(true);
+type Step = "details" | "investors" | "emails" | "sequence" | "launch";
 
 export default function NewCampaignPage() {
   const router = useRouter();
@@ -56,6 +44,20 @@ export default function NewCampaignPage() {
   // Email generation
   const [generatingEmails, setGeneratingEmails] = useState(false);
   const [generatedCount, setGeneratedCount] = useState(0);
+
+  // Follow-up sequence state
+  const [sequenceName, setSequenceName] = useState("");
+  const [sequenceSteps, setSequenceSteps] = useState<Array<{
+    step_type: string;
+    subject_template: string;
+    body_template: string;
+    delay_days: number;
+    tone: string;
+  }>>([
+    { step_type: "initial", subject_template: "", body_template: "", delay_days: 0, tone: "professional" },
+  ]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [stopOnReply, setStopOnReply] = useState(true);
 
   const steps: { id: Step; label: string; icon: string }[] = [
     { id: "details", label: "Campaign Details", icon: "ri-edit-line" },
