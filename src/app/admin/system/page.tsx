@@ -78,7 +78,6 @@ export default function AdminSystemPage() {
               { name: "AI Service", key: "ai" as const, desc: "NVIDIA NIM API" },
               { name: "Email", key: "email" as const, desc: "Gmail / SMTP" },
               { name: "Storage", key: "storage" as const, desc: "Supabase Storage" },
-              { name: "Convex", key: "database" as const, desc: "Real-time database" },
             ].map((service) => (
               <div key={service.name} className="flex items-center gap-[12px] p-[16px] border border-gray-100 dark:border-gray-800 rounded-[8px]">
                 <div className={`w-[36px] h-[36px] rounded-full flex items-center justify-center ${statusColor(status[service.key])}`}>
@@ -112,7 +111,6 @@ export default function AdminSystemPage() {
                 { label: "Uptime", value: status.uptime },
                 { label: "Framework", value: "Next.js 15" },
                 { label: "Database", value: "Supabase (PostgreSQL)" },
-                { label: "Real-time", value: "Convex" },
                 { label: "Hosting", value: "Vercel" },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
