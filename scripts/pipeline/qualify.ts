@@ -56,8 +56,8 @@ function blobText(payload: Record<string, unknown>): string {
 
 export interface QualifyInputs {
   source: SourceRecord;
-  tier1: Tier1Verdict | null;
-  tier2: Tier2Qualification | null;
+  tier1?: Tier1Verdict | null;
+  tier2?: Tier2Qualification | null;
   /** existing canonical names for the duplicate-risk penalty heuristic */
   fuzzyDupSignal?: number; // 0..1, 0 = unique
 }

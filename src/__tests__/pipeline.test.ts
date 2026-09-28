@@ -109,7 +109,7 @@ describe("quality score", () => {
 
 describe("dedup", () => {
   const rec = (over: Partial<InvestorRecord>): InvestorRecord => ({
-    id: "x", canonical_name: "test capital", legal_name: "Test Capital", investor_type: "vc",
+    id: "x", canonical_name: "test capital", legal_name: "Test Capital", investor_type: "venture_capital",
     website: null, linkedin_url: null, twitter_url: null, crunchbase_url: null, email: null,
     country: null, city: null, region: null, geographies: [], stages: [], sectors: [],
     min_check_usd: null, max_check_usd: null, thesis: null, portfolio: [], is_active: true,
