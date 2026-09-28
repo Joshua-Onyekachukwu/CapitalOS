@@ -163,6 +163,43 @@ export interface GeoResult {
   region: Geography | null;
 }
 
+/** IAPD monthly reports use two-letter state codes ("CA", "NY"). */
+const STATE_ABBREV = new Set([
+  "al","ak","az","ar","ca","co","ct","de","fl","ga","hi","id","il","in","ia","ks","ky",
+  "la","me","md","ma","mi","mn","ms","mo","mt","ne","nv","nh","nj","nm","ny","nc",
+  "nd","oh","ok","or","pa","ri","sc","sd","tn","tx","ut","vt","va","wa","wv","wi",
+  "wy","dc","pr",
+]);
+
+/** Normalize from separate city/state/country parts (IAPD report shape). */
+export function normalizeGeoParts(
+  city: string | null | undefined,
+  state: string | null | undefined,
+  country: string | null | undefined
+): GeoResult {
+  const c = (country || "").trim().toLowerCase() || null;
+  let region = c ? COUNTRY_TO_REGION[c] || null : null;
+  let cityT = city ? titleCase(city.trim()) : null;
+  const st = (state || "").trim().toLowerCase();
+  if (!region && st) {
+    if (STATE_ABBREV.has(st) || US_STATES.has(st)) region = "north_america";
+  }
+  if (!cityT && st && US_STATES.has(st)) cityT = titleCase(st);
+  return {
+    country: c ? titleCase(c) : null,
+    city: cityT,
+    region,
+  };
+}
+
+/** Excel serial date (days since 1899-12-30) → ISO yyyy-mm-dd. */
+export function excelSerialToISO(v: string | null | undefined): string | null {
+  if (!v || !/^\d{5}(\.\d+)?$/.test(v)) return null;
+  const serial = parseFloat(v);
+  const ms = Date.UTC(1899, 11, 30) + serial * 86_400_000;
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
 export function normalizeGeography(
   rawLocation: string | null | undefined,
   rawCountry: string | null | undefined

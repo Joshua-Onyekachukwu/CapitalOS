@@ -17,9 +17,11 @@ import {
   canonicalizeName,
   classifyTypeFromText,
   dedupe,
+  excelSerialToISO,
   extractSectors,
   extractStages,
   normalizeEmail,
+  normalizeGeoParts,
   normalizeGeography,
   normalizeWebsite,
   parseCheckSize,
@@ -48,10 +50,20 @@ function displayName(payload: Record<string, unknown>): string | null {
 }
 
 function blobText(payload: Record<string, unknown>): string {
-  return Object.entries(payload)
-    .filter(([, v]) => typeof v === "string")
-    .map(([k, v]) => `${k}: ${v}`)
-    .join(". ");
+  const parts: string[] = [];
+  for (const [k, v] of Object.entries(payload)) {
+    if (typeof v === "string" && v.trim()) parts.push(`${k}: ${v}`);
+  }
+  // Flatten the compact raw source snapshot (IAPD monthly reports keep a
+  // truncated column map under `raw`) so deterministic patterns and the AI
+  // see every short field, not just the mapped ones.
+  const raw = payload.raw;
+  if (raw && typeof raw === "object") {
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof v === "string" && v.trim()) parts.push(`${k}: ${v}`);
+    }
+  }
+  return parts.join(". ");
 }
 
 export interface QualifyInputs {
@@ -79,7 +91,15 @@ export function qualify(inputs: QualifyInputs): QualifyResult {
   const blob = blobText(payload);
   const website = normalizeWebsite(payload.website as string);
   const email = normalizeEmail(payload.email as string);
-  const geo = normalizeGeography(payload.location as string, payload.country as string);
+  // IAPD monthly reports provide separate city/state/country parts;
+  // other sources may provide a single location string.
+  const geo = payload.location_city || payload.location_state
+    ? normalizeGeoParts(
+        payload.location_city as string,
+        payload.location_state as string,
+        payload.location_country as string
+      )
+    : normalizeGeography(payload.location as string, payload.country as string);
 
   // AI gate: tier1 must affirm investor status when it ran. If AI was
   // unavailable (no key / provider outage) we proceed on deterministic
@@ -90,19 +110,37 @@ export function qualify(inputs: QualifyInputs): QualifyResult {
   }
 
   // Deterministic type classification, refined by AI verdict when present.
-  const kindType = source.kind === "iapd_ecr" ? { type: "angel" as const, confidence: 0.9 } : null;
+  // The AI verdict is only accepted when it uses OUR controlled vocabulary —
+  // free-text types ("Registered Investment Adviser") never leak through.
+  const VALID_TYPES: readonly string[] = [
+    "venture_capital", "angel", "angel_syndicate", "family_office", "corporate_vc",
+    "accelerator", "incubator", "micro_vc", "growth_equity", "private_equity",
+    "government_fund", "university_fund", "other",
+  ];
+  // Exempt reporting advisers (iapd_ecr) are mostly emerging private-fund
+  // managers — VC, PE, real estate, crypto funds. A hardcoded type would
+  // mislabel them; use a weak angel prior only when AI and text signals are
+  // both unavailable (confidence below both, so it never overrides).
+  const kindType = source.kind === "iapd_ecr" ? { type: "angel" as const, confidence: 0.5 } : null;
   const textType = classifyTypeFromText(blob, name);
-  const aiType = tier1?.investor_type
-    ? ({ type: tier1.investor_type, confidence: 0.8 } as { type: any; confidence: number })
-    : null;
+  const aiType =
+    tier1?.investor_type && VALID_TYPES.includes(tier1.investor_type)
+      ? { type: tier1.investor_type as InvestorType, confidence: 0.8 }
+      : null;
   const chosenType = kindType?.confidence && kindType.confidence >= (aiType?.confidence ?? 0)
     ? kindType
     : aiType && aiType.confidence > textType.confidence
       ? aiType
       : textType;
 
-  // Startup-relevance gate: institutional 'other' advisers with no startup
-  // signal and no rich text are not worth DB space at scale.
+  // Startup-relevance gate (§16): 'other' classifications are only kept
+  // when there is real startup/venture signal in the text. A registered
+  // adviser with no venture language and no website is not investor
+  // intelligence — it is noise. This gate runs BEFORE the AI acceptance so
+  // an ambiguous AI type cannot rescue a record the deterministic signals
+  // already failed.
+  const hasVentureSignal =
+    /\bventure\b|\bstartup\b|\bseed\b|\bearly[- ]stage\b|\bseries a\b|\bfounders?\b/i.test(blob);
   const startupSignal =
     chosenType.type === "venture_capital" ||
     chosenType.type === "angel" ||
@@ -111,8 +149,8 @@ export function qualify(inputs: QualifyInputs): QualifyResult {
     chosenType.type === "angel_syndicate" ||
     chosenType.type === "corporate_vc" ||
     chosenType.type === "family_office" ||
-    /\bventure\b|\bstartup\b|\bseed\b|\bearly stage\b/i.test(blob);
-  if (!startupSignal && chosenType.type === "other" && chosenType.confidence < 0.5 && !website) {
+    hasVentureSignal;
+  if (!startupSignal && chosenType.type === "other") {
     return { outcome: "rejected", reason: "insufficient_startup_signal" };
   }
 
@@ -138,8 +176,12 @@ export function qualify(inputs: QualifyInputs): QualifyResult {
     .slice(0, 30)
     .map((c) => ({ company: c.trim(), source_url: source.source_url }));
 
-  // Latest known activity signal for IAPD records: the filing date itself.
-  const filingDate = typeof payload.filing_date === "string" ? payload.filing_date : null;
+  // Latest known activity signal for IAPD records: the filing date itself
+  // (Excel serial dates in the monthly reports are converted to ISO).
+  const filingDate =
+    typeof payload.filing_date === "string"
+      ? excelSerialToISO(payload.filing_date) || payload.filing_date
+      : null;
   const fiveYearsAgo = Date.now() - 5 * 365 * 86_400_000;
   const is_active = filingDate
     ? new Date(filingDate).getTime() > fiveYearsAgo

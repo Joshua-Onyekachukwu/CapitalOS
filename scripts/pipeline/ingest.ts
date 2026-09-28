@@ -39,10 +39,30 @@ export interface IngestResult {
   errors: string[];
 }
 
+/** Pipeline type vocabulary → investors.investor_type enum (DB constraint).
+ *  'other' has no honest enum equivalent — the closest is strategic_investor,
+ *  but those records should be rare because the startup-signal gate rejects
+ *  noise before ingest. */
+const DB_TYPE: Record<string, string> = {
+  venture_capital: "venture_capital",
+  angel: "angel_investor",
+  angel_syndicate: "angel_syndicate",
+  family_office: "family_office",
+  corporate_vc: "corporate_venture",
+  accelerator: "accelerator",
+  incubator: "incubator",
+  micro_vc: "micro_vc",
+  growth_equity: "private_equity",
+  private_equity: "private_equity",
+  government_fund: "government_fund",
+  university_fund: "university_fund",
+  other: "strategic_investor",
+};
+
 function toInvestorRow(rec: InvestorRecord) {
   return {
     full_name: rec.legal_name || rec.canonical_name,
-    investor_type: rec.investor_type || "other",
+    investor_type: DB_TYPE[rec.investor_type || "other"] || "strategic_investor",
     investment_stages: rec.stages,
     investment_sectors: rec.sectors,
     investment_geographies: rec.geographies,
@@ -67,7 +87,7 @@ function toInvestorRow(rec: InvestorRecord) {
 function toRawRecord(rec: InvestorRecord, batch: string) {
   return {
     raw_data: rec as unknown as Record<string, unknown>,
-    source_type: "pipeline",
+    source_type: "public_records",
     source_provider: rec.source_provider,
     source_url: rec.source_url,
     import_job_id: null,
@@ -88,7 +108,9 @@ export async function ingestQualified(
   let skipped = 0;
 
   const capped = records.length > maxRows;
-  const slice = records.slice(0, maxRows);
+  // Defensive: 'other' records should have been rejected upstream by the
+  // startup-signal gate; never let an unclassified type reach the DB.
+  const slice = records.filter((r) => r.investor_type && r.investor_type !== "other").slice(0, maxRows);
 
   if (opts.dryRun) {
     return { staged: slice.length, inserted: 0, skipped: 0, capped, errors: ["dry-run"] };

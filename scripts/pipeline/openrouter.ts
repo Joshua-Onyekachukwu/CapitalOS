@@ -18,13 +18,13 @@
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-const TIER1_MODELS = ["meta-llama/llama-3.1-8b-instruct", "google/gemini-flash-1.5"];
+const TIER1_MODELS = ["meta-llama/llama-3.1-8b-instruct", "google/gemini-2.0-flash-001"];
 const TIER2_MODELS = ["anthropic/claude-3.5-haiku", "openai/gpt-4o-mini"];
 
 /** $/1M tokens (prompt, completion) — kept here for cost accounting. */
 export const MODEL_PRICES: Record<string, [number, number]> = {
   "meta-llama/llama-3.1-8b-instruct": [0.06, 0.06],
-  "google/gemini-flash-1.5": [0.075, 0.3],
+  "google/gemini-2.0-flash-001": [0.1, 0.4],
   "anthropic/claude-3.5-haiku": [0.8, 4],
   "openai/gpt-4o-mini": [0.15, 0.6],
 };
@@ -131,8 +131,11 @@ export interface Tier1Verdict {
 const TIER1_SYSTEM = `You classify raw business records for a fundraising platform.
 Decide whether the record describes an entity that INVESTS in companies or startups
 (VC fund, angel, family office, corporate VC, accelerator, micro-VC, growth/PE fund,
-government or university fund). Registered investment advisers that only manage money
-for private clients may still count if they plausibly back startups.
+government or university fund). Registered investment advisers that manage funds or
+back startups count. Broker-dealers and pure wealth managers do NOT.
+If it is an investor, classify investor_type as EXACTLY one of: venture_capital, angel,
+angel_syndicate, family_office, corporate_vc, accelerator, incubator, micro_vc,
+growth_equity, private_equity, government_fund, university_fund, other.
 Respond with ONLY JSON: {"is_investor_entity": boolean, "investor_type": string|null, "reason": "max 15 words"}`;
 
 export async function tier1Classify(
