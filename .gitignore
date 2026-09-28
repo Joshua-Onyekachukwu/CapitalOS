@@ -83,3 +83,7 @@ data/investors/edgar-progress.json
 data/investors/*.log
 data/investors/edgar-run-console.log
 data/investors/snapshots/*.jsonl.gz
+
+# Pipeline data lake (raw staging; reproducible, do not commit)
+data/pipeline/
+data/iapd/
