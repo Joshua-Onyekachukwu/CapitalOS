@@ -1,21 +1,24 @@
 name: IAPD Acquisition
 
-# Fetches the SEC IAPD "ADV Base" compilation (registered investment
-# advisers) on US-hosted runners — SEC properties block non-US traffic,
-# so this cannot run from every development machine. The artifact it
-# uploads is the raw data-lake input for scripts/pipeline/run-batch.ts.
+# Fetches the SEC's monthly Investment Adviser Information Reports on
+# US-hosted runners (SEC properties block non-US traffic, so this cannot
+# run from every development machine). Two files per month:
+#   - Registered Investment Advisers (~5MB)
+#   - Exempt Reporting Advisers (~0.8MB)
+# Each unzips to a spreadsheet of Form ADV data (identity, registration,
+# business, AUM, employees...). We download both, parse rows into JSONL,
+# and upload a raw artifact that scripts/pipeline/run-batch.ts consumes.
 #
-# The SEC relocates the compilation file periodically; we probe recent
-# publication dates (weekly cadence) and take the first that resolves.
-# Public, unauthenticated data; rate-limit-friendly (single download).
+# Source listing: https://www.sec.gov/data-research/sec-markets-data/
+#   information-about-registered-investment-advisers-exempt-reporting-advisers
 
 on:
   workflow_dispatch:
     inputs:
       limit:
-        description: "Max adviser records to emit into the raw JSONL"
+        description: "Max rows per file to emit into the raw JSONL"
         required: false
-        default: "100"
+        default: "120"
 
 concurrency:
   group: iapd-acquire
@@ -32,96 +35,50 @@ jobs:
         with:
           node-version: 22
 
-      - name: Resolve latest IAPD compilation
-        id: resolve
+      - name: Install xlsx parser
+        run: npm install --no-save xlsx@0.18.5
+
+      - name: Discover latest report URLs
+        id: discover
         run: |
           set -e
-          # Probe back ~5 weeks of weekly publication dates.
-          for i in 0 1 2 3 4 5; do
-            D=$(date -d "-$i week last friday" +%Y_%m_%d 2>/dev/null || date -v-${i}w +%Y_%m_%d)
-            URL="https://reports.adviserinfo.sec.gov/reports/CompilationReps/ADV_Base_A_${D}.zip"
-            CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$URL" || echo 000)
-            echo "probe $D → $CODE"
-            if [ "$CODE" = "200" ]; then
-              echo "url=$URL" >> "$GITHUB_OUTPUT"
-              echo "date=$D" >> "$GITHUB_OUTPUT"
-              break
-            fi
-          done
+          LISTING="https://www.sec.gov/data-research/sec-markets-data/information-about-registered-investment-advisers-exempt-reporting-advisers"
+          curl -sS --max-time 60 -A "CapitalOS Pipeline admin@capital-os.example" "$LISTING" -o listing.html
+          echo "listing bytes: $(wc -c < listing.html)"
+          # The page links the monthly zips; pull the most recent RIAdvisers and ERAdvisers hrefs.
+          node - <<'EOF'
+          const fs = require("fs");
+          const html = fs.readFileSync("listing.html", "utf8");
+          const hrefs = [...html.matchAll(/href="([^"]+\.zip)"/gi)].map(m => m[1]);
+          const abs = hrefs.map(h => new URL(h, "https://www.sec.gov").toString());
+          const ria = abs.find(u => /ria\d{6}|registered/i.test(u)) || abs[0];
+          const era = abs.find(u => /era\d{6}|exempt/i.test(u)) || abs[1];
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `ria=${ria}\nera=${era}\n`);
+          console.log("RIA:", ria);
+          console.log("ERA:", era);
+          if (!ria || !era) { console.error("no zip links found"); process.exit(3); }
+          EOF
 
-      - name: Download and extract
-        if: steps.resolve.outputs.url != ''
-        run: |
-          set -e
-          curl -sS --max-time 300 -o iapd.zip "${{ steps.resolve.outputs.url }}"
-          unzip -o iapd.zip -d iapd_raw
-          ls -la iapd_raw
-
-      - name: Emit raw JSONL (limit=${{ github.event.inputs.limit }})
-        if: steps.resolve.outputs.url != ''
+      - name: Download and convert to JSONL
+        env:
+          RIA_URL: ${{ steps.discover.outputs.ria }}
+          ERA_URL: ${{ steps.discover.outputs.era }}
+          ROW_LIMIT: ${{ github.event.inputs.limit }}
         run: |
           set -e
           mkdir -p out
-          node - <<'EOF'
-          const fs = require("fs");
-          const LIMIT = parseInt(process.argv[2] || "100", 10);
-          // IAPD compilations ship XML; emit a JSONL of adviser rows for the
-          // pipeline. We do a pragmatic parse: the base compilation is a
-          // sequence of <Adviser> or IA records — extract core identity,
-          // location and form fields per record.
-          const files = fs.readdirSync("iapd_raw").filter(f => /\.(xml|csv|txt)$/i.test(f));
-          if (files.length === 0) {
-            console.error("no parseable files in archive; listing contents");
-            fs.readdirSync("iapd_raw").forEach(f => console.log(" -", f));
-            process.exit(3);
-          }
-          // Stream-ish handling: read first file (base compilation is one file)
-          const file = "iapd_raw/" + files[0];
-          const size = fs.statSync(file).size;
-          console.log(`parsing ${file} (${(size / 1e6).toFixed(1)} MB)`);
-          const data = fs.readFileSync(file, "utf8");
-          // The ADV Base format: pipe-delimited per IAPD docs, one adviser per line:
-          // FirmCrdNb|FirmBCID|FirmNm|FirmCik|... (see IAPD compilation README).
-          // We detect delimiter and map the header row to fields.
-          const lines = data.split(/\r?\n/).filter(Boolean);
-          const isDelimited = lines[0].includes("|");
-          let header = null;
-          const rows = [];
-          if (isDelimited) {
-            header = lines[0].split("|");
-            for (const line of lines.slice(1)) {
-              const vals = line.split("|");
-              if (vals.length !== header.length) continue;
-              const obj = {};
-              header.forEach((h, i) => { obj[h.trim()] = vals[i]; });
-              rows.push(obj);
-              if (rows.length >= LIMIT) break;
-            }
-          } else {
-            // XML fallback: naive <Firm> blocks
-            const blocks = data.split(/<\/?(Adviser|Firm|IA)[^>]*>/i).filter(b => b.includes("FirmNm") || b.includes("FirmCrdNb"));
-            for (const b of blocks) {
-              const get = (tag) => { const m = b.match(new RegExp(`<${tag}>([^<]+)<`, "i")); return m ? m[1].trim() : ""; };
-              rows.push({ firm_id: get("FirmCrdNb"), firm_name: get("FirmNm"), sec_number: get("FirmSECNb"), location: get("MainAddrCity"), country: get("MainAddrJurisdiction") });
-              if (rows.length >= LIMIT) break;
-            }
-          }
-          const out = { collected_at: new Date().toISOString(), source: "${{ steps.resolve.outputs.url }}", count: rows.length, kind: "iapd_adviser", data: { rows } };
-          fs.writeFileSync("out/iapd-advisers.json", JSON.stringify(out, null, 2));
-          console.log(`emitted ${rows.length} rows`);
-          EOF
+          UA="CapitalOS Pipeline admin@capital-os.example"
+          curl -sS --max-time 300 -A "$UA" -o ria.zip "$RIA_URL"
+          curl -sS --max-time 120 -A "$UA" -o era.zip "$ERA_URL"
+          unzip -o ria.zip -d ria_x >/dev/null; unzip -o era.zip -d era_x >/dev/null
+          node scripts/iapd-convert.cjs ria_x out/iapd-advisers.json "$ROW_LIMIT" registered
+          node scripts/iapd-convert.cjs era_x out/iapd-exempt.json "$ROW_LIMIT" exempt
+          ls -la out
+          head -c 600 out/iapd-advisers.json || true
 
       - name: Upload artifact
-        if: steps.resolve.outputs.url != ''
         uses: actions/upload-artifact@v4
         with:
           name: iapd-raw
           path: out/
           retention-days: 30
-
-      - name: Report
-        if: steps.resolve.outputs.url == ''
-        run: |
-          echo "No IAPD compilation URL resolved in the probe window."
-          echo "Check https://adviserinfo.sec.gov/ for the current file location."
-          exit 1
