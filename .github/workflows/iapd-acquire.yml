@@ -50,13 +50,16 @@ jobs:
           const fs = require("fs");
           const html = fs.readFileSync("listing.html", "utf8");
           const hrefs = [...html.matchAll(/href="([^"]+\.zip)"/gi)].map(m => m[1]);
-          const abs = hrefs.map(h => new URL(h, "https://www.sec.gov").toString());
-          const ria = abs.find(u => /ria\d{6}|registered/i.test(u)) || abs[0];
-          const era = abs.find(u => /era\d{6}|exempt/i.test(u)) || abs[1];
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `ria=${ria}\nera=${era}\n`);
+          const abs = [...new Set(hrefs.map(h => new URL(h, "https://www.sec.gov").toString()))];
+          // Disambiguate by FILENAME (the directory path contains both words).
+          // Exempt reports have "exempt" in the file name; registered ones don't.
+          const era = abs.find(u => /exempt[^/]*\.zip$/i.test(u)) || null;
+          const ria = abs.find(u => !/exempt/i.test(u.split("/").pop()) && /ia\d{6}|\.zip$/i.test(u)) || null;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `ria=${ria || ""}\nera=${era || ""}\n`);
+          console.log("all zips:", abs.slice(0, 6));
           console.log("RIA:", ria);
           console.log("ERA:", era);
-          if (!ria || !era) { console.error("no zip links found"); process.exit(3); }
+          if (!ria || !era) { console.error("could not disambiguate zip links"); process.exit(3); }
           EOF
 
       - name: Download and convert to JSONL

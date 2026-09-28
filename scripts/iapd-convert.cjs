@@ -15,7 +15,7 @@ const fs = require("fs");
 const path = require("path");
 const XLSX = require("xlsx");
 
-const [dir, out, limitArg, kind] = process.argv.slice(2);
+const [dir, outFile, limitArg, kind] = process.argv.slice(2);
 const LIMIT = parseInt(limitArg || "120", 10);
 
 // Find the first spreadsheet in the extracted dir
@@ -60,9 +60,9 @@ function pick(row, candidates) {
   return null;
 }
 
-const out = [];
+const records = [];
 for (const row of rows) {
-  if (out.length >= LIMIT) break;
+  if (records.length >= LIMIT) break;
   const name = pick(row, FIELD_MAP.firm_name);
   if (!name) continue;
 
@@ -92,15 +92,15 @@ for (const row of rows) {
       return acc;
     }, {});
 
-  out.push(rec);
+  records.push(rec);
 }
 
 const payload = {
   collected_at: new Date().toISOString(),
   source: "SEC IAPD monthly compilation",
   kind,
-  count: out.length,
-  data: { rows: out },
+  count: records.length,
+  data: { rows: records },
 };
-fs.writeFileSync(out, JSON.stringify(payload, null, 2));
-console.log(`emitted ${out.length} ${kind} rows → ${out}`);
+fs.writeFileSync(outFile, JSON.stringify(payload, null, 2));
+console.log(`emitted ${records.length} ${kind} rows → ${outFile}`);
