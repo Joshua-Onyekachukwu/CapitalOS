@@ -17,7 +17,9 @@ import { runEdgarReverification } from "@/lib/services/investor/edgar-reverify";
 import { runSnapshotExport } from "@/lib/services/investor/snapshot-archive";
 import { runQualificationPass } from "@/lib/services/investor/qualification-tiers";
 
-export const maxDuration = 60;
+// The chain includes up to ~60 paced SEC fetches (EDGAR re-verification) and
+// a full-dataset snapshot upload — 300s covers worst case; typical run ~60s.
+export const maxDuration = 300;
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -44,7 +46,7 @@ export async function GET(request: NextRequest) {
     // Batch is sized so the whole cron chain fits the function window;
     // already-rechecked rows get a fresh last_verified_at and sort to the
     // back, so the next day's run resumes where this one left off.
-    const edgar = await runEdgarReverification({ limit: 100 });
+    const edgar = await runEdgarReverification({ limit: 60 });
 
     // Qualification tiers re-stamped daily (cheap: pure compute + bulk
     // updates) so evidence freshness never drifts from reality.
