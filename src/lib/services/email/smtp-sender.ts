@@ -1,10 +1,19 @@
 // =============================================
-// Email Sender — Supports Global + Per-User SMTP
+// Email Sender — OAuth2 (XOAUTH2) + Global + Per-User SMTP
 // =============================================
-// 1. Global: uses SMTP_USER/SMTP_PASS from env (Gmail app password)
-// 2. Per-User: uses custom SMTP settings from email_accounts table
+// Auth strategy, in preference order:
+//   1. Per-user Google OAuth2 (XOAUTH2): the user connected Gmail via
+//      /api/auth/google — send from THEIR address with their tokens
+//      (email_accounts.provider='google', refresh_token encrypted at rest).
+//   2. Per-user custom SMTP: their own host/user/password.
+//   3. Global OAuth2: GOOGLE_CLIENT_ID/SECRET + GOOGLE_REFRESH_TOKEN env.
+//   4. Global legacy: SMTP_USER/SMTP_PASS Gmail app password.
+//
+// OAuth2 is Google's current protocol; app passwords are legacy and get
+// rejected with 535 5.7.8 when app-password access is revoked on the account.
 
 import nodemailer from "nodemailer";
+import { createClient } from "@supabase/supabase-js";
 import { decryptToken } from "@/lib/services/email/crypto";
 
 // =============================================
@@ -19,6 +28,12 @@ interface SmtpConfig {
   secure: boolean;
   fromName?: string;
   fromEmail: string;
+}
+
+/** XOAUTH2 credentials — preferred over SmtpConfig when present. */
+interface OAuth2Config {
+  user: string;
+  accessToken: string;
 }
 
 interface SmtpSendParams {
@@ -36,6 +51,8 @@ interface SmtpSendParams {
   }[];
   /** User-specific SMTP config. If null, uses global env config. */
   smtpConfig?: SmtpConfig;
+  /** XOAUTH2 credentials — win over smtpConfig when present. */
+  oauth2?: OAuth2Config;
 }
 
 interface SmtpSendResult {
@@ -45,16 +62,89 @@ interface SmtpSendResult {
 }
 
 // =============================================
-// Transport Cache
+// Google OAuth2 — access token exchange (cached per refresh token)
+// =============================================
+
+const oauth2TokenCache = new Map<string, { token: string; expiresAt: number }>();
+
+function refreshCacheKey(refreshToken: string): string {
+  return Buffer.from(refreshToken).toString("base64").slice(0, 48);
+}
+
+export async function refreshGoogleAccessToken(refreshToken: string): Promise<string | null> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
+  const key = refreshCacheKey(refreshToken);
+  const cached = oauth2TokenCache.get(key);
+  if (cached && cached.expiresAt > Date.now() + 60_000) return cached.token;
+
+  try {
+    const resp = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+    if (!resp.ok) {
+      console.error(`[smtp-sender] OAuth2 refresh failed: ${resp.status} ${(await resp.text()).slice(0, 120)}`);
+      return null;
+    }
+    const data = await resp.json();
+    const token = String(data.access_token);
+    oauth2TokenCache.set(key, { token, expiresAt: Date.now() + (Number(data.expires_in) - 60) * 1000 });
+    return token;
+  } catch (err) {
+    console.error("[smtp-sender] OAuth2 refresh error:", err);
+    return null;
+  }
+}
+
+/** Global OAuth2 token from env (service account refresh token). */
+async function getGlobalOAuth2AccessToken(): Promise<OAuth2Config | null> {
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  if (!refreshToken || !process.env.GOOGLE_CLIENT_ID) return null;
+  const token = await refreshGoogleAccessToken(refreshToken);
+  if (!token) return null;
+  return { user: process.env.SMTP_USER || process.env.EMAIL_FROM || "", accessToken: token };
+}
+
+// =============================================
+// Transport selection
 // =============================================
 
 const transportCache = new Map<string, nodemailer.Transporter>();
 
-function getTransporter(config?: SmtpConfig): nodemailer.Transporter {
-  const cacheKey = config
-    ? `${config.host}:${config.port}:${config.user}`
-    : "global";
+async function getTransporter(
+  config?: SmtpConfig,
+  oauth2?: OAuth2Config
+): Promise<nodemailer.Transporter> {
+  // 1) XOAUTH2 transports are NOT cached: their embedded access token
+  //    expires (~1h) and a pooled transport would keep sending with a stale
+  //    token. The token itself is cached above with a 60s safety margin, so
+  //    rebuilding is cheap.
+  if (oauth2) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: false,
+      auth: {
+        type: "OAuth2",
+        user: oauth2.user,
+        accessToken: oauth2.accessToken,
+      },
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+    });
+  }
 
+  const cacheKey = config ? `${config.host}:${config.port}:${config.user}` : "global";
   if (transportCache.has(cacheKey)) {
     return transportCache.get(cacheKey)!;
   }
@@ -62,7 +152,7 @@ function getTransporter(config?: SmtpConfig): nodemailer.Transporter {
   let transport: nodemailer.Transporter;
 
   if (config) {
-    // Per-user custom SMTP
+    // 2) Per-user custom SMTP (password auth — user's own server)
     transport = nodemailer.createTransport({
       host: config.host,
       port: config.port,
@@ -78,7 +168,24 @@ function getTransporter(config?: SmtpConfig): nodemailer.Transporter {
       greetingTimeout: 5000,
     });
   } else {
-    // Global env SMTP (Gmail app password fallback)
+    // 3) Global OAuth2 from env, else 4) global app password (legacy)
+    const globalOAuth2 = await getGlobalOAuth2AccessToken();
+    if (globalOAuth2 && globalOAuth2.user) {
+      return nodemailer.createTransport({
+        host: process.env.SMTP_HOST || "smtp.gmail.com",
+        port: parseInt(process.env.SMTP_PORT || "587"),
+        secure: false,
+        auth: {
+          type: "OAuth2",
+          user: globalOAuth2.user,
+          accessToken: globalOAuth2.accessToken,
+        },
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100,
+      });
+    }
+
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
       throw new Error("No email credentials configured");
     }
@@ -143,10 +250,12 @@ export async function sendEmailViaSmtp(
   params: SmtpSendParams
 ): Promise<SmtpSendResult> {
   try {
-    const transport = getTransporter(params.smtpConfig);
+    const transport = await getTransporter(params.smtpConfig, params.oauth2);
     const config = params.smtpConfig;
 
-    const fromAddress = config
+    const fromAddress = params.oauth2
+      ? `"Capital OS" <${params.oauth2.user}>`
+      : config
       ? `"${config.fromName || "Capital OS"}" <${config.fromEmail}>`
       : `"Capital OS" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`;
 
@@ -187,7 +296,7 @@ export async function sendEmailViaSmtp(
 }
 
 // =============================================
-// Send with User's Custom SMTP (from DB)
+// Send with User's Connected Account (from DB)
 // =============================================
 
 export async function sendEmailWithUserSmtp(
@@ -195,7 +304,6 @@ export async function sendEmailWithUserSmtp(
   params: SmtpSendParams
 ): Promise<SmtpSendResult> {
   try {
-    const { createClient } = await import("@supabase/supabase-js");
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -240,7 +348,38 @@ export async function sendEmailWithUserSmtp(
       };
     }
 
-    // Build SMTP config from account
+    // ── Google OAuth2 account: send from the user's own Gmail via XOAUTH2 ──
+    if (account.provider === "google" && account.refresh_token) {
+      let refreshToken: string;
+      try {
+        refreshToken = decryptToken(account.refresh_token);
+      } catch {
+        return {
+          success: false,
+          error: "Stored Google tokens could not be decrypted — reconnect your Gmail account in Settings.",
+        };
+      }
+      const accessToken = await refreshGoogleAccessToken(refreshToken);
+      if (!accessToken) {
+        return {
+          success: false,
+          error: "Google token refresh failed — reconnect your Gmail account in Settings.",
+        };
+      }
+      const result = await sendEmailViaSmtp({
+        ...params,
+        oauth2: { user: account.email_address, accessToken },
+      });
+      if (result.success) {
+        await supabase
+          .from("email_accounts")
+          .update({ sends_today: (account.sends_today || 0) + 1, last_synced_at: new Date().toISOString() })
+          .eq("id", account.id);
+      }
+      return result;
+    }
+
+    // ── Custom SMTP account (password auth) ──
     let smtpConfig: SmtpConfig | undefined;
 
     if (account.smtp_host && account.smtp_user && account.smtp_pass_encrypted) {
@@ -297,7 +436,7 @@ export async function verifySmtpConnection(
   config?: SmtpConfig
 ): Promise<boolean> {
   try {
-    const transport = getTransporter(config);
+    const transport = await getTransporter(config);
     await transport.verify();
     return true;
   } catch {

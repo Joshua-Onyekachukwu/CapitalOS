@@ -54,27 +54,44 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-
-      const { error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: {
-            full_name: form.fullName,
-          },
-        },
+      // Email activation is not configured yet (Supabase Site URL still
+      // points at localhost and no transactional email provider exists), so
+      // accounts are auto-confirmed server-side. The user is signed in
+      // immediately after signup.
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: form.fullName,
+          email: form.email,
+          password: form.password,
+        }),
       });
+      const data = await res.json().catch(() => ({}));
 
-      if (error) {
-        setServerError(error.message);
+      if (!res.ok) {
+        setServerError(data.error || `Signup failed (${res.status})`);
         setLoading(false);
         return;
       }
 
-      setSuccess(true);
-      setLoading(false);
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (signInError) {
+        setServerError(
+          "Account created but automatic sign-in failed. Please log in manually."
+        );
+        setSuccess(true);
+        setLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
     } catch {
       setServerError("An unexpected error occurred. Please try again.");
       setLoading(false);
@@ -92,14 +109,14 @@ export default function SignupPage() {
             Check your email
           </h1>
           <p className="text-[14px] text-gray-500 !mb-[25px]">
-            We sent a confirmation link to <strong>{form.email}</strong>.
-            Click the link to activate your account.
+            Your account <strong>{form.email}</strong> was created, but automatic
+            sign-in failed. Please log in manually.
           </p>
           <Link
             href="/login"
             className="text-[14px] text-lime-600 hover:text-lime-700 font-medium"
           >
-            Back to login
+            Go to login
           </Link>
         </CardBody>
       </Card>
