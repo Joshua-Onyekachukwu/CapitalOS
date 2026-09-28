@@ -9,6 +9,7 @@
 
 import { getNextApiKey, markKeyRateLimited, getBaseUrl } from "./keys";
 import { getModelConfig, type AiTask } from "./models";
+import { recordAiUsage } from "./usage";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -28,6 +29,8 @@ interface ChatResponse {
 interface AiClientOptions {
   task: AiTask;
   systemPrompt?: string;
+  /** Calling user, when known — enables per-user usage metering. */
+  userId?: string;
   messages: ChatMessage[];
   maxRetries?: number;
   /** Per-attempt timeout in ms (default 45s). */
@@ -112,6 +115,7 @@ export async function chatCompletion({
   task,
   systemPrompt,
   messages,
+  userId,
   maxRetries = MAX_RETRIES,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 }: AiClientOptions): Promise<ChatResponse> {
@@ -124,6 +128,7 @@ export async function chatCompletion({
     : messages;
 
   let lastError: Error | null = null;
+  const startedAt = Date.now();
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const apiKey = getNextApiKey();
@@ -172,7 +177,17 @@ export async function chatCompletion({
       }
 
       const data = await response.json();
-      return parseChatResponse(data, model);
+      const parsed = parseChatResponse(data, model);
+      recordAiUsage({
+        userId,
+        task,
+        model: parsed.model,
+        promptTokens: parsed.usage.promptTokens,
+        completionTokens: parsed.usage.completionTokens,
+        totalTokens: parsed.usage.totalTokens,
+        latencyMs: Date.now() - startedAt,
+      });
+      return parsed;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 

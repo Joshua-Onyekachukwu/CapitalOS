@@ -169,7 +169,8 @@ function computeFitScore(investor: Record<string, unknown>, startup: { sector: s
 
 async function generateAIAnalysis(
   investor: Record<string, unknown>,
-  startupProfile: Record<string, unknown>
+  startupProfile: Record<string, unknown>,
+  userId?: string
 ): Promise<string> {
   const prompt = `You are an expert investor-startup matching analyst for a fundraising operating system.
 
@@ -204,6 +205,7 @@ Provide a concise investor fit analysis in 2-3 paragraphs covering:
 Be specific and reference actual data points. Do not fabricate information.`;
 
   const result = await chatCompletion({
+    userId,
     task: "fit_analysis",
     messages: [{ role: "user", content: prompt }],
     maxRetries: 2,
@@ -359,7 +361,7 @@ export async function POST(request: NextRequest) {
       let aiAnalysis = "";
       if (action === "ai_analysis") {
         try {
-          aiAnalysis = await generateAIAnalysis(investor as any, profile as any);
+          aiAnalysis = await generateAIAnalysis(investor as any, profile as any, user.id);
         } catch (err) {
           aiAnalysis = "AI analysis unavailable. Using deterministic scoring.";
           console.error("AI analysis error:", err);

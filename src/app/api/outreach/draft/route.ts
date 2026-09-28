@@ -195,6 +195,7 @@ Rules:
     if (customInstructions) contextParts.push(`Founder notes: ${customInstructions}`);
 
     const response = await chatCompletion({
+      userId: user.id,
       task: "email_drafting",
       systemPrompt,
       messages: [

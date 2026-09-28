@@ -228,6 +228,7 @@ When relevant, guide the user to the right page:
     const { chatCompletion } = await import("@/lib/ai");
     console.log("[Copilot] Calling AI...");
     const response = await chatCompletion({
+      userId,
       task: "research_summary",
       systemPrompt: context,
       messages: messages.map((m) => ({
