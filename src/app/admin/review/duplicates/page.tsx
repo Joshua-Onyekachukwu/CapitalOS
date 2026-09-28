@@ -12,6 +12,8 @@ interface DuplicateCandidate {
   match_signals: Record<string, number>;
   status: string;
   created_at: string;
+  investor_a_id: string;
+  investor_b_id: string;
   investor_a_name: string;
   investor_a_email: string | null;
   investor_b_name: string;
@@ -52,20 +54,41 @@ export default function DuplicatesReviewPage() {
     }
   };
 
-  const handleAction = async (id: string, action: "approved_merge" | "rejected") => {
-    setActionLoading(id);
+  // Actions go through audited admin APIs — direct table writes are blocked
+  // by RLS by design. "Merge" performs a real merge (keeper = A); "Keep
+  // Separate" records the rejection with reviewer attribution.
+  const handleAction = async (
+    candidate: DuplicateCandidate,
+    action: "merge" | "reject"
+  ) => {
+    setActionLoading(candidate.id);
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      await supabase
-        .from("duplicate_candidates")
-        .update({
-          status: action,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", id);
+      const res =
+        action === "merge"
+          ? await fetch("/api/admin/intelligence", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "merge",
+                keeperId: candidate.investor_a_id,
+                loserId: candidate.investor_b_id,
+              }),
+            })
+          : await fetch("/api/admin/dedup/review", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                candidateId: candidate.id,
+                action: "rejected",
+              }),
+            });
 
-      setCandidates((prev) => prev.filter((c) => c.id !== id));
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error("Action failed:", data?.error || res.status);
+        return;
+      }
+      setCandidates((prev) => prev.filter((c) => c.id !== candidate.id));
     } catch (err) {
       console.error("Action failed:", err);
     } finally {
@@ -177,7 +200,7 @@ export default function DuplicatesReviewPage() {
                   <div className="flex items-center gap-[8px] flex-shrink-0">
                     <Button
                       size="sm"
-                      onClick={() => handleAction(candidate.id, "approved_merge")}
+                      onClick={() => handleAction(candidate, "merge")}
                       disabled={actionLoading === candidate.id}
                     >
                       <i className="ri-git-merge-line text-[14px]"></i>
@@ -186,7 +209,7 @@ export default function DuplicatesReviewPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAction(candidate.id, "rejected")}
+                      onClick={() => handleAction(candidate, "reject")}
                       disabled={actionLoading === candidate.id}
                     >
                       <i className="ri-close-line text-[14px]"></i>

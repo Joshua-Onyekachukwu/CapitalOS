@@ -123,16 +123,15 @@ export function CommunicationTimeline({ investorId, onRefresh }: CommunicationTi
 
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
-    // Notes are stored in data_change_log
+    // Notes live in data_change_log, which is service-write-only under RLS —
+    // they are attributed server-side via the notes API.
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      await supabase.from("data_change_log").insert({
-        investor_id: investorId,
-        field_name: "note",
-        new_value: noteText.trim(),
-        change_type: "note",
+      const res = await fetch("/api/investors/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ investorId, note: noteText.trim() }),
       });
+      if (!res.ok) return; // keep the editor open on failure
       setNoteText("");
       setAddingNote(false);
       loadTimeline();
