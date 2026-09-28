@@ -66,6 +66,10 @@ jobs:
           TEST_IDOR_VICTIM_USER_ID: ${{ secrets.TEST_IDOR_VICTIM_USER_ID }}
           FORCE_FAILURE: ${{ github.event.inputs.force_failure }}
         run: |
+          # GitHub runs steps under `bash -e`: a failing pipeline aborts the
+          # script before STATUS capture unless errexit is off. pipefail is
+          # needed so $? is vitest's exit code, not tee's.
+          set +e
           set -o pipefail
           npx vitest run src/__tests__/access-control.test.ts \
             --reporter=default --outputFile.security=security-results.txt 2>&1 \
@@ -78,13 +82,16 @@ jobs:
           exit 0  # alerting steps below decide the job outcome
 
       - name: Fail job on suite failure (after alerting)
-        if: steps.suite.outputs.status != '0'
+        # always() is required: once the suite step fails, the job is in a
+        # failing state and steps are skipped unless their condition
+        # includes always()/failure() — even when the `if` itself is true.
+        if: always() && steps.suite.outputs.status != '0'
         run: |
           echo "Access-control suite failed (exit ${{ steps.suite.outputs.status }}). See alert issue."
           exit 1
 
       - name: Raise or update security alert issue
-        if: steps.suite.outputs.status != '0'
+        if: always() && steps.suite.outputs.status != '0'
         uses: actions/github-script@v7
         env:
           RESULTS: ${{ github.workspace }}/security-results.txt
@@ -143,7 +150,7 @@ jobs:
             }
 
       - name: Resolve alert issue on recovery
-        if: steps.suite.outputs.status == '0'
+        if: always() && steps.suite.outputs.status == '0'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
