@@ -74,3 +74,12 @@ data-backups/
 *.meta.json
 checkpoint.json
 .freebuff/
+
+.vercel
+.env*
+
+# Data pipeline runtime artifacts (checkpoints, logs, bulk snapshots)
+data/investors/edgar-progress.json
+data/investors/*.log
+data/investors/edgar-run-console.log
+data/investors/snapshots/*.jsonl.gz
