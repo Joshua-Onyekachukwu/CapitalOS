@@ -95,21 +95,27 @@ async function cleanup(userId) {
 
     // ── 2. Dashboard ──
     console.log("[2] dashboard");
-    await page.waitForSelector("main", { timeout: 15000 });
-    await page.waitForTimeout(1500);
+    // Dashboard content loads async after the redirect — wait for real content.
+    const dashReady = await page
+      .waitForSelector('main:has-text("Welcome")', { timeout: 20000 })
+      .then(() => true)
+      .catch(() => false);
     const dashText = await page.locator("main").innerText();
-    assert("dashboard shows welcome", /Welcome back/i.test(dashText));
+    assert("dashboard shows welcome", dashReady && /Welcome back/i.test(dashText));
     assert("dashboard shows investor stats", /Total Investors/i.test(dashText));
     assert("dashboard shows next steps", /Next Steps/i.test(dashText));
 
     // ── 3. Discover filters ──
     console.log("[3] discover filters");
     await page.goto(`${BASE}/dashboard/investors/discover`, { waitUntil: "networkidle" });
-    const secSelect = page.locator("select").nth(2); // Stage, Filing Activity, Evidence
+    // Select order: [0] Stage, [1] SEC Filing Activity, [2] Evidence
+    const secSelect = page.locator("select").nth(1);
     await secSelect.selectOption({ label: "Filed within 1 year (active)" });
-    await page.fill('textarea', "active institutional investors");
+    await page.fill("textarea", "active institutional investors");
     await page.click('button:has-text("Discover Investors")');
-    await page.waitForTimeout(4000);
+    await page
+      .waitForSelector('main:has-text("investors found")', { timeout: 20000 })
+      .catch(() => {});
     const discText = await page.locator("main").innerText();
     assert("discover returns results", /investors? found/i.test(discText) && !/0 investors found/i.test(discText));
     assert("discover surfaces dormancy/evidence info", /filed/i.test(discText) || /SEC-verified/i.test(discText));
@@ -127,19 +133,27 @@ async function cleanup(userId) {
     const badge = await page.locator('table tbody span[title*="Source-verified"], table tbody span[title*="Derived"], table tbody span[title*="AI-classified"], table tbody span[title*="Unqualified"]').first();
     assert("evidence badge rendered on rows", await badge.isVisible().catch(() => false));
 
-    // Apply the evidence filter through the sidebar
-    await page.click('button:has-text("Filters")');
-    await page.selectOption('select[name="evidence"], select >> nth=3', { value: "verified" }).catch(async () => {
-      // Fallback: drive the API directly through the page session
+    // Apply the evidence filter: prefer the sidebar select (option value
+    // 'verified'), fall back to driving the API through the page session.
+    const evidenceSelect = page.locator('select:has(option[value="verified"])').first();
+    const usedUi = await evidenceSelect
+      .selectOption("verified")
+      .then(() => true)
+      .catch(() => false);
+    if (usedUi) {
+      await page.waitForTimeout(2500);
+      const filtered = await page.locator("table tbody tr").count();
+      assert("evidence filter applied in UI", filtered > 0, `${filtered} rows`);
+    } else {
       const r = await page.evaluate(async () => {
         const res = await fetch("/api/investors?evidence=verified&limit=5");
         return { status: res.status, json: await res.json() };
       });
-      assert("evidence=verified API filter works", r.status === 200 && (r.json.investors || []).every((x) => x.verification_status === "verified"));
-    });
-    await page.waitForTimeout(2500);
-    const filteredText = await page.locator("main").innerText();
-    assert("evidence filter applied in UI", /Source-verified/i.test(filteredText) || /needs verification/i.test(filteredText));
+      assert(
+        "evidence=verified API filter works",
+        r.status === 200 && (r.json.investors || []).every((x) => x.verification_status === "verified")
+      );
+    }
 
     // ── 5. Investor profile ──
     console.log("[5] investor profile");
