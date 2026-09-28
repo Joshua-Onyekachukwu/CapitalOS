@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const startedAt = Date.now();
     const pollResults = await pollEmailAccounts(); // all users, all active accounts
     const totalReplies = pollResults.reduce((sum, r) => sum + r.repliesDetected, 0);
-    const errors = pollResults.filter((r) => r.error);
+    const errors = pollResults.filter((r) => r.errors.length > 0);
 
     console.log(
       `[cron/daily] polled ${pollResults.length} accounts, ${totalReplies} replies, ` +
