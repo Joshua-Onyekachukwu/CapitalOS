@@ -43,6 +43,10 @@ async function computeFacets() {
     { count: verifiedCount },
     { count: readyCount },
     { count: needsVerificationCount },
+    { count: evidenceVerifiedCount },
+    { count: evidenceDerivedCount },
+    { count: evidenceAiCount },
+    { count: evidenceUnknownCount },
   ] = await Promise.all([
     supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true),
     supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).not("email", "is", null).neq("email", ""),
@@ -50,13 +54,18 @@ async function computeFacets() {
     supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("is_verified", true),
     supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("outreach_readiness", "ready"),
     supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("outreach_readiness", "needs_verification"),
+    // Evidence tier counts (mirror the qualification pass's verification_status stamps)
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("verification_status", "verified"),
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("verification_status", "derived"),
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("verification_status", "ai_classified"),
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("verification_status", "unknown"),
   ]);
 
   // 2. Fetch a larger sample for category facets (type, sector, stage, country)
   const SAMPLE_SIZE = 5000;
   const { data: investors } = await supabase
     .from("investors")
-    .select("investor_type, investment_sectors, investment_stages, country, city, outreach_readiness")
+    .select("investor_type, investment_sectors, investment_stages, country, city, outreach_readiness, verification_status")
     .eq("is_active", true)
     .limit(SAMPLE_SIZE);
 
@@ -68,6 +77,7 @@ async function computeFacets() {
   const stageCounts: Record<string, number> = {};
   const countryCounts: Record<string, number> = {};
   const readinessCounts: Record<string, number> = {};
+  const evidenceCounts: Record<string, number> = {};
 
   for (const inv of rows) {
     if (inv.investor_type) {
@@ -89,6 +99,9 @@ async function computeFacets() {
     if (inv.outreach_readiness) {
       readinessCounts[inv.outreach_readiness] = (readinessCounts[inv.outreach_readiness] || 0) + 1;
     }
+    if (inv.verification_status) {
+      evidenceCounts[inv.verification_status] = (evidenceCounts[inv.verification_status] || 0) + 1;
+    }
   }
 
   // Sort and format
@@ -104,6 +117,12 @@ async function computeFacets() {
     stages: sortDesc(stageCounts),
     countries: sortDesc(countryCounts),
     readiness: sortDesc(readinessCounts),
+    evidence: [
+      { value: "verified", label: "Source-verified", count: evidenceVerifiedCount || 0 },
+      { value: "derived", label: "Derived", count: evidenceDerivedCount || 0 },
+      { value: "ai_classified", label: "AI-classified", count: evidenceAiCount || 0 },
+      { value: "unknown", label: "Unqualified", count: evidenceUnknownCount || 0 },
+    ],
     emailStats: {
       with: withEmailCount || 0,
       without: (totalCount || 0) - (withEmailCount || 0),

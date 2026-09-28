@@ -51,6 +51,15 @@ interface InvestorData {
   fund_size: number | null;
 }
 
+interface MergeHistoryEntry {
+  merged_id?: string;
+  merged_name?: string;
+  merged_at?: string;
+  merged_by?: string;
+  candidate_id?: string;
+  reversible?: boolean;
+}
+
 interface ResearchSummary {
   summary: string;
   investmentThesis: string;
@@ -80,6 +89,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
   }, []);
   const [investor, setInvestor] = useState<InvestorData | null>(null);
   const [research, setResearch] = useState<ResearchSummary | null>(null);
+  const [mergeHistory, setMergeHistory] = useState<MergeHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchError, setResearchError] = useState("");
@@ -100,6 +110,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
         firm_type: data.firm?.firm_type || null,
         fund_size: data.firm?.fund_size || null,
       });
+      setMergeHistory(Array.isArray(data.mergeHistory) ? data.mergeHistory : []);
 
       if (data.profile?.ai_reasoning) {
         try {
@@ -265,6 +276,36 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-[20px]">
         <div className="lg:col-span-2 space-y-[20px]">
+          {mergeHistory.length > 0 && (
+            <Card>
+              <CardBody className="p-[16px]">
+                <div className="flex items-center gap-[8px] mb-[8px]">
+                  <i className="ri-git-merge-line text-gray-400 text-[16px]"></i>
+                  <h3 className="!text-[14px] !font-semibold !mb-0">
+                    Merge History
+                    <span className="text-[12px] font-normal text-gray-400 ml-[8px]">
+                      {mergeHistory.length} duplicate{mergeHistory.length !== 1 ? "s" : ""} merged into this record · reversible by an admin
+                    </span>
+                  </h3>
+                </div>
+                <div className="space-y-[4px]">
+                  {mergeHistory.map((m, i) => (
+                    <div key={m.merged_id || i} className="flex items-center justify-between text-[12px] py-[4px] border-b border-gray-50 dark:border-gray-800 last:border-0">
+                      <span className="text-gray-500">
+                        {m.merged_name || "Duplicate record"}
+                        {m.merged_at && (
+                          <span className="text-gray-300 ml-[8px]">
+                            {new Date(m.merged_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-gray-300">{m.merged_by || "admin review"}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
           <Card>
             <CardBody className="p-[24px]">
               <div className="flex items-start gap-[16px]">

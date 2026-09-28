@@ -44,6 +44,23 @@ export async function GET(
       firm = firmData;
     }
 
+    // Merge auditability: if this record absorbed duplicates (keeper), return
+    // the merge_history entries; if this record was merged away (loser),
+    // return the keeper it points to so the UI can redirect/annotate.
+    let mergeHistory: Array<Record<string, unknown>> = [];
+    let mergedInto: { id: string; full_name: string } | null = null;
+    if (Array.isArray(investor.merge_history) && investor.merge_history.length > 0) {
+      mergeHistory = investor.merge_history;
+    }
+    if (investor.merged_into_id) {
+      const { data: keeper } = await supabase
+        .from("investors")
+        .select("id, full_name")
+        .eq("id", investor.merged_into_id)
+        .maybeSingle();
+      if (keeper) mergedInto = keeper;
+    }
+
     // Fetch AI research profile (investor_profiles table)
     let profile = null;
     try {
@@ -75,6 +92,8 @@ export async function GET(
       firm,
       profile,
       similar,
+      mergeHistory,
+      mergedInto,
     });
   } catch (err) {
     console.error("Investor detail error:", err);

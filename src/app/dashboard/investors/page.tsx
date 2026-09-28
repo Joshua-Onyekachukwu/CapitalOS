@@ -96,6 +96,13 @@ const READINESS_OPTIONS = [
   { label: "Do Not Contact", value: "do_not_contact" },
 ];
 
+const EVIDENCE_OPTIONS = [
+  { label: "Source-verified", value: "verified" },
+  { label: "Derived", value: "derived" },
+  { label: "AI-classified", value: "ai_classified" },
+  { label: "Unqualified", value: "unknown" },
+];
+
 const SORT_OPTIONS = [
   { label: "Fit Score", value: "fit_score" },
   { label: "Data Quality", value: "data_quality_score" },
@@ -164,6 +171,12 @@ const FILTER_CONFIGS: FilterConfig[] = [
     label: "Outreach Status",
     type: "select",
     options: READINESS_OPTIONS,
+  },
+  {
+    key: "evidence",
+    label: "Evidence Tier",
+    type: "select",
+    options: EVIDENCE_OPTIONS,
   },
   {
     key: "minQuality",
@@ -252,6 +265,7 @@ export default function InvestorsPage() {
       if (filters.country) params.set("country", filters.country);
       if (filters.city) params.set("city", filters.city);
       if (filters.readiness) params.set("readiness", filters.readiness);
+      if (filters.evidence) params.set("evidence", filters.evidence);
       if (filters.verified) params.set("verified", filters.verified);
       if (filters.minQuality) params.set("minQuality", filters.minQuality);
       if (filters.hasEmail) params.set("hasEmail", filters.hasEmail);
@@ -287,6 +301,7 @@ export default function InvestorsPage() {
       if (filters.country) params.set("country", filters.country);
       if (filters.city) params.set("city", filters.city);
       if (filters.readiness) params.set("readiness", filters.readiness);
+      if (filters.evidence) params.set("evidence", filters.evidence);
       if (filters.verified) params.set("verified", filters.verified);
       if (filters.minQuality) params.set("minQuality", filters.minQuality);
       if (filters.hasEmail) params.set("hasEmail", filters.hasEmail);
@@ -302,6 +317,7 @@ export default function InvestorsPage() {
         stage: Object.fromEntries(data.stages?.map((s: any) => [s.value, s.count]) || []),
         country: Object.fromEntries(data.countries?.map((c: any) => [c.value, c.count]) || []),
         readiness: Object.fromEntries(data.readiness?.map((r: any) => [r.value, r.count]) || []),
+        evidence: Object.fromEntries((data.evidence || []).map((e: any) => [e.value, e.count])),
         email: data.emailStats || { with: 0, without: 0 },
         linkedin: data.linkedinStats || { with: 0, without: 0 },
         verified: data.verifiedStats || { yes: 0, no: 0 },

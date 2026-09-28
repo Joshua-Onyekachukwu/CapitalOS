@@ -33,6 +33,10 @@ export async function GET(request: NextRequest) {
     const firmId = sp.get("firmId") || "";
     const stage = sp.get("stage") || "";        // single stage value
     const sector = sp.get("sector") || "";      // single sector value
+    // Evidence tier filter — matches the pipeline-stamped verification_status
+    // (verified/derived/ai_classified/unknown) that the qualification pass
+    // re-stamps daily and the UI badges display.
+    const evidence = sp.get("evidence") || "";
     // Array params — "sectors" and "stages" can be comma-separated or multiple values
     const sectorsParam = sp.get("sectors") || "";
     const stagesParam = sp.get("stages") || "";
@@ -82,6 +86,9 @@ export async function GET(request: NextRequest) {
       // Single stage/sector values (from main investor list filters)
       if (stage) q = q.contains("investment_stages", [stage]);
       if (sector) q = q.contains("investment_sectors", [sector]);
+      if (["verified", "derived", "ai_classified", "unknown"].includes(evidence)) {
+        q = q.eq("verification_status", evidence);
+      }
       // Array overlap — any of the specified values must be in the array columns
       if (stages.length > 0) q = q.overlaps("investment_stages", stages);
       if (sectors.length > 0) q = q.overlaps("investment_sectors", sectors);
