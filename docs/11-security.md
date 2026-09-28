@@ -181,31 +181,41 @@ TRUNCATE is not RLS-gated, so it must never be granted to client roles.
 
 ## Nightly Access-Control Monitoring
 
-The authorization model is verified against production every night by
-`.github/workflows/security-nightly.yml` (03:15 UTC, or manual dispatch):
+The authorization model and the auth user journey are verified against
+production every night by `.github/workflows/security-nightly.yml`
+(03:15 UTC, or manual dispatch):
 
-- **Static scan** — every `/api/admin/*` handler's first statement is
-  `requireAdmin` (bootstrap endpoint excepted: `requireAuth` + fails-closed).
-- **Live matrix** — every admin route returns 401 unauthenticated and 403
-  as a non-admin; an admin session passes (positive control).
-- **IDOR regressions** — suppression, warmup, and dashboard/admin stay
-  caller-scoped (the three historically vulnerable surfaces).
+- **Access-control suite** — static scan (every `/api/admin/*` handler's
+  first statement is `requireAdmin`; bootstrap endpoint excepted with
+  `requireAuth` + fails-closed), live 401/403 matrix over every admin
+  route, admin positive control, and IDOR regressions on the three
+  historically vulnerable surfaces (suppression, warmup, dashboard/admin).
+- **Authflow suite** — signup creates a confirmed account, duplicate
+  email is refused, password grant issues a session, password-reset
+  responses are generic (no account enumeration), fabricated session
+  cookies are rejected, and `sb-*` session cookies carry
+  HttpOnly/Secure/SameSite in production.
 
-On failure, two alert channels fire:
+On failure, up to four alert channels fire:
 
 1. A deduplicated GitHub issue labeled `security-alert`
-   ("security: access-control suite failing against production") that
-   updates while failing and auto-closes on the next passing run.
+   ("security: nightly suite failing against production") that updates
+   while failing and auto-closes on the next fully passing run.
 2. A `security_nightly` row in `background_jobs` (via
    `POST /api/cron/security-alert`, gated by `CRON_SECRET`) — failures
    surface in **/admin/intelligence → job_status** recent failures.
+3. **Slack** — `SLACK_WEBHOOK_URL` secret posts a :rotating_light:
+   message with the failing suite(s) and run link (skipped when unset).
+4. **Email** — `RESEND_API_KEY` + `ALERT_EMAIL_TO` secrets send a
+   Resend alert (skipped when unset).
 
 To drill the alert path end to end: run the workflow with the
 `force_failure` input set to `true` — the DRILL test fails on purpose,
 the issue opens, and the next passing run closes it automatically.
 Required repo secrets: `TEST_FOUNDER_EMAIL/PASSWORD`,
 `TEST_ADMIN_EMAIL/PASSWORD`, `TEST_IDOR_VICTIM_ACCOUNT_ID/USER_ID`,
-`CRON_SECRET` (Supabase + Vercel secrets are shared with deploy.yml).
+`CRON_SECRET`; optional: `SLACK_WEBHOOK_URL`, `RESEND_API_KEY`,
+`ALERT_EMAIL_TO` (Supabase + Vercel secrets are shared with deploy.yml).
 
 ---
 
