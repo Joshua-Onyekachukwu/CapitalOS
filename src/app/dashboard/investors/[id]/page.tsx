@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { DataHistory } from "@/components/Dashboard/DataHistory";
 import { CommunicationTimeline } from "@/components/Outreach/CommunicationTimeline";
 import { EmailComposeModal } from "@/components/Outreach/EmailComposeModal";
+import { QualificationBadge } from "@/components/Investor/QualificationBadge";
 import { toast as sonnerToast } from "sonner";
 
 interface InvestorData {
@@ -39,6 +40,12 @@ interface InvestorData {
   avatar_url: string | null;
   source: string | null;
   created_at: string;
+  verification_status?: string | null;
+  last_verified_at?: string | null;
+  source_provider?: string | null;
+  source_id?: string | null;
+  qualification_notes?: string | null;
+  fit_score_breakdown?: Record<string, unknown> | null;
   firm_name: string | null;
   firm_type: string | null;
   fund_size: number | null;
@@ -265,11 +272,22 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                   {initials}
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-[8px] mb-[4px]">
+                  <div className="flex items-center gap-[8px] mb-[4px] flex-wrap">
                     <h2 className="!text-[18px] !font-bold !mb-0">{investor.full_name}</h2>
                     {investor.is_verified && (
                       <i className="ri-verified-badge-fill text-lime-500 text-[18px]"></i>
                     )}
+                    <QualificationBadge
+                      verification_status={investor.verification_status ?? null}
+                      last_verified_at={investor.last_verified_at ?? null}
+                      source_provider={investor.source_provider ?? null}
+                      source_id={investor.source_id ?? null}
+                      qualification_notes={investor.qualification_notes ?? null}
+                      fit_score_breakdown={investor.fit_score_breakdown ?? null}
+                      fit_score={investor.fit_score}
+                      outreach_readiness={investor.outreach_readiness}
+                      variant="inline"
+                    />
                   </div>
                   <p className="text-[14px] text-gray-500 !mb-[8px]">
                     {investor.job_title || "Investor"}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { SearchFilterBar, FilterConfig } from "@/components/Dashboard/SearchFilterBar";
+import { QualificationBadge } from "@/components/Investor/QualificationBadge";
 
 // ── Types ──
 interface Investor {
@@ -26,6 +27,11 @@ interface Investor {
   investment_stages: string[];
   investment_sectors: string[];
   created_at: string;
+  verification_status?: string | null;
+  last_verified_at?: string | null;
+  source_provider?: string | null;
+  qualification_notes?: string | null;
+  fit_score_breakdown?: Record<string, unknown> | null;
 }
 
 // ── Filter configs ──
@@ -514,7 +520,7 @@ export default function InvestorsPage() {
                         Quality
                       </th>
                       <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px] hidden xl:table-cell">
-                        Verified
+                        Evidence
                       </th>
                       <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px]">
                         Status
@@ -599,13 +605,17 @@ export default function InvestorsPage() {
                           </div>
                         </td>
 
-                        {/* Verified */}
+                        {/* Evidence tier */}
                         <td className="px-[16px] py-[12px] text-center hidden xl:table-cell">
-                          {inv.is_verified ? (
-                            <i className="ri-shield-check-line text-green-500 text-[16px]"></i>
-                          ) : (
-                            <i className="ri-shield-line text-gray-300 text-[16px]"></i>
-                          )}
+                          <QualificationBadge
+                            verification_status={inv.verification_status ?? null}
+                            last_verified_at={inv.last_verified_at ?? null}
+                            source_provider={inv.source_provider ?? null}
+                            qualification_notes={inv.qualification_notes ?? null}
+                            fit_score_breakdown={inv.fit_score_breakdown ?? null}
+                            fit_score={inv.fit_score}
+                            outreach_readiness={inv.outreach_readiness}
+                          />
                         </td>
 
                         {/* Outreach status */}

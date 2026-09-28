@@ -30,7 +30,16 @@ export interface SnapshotSummary {
   rows: number;
   bytes: number;
   object: string;
+  /** Retention outcome — old snapshots pruned after a successful upload */
+  pruned?: number;
+  retained?: string[];
   error?: string;
+}
+
+/** How many dated snapshots to keep in the archive (SNAPSHOT_RETENTION env). */
+function retentionCount(): number {
+  const n = parseInt(process.env.SNAPSHOT_RETENTION || "30", 10);
+  return Math.min(365, Math.max(3, Number.isFinite(n) ? n : 30));
 }
 
 function sp() {
@@ -117,7 +126,28 @@ export async function runSnapshotExport(opts?: { userId?: string }): Promise<Sna
       .upload(object, body, { contentType: "application/x-ndjson", upsert: false });
     if (uploadErr) throw uploadErr;
 
-    const outcome: SnapshotSummary = { status: "completed", rows, bytes: body.length, object };
+    // ── Retention: keep only the N most recent dated snapshots ──
+    // Never throws — an over-eager prune must not fail the snapshot run.
+    let pruned = 0;
+    const retained: string[] = [];
+    try {
+      const keep = retentionCount();
+      const { data: objects } = await db.storage.from(BUCKET).list(FOLDER, {
+        limit: 1000,
+        sortBy: { column: "created_at", order: "desc" },
+      });
+      const dated = (objects || []).filter((o) => /^investors-\d{4}-\d{2}-\d{2}\.jsonl$/.test(o.name));
+      const stale = dated.slice(keep);
+      for (const o of stale) {
+        const { error: rmErr } = await db.storage.from(BUCKET).remove([`${FOLDER}/${o.name}`]);
+        if (!rmErr) pruned++;
+      }
+      for (const o of dated.slice(0, keep)) retained.push(o.name);
+    } catch (pruneErr) {
+      console.warn("[snapshot-archive] retention pass failed:", pruneErr);
+    }
+
+    const outcome: SnapshotSummary = { status: "completed", rows, bytes: body.length, object, pruned, retained };
     await recordJob(outcome);
     if (opts?.userId) {
       const { logAdminAction } = await import("@/lib/services/admin/audit");
