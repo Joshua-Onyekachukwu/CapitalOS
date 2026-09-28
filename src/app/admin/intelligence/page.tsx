@@ -57,6 +57,50 @@ export default function AdminIntelligencePage() {
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string>("");
   const [exporting, setExporting] = useState(false);
+  const [queue, setQueue] = useState<Array<{ id: string; name: string | null; confidence: number; a: { id: string; fullName: string; country: string | null }; b: { id: string; fullName: string; country: string | null } }>>([]);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [mergingId, setMergingId] = useState<string | null>(null);
+  const [queueMsg, setQueueMsg] = useState("");
+
+  const loadQueue = useCallback(async () => {
+    setQueueLoading(true);
+    try {
+      const res = await fetch("/api/admin/intelligence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "list_duplicates", limit: 50 }),
+      });
+      const j = await res.json();
+      setQueue(res.ok ? j.candidates || [] : []);
+    } catch {
+      setQueue([]);
+    } finally {
+      setQueueLoading(false);
+    }
+  }, []);
+
+  const mergePair = async (candidate: typeof queue[number]) => {
+    const ok = window.confirm(
+      `Merge "${candidate.b.fullName}" into "${candidate.a.fullName}"?\n\nThe merged record keeps the earliest-created row, fills empty fields from the other, and the duplicate row is deactivated (reversible). This action is audited.`
+    );
+    if (!ok) return;
+    setMergingId(candidate.id);
+    setQueueMsg("");
+    try {
+      const res = await fetch("/api/admin/intelligence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "merge", keeperId: candidate.a.id, loserId: candidate.b.id }),
+      });
+      const j = await res.json();
+      setQueueMsg(res.ok ? `Merged "${candidate.b.fullName}" into "${candidate.a.fullName}".` : `Merge failed: ${j.error || res.status}`);
+      await Promise.all([loadQueue(), load()]);
+    } catch {
+      setQueueMsg("Merge failed — network error.");
+    } finally {
+      setMergingId(null);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,7 +118,8 @@ export default function AdminIntelligencePage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    loadQueue();
+  }, [load, loadQueue]);
 
   const runDuplicateScan = async () => {
     setScanning(true);
@@ -87,7 +132,7 @@ export default function AdminIntelligencePage() {
       });
       const j = await res.json();
       setScanResult(res.ok ? `Scan complete: ${j.created} new duplicate pair(s) queued for review.` : `Scan failed: ${j.error || res.status}`);
-      await load();
+      await Promise.all([load(), loadQueue()]);
     } catch {
       setScanResult("Scan failed — network error.");
     } finally {
@@ -183,6 +228,52 @@ export default function AdminIntelligencePage() {
           {scanResult}
         </div>
       )}
+
+      {/* Duplicate review queue */}
+      <Card className="mb-[20px]">
+        <CardBody>
+          <div className="flex items-center justify-between mb-[12px]">
+            <h3 className="!text-[15px] !font-semibold !mb-0">
+              Duplicate Review Queue
+              <span className="text-[12px] font-normal text-gray-400 ml-[8px]">nothing merges without your confirmation</span>
+            </h3>
+            <Button variant="ghost" size="sm" onClick={loadQueue} disabled={queueLoading}>
+              <i className={`ri-refresh-line ${queueLoading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+          {queueMsg && (
+            <p className="text-[13px] text-green-600 dark:text-green-400 !mb-[10px]">{queueMsg}</p>
+          )}
+          {queue.length === 0 && !queueLoading ? (
+            <p className="text-[13px] text-gray-400 !mb-0">No pending duplicates. Run a scan after new ingestions.</p>
+          ) : (
+            <div className="space-y-[6px]">
+              {queue.slice(0, 25).map((c) => (
+                <div key={c.id} className="flex items-center gap-[10px] text-[13px] py-[6px] border-b border-gray-50 dark:border-gray-800 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[#06201b] dark:text-white">{c.a.fullName}</span>
+                    <span className="text-gray-400 mx-[6px]">←</span>
+                    <span className="text-gray-500">{c.b.fullName}</span>
+                    {c.a.country && <span className="text-gray-400 ml-[6px] text-[12px]">({c.a.country})</span>}
+                  </div>
+                  <Badge variant="warning">{(c.confidence * 100).toFixed(0)}%</Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={mergingId === c.id}
+                    onClick={() => mergePair(c)}
+                  >
+                    {mergingId === c.id ? "Merging..." : "Merge"}
+                  </Button>
+                </div>
+              ))}
+              {queue.length > 25 && (
+                <p className="text-[12px] text-gray-400 !mb-0">Showing 25 of {queue.length} pending pairs.</p>
+              )}
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[16px] mb-[20px]">
         {/* Storage */}
