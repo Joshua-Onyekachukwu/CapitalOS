@@ -1,19 +1,17 @@
 // =============================================
-// Signup API — auto-confirmed accounts
+// Signup API — auto-confirm now, real email activation behind a flag
 // =============================================
-// Supabase email confirmation is not usable in production yet: the project's
-// Site URL is still localhost:3000 and no transactional email provider is
-// configured, so confirmation links either never arrive or redirect users to
-// localhost. Until an activation system is properly set up, accounts are
-// confirmed at the app level via the service-role admin API (email_confirm).
+// Default (SIGNUP_AUTO_CONFIRM unset/true): accounts are created confirmed
+// via the service-role admin API and the user signs in immediately — no
+// dead-end confirmation loop while Supabase has no SMTP provider and its
+// Site URL is still localhost (see docs/supabase-url-configuration.md).
 //
-// Verification is still possible later: the confirm endpoint can flip
-// users into a verification state before any sensitive action, and this
-// route keeps flagging accounts that skip the email loop entirely.
+// Once the dashboard-side setup is done (Auth → SMTP provider + Site URL +
+// redirect allowlist per the doc), set SIGNUP_AUTO_CONFIRM=false and signup
+// switches to supabase.auth.signUp, which sends the confirmation email via
+// the configured provider; the user activates through /auth/callback.
 //
 // POST /api/auth/signup  { fullName, email, password }
-// GET  /api/auth/signup?userId=…   → sets email_confirmed and returns a
-//                                    one-time exchange token for first login.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -57,13 +55,48 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = serviceClient();
+  const autoConfirm = process.env.SIGNUP_AUTO_CONFIRM !== "false"; // default on
 
   try {
-    const { data, error } = await admin.auth.admin.createUser({
+    if (autoConfirm) {
+      const { data, error } = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName, signup_source: "app_autoconfirm" },
+      });
+
+      if (error) {
+        if (/already/i.test(error.message)) {
+          return NextResponse.json(
+            { error: "An account with this email already exists — log in instead." },
+            { status: 409 }
+          );
+        }
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        confirmed: true,
+        requiresActivation: false,
+        userId: data.user?.id,
+        message: "Account created. You can log in immediately.",
+      });
+    }
+
+    // Real email activation: create the user unconfirmed through the public
+    // API so Supabase sends the confirmation email via its configured SMTP
+    // provider. The link lands on /auth/callback (allowlisted domain).
+    const { createClient: createSsrClient } = await import("@/lib/supabase/server");
+    const publicClient = await createSsrClient();
+    const { error } = await publicClient.auth.signUp({
       email,
       password,
-      email_confirm: true, // no activation loop until the email system is set up
-      user_metadata: { full_name: fullName, signup_source: "app_autoconfirm" },
+      options: {
+        data: { full_name: fullName, signup_source: "email_activation" },
+        emailRedirectTo: `${request.nextUrl.origin}/auth/callback`,
+      },
     });
 
     if (error) {
@@ -78,9 +111,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      confirmed: true,
-      userId: data.user?.id,
-      message: "Account created. You can log in immediately.",
+      confirmed: false,
+      requiresActivation: true,
+      message: "Check your email to activate your account.",
     });
   } catch (err: any) {
     return NextResponse.json(
