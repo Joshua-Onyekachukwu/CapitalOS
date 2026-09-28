@@ -20,6 +20,10 @@ export async function GET(request: NextRequest) {
   const redirectUri = `${origin}/api/auth/google/callback`;
 
   const scopes = [
+    // https://mail.google.com/ is REQUIRED for SMTP/IMAP XOAUTH2 — the Gmail
+    // API scopes (gmail.send/gmail.readonly) do not grant SMTP access.
+    "https://mail.google.com/",
+    // Gmail API scopes for reply polling (fetchGmailMessages in reply-poller)
     "https://www.googleapis.com/auth/gmail.send",
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/userinfo.email",

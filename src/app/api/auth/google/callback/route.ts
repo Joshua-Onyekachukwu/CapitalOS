@@ -2,35 +2,48 @@
 // Google OAuth — Callback Route
 // =============================================
 // Exchanges authorization code for tokens and stores them encrypted.
+//
+// User identification uses the @supabase/ssr server client (supabase.auth.
+// getUser()), which reads the real sb-*-auth-token cookie. The previous
+// implementation hand-parsed the cookie string, which cannot decode
+// @supabase/ssr's base64-JSON (and possibly chunked) cookie — consent
+// completed but the account was never saved ("Could not identify user").
+//
+// Errors are surfaced to the settings page with actionable text: a
+// redirect_uri_mismatch names the exact URI to register in Google Cloud
+// Console (the URI must match the initiating origin verbatim).
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { encryptToken } from "@/lib/services/email/crypto";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+
+function settingsUrl(): string {
+  const base = process.env.NEXT_PUBLIC_APP_URL || "https://capital-os-nine.vercel.app";
+  return `${base}/dashboard/settings`;
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
 
-  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/dashboard/settings`;
-
   if (error) {
-    return NextResponse.redirect(
-      `${dashboardUrl}?email_error=${encodeURIComponent(error)}`
-    );
+    return NextResponse.redirect(`${settingsUrl()}?email_error=${encodeURIComponent(error)}`);
   }
 
   if (!code) {
     return NextResponse.redirect(
-      `${dashboardUrl}?email_error=${encodeURIComponent("No authorization code received")}`
+      `${settingsUrl()}?email_error=${encodeURIComponent("No authorization code received")}`
     );
   }
 
   try {
-    // Derive redirect URI from the actual request origin (works on localhost and production)
+    // Must match the redirect_uri used to obtain the code verbatim — the
+    // initiation route derives it from the request origin the same way.
     const origin = request.nextUrl.origin;
     const redirectUri = `${origin}/api/auth/google/callback`;
 
@@ -49,9 +62,11 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errText = await tokenResponse.text();
-      return NextResponse.redirect(
-        `${dashboardUrl}?email_error=${encodeURIComponent(`Token exchange failed: ${errText}`)}`
-      );
+      let hint = errText.slice(0, 200);
+      if (errText.includes("redirect_uri_mismatch")) {
+        hint = `Google rejected this redirect URI: ${redirectUri}. Add it under APIs & Credentials → your OAuth client → Authorized redirect URIs in Google Cloud Console.`;
+      }
+      return NextResponse.redirect(`${settingsUrl()}?email_error=${encodeURIComponent(`Token exchange failed: ${hint}`)}`);
     }
 
     const tokens = await tokenResponse.json();
@@ -71,57 +86,15 @@ export async function GET(request: NextRequest) {
       displayName = userInfo.name || "";
     }
 
-    // Get authenticated user from Supabase
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    // Identify the signed-in user via the SSR client (reads the real session
+    // cookie) — never by parsing the cookie header manually.
+    const userSupabase = await createServerSupabase();
+    const { data: userData, error: userError } = await userSupabase.auth.getUser();
+    const userId = userData?.user?.id || "";
 
-    // Extract user ID from the session cookie
-    const cookieHeader = request.headers.get("cookie") || "";
-    const supabaseAnon = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    // Try to get the user from the auth cookie
-    const authCookie = cookieHeader
-      .split(";")
-      .map((c) => c.trim())
-      .find((c) => c.startsWith("sb-"));
-
-    let userId = "";
-
-    if (authCookie) {
-      const tokenValue = authCookie.split("=")[1];
-      const { data: { user } } = await supabaseAnon.auth.getUser(tokenValue);
-      userId = user?.id || "";
-    }
-
-    // Fallback: try getting user from service role
-    if (!userId) {
-      // Parse cookies to find auth token
-      const cookies = cookieHeader.split(";").reduce((acc, c) => {
-        const [key, ...val] = c.trim().split("=");
-        acc[key] = val.join("=");
-        return acc;
-      }, {} as Record<string, string>);
-
-      // Try all possible cookie keys
-      for (const [key, val] of Object.entries(cookies)) {
-        if (key.includes("auth") || key.includes("supabase")) {
-          const { data: { user } } = await supabase.auth.getUser(val);
-          if (user) {
-            userId = user.id;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!userId) {
+    if (userError || !userId) {
       return NextResponse.redirect(
-        `${dashboardUrl}?email_error=${encodeURIComponent("Could not identify user. Please sign in first.")}`
+        `${settingsUrl()}?email_error=${encodeURIComponent("Could not identify user — sign in to Capital OS, then connect Gmail again.")}`
       );
     }
 
@@ -130,6 +103,11 @@ export async function GET(request: NextRequest) {
     const encryptedRefreshToken = encryptToken(tokens.refresh_token || "");
 
     // Store or update email account
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const { error: upsertError } = await supabase
       .from("email_accounts")
       .upsert(
@@ -149,16 +127,14 @@ export async function GET(request: NextRequest) {
 
     if (upsertError) {
       return NextResponse.redirect(
-        `${dashboardUrl}?email_error=${encodeURIComponent(`Failed to save email account: ${upsertError.message}`)}`
+        `${settingsUrl()}?email_error=${encodeURIComponent(`Failed to save email account: ${upsertError.message}`)}`
       );
     }
 
-    return NextResponse.redirect(
-      `${dashboardUrl}?email_connected=google`
-    );
+    return NextResponse.redirect(`${settingsUrl()}?email_connected=google`);
   } catch (err) {
     return NextResponse.redirect(
-      `${dashboardUrl}?email_error=${encodeURIComponent(`Google OAuth failed: ${String(err)}`)}`
+      `${settingsUrl()}?email_error=${encodeURIComponent(`Google OAuth failed: ${String(err)}`)}`
     );
   }
 }
