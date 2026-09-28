@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { pollEmailAccounts } from "@/lib/services/email/reply-poller";
+import { runApolloEnrichment } from "@/lib/services/investor/apollo-enrichment";
 
 export const maxDuration = 60;
 
@@ -28,9 +29,14 @@ export async function GET(request: NextRequest) {
     const totalReplies = pollResults.reduce((sum, r) => sum + r.repliesDetected, 0);
     const errors = pollResults.filter((r) => r.errors.length > 0);
 
+    // Scheduled enrichment pass (weekly cadence is enforced inside the
+    // service via the run-horizon check). Safe no-op without APOLLO_API_KEY.
+    const apollo = await runApolloEnrichment({ limit: 400 });
+
     console.log(
       `[cron/daily] polled ${pollResults.length} accounts, ${totalReplies} replies, ` +
-      `${errors.length} account errors, ${Date.now() - startedAt}ms`
+      `${errors.length} account errors, apollo=${apollo.status} ` +
+      `(matched=${apollo.matched}/emails=${apollo.emailsFound}), ${Date.now() - startedAt}ms`
     );
 
     return NextResponse.json({
@@ -39,6 +45,7 @@ export async function GET(request: NextRequest) {
       accountsPolled: pollResults.length,
       repliesDetected: totalReplies,
       accountErrors: errors.length,
+      apollo: apollo,
     });
   } catch (err) {
     console.error("[cron/daily] failed:", err);
