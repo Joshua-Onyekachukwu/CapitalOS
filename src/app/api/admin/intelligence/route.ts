@@ -111,6 +111,57 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, ...data });
     }
 
+    // ── Apollo enrichment run history (background_jobs) ──
+    if (action === "apollo_runs") {
+      const limit = Math.min(50, Math.max(1, parseInt(body.limit) || 20));
+      const { data, error } = await sp
+        .from("background_jobs")
+        .select("id, status, output, error_message, started_at, completed_at")
+        .eq("job_type", "apollo_enrichment")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return NextResponse.json({
+        runs: (data || []).map((j: any) => ({
+          id: j.id,
+          status: j.status,
+          createdAt: j.started_at,
+          durationMs: j.started_at && j.completed_at ? new Date(j.completed_at).getTime() - new Date(j.started_at).getTime() : null,
+          targets: j.output?.targets ?? null,
+          matched: j.output?.matched ?? null,
+          ambiguous: j.output?.ambiguous ?? null,
+          emailsFound: j.output?.emailsFound ?? null,
+          estimatedCredits: j.output?.estimatedCredits ?? null,
+          apiCalls: j.output?.apiCalls ?? null,
+          error: j.error_message || j.output?.error || null,
+        })),
+      });
+    }
+
+    // ── Background job status rollup (all job types) ──
+    if (action === "job_status") {
+      const { data: byType, error: e1 } = await sp
+        .from("background_jobs")
+        .select("job_type, status");
+      if (e1) throw e1;
+      const counts: Record<string, Record<string, number>> = {};
+      for (const j of byType || []) {
+        counts[j.job_type] = counts[j.job_type] || {};
+        counts[j.job_type][j.status] = (counts[j.job_type][j.status] || 0) + 1;
+      }
+      const { data: failures, error: e2 } = await sp
+        .from("background_jobs")
+        .select("job_type, error_message, created_at")
+        .eq("status", "failed")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (e2) throw e2;
+      return NextResponse.json({
+        counts,
+        recentFailures: (failures || []).map((f: any) => ({ jobType: f.job_type, error: f.error_message, createdAt: f.created_at })),
+      });
+    }
+
     // ── JSONL export (streams the compact normalized dataset) ──
     if (action === "export") {
       const { format } = body;

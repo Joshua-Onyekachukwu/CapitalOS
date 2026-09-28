@@ -61,6 +61,39 @@ export default function AdminIntelligencePage() {
   const [queueLoading, setQueueLoading] = useState(false);
   const [mergingId, setMergingId] = useState<string | null>(null);
   const [queueMsg, setQueueMsg] = useState("");
+  const [apolloRuns, setApolloRuns] = useState<
+    Array<{ id: string; status: string; createdAt: string; durationMs: number | null; targets: number | null; matched: number | null; ambiguous: number | null; emailsFound: number | null; estimatedCredits: number | null; apiCalls: { orgSearch: number; peopleSearch: number } | null; error: string | null }>
+  >([]);
+  const [apolloLoading, setApolloLoading] = useState(false);
+  const [jobCounts, setJobCounts] = useState<Record<string, Record<string, number>>>({});
+  const [recentFailures, setRecentFailures] = useState<Array<{ jobType: string; error: string | null; createdAt: string }>>([]);
+
+  const loadApollo = useCallback(async () => {
+    setApolloLoading(true);
+    try {
+      const [runsRes, jobsRes] = await Promise.all([
+        fetch("/api/admin/intelligence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "apollo_runs", limit: 12 }),
+        }),
+        fetch("/api/admin/intelligence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "job_status" }),
+        }),
+      ]);
+      const runs = runsRes.ok ? (await runsRes.json()).runs || [] : [];
+      const jobs = jobsRes.ok ? await jobsRes.json() : {};
+      setApolloRuns(runs);
+      setJobCounts(jobs.counts || {});
+      setRecentFailures(jobs.recentFailures || []);
+    } catch {
+      setApolloRuns([]);
+    } finally {
+      setApolloLoading(false);
+    }
+  }, []);
 
   const loadQueue = useCallback(async () => {
     setQueueLoading(true);
@@ -119,7 +152,8 @@ export default function AdminIntelligencePage() {
   useEffect(() => {
     load();
     loadQueue();
-  }, [load, loadQueue]);
+    loadApollo();
+  }, [load, loadQueue, loadApollo]);
 
   const runDuplicateScan = async () => {
     setScanning(true);
@@ -274,6 +308,87 @@ export default function AdminIntelligencePage() {
           )}
         </CardBody>
       </Card>
+
+      {/* Apollo enrichment + background jobs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[16px] mb-[20px]">
+        <Card>
+          <CardBody>
+            <div className="flex items-center justify-between mb-[12px]">
+              <h3 className="!text-[15px] !font-semibold !mb-0">Apollo Enrichment Runs</h3>
+              <Button variant="ghost" size="sm" onClick={loadApollo} disabled={apolloLoading}>
+                <i className={`ri-refresh-line ${apolloLoading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+            {apolloRuns.length === 0 && !apolloLoading ? (
+              <p className="text-[13px] text-gray-400 !mb-0">No Apollo enrichment runs recorded yet.</p>
+            ) : (
+              <div className="space-y-[6px]">
+                {apolloRuns.slice(0, 8).map((r) => (
+                  <div key={r.id} className="py-[6px] border-b border-gray-50 dark:border-gray-800 last:border-0">
+                    <div className="flex items-center justify-between text-[13px]">
+                      <span className="text-[#06201b] dark:text-white">
+                        {new Date(r.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                      <Badge variant={r.status === "completed" ? "success" : r.status === "failed" ? "danger" : "warning"}>
+                        {r.error && r.status === "failed" ? "failed" : r.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-[10px] text-[12px] text-gray-400 mt-[2px] flex-wrap">
+                      <span>{r.targets ?? "—"} targets</span>
+                      <span>· {r.matched ?? "—"} matched</span>
+                      <span>· {r.ambiguous ?? "—"} ambiguous</span>
+                      <span>· {r.emailsFound ?? "—"} emails</span>
+                      <span>· ~{r.estimatedCredits ?? "—"} credits</span>
+                      {r.apiCalls && (
+                        <span className="text-[11px] text-gray-300 dark:text-gray-600">
+                          (org:{r.apiCalls.orgSearch} people:{r.apiCalls.peopleSearch})
+                        </span>
+                      )}
+                    </div>
+                    {r.error && (
+                      <p className="text-[11px] text-red-500 mt-[2px] !mb-0">{r.error}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody>
+            <h3 className="!text-[15px] !font-semibold !mb-[12px]">Background Job Status</h3>
+            {Object.keys(jobCounts).length === 0 ? (
+              <p className="text-[13px] text-gray-400 !mb-0">No background jobs recorded.</p>
+            ) : (
+              <div className="space-y-[6px]">
+                {Object.entries(jobCounts).map(([type, statuses]) => (
+                  <div key={type} className="flex items-center justify-between text-[13px] py-[4px] border-b border-gray-50 dark:border-gray-800 last:border-0">
+                    <span className="text-[#06201b] dark:text-white">{type}</span>
+                    <span className="flex gap-[6px]">
+                      {Object.entries(statuses).map(([s, n]) => (
+                        <Badge key={s} variant={s === "completed" ? "success" : s === "failed" ? "danger" : "warning"} size="sm">
+                          {s}: {n}
+                        </Badge>
+                        ))}
+                    </span>
+                  </div>
+                ))}
+                {recentFailures.length > 0 && (
+                  <div className="mt-[10px]">
+                    <p className="text-[11px] uppercase tracking-wide text-gray-400 !mb-[6px]">Recent failures</p>
+                    {recentFailures.slice(0, 3).map((f, i) => (
+                      <p key={i} className="text-[12px] text-red-500 !mb-[4px] truncate" title={f.error || ""}>
+                        {f.jobType}: {f.error || "unknown error"}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[16px] mb-[20px]">
         {/* Storage */}

@@ -31,8 +31,21 @@ export interface ApolloRunSummary {
   emailsFound: number;
   sectorsFilled: number;
   websitesFilled: number;
+  /** Cost accounting (see CREDIT_COSTS) */
+  apiCalls: { orgSearch: number; peopleSearch: number };
+  estimatedCredits: number;
+  /** Dedup guard: emails skipped because another active row already owns them */
+  emailConflicts: number;
   error?: string;
 }
+
+/**
+ * Credit accounting per Apollo endpoint (documented plan assumptions —
+ * organizations/search name-matching is free on every plan; people/search
+ * may consume plan credits on every call depending on plan terms).
+ * estimatedCredits is a deliberate upper bound, never an undercount.
+ */
+const CREDIT_COSTS = { orgSearch: 0, peopleSearch: 1 } as const;
 
 function sp() {
   return createClient(
@@ -97,6 +110,9 @@ export async function runApolloEnrichment(opts?: { limit?: number; dryRun?: bool
   const summary: ApolloRunSummary = {
     status: "completed", targets: 0, matched: 0, ambiguous: 0,
     emailsFound: 0, sectorsFilled: 0, websitesFilled: 0,
+    apiCalls: { orgSearch: 0, peopleSearch: 0 },
+    estimatedCredits: 0,
+    emailConflicts: 0,
   };
 
   if (!process.env.APOLLO_API_KEY) {
@@ -136,6 +152,7 @@ export async function runApolloEnrichment(opts?: { limit?: number; dryRun?: bool
         "/organizations/search",
         { q_organization_name: row.full_name, page: 1, per_page: 3 }
       );
+      summary.apiCalls.orgSearch++;
       const orgs = search.organizations || [];
       const best = orgs
         .map((o) => ({ o, sim: nameSimilarity(row.name_normalized || norm(row.full_name), norm(String(o.name || ""))) }))
@@ -184,12 +201,27 @@ export async function runApolloEnrichment(opts?: { limit?: number; dryRun?: bool
                 page: 1, per_page: 1,
               }
             );
+            summary.apiCalls.peopleSearch++;
+            summary.estimatedCredits += CREDIT_COSTS.peopleSearch;
             const person = people.people?.[0];
             const email = person?.email ? String(person.email) : null;
             if (email && !row.email) {
-              update.email = email;
-              update.job_title = person?.title ? String(person.title) : null;
-              summary.emailsFound++;
+              // Dedup guard: never write a contact another active row already
+              // owns — enrichment must not create the duplicates we just merged.
+              const { data: clash } = await db
+                .from("investors")
+                .select("id")
+                .eq("email", email)
+                .neq("id", row.id)
+                .eq("is_active", true)
+                .limit(1);
+              if (clash && clash.length > 0) {
+                summary.emailConflicts++;
+              } else {
+                update.email = email;
+                update.job_title = person?.title ? String(person.title) : null;
+                summary.emailsFound++;
+              }
             }
           } catch (err) {
             if ((err as { code?: number }).code === 403) {

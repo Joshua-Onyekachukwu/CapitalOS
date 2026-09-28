@@ -119,6 +119,9 @@ export async function POST(request: NextRequest) {
     const explicitStage: string = (body.stage || "").trim().toLowerCase();
     const explicitSector: string = (body.sector || "").trim().toLowerCase();
     const explicitCountry: string = (body.country || "").trim();
+    // Dormancy + evidence filters (targeting active SEC filers, not stale rows)
+    const filingRecency: string | null = ["1y", "3y"].includes(body.filingRecency) ? body.filingRecency : null;
+    const hasSecEvidence: boolean = body.hasSecEvidence === true;
 
     // ── Parse natural language into structured filters (best effort) ──
     let parsed: ParsedQuery | null = null;
@@ -143,7 +146,7 @@ export async function POST(request: NextRequest) {
     );
 
     // ── Build the database query ──
-    const baseSelect = "id, full_name, job_title, country, city, fit_score, fit_score_breakdown, investor_type, investment_stages, investment_sectors, email, linkedin_url, outreach_readiness, bio, is_verified, data_quality_score";
+    const baseSelect = "id, full_name, job_title, country, city, fit_score, fit_score_breakdown, investor_type, investment_stages, investment_sectors, email, linkedin_url, outreach_readiness, bio, is_verified, data_quality_score, edgar_last_filing_date, verification_status, source_provider";
 
     // Text search: keywords go to name/title/bio. When AI parsing failed,
     // extract meaningful words from the query (never search the raw sentence
@@ -185,6 +188,11 @@ export async function POST(request: NextRequest) {
       if (countries.length > 0) b = b.or(countries.map((c) => `country.ilike.%${c}%`).join(","));
       if (parsed?.investor_types.length) b = b.in("investor_type", parsed.investor_types);
       if (parsed?.has_email) b = b.not("email", "is", null).neq("email", "");
+      if (filingRecency) {
+        const cutoff = new Date(Date.now() - (filingRecency === "1y" ? 365 : 3 * 365) * 86_400_000).toISOString().slice(0, 10);
+        b = b.gte("edgar_last_filing_date", cutoff);
+      }
+      if (hasSecEvidence) b = b.not("edgar_sic_code", "is", null); // SEC-verified rows carry their SIC classification
       return b;
     };
 
@@ -202,8 +210,21 @@ export async function POST(request: NextRequest) {
       supabase.from("investors").select("id", { count: "exact", head: true })
     );
 
+    const today = new Date().toISOString().slice(0, 10);
+    const decorated = (investors || []).map((row: any) => ({
+      ...row,
+      filing_recency: row.edgar_last_filing_date
+        ? Date.now() - new Date(row.edgar_last_filing_date).getTime() <= 365 * 86_400_000
+          ? "filing_1y"
+          : Date.now() - new Date(row.edgar_last_filing_date).getTime() <= 3 * 365 * 86_400_000
+          ? "filing_3y"
+          : "dormant_3y_plus"
+        : "no_evidence",
+      sec_verified: row.verification_status === "verified" && !!row.edgar_last_filing_date && !!(row.source_provider || "").toLowerCase().match(/edgar|sec/),
+    }));
+
     return NextResponse.json({
-      investors: investors || [],
+      investors: decorated,
       total: count || investors?.length || 0,
       parsed: parsed || null, // let the UI show how the query was understood
       fallback: !parsed && query.length > 3,

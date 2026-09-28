@@ -1,0 +1,59 @@
+{
+  "$comment": "SEC SIC description → sector tag mapping. First-match-wins, ordered most-specific first. Tags are lowercase snake_case, aligned with the seed-sectors vocabulary where applicable; the rest are honest verticals that vocabulary lacks. 'unmapped' patterns intentionally yield NO tags: holding shells, IP lessors and government issuers have no honest sector — unknown stays unknown (evidence-backed pipeline contract). Consumed by src/lib/services/investor/sic-sectors.ts and scripts/backfill-sic-sectors.cjs.",
+  "unmapped": {
+    "$comment": "Matched first. No tags are written for these — they are not industry sectors.",
+    "patterns": [
+      "non-operating establishments",
+      "patent owners",
+      "foreign government",
+      "holding companies"
+    ]
+  },
+  "rules": [
+    {
+      "$comment": "Specific descriptions that would otherwise be swallowed by a generic pattern below",
+      "patterns": [
+        "radio & tv broadcasting & communications equipment",
+        "hospital & medical service plans",
+        "investors, nec",
+        "oil & gas field machinery",
+        "asset-backed securities",
+        "security & commodity brokers",
+        "telephone communications"
+      ],
+      "tagsFor": {
+        "radio & tv broadcasting & communications equipment": ["hardware"],
+        "hospital & medical service plans": ["insurance"],
+        "investors, nec": ["real_estate"],
+        "oil & gas field machinery": ["energy"],
+        "asset-backed securities": ["capital_markets"],
+        "security & commodity brokers": ["capital_markets"],
+        "telephone communications": ["telecom"]
+      }
+    },
+    { "patterns": ["commercial bank", "savings institution", "bank, nec", "credit union"], "tags": ["commercial_banking"] },
+    { "patterns": ["insurance", "surety"], "tags": ["insurance"] },
+    { "patterns": ["investment advice", "investment counsel", "asset management", "portfolio management"], "tags": ["asset_management"] },
+    { "patterns": ["brokers", "dealer", "flotation", "depositary receipts", "exchanges & services"], "tags": ["capital_markets"] },
+    { "patterns": ["finance services", "credit institution", "credit corporation", "business credit"], "tags": ["financial_services"] },
+    { "patterns": ["prepackaged software", "computer programming", "data processing", "software"], "tags": ["software"] },
+    { "patterns": ["semiconductor"], "tags": ["semiconductors"] },
+    { "patterns": ["computer peripheral", "electronic components", "communications equipment", "electronic & other electrical", "computer storage", "computer communications"], "tags": ["hardware"] },
+    { "patterns": ["pharmaceutical", "biological products", "biotech"], "tags": ["pharma_biotech"] },
+    { "patterns": ["guided missiles", "space vehicles"], "tags": ["spacetech", "defense"] },
+    { "patterns": ["aircraft", "aerospace"], "tags": ["aerospace"] },
+    { "patterns": ["ordnance"], "tags": ["defense"] },
+    { "patterns": ["real estate"], "tags": ["real_estate"] },
+    { "patterns": ["petroleum refining", "oil & gas", "crude petroleum", "electric & other services", "electric services", "gas & electric", "coal mining"], "tags": ["energy"] },
+    { "patterns": ["telephone", "radiotelephone", "telegraph"], "tags": ["telecom"] },
+    { "patterns": ["newspapers", "publishing", "broadcasting", "television", "advertising"], "tags": ["media"] },
+    { "patterns": ["air transportation", "airline", "railroad", "trucking", "water transportation", "transportation"], "tags": ["transportation"] },
+    { "patterns": ["machinery", "primary metal", "electrical work"], "tags": ["industrials"] },
+    { "patterns": ["plastic materials", "synth resins", "elastomers", "chemicals", "stone, clay"], "tags": ["materials"] },
+    { "patterns": ["motor vehicles", "passenger car"], "tags": ["automotive"] },
+    { "patterns": ["retail-", "eating places", "drinking places", "variety stores", "department stores", "grocery"], "tags": ["consumer"] },
+    { "patterns": ["educational services", "schools"], "tags": ["education"] },
+    { "patterns": ["bldg contractors", "general contractors", "heavy construction"], "tags": ["construction"] },
+    { "patterns": ["business services"], "tags": ["business_services"] }
+  ]
+}

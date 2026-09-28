@@ -13,6 +13,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { pollEmailAccounts } from "@/lib/services/email/reply-poller";
 import { pollImapAccounts } from "@/lib/services/email/imap-poller";
 import { runApolloEnrichment } from "@/lib/services/investor/apollo-enrichment";
+import { runEdgarReverification } from "@/lib/services/investor/edgar-reverify";
+import { runSnapshotExport } from "@/lib/services/investor/snapshot-archive";
+import { runQualificationPass } from "@/lib/services/investor/qualification-tiers";
 
 export const maxDuration = 60;
 
@@ -37,10 +40,27 @@ export async function GET(request: NextRequest) {
     // service via the run-horizon check). Safe no-op without APOLLO_API_KEY.
     const apollo = await runApolloEnrichment({ limit: 400 });
 
+    // Monthly EDGAR re-verification (cadence enforced inside the service).
+    // Batch is sized to fit the function window; already-rechecked rows get a
+    // fresh last_verified_at and sort to the back, so the next day's run
+    // resumes where this one left off.
+    const edgar = await runEdgarReverification({ limit: 150 });
+
+    // Qualification tiers re-stamped daily (cheap: pure compute + bulk
+    // updates) so evidence freshness never drifts from reality.
+    const qualification = await runQualificationPass();
+
+    // Daily JSONL snapshot to Supabase Storage (idempotent per day) — runs
+    // last so the archive captures this run's stamps.
+    const snapshot = await runSnapshotExport();
+
     console.log(
       `[cron/daily] polled ${allResults.length} accounts, ${totalChecked} checked, ${totalReplies} replies, ` +
       `${errors.length} account errors, apollo=${apollo.status} ` +
-      `(matched=${apollo.matched}/emails=${apollo.emailsFound}), ${Date.now() - startedAt}ms`
+      `(matched=${apollo.matched}/emails=${apollo.emailsFound}), edgar=${edgar.status} ` +
+      `(rechecked=${edgar.rechecked}/refreshed=${edgar.filingsRefreshed}/drift=${edgar.sicDrift}), ` +
+      `qualification=${qualification.status} (verified=${qualification.tierCounts.verified}/derived=${qualification.tierCounts.derived}/up=${qualification.upgrades}/down=${qualification.downgrades}), ` +
+      `snapshot=${snapshot.status} (${snapshot.rows} rows), ${Date.now() - startedAt}ms`
     );
 
     return NextResponse.json({
@@ -52,6 +72,9 @@ export async function GET(request: NextRequest) {
       accountErrors: errors.length,
       accountErrorDetails: errors.map((e) => ({ accountId: e.accountId, errors: e.errors })),
       apollo: apollo,
+      edgarReverification: edgar,
+      qualification: qualification,
+      snapshot: snapshot,
     });
   } catch (err) {
     console.error("[cron/daily] failed:", err);

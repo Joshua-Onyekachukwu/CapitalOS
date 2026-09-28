@@ -37,6 +37,9 @@ interface DiscoverResult {
   outreach_readiness: string;
   bio: string | null;
   is_verified: boolean;
+  edgar_last_filing_date?: string | null;
+  filing_recency?: string;
+  sec_verified?: boolean;
 }
 
 interface AnalyzeResult {
@@ -99,6 +102,8 @@ export default function InvestorDiscoverPage() {
   const [showResults, setShowResults] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("fit_score");
+  const [filingRecency, setFilingRecency] = useState("");
+  const [secOnly, setSecOnly] = useState(false);
 
   // Analyze state
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
@@ -122,6 +127,8 @@ export default function InvestorDiscoverPage() {
           sector,
           stage,
           country: geography,
+          filingRecency: filingRecency || undefined,
+          hasSecEvidence: secOnly,
           sortBy,
           sortDirection: "desc",
           limit: 50,
@@ -138,7 +145,7 @@ export default function InvestorDiscoverPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [query, sector, stage, geography, sortBy]);
+  }, [query, sector, stage, geography, sortBy, filingRecency, secOnly]);
 
   const handleUseMyProfile = async () => {
     try {
@@ -393,6 +400,33 @@ export default function InvestorDiscoverPage() {
             </div>
           </div>
 
+          {/* Dormancy + evidence filters */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-[16px]">
+            <div>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">SEC Filing Activity</label>
+              <select
+                value={filingRecency}
+                onChange={(e) => setFilingRecency(e.target.value)}
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+              >
+                <option value="">Any activity</option>
+                <option value="1y">Filed within 1 year (active)</option>
+                <option value="3y">Filed within 3 years</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Evidence</label>
+              <select
+                value={secOnly ? "sec" : ""}
+                onChange={(e) => setSecOnly(e.target.value === "sec")}
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+              >
+                <option value="">All investors</option>
+                <option value="sec">SEC-verified filers only</option>
+              </select>
+            </div>
+          </div>
+
           {/* Free text */}
           <div className="mb-[16px]">
             <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Describe what you need</label>
@@ -453,6 +487,8 @@ export default function InvestorDiscoverPage() {
                   setStage("");
                   setGeography("");
                   setQuery("");
+                  setFilingRecency("");
+                  setSecOnly(false);
                   setSelectedFilters([]);
                   setShowResults(false);
                   setResults([]);
@@ -514,6 +550,20 @@ export default function InvestorDiscoverPage() {
                   </span>
                 )}
               </h3>
+              {results.length > 0 && (
+                <p className="text-[12px] text-gray-400 !mb-0 mt-[4px]">
+                  {(() => {
+                    const c: Record<string, number> = { filing_1y: 0, filing_3y: 0, dormant_3y_plus: 0, no_evidence: 0 };
+                    results.forEach((r) => { const k = r.filing_recency || "no_evidence"; c[k] = (c[k] || 0) + 1; });
+                    return (
+                      <>
+                        {c.filing_1y} filed &lt;1y · {c.filing_3y} filed &lt;3y · {c.dormant_3y_plus} dormant &gt;3y · {c.no_evidence} no filing data
+                        {results.some((r) => r.sec_verified) && <> · {results.filter((r) => r.sec_verified).length} SEC-verified</>}
+                      </>
+                    );
+                  })()}
+                </p>
+              )}
               {parsedFilters && (
                 <div className="flex items-center gap-[6px] flex-wrap mt-[6px]">
                   <span className="text-[12px] text-gray-400">Understood as:</span>
@@ -624,6 +674,16 @@ export default function InvestorDiscoverPage() {
                                 {s}
                               </Badge>
                             ))}
+                            {investor.sec_verified && (
+                              <Badge variant="success" size="sm">
+                                <i className="ri-shield-check-line mr-[2px]"></i>SEC-verified
+                              </Badge>
+                            )}
+                            {investor.filing_recency === "dormant_3y_plus" && (
+                              <Badge variant="warning" size="sm">
+                                Dormant &gt;3y
+                              </Badge>
+                            )}
                           </div>
 
                           {/* Match Reasons (from existing breakdown) */}
