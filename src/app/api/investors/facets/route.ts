@@ -34,6 +34,8 @@ async function computeFacets() {
   );
 
   // 1. Get accurate counts for key stats using head:true (fast, no data transfer)
+  // All counts exclude merged/deactivated rows (is_active=false) so the stats
+  // match the filtered investor list.
   const [
     { count: totalCount },
     { count: withEmailCount },
@@ -42,12 +44,12 @@ async function computeFacets() {
     { count: readyCount },
     { count: needsVerificationCount },
   ] = await Promise.all([
-    supabase.from("investors").select("*", { count: "exact", head: true }),
-    supabase.from("investors").select("*", { count: "exact", head: true }).not("email", "is", null).neq("email", ""),
-    supabase.from("investors").select("*", { count: "exact", head: true }).not("linkedin_url", "is", null).neq("linkedin_url", ""),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_verified", true),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("outreach_readiness", "ready"),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("outreach_readiness", "needs_verification"),
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true),
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).not("email", "is", null).neq("email", ""),
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).not("linkedin_url", "is", null).neq("linkedin_url", ""),
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("is_verified", true),
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("outreach_readiness", "ready"),
+    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("outreach_readiness", "needs_verification"),
   ]);
 
   // 2. Fetch a larger sample for category facets (type, sector, stage, country)
@@ -55,6 +57,7 @@ async function computeFacets() {
   const { data: investors } = await supabase
     .from("investors")
     .select("investor_type, investment_sectors, investment_stages, country, city, outreach_readiness")
+    .eq("is_active", true)
     .limit(SAMPLE_SIZE);
 
   const rows = investors || [];

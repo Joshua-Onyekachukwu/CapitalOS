@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
     };
 
     const { data: investors, error } = await applyFilters(
-      supabase.from("investors").select(baseSelect).order(sortBy, { ascending: sortDir, nullsFirst: false })
+      supabase.from("investors").select(baseSelect).eq("is_active", true).order(sortBy, { ascending: sortDir, nullsFirst: false })
     ).limit(limit);
 
     if (error) {
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
 
     // ── Count total matches (same filters, head count) ──
     const { count } = await applyFilters(
-      supabase.from("investors").select("id", { count: "exact", head: true })
+      supabase.from("investors").select("id", { count: "exact", head: true }).eq("is_active", true)
     );
 
     const today = new Date().toISOString().slice(0, 10);

@@ -52,6 +52,9 @@ export async function GET(request: NextRequest) {
 
     // Helper to apply common filters
     const applyFilters = (q: any) => {
+      // Merged/deactivated records (duplicate merges set is_active=false) must
+      // never surface to users — they exist only as merge-history evidence.
+      q = q.eq("is_active", true);
       // NOTE: only columns that actually exist on `investors` — referencing a
       // phantom column (e.g. firm_name) makes PostgREST reject the whole .or()
       // with 42703, which surfaced as "0 results for every search". Firm search
