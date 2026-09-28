@@ -66,12 +66,13 @@ jobs:
           TEST_IDOR_VICTIM_USER_ID: ${{ secrets.TEST_IDOR_VICTIM_USER_ID }}
           FORCE_FAILURE: ${{ github.event.inputs.force_failure }}
         run: |
-          set +e
+          set -o pipefail
           npx vitest run src/__tests__/access-control.test.ts \
             --reporter=default --outputFile.security=security-results.txt 2>&1 \
             | tee suite-output.txt
           STATUS=$?
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "suite exit: $STATUS"
           # Keep the log bounded for the issue body.
           tail -c 12000 suite-output.txt > security-results.txt
           exit 0  # alerting steps below decide the job outcome
