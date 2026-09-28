@@ -12,7 +12,7 @@
  * claim tier reflects the weakest evidenced attribute.
  */
 
-import { weakestTier, tierOf, type EvidenceRef, type InvestorRecord, type SourceRecord, type Stage, type Sector, type Geography } from "./types";
+import { weakestTier, tierOf, type EvidenceRef, type InvestorRecord, type InvestorType, type SourceRecord, type Stage, type Sector, type Geography } from "./types";
 import {
   canonicalizeName,
   classifyTypeFromText,
