@@ -51,18 +51,21 @@ export async function GET(request: NextRequest) {
     // admin surface (app_metadata.role OR env allowlist) — not isAdminEmail
     // alone, which misses role-based admins.
     const roleInfo = await getUserRole(user.id, user.email);
+    // "Configured" must reflect reality: an admin exists via the env
+    // allowlist OR via app_metadata.role — not the env var alone.
+    const bootstrapComplete = await adminAlreadyConfigured();
 
     // The admin allowlist is an admin-only detail — non-admins get only the
     // configuration state and their own status (access-control suite).
     return NextResponse.json({
-      configured: adminEmails.length > 0,
+      configured: bootstrapComplete,
       ...(roleInfo.isAdmin ? { adminEmails: adminEmails } : {}),
       currentUser: {
         email: user.email.replace(/(.{2}).*(@.*)/, "$1***$2"),
         isAdmin: isCurrentUserAdmin || roleInfo.isAdmin,
         adminReason: getAdminReason(user.email),
       },
-      setupComplete: adminEmails.length > 0,
+      setupComplete: bootstrapComplete,
     });
   } catch (err) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
