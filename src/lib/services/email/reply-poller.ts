@@ -124,7 +124,7 @@ async function fetchMicrosoftMessages(accessToken: string, since: Date): Promise
   return emails;
 }
 
-async function processReply(email: IncomingEmail, userId: string, investorId: string | null, accountId?: string): Promise<boolean> {
+export async function processReply(email: IncomingEmail, userId: string, investorId: string | null, accountId?: string): Promise<boolean> {
   // Check if already processed
   const existing = await query<any>(
     `SELECT id FROM email_messages WHERE message_id = $1 LIMIT 1`,
