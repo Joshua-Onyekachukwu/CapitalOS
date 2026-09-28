@@ -26,7 +26,7 @@ const fs = require("fs");
 const path = require("path");
 
 const UA = "CapitalOS-Investor-Intelligence/1.0 (data-quality enrichment; contact: ops@capital-os.local)";
-const RATE_MS = 110; // ~9 req/s, under SEC's 10 req/s fair-use cap
+const RATE_MS = 110; // kept for reference/cool-down pacing
 const CHECKPOINT = path.join("data", "investors", "edgar-progress.json");
 const LOG = path.join("data", "investors", `edgar-enrichment-${new Date().toISOString().slice(0, 10)}.log`);
 
@@ -36,8 +36,9 @@ const getArg = (name, dflt) => {
   return i >= 0 ? args[i + 1] : dflt;
 };
 const LIMIT = parseInt(getArg("--limit", "100"));
-const OFFSET = parseInt(getArg("--offset", "0"));
 const FORCE = args.includes("--force");
+const CHUNK = 5;          // concurrent SEC fetches per burst
+const BURST_PAUSE_MS = 550; // keeps average rate ≈ 9 req/s (SEC fair-use < 10)
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -97,71 +98,61 @@ async function main() {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  // Resumable checkpoint: resume from where the last run stopped.
-  let startOffset = OFFSET;
-  if (OFFSET === 0 && fs.existsSync(CHECKPOINT)) {
-    try {
-      const cp = JSON.parse(fs.readFileSync(CHECKPOINT, "utf8"));
-      if (cp.done === false && cp.nextOffset) {
-        startOffset = cp.nextOffset;
-        log(`resuming from checkpoint at offset ${startOffset}`);
-      }
-    } catch { /* corrupt checkpoint — start clean */ }
-  }
-
-  const { data: rows, error } = await sp
+  // The SELECT is the checkpoint: only rows never checked against SEC
+  // (last_verified_at IS NULL) are processed, so interrupted runs resume
+  // exactly where they stopped with no lost or repeated work.
+  let query = sp
     .from("investors")
-    .select("id, source_id, full_name, last_verified_at, is_active")
+    .select("id, source_id, full_name, is_active")
     .eq("is_active", true)
     .order("created_at")
-    .range(startOffset, startOffset + LIMIT - 1);
+    .limit(LIMIT);
+  if (!FORCE) query = query.is("last_verified_at", null);
+
+  const { data: rows, error } = await query;
   if (error) throw new Error(`Supabase fetch failed: ${error.message}`);
 
-  log(`=== run: offset=${startOffset} limit=${LIMIT} rows=${rows?.length || 0} force=${FORCE} ===`);
-  let processed = 0, enriched = 0, quarantined = 0, skipped = 0, failed = 0;
+  log(`=== run: limit=${LIMIT} rows=${rows?.length || 0} force=${FORCE} ===`);
+  const stats = { processed: 0, enriched: 0, quarantined: 0, skipped: 0, failed: 0 };
 
-  /** Collect updates and flush concurrently — fetches stay serial (SEC cap). */
+  /** Collect updates and flush concurrently — DB writes never block fetches. */
   const pending = [];
   const flush = async () => {
     if (pending.length === 0) return;
     const results = await Promise.allSettled(pending.splice(0));
     for (const r of results) {
       if (r.status === "rejected") {
-        failed++;
+        stats.failed++;
         log(`UPDATE ERROR: ${r.reason?.message || r.reason}`);
       }
     }
   };
 
-  for (const row of rows || []) {
-    // Incremental: rows already verified by a previous run are skipped
-    // (skip key is last_verified_at — most enriched rows honestly have
-    // sic=null, so the SIC column cannot be the completion signal)
-    if (!FORCE && row.last_verified_at != null) {
-      skipped++;
-      continue;
-    }
+  const stamp = () => new Date().toISOString();
 
+  const processRow = async (row) => {
     const cik = (row.source_id || "").trim();
     if (!/^\d{10}$/.test(cik)) {
       // Garbage quarantine — keep the row, flag it for review (never delete)
       pending.push(
-        sp.from("investors").update({ record_status: "needs_review", updated_at: new Date().toISOString() }).eq("id", row.id)
+        sp.from("investors").update({ record_status: "needs_review", last_verified_at: stamp(), updated_at: stamp() }).eq("id", row.id)
       );
-      quarantined++;
+      stats.quarantined++;
       log(`QUARANTINE ${row.id} "${row.full_name}" — invalid CIK "${row.source_id}"`);
-      continue;
+      return;
     }
 
-    try {
-      const result = await fetchSubmissions(cik);
-      if (result.notFound) {
-        pending.push(
-          sp.from("investors").update({ record_status: "needs_review", updated_at: new Date().toISOString() }).eq("id", row.id)
-        );
-        quarantined++;
-        log(`QUARANTINE ${row.id} "${row.full_name}" — no SEC record for CIK ${cik}`);
-      } else {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await fetchSubmissions(cik);
+        if (result.notFound) {
+          pending.push(
+            sp.from("investors").update({ record_status: "needs_review", last_verified_at: stamp(), updated_at: stamp() }).eq("id", row.id)
+          );
+          stats.quarantined++;
+          log(`QUARANTINE ${row.id} "${row.full_name}" — no SEC record for CIK ${cik}`);
+          return;
+        }
         const f = extractFields(result.data);
         pending.push(
           sp
@@ -174,36 +165,40 @@ async function main() {
               edgar_last_filing_date: f.edgarLastFilingDate,
               name_normalized: normalizeName(f.edgarName || row.full_name),
               verification_status: "verified",
-              last_verified_at: new Date().toISOString(),
+              last_verified_at: stamp(),
               record_status: "valid",
-              updated_at: new Date().toISOString(),
+              updated_at: stamp(),
             })
             .eq("id", row.id)
         );
-        enriched++;
-        if (f.formerNames.length > 0 && enriched % 50 === 0) {
-          log(`progress: ${processed} processed, ${enriched} enriched (last: "${row.full_name}" sic=${f.edgarSicCode} ${f.edgarCity || "-"} ${f.edgarState || "-"})`);
+        stats.enriched++;
+        return;
+      } catch (err) {
+        if (err.retryable && attempt < 3) {
+          log(`rate limited on CIK ${cik} — cooling down 15s (attempt ${attempt})`);
+          await sleep(15000);
+          continue;
         }
-      }
-    } catch (err) {
-      failed++;
-      log(`ERROR ${row.id} CIK ${cik}: ${err.message}`);
-      if (err.retryable) {
-        log("rate limited — cooling down 15s");
-        await flush();
-        await sleep(15000);
+        stats.failed++;
+        log(`ERROR ${row.id} CIK ${cik}: ${err.message}`);
+        return;
       }
     }
+  };
 
-    processed++;
-    if (processed % 50 === 0) await flush();
-    await sleep(RATE_MS);
+  for (let i = 0; i < (rows || []).length; i += CHUNK) {
+    const chunk = (rows || []).slice(i, i + CHUNK);
+    await Promise.allSettled(chunk.map(processRow));
+    stats.processed += chunk.length;
+    if (stats.processed % 100 < CHUNK) await flush();
+    if (i + CHUNK < rows.length) await sleep(BURST_PAUSE_MS);
   }
   await flush();
 
-  fs.writeFileSync(CHECKPOINT, JSON.stringify({ done: processed < LIMIT, nextOffset: startOffset + (rows?.length || 0), updatedAt: new Date().toISOString() }, null, 2));
-  log(`=== done: processed=${processed} enriched=${enriched} quarantined=${quarantined} skipped=${skipped} failed=${failed} ===`);
-  console.log(`\nSummary: processed=${processed} enriched=${enriched} quarantined=${quarantined} skipped=${skipped} failed=${failed}`);
+  // Resumable progress note for observability (SELECT filter is the real checkpoint)
+  fs.writeFileSync(CHECKPOINT, JSON.stringify({ done: stats.processed < LIMIT, processed: stats.processed, updatedAt: stamp() }, null, 2));
+  log(`=== done: processed=${stats.processed} enriched=${stats.enriched} quarantined=${stats.quarantined} skipped=${stats.skipped} failed=${stats.failed} ===`);
+  console.log(`\nSummary: processed=${stats.processed} enriched=${stats.enriched} quarantined=${stats.quarantined} skipped=${stats.skipped} failed=${stats.failed}`);
   console.log(`Checkpoint: ${CHECKPOINT} | Log: ${LOG}`);
 }
 
