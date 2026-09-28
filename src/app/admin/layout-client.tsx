@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 const adminNav = [
   { label: "Overview", href: "/admin", icon: "ri-dashboard-3-line" },
+  { label: "Investor Intelligence", href: "/admin/intelligence", icon: "ri-brain-line" },
   { label: "Users", href: "/admin/users", icon: "ri-team-line" },
   { label: "Investors", href: "/admin/investors", icon: "ri-user-search-line" },
   { label: "Investor Firms", href: "/admin/investor-firms", icon: "ri-building-2-line" },
