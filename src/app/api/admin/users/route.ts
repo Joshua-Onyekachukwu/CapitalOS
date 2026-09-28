@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
     created_at: u.created_at,
     last_sign_in: u.last_sign_in_at,
     provider: u.app_metadata?.provider || "email",
+    signup_source: u.user_metadata?.signup_source || null,
+    confirmed: !!u.email_confirmed_at,
   }));
 
   return NextResponse.json({ users });

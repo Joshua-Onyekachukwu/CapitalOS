@@ -17,7 +17,7 @@ interface NavSection {
   items: NavItem[];
   adminOnly?: boolean;
 }  // Admin-only hrefs — hidden from non-admins in sidebar AND blocked by layout
-  const ADMIN_HREFS = ["/dashboard/admin"];
+  const ADMIN_HREFS = ["/dashboard/data-health"];
 
   function isAdminItem(href: string): boolean {
     return ADMIN_HREFS.some((adminHref) => href === adminHref || href.startsWith(adminHref + "/"));
@@ -76,9 +76,9 @@ interface NavSection {
     {
       title: "Admin",
       items: [
-        { label: "Data Health", href: "/dashboard/admin", icon: "ri-heart-pulse-line" },
-        { label: "Email Monitor", href: "/dashboard/admin/email-monitor", icon: "ri-mail-check-line" },
-        { label: "Waitlist", href: "/dashboard/admin/waitlist", icon: "ri-user-star-line" },
+        { label: "Data Health", href: "/dashboard/data-health", icon: "ri-heart-pulse-line" },
+        { label: "Email Monitor", href: "/dashboard/data-health/email-monitor", icon: "ri-mail-check-line" },
+        { label: "Waitlist", href: "/dashboard/data-health/waitlist", icon: "ri-user-star-line" },
       ],
       adminOnly: true,
     },

@@ -52,7 +52,7 @@ export default function AdminWaitlistPage() {
     <div className="p-6 max-w-[1200px] mx-auto">
       <div className="mb-6">
         <Link
-          href="/dashboard/admin"
+          href="/dashboard/data-health"
           className="text-sm text-gray-500 hover:text-gray-700 mb-1 inline-flex items-center gap-1"
         >
           <i className="ri-arrow-left-line"></i> Back to Admin

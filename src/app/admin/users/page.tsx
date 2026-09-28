@@ -14,7 +14,14 @@ interface User {
   created_at: string;
   last_sign_in: string;
   provider: string;
+  signup_source: string | null;
+  confirmed: boolean;
 }
+
+const SIGNUP_SOURCE_LABELS: Record<string, string> = {
+  app_autoconfirm: "Auto-confirmed",
+  email_activation: "Email activation",
+};
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -108,6 +115,7 @@ export default function AdminUsersPage() {
                   <tr className="border-b border-gray-200 dark:border-gray-700">
                     <th className="text-left py-[12px] px-[16px] font-semibold text-gray-500">User</th>
                     <th className="text-left py-[12px] px-[16px] font-semibold text-gray-500">Role</th>
+                    <th className="text-left py-[12px] px-[16px] font-semibold text-gray-500">Signup</th>
                     <th className="text-left py-[12px] px-[16px] font-semibold text-gray-500">Auth Provider</th>
                     <th className="text-left py-[12px] px-[16px] font-semibold text-gray-500">Joined</th>
                     <th className="text-left py-[12px] px-[16px] font-semibold text-gray-500">Last Active</th>
@@ -123,6 +131,12 @@ export default function AdminUsersPage() {
                       <td className="py-[12px] px-[16px]">
                         <Badge variant={user.role === "admin" ? "danger" : "default"}>
                           {user.role || "user"}
+                        </Badge>
+                      </td>
+                      <td className="py-[12px] px-[16px]">
+                        <Badge variant={user.signup_source === "email_activation" ? "success" : "default"}>
+                          {SIGNUP_SOURCE_LABELS[user.signup_source || ""] ||
+                            (user.confirmed ? "Confirmed" : "Legacy/Unconfirmed")}
                         </Badge>
                       </td>
                       <td className="py-[12px] px-[16px] text-gray-500 capitalize">
