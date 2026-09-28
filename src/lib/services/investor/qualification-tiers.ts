@@ -140,16 +140,26 @@ export async function runQualificationPass(opts?: { limit?: number; userId?: str
 
   try {
     const db = sp();
-    const limit = Math.min(20_000, Math.max(100, opts?.limit ?? 12_500));
+    const maxRows = Math.min(20_000, Math.max(100, opts?.limit ?? 12_500));
 
     const rank: Record<QualificationTier, number> = { verified: 3, derived: 2, ai_classified: 1, unknown: 0 };
 
-    const { data: rows, error } = await db
-      .from("investors")
-      .select("id, verification_status, source_provider, source_id, last_verified_at, fit_score_breakdown, outreach_readiness, fit_score, qualification_notes")
-      .eq("is_active", true)
-      .limit(limit);
-    if (error) throw error;
+    // Paginate — Supabase caps single queries (default max-rows 1000), so a
+    // plain .limit() would silently scan only a fraction of the dataset.
+    const rows: Array<Record<string, any>> = [];
+    const PAGE = 1000;
+    for (let offset = 0; offset < maxRows; offset += PAGE) {
+      const { data, error } = await db
+        .from("investors")
+        .select("id, verification_status, source_provider, source_id, last_verified_at, fit_score_breakdown, outreach_readiness, fit_score, qualification_notes")
+        .eq("is_active", true)
+        .order("created_at")
+        .range(offset, offset + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      rows.push(...data);
+      if (data.length < PAGE) break;
+    }
 
     const now = new Date();
     const verifiedIds: string[] = [];

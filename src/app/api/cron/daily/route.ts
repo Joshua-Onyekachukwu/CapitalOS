@@ -41,10 +41,10 @@ export async function GET(request: NextRequest) {
     const apollo = await runApolloEnrichment({ limit: 400 });
 
     // Monthly EDGAR re-verification (cadence enforced inside the service).
-    // Batch is sized to fit the function window; already-rechecked rows get a
-    // fresh last_verified_at and sort to the back, so the next day's run
-    // resumes where this one left off.
-    const edgar = await runEdgarReverification({ limit: 150 });
+    // Batch is sized so the whole cron chain fits the function window;
+    // already-rechecked rows get a fresh last_verified_at and sort to the
+    // back, so the next day's run resumes where this one left off.
+    const edgar = await runEdgarReverification({ limit: 100 });
 
     // Qualification tiers re-stamped daily (cheap: pure compute + bulk
     // updates) so evidence freshness never drifts from reality.
