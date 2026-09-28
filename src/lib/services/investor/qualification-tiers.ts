@@ -190,7 +190,9 @@ export async function runQualificationPass(opts?: { limit?: number; userId?: str
     const stamp = new Date().toISOString();
     const bulk = async (ids: string[], status: string) => {
       while (ids.length > 0) {
-        const chunk = ids.splice(0, 1000);
+        // 200-uuid chunks: the .in() filter travels in the request URL, and
+        // ~1000 of them exceed the gateway's URI limit (400 Bad Request).
+        const chunk = ids.splice(0, 200);
         const { error: upErr } = await db.from("investors").update({ verification_status: status, updated_at: stamp }).in("id", chunk);
         if (upErr) throw upErr;
       }
