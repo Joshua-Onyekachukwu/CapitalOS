@@ -69,6 +69,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result);
     }
 
+    // ── Pending duplicate review queue (with names) ──
+    if (action === "list_duplicates") {
+      const limit = Math.min(200, Math.max(10, parseInt(body.limit) || 100));
+      const { data, error } = await sp
+        .from("duplicate_candidates")
+        .select("id, confidence, match_signals, created_at, investor_a_id, investor_b_id, investors:investor_a_id(full_name, country), loser:investor_b_id(full_name, country)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true })
+        .limit(limit);
+      if (error) throw error;
+      return NextResponse.json({
+        candidates: (data || []).map((d: any) => ({
+          id: d.id,
+          confidence: d.confidence,
+          name: d.match_signals?.name || null,
+          a: { id: d.investor_a_id, fullName: d.investors?.full_name, country: d.investors?.country },
+          b: { id: d.investor_b_id, fullName: d.loser?.full_name, country: d.loser?.country },
+          createdAt: d.created_at,
+        })),
+      });
+    }
+
+    // ── Merge a reviewed duplicate pair (destructive; audited) ──
+    if (action === "merge") {
+      const keeper: string = body.keeperId;
+      const loser: string = body.loserId;
+      if (!keeper || !loser || keeper === loser) {
+        return NextResponse.json({ error: "keeperId and loserId (distinct) required" }, { status: 400 });
+      }
+      const { data, error } = await sp.rpc("merge_investors", { p_keeper: keeper, p_loser: loser });
+      if (error) throw error;
+      logAdminAction({
+        userId: user.id,
+        action: "merge_investors",
+        entityType: "investor",
+        entityId: keeper,
+        details: { loser, result: data },
+        ip: request.headers.get("x-forwarded-for"),
+      });
+      return NextResponse.json({ success: true, ...data });
+    }
+
     // ── JSONL export (streams the compact normalized dataset) ──
     if (action === "export") {
       const { format } = body;
