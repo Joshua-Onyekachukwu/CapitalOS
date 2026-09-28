@@ -37,11 +37,20 @@ const TEST_TIMEOUT = 120_000;
 const BASE_URL = process.env.TEST_URL || "http://localhost:3456";
 
 // ── Server availability gate (integration sections skip when absent) ──
-const serverAvailable = await fetch(`${BASE_URL}/api/auth/google`, {
-  signal: AbortSignal.timeout(3000),
-})
-  .then(() => true)
-  .catch(() => false);
+// Probed route returns 401 without a session — any response means the
+// server is up. (Avoids redirecting probes like /api/auth/google, which
+// bounce to accounts.google.com and stall on restricted networks.)
+// Uses a manual race rather than AbortSignal.timeout: the jsdom test
+// environment does not provide it.
+const serverAvailable = await Promise.race([
+  fetch(`${BASE_URL}/api/dashboard/admin`)
+    .then(() => true)
+    .catch((e) => {
+      console.log(`[access-control] server probe failed: ${e?.name}: ${e?.cause?.code || e?.message}`);
+      return false as const;
+    }),
+  new Promise<false>((resolve) => setTimeout(() => resolve(false), 10_000)),
+]);
 
 // ════════════════════════════════════════════════════════
 // A. STATIC SCAN — requireAdmin must be the first statement
@@ -139,19 +148,34 @@ const FOUNDER_PASSWORD = process.env.TEST_FOUNDER_PASSWORD || "";
 const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || "";
 const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || "";
 
-/** Sign in via Supabase and return the session cookie string. */
+/**
+ * Sign in via @supabase/ssr with an in-memory cookie store and return the
+ * session cookie string for the app's server client. The password grant
+ * endpoint does NOT set sb-* cookies itself — only the SSR client writes
+ * them — so we let @supabase/ssr produce them to guarantee the exact
+ * (chunked/base64) format the app's createServerClient parses.
+ */
 async function signIn(email: string, password: string): Promise<string | null> {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+  const store = new Map<string, string>();
+  const { createServerClient } = await import("@supabase/ssr");
+  const sb = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    cookies: {
+      getAll: () =>
+        Array.from(store.entries()).map(([name, value]) => ({ name, value })),
+      setAll: (cookies) =>
+        cookies.forEach(({ name, value }) => store.set(name, value)),
+    },
   });
-  if (!res.ok) return null;
-  const jar = res.headers.getSetCookie?.() ?? [];
-  const sbCookies = jar
-    .filter((c) => c.startsWith("sb-"))
-    .map((c) => c.split(";")[0]);
-  return sbCookies.length ? sbCookies.join("; ") : null;
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    console.log(`[access-control] signIn failed for ${email}: ${error.message}`);
+    return null;
+  }
+
+  return Array.from(store.entries())
+    .map(([name, value]) => `${name}=${value}`)
+    .join("; ");
 }
 
 async function req(path: string, options: RequestInit = {}): Promise<Response> {

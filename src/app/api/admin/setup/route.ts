@@ -47,9 +47,11 @@ export async function GET(request: NextRequest) {
     const adminEmails = getAdminEmails();
     const isCurrentUserAdmin = isAdminEmail(user.email);
 
+    // The admin allowlist is an admin-only detail — non-admins get only the
+    // configuration state and their own status (access-control suite).
     return NextResponse.json({
       configured: adminEmails.length > 0,
-      adminEmails: adminEmails.map((e) => e.replace(/(.{2}).*(@.*)/, "$1***$2")), // Mask emails
+      ...(isCurrentUserAdmin ? { adminEmails: adminEmails } : {}),
       currentUser: {
         email: user.email.replace(/(.{2}).*(@.*)/, "$1***$2"),
         isAdmin: isCurrentUserAdmin,
