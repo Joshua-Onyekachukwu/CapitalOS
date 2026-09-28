@@ -15,7 +15,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { createClient } from "@supabase/supabase-js";
 import { getAdminEmails, isAdminEmail, setSupabaseAdminRole, getAdminReason } from "@/lib/admin-setup";
+
+/**
+ * True once any admin exists (env allowlist or any user with the admin
+ * app_metadata role). The bootstrap endpoint refuses to act after that —
+ * otherwise ANY authenticated user could self-promote via set_role.
+ * Fails closed: if the check errors, treat admin as configured.
+ */
+async function adminAlreadyConfigured(): Promise<boolean> {
+  if ((process.env.COCKROACH_ADMIN_EMAILS || "").trim()) return true;
+  try {
+    const sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { data } = await sp.auth.admin.listUsers({ page: 1, perPage: 200 });
+    return (data?.users || []).some((u) => u.app_metadata?.role === "admin");
+  } catch {
+    return true;
+  }
+}
 
 export async function GET(request: NextRequest) {
   const user = await requireAuth(request);
@@ -66,7 +88,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Add email to allowlist
+    // Everything below is first-run bootstrap only. Once an admin exists,
+    // refuse — this endpoint must never be a privilege-escalation path.
+    if (await adminAlreadyConfigured()) {
+      return NextResponse.json(
+        { error: "Admin already configured. Bootstrap endpoint disabled." },
+        { status: 403 }
+      );
+    }
+
+    // Add email to allowlist (runtime-only; bootstrap mode)
     if (email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
