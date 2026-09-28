@@ -7,9 +7,15 @@
  * silently dead-ended. This module reads the INBOX over IMAP (schema columns
  * imap_host/port/user/pass_encrypted already existed, unwired) and reuses
  * processReply() for classification, threading and suppression handling.
+ *
+ * Message parsing uses mailparser's simpleParser (robust RFC822 handling:
+ * folded headers, encoded-words, MIME multipart) rather than regex slicing,
+ * which broke on Gmail's folded Message-ID/In-Reply-To headers — exactly the
+ * headers threading depends on.
  */
 
 import { ImapFlow } from "imapflow";
+import { simpleParser } from "mailparser";
 import { createClient } from "@supabase/supabase-js";
 import { decryptToken } from "./crypto";
 import { processReply } from "./reply-poller";
@@ -35,7 +41,7 @@ interface IncomingEmail {
 export async function pollImapAccount(account: Record<string, any>): Promise<ImapPollResult> {
   const result: ImapPollResult = {
     accountId: account.id,
-    provider: account.provider || "custom_smtp",
+    provider: typeof account.provider === "string" && account.provider ? account.provider : "custom_smtp",
     emailsChecked: 0,
     repliesDetected: 0,
     errors: [],
@@ -77,24 +83,30 @@ export async function pollImapAccount(account: Record<string, any>): Promise<Ima
       const recent = (uids || []).slice(-25);
 
       for (const uid of recent) {
-        const msg: Awaited<ReturnType<typeof client.fetchOne>> = await client.fetchOne(String(uid), { envelope: true, source: true, uid: true });
-        const m = msg && typeof msg === "object" ? msg : null;
-        if (!m || !m.envelope || !m.source) continue;
+        const msg = await client.fetchOne(String(uid), { envelope: true, source: true, uid: true });
+        if (!msg || !msg.source) continue;
 
-        const env = m.envelope;
-        const headers = parseHeaders(m.source);
+        // simpleParser handles folded headers + encoded-words: Message-ID and
+        // In-Reply-To come back unwrapped exactly as they were generated, so
+        // the In-Reply-To → email_messages.message_id thread lookup matches.
+        const parsed = await simpleParser(msg.source);
+
+        const fromText =
+          parsed.from?.text ||
+          (parsed.from?.value || []).map((a) => `${a.name || ""} <${a.address || ""}>`).join(", ");
+
         result.emailsChecked++;
 
         const incoming: IncomingEmail = {
-          id: String(uid),
-          from: env.from?.map((a) => `${a.name || ""} <${a.address || ""}>`).join(", ") || "",
-          subject: env.subject || "",
+          id: String(msg.uid ?? uid),
+          from: fromText || "",
+          subject: parsed.subject || "",
           // First 500 chars of the decoded text body is enough for the
           // classifier (sentiment, bounce and complaint detection).
-          bodyPreview: extractTextPreview(m.source),
-          date: (env.date ? new Date(env.date) : new Date()).toISOString(),
-          inReplyTo: headers["in-reply-to"] || null,
-          messageId: headers["message-id"] || `${host}-${uid}-${m.uid}`,
+          bodyPreview: extractTextPreview(parsed),
+          date: (parsed.date ? new Date(parsed.date) : new Date()).toISOString(),
+          inReplyTo: parsed.inReplyTo || null,
+          messageId: parsed.messageId || `imap-${host}-${msg.uid ?? uid}`,
         };
 
         const wasReply = await processReply(incoming, String(account.user_id), null, String(account.id));
@@ -111,27 +123,23 @@ export async function pollImapAccount(account: Record<string, any>): Promise<Ima
   return result;
 }
 
-function parseHeaders(source: Buffer): Record<string, string> {
-  const headers: Record<string, string> = {};
-  const headerEnd = source.indexOf("\r\n\r\n");
-  const headerBlock = source.subarray(0, headerEnd > 0 ? headerEnd : Math.min(source.length, 4000)).toString("utf8");
-  for (const line of headerBlock.split(/\r?\n/)) {
-    const m = line.match(/^([\w-]+):\s*(.*)$/);
-    if (m) headers[m[1].toLowerCase()] = m[2];
-  }
-  return headers;
-}
+function extractTextPreview(parsed: Awaited<ReturnType<typeof simpleParser>>): string {
+  if (parsed.text) return parsed.text.replace(/\s+/g, " ").trim().slice(0, 500);
 
-function extractTextPreview(source: Buffer): string {
-  const raw = source.toString("utf8");
-  // Prefer the plain-text part; fall back to a stripped HTML body
-  const textMatch = raw.match(/Content-Type: text\/plain[\s\S]*?\r\n\r\n([\s\S]*?)(?:\r\n--|\r\n\r\n[A-Z]|$)/i);
-  let body = textMatch?.[1];
-  if (!body) {
-    const htmlMatch = raw.match(/Content-Type: text\/html[\s\S]*?\r\n\r\n([\s\S]*?)(?:\r\n--|$)/i);
-    body = htmlMatch?.[1]?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  if (parsed.html) {
+    const html = String(parsed.html);
+    return html
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 500);
   }
-  return (body || "").replace(/=[A-F0-9]{2}/gi, "").trim().slice(0, 500);
+
+  return "";
 }
 
 /**
@@ -155,7 +163,10 @@ export async function pollImapAccounts(userId?: string): Promise<ImapPollResult[
   if (userId) q = q.eq("user_id", userId);
 
   const { data: accounts, error } = await q;
-  if (error) return [{ accountId: "-", provider: "imap", emailsChecked: 0, repliesDetected: 0, errors: [error.message] }];
+  if (error)
+    return [
+      { accountId: "-", provider: "imap", emailsChecked: 0, repliesDetected: 0, errors: [error.message] },
+    ];
 
   const results: ImapPollResult[] = [];
   for (const account of accounts || []) {
