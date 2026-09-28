@@ -81,42 +81,73 @@ jobs:
           tail -c 12000 suite-output.txt > security-results.txt
           exit 0  # alerting steps below decide the job outcome
 
+      - name: Run authflow suite
+        id: authflow
+        env:
+          TEST_URL: https://capital-os-nine.vercel.app
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          TEST_FOUNDER_EMAIL: ${{ secrets.TEST_FOUNDER_EMAIL }}
+          TEST_FOUNDER_PASSWORD: ${{ secrets.TEST_FOUNDER_PASSWORD }}
+        run: |
+          set +e
+          set -o pipefail
+          npx vitest run src/__tests__/authflow.test.ts \
+            --reporter=default --outputFile.security=authflow-results.txt 2>&1 \
+            | tee authflow-output.txt
+          STATUS=$?
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "authflow exit: $STATUS"
+          tail -c 8000 authflow-output.txt > authflow-results.txt
+          exit 0
+
       - name: Fail job on suite failure (after alerting)
-        # always() is required: once the suite step fails, the job is in a
+        # always() is required: once a suite step fails, the job is in a
         # failing state and steps are skipped unless their condition
         # includes always()/failure() — even when the `if` itself is true.
-        if: always() && steps.suite.outputs.status != '0'
+        if: always() && (steps.suite.outputs.status != '0' || steps.authflow.outputs.status != '0')
         run: |
-          echo "Access-control suite failed (exit ${{ steps.suite.outputs.status }}). See alert issue."
+          echo "Nightly suites failed (access-control: ${{ steps.suite.outputs.status }}, authflow: ${{ steps.authflow.outputs.status }}). See alert issue."
           exit 1
 
       - name: Raise or update security alert issue
-        if: always() && steps.suite.outputs.status != '0'
+        if: always() && (steps.suite.outputs.status != '0' || steps.authflow.outputs.status != '0')
         uses: actions/github-script@v7
         env:
           RESULTS: ${{ github.workspace }}/security-results.txt
+          AUTHFLOW_RESULTS: ${{ github.workspace }}/authflow-results.txt
+          AC_STATUS: ${{ steps.suite.outputs.status }}
+          AF_STATUS: ${{ steps.authflow.outputs.status }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require("fs");
-            const title = "security: access-control suite failing against production";
+            const title = "security: nightly suite failing against production";
             const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-            const results = fs.existsSync(process.env.RESULTS)
-              ? fs.readFileSync(process.env.RESULTS, "utf8")
-              : "(no results captured)";
+            const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "(no results captured)");
+            const failed = [];
+            if (process.env.AC_STATUS !== "0") failed.push(`access-control (exit ${process.env.AC_STATUS})`);
+            if (process.env.AF_STATUS !== "0") failed.push(`authflow (exit ${process.env.AF_STATUS})`);
             const body = [
-              "The nightly access-control suite failed against production.",
+              "The nightly security suites failed against production.",
               "",
+              `- Failing: ${failed.join(", ")}`,
               `- Run: ${runUrl}`,
               `- Date: ${new Date().toISOString()}`,
               `- Sha: ${process.env.GITHUB_SHA}`,
               "",
-              "<details><summary>Suite output (tail)</summary>",
+              "<details><summary>Access-control output (tail)</summary>",
               "",
               "```",
-              results,
+              read(process.env.RESULTS),
               "```",
+              "</details>",
               "",
+              "<details><summary>Authflow output (tail)</summary>",
+              "",
+              "```",
+              read(process.env.AUTHFLOW_RESULTS),
+              "```",
               "</details>",
               "",
               "This issue is auto-managed: it reopens/updates while failures persist and closes on the next fully passing run.",
@@ -150,7 +181,7 @@ jobs:
             }
 
       - name: Resolve alert issue on recovery
-        if: always() && steps.suite.outputs.status == '0'
+        if: always() && steps.suite.outputs.status == '0' && steps.authflow.outputs.status == '0'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -162,7 +193,7 @@ jobs:
               labels: "security-alert",
               per_page: 10,
             });
-            const title = "security: access-control suite failing against production";
+            const title = "security: nightly suite failing against production";
             for (const issue of existing.data.filter((i) => i.title === title)) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -179,16 +210,56 @@ jobs:
               });
             }
 
+      - name: Notify Slack (failure only)
+        if: always() && (steps.suite.outputs.status != '0' || steps.authflow.outputs.status != '0')
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          AC_STATUS: ${{ steps.suite.outputs.status }}
+          AF_STATUS: ${{ steps.authflow.outputs.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL not set — skipping Slack notification"
+            exit 0
+          fi
+          FAILED=""
+          [ "$AC_STATUS" != "0" ] && FAILED="$FAILED access-control(=$AC_STATUS)"
+          [ "$AF_STATUS" != "0" ] && FAILED="$FAILED authflow(=$AF_STATUS)"
+          PAYLOAD=$(printf '{"text":":rotating_light: *Capital OS nightly security suites FAILED*%s\nRun: %s\nSha: %s"}' "$FAILED" "$RUN_URL" "${{ github.sha }}")
+          curl -sS --max-time 15 -X POST -H 'Content-type: application/json' -d "$PAYLOAD" "$SLACK_WEBHOOK_URL"
+
+      - name: Notify email on failure (Resend, optional)
+        if: always() && (steps.suite.outputs.status != '0' || steps.authflow.outputs.status != '0')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          AC_STATUS: ${{ steps.suite.outputs.status }}
+          AF_STATUS: ${{ steps.authflow.outputs.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$ALERT_EMAIL_TO" ]; then
+            echo "RESEND_API_KEY / ALERT_EMAIL_TO not set — skipping email notification"
+            exit 0
+          fi
+          FAILED=""
+          [ "$AC_STATUS" != "0" ] && FAILED="$FAILED access-control(=$AC_STATUS)"
+          [ "$AF_STATUS" != "0" ] && FAILED="$FAILED authflow(=$AF_STATUS)"
+          curl -sS --max-time 15 -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"from\":\"alerts@capital-os.example\",\"to\":[\"$ALERT_EMAIL_TO\"],\"subject\":\":rotating_light: Capital OS nightly security suites FAILED\",\"text\":\"Failing:$FAILED Run: $RUN_URL\"}"
+
       - name: Record outcome in-app (background_jobs)
         if: always()
         run: |
-          STATUS="${{ steps.suite.outputs.status }}"
+          AC="${{ steps.suite.outputs.status }}"
+          AF="${{ steps.authflow.outputs.status }}"
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           SHA="${{ github.sha }}"
-          if [ "$STATUS" = "0" ]; then
+          if [ "$AC" = "0" ] && [ "$AF" = "0" ]; then
             PAYLOAD=$(printf '{"jobType":"security_nightly","status":"completed","runUrl":"%s","sha":"%s"}' "$RUN_URL" "$SHA")
           else
-            PAYLOAD=$(printf '{"jobType":"security_nightly","status":"failed","runUrl":"%s","sha":"%s"}' "$RUN_URL" "$SHA")
+            PAYLOAD=$(printf '{"jobType":"security_nightly","status":"failed","runUrl":"%s","sha":"%s","detail":"access-control=$AC authflow=$AF"}' "$RUN_URL" "$SHA")
           fi
           curl -sS --max-time 30 -X POST \
             "${{ secrets.SECURITY_ALERT_URL || 'https://capital-os-nine.vercel.app/api/cron/security-alert' }}" \

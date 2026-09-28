@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     const output: Record<string, unknown> = { via: "github-actions" };
     if (runUrl) output.run_url = runUrl;
     if (sha) output.sha = sha;
+    if (typeof body?.detail === "string") output.detail = body.detail;
 
     const { error } = await sp.from("background_jobs").insert({
       job_type: JOB_TYPE,
