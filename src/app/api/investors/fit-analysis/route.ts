@@ -133,14 +133,25 @@ function computeFitScore(investor: Record<string, unknown>, startup: { sector: s
     explanation: hasCheckSize ? "Check size data available" : "Check size not specified",
   });
 
+  // Activity: prefer the SEC-verified last 13F-HR filing date (evidence that
+  // the firm is still actively managing a disclosed portfolio), falling back
+  // to a recorded last_investment_date when present.
+  const lastFiling = investor.edgar_last_filing_date as string | null;
   const lastInvestment = investor.last_investment_date as string | null;
-  let activityScore = 50;
-  let activityExplanation = "No investment date data";
-  if (lastInvestment) {
-    const daysSince = Math.floor((Date.now() - new Date(lastInvestment).getTime()) / (1000 * 60 * 60 * 24));
-    if (daysSince < 90) { activityScore = 100; activityExplanation = `Last investment ${daysSince}d ago — very active`; }
-    else if (daysSince < 365) { activityScore = 75; activityExplanation = `Last investment ${Math.floor(daysSince / 30)}mo ago`; }
-    else { activityScore = 30; activityExplanation = `Last investment ${Math.floor(daysSince / 365)}y ago`; }
+  const activityDate = lastFiling || lastInvestment;
+  let activityScore = 15;
+  let activityExplanation = "No filing or investment date evidence";
+  if (activityDate) {
+    const daysSince = Math.floor((Date.now() - new Date(activityDate).getTime()) / (1000 * 60 * 60 * 24));
+    if (lastFiling && daysSince < 120) { activityScore = 100; activityExplanation = `Filed 13F-HR ${daysSince}d ago — actively managing a disclosed portfolio (SEC)`; }
+    else if (lastFiling && daysSince < 420) { activityScore = 80; activityExplanation = `Filed 13F-HR ~${Math.floor(daysSince / 30)}mo ago (SEC)`; }
+    else if (lastFiling && daysSince < 730) { activityScore = 55; activityExplanation = `Last 13F-HR ~${Math.floor(daysSince / 30)}mo ago (SEC)`; }
+    else if (lastFiling) { activityScore = 25; activityExplanation = `No SEC filing in ${Math.floor(daysSince / 365)}y — likely dormant`; }
+    else {
+      if (daysSince < 90) { activityScore = 100; activityExplanation = `Last investment ${daysSince}d ago — very active`; }
+      else if (daysSince < 365) { activityScore = 75; activityExplanation = `Last investment ${Math.floor(daysSince / 30)}mo ago`; }
+      else { activityScore = 30; activityExplanation = `Last investment ${Math.floor(daysSince / 365)}y ago`; }
+    }
   }
   factors.push({ factor: "Recent Activity", score: activityScore, weight: 0.10, explanation: activityExplanation });
 
@@ -259,7 +270,7 @@ export async function POST(request: NextRequest) {
 
       const { data: investors, error: investorsError } = await sp
         .from("investors")
-        .select("id, investment_sectors, investment_stages, investment_geographies, country, email, linkedin_url, job_title, is_verified, min_check_size, max_check_size, last_investment_date, bio")
+        .select("id, investment_sectors, investment_stages, investment_geographies, country, email, linkedin_url, job_title, is_verified, min_check_size, max_check_size, last_investment_date, edgar_last_filing_date, bio")
         .order("created_at")
         .range(offset, offset + PAGE_SIZE - 1);
 
