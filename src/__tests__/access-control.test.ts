@@ -255,6 +255,10 @@ describe.skipIf(!liveCredsReady)(
         const routes = adminRouteMatrix();
         const failures: string[] = [];
         for (const r of routes) {
+          // The bootstrap STATUS endpoint is intentionally reachable by any
+          // authenticated user (it must work before any admin exists), but
+          // it must NOT disclose the admin allowlist to them.
+          if (r.path === "/api/admin/setup" && r.method === "GET") continue;
           const res = await req(r.path, {
             method: r.method,
             headers: { Cookie: founderCookie! },
@@ -265,6 +269,31 @@ describe.skipIf(!liveCredsReady)(
           }
         }
         expect(failures, failures.join("\n")).toHaveLength(0);
+      },
+      TEST_TIMEOUT
+    );
+
+    it(
+      "bootstrap status: reachable by non-admins but allowlist stays redacted",
+      async () => {
+        expect(founderCookie).toBeTruthy();
+        const res = await req("/api/admin/setup", {
+          headers: { Cookie: founderCookie! },
+        });
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.configured).toBe(true);
+        expect(body.currentUser.isAdmin).toBe(false);
+        expect(body).not.toHaveProperty("adminEmails");
+
+        // Contrast: the admin DOES receive the allowlist.
+        expect(adminCookie).toBeTruthy();
+        const adminRes = await req("/api/admin/setup", {
+          headers: { Cookie: adminCookie! },
+        });
+        expect(adminRes.status).toBe(200);
+        const adminBody = await adminRes.json();
+        expect(Array.isArray(adminBody.adminEmails)).toBe(true);
       },
       TEST_TIMEOUT
     );

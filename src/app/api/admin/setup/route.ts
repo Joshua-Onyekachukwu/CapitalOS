@@ -17,6 +17,7 @@ import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { createClient } from "@supabase/supabase-js";
 import { getAdminEmails, isAdminEmail, setSupabaseAdminRole, getAdminReason } from "@/lib/admin-setup";
+import { getUserRole } from "@/lib/roles";
 
 /**
  * True once any admin exists (env allowlist or any user with the admin
@@ -46,15 +47,19 @@ export async function GET(request: NextRequest) {
   try {
     const adminEmails = getAdminEmails();
     const isCurrentUserAdmin = isAdminEmail(user.email);
+    // Allowlist disclosure follows the same admin semantics as every other
+    // admin surface (app_metadata.role OR env allowlist) — not isAdminEmail
+    // alone, which misses role-based admins.
+    const roleInfo = await getUserRole(user.id, user.email);
 
     // The admin allowlist is an admin-only detail — non-admins get only the
     // configuration state and their own status (access-control suite).
     return NextResponse.json({
       configured: adminEmails.length > 0,
-      ...(isCurrentUserAdmin ? { adminEmails: adminEmails } : {}),
+      ...(roleInfo.isAdmin ? { adminEmails: adminEmails } : {}),
       currentUser: {
         email: user.email.replace(/(.{2}).*(@.*)/, "$1***$2"),
-        isAdmin: isCurrentUserAdmin,
+        isAdmin: isCurrentUserAdmin || roleInfo.isAdmin,
         adminReason: getAdminReason(user.email),
       },
       setupComplete: adminEmails.length > 0,
