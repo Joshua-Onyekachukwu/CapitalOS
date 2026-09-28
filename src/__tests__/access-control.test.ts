@@ -162,7 +162,7 @@ async function signIn(email: string, password: string): Promise<string | null> {
     cookies: {
       getAll: () =>
         Array.from(store.entries()).map(([name, value]) => ({ name, value })),
-      setAll: (cookies) =>
+      setAll: (cookies: Array<{ name: string; value: string }>) =>
         cookies.forEach(({ name, value }) => store.set(name, value)),
     },
   });
