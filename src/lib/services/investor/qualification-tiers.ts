@@ -146,7 +146,8 @@ export async function runQualificationPass(opts?: { limit?: number; userId?: str
 
     // Paginate — Supabase caps single queries (default max-rows 1000), so a
     // plain .limit() would silently scan only a fraction of the dataset.
-    const rows: Array<Record<string, any>> = [];
+    type ScanRow = Parameters<typeof classifyTier>[0] & { id: string; qualification_notes: string | null };
+    const rows: ScanRow[] = [];
     const PAGE = 1000;
     for (let offset = 0; offset < maxRows; offset += PAGE) {
       const { data, error } = await db
