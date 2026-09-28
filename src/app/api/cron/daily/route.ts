@@ -49,6 +49,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error("[cron/daily] failed:", err);
+    // Scheduled work that partially completed must still report its outcome
+    // so the run is observable; a hard failure returns 500 for retry signals.
+    const partial = (err as { partial?: unknown }).partial;
+    if (partial) return NextResponse.json({ success: false, partial });
     return NextResponse.json({ error: "Cron run failed" }, { status: 500 });
   }
 }
