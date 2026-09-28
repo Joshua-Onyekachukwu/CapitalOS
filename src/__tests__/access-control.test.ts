@@ -36,6 +36,11 @@ dotenv.config();
 const TEST_TIMEOUT = 120_000;
 const BASE_URL = process.env.TEST_URL || "http://localhost:3456";
 
+// Alerting drill (security-nightly.yml input force_failure=true): a
+// deliberately failing test that exercises the full alert pipeline —
+// skipped in every normal run.
+const forceFailure = process.env.FORCE_FAILURE === "true";
+
 // ── Server availability gate (integration sections skip when absent) ──
 // Probed route returns 401 without a session — any response means the
 // server is up. (Avoids redirecting probes like /api/auth/google, which
@@ -130,6 +135,12 @@ describe("A. STATIC — admin route guard placement", () => {
       violations,
       `Handlers without requireAdmin as first statement:\n${violations.join("\n")}`
     ).toHaveLength(0);
+  });
+});
+
+describe.skipIf(!forceFailure)("DRILL — deliberate failure for alerting drill", () => {
+  it("fails on purpose when FORCE_FAILURE=true (workflow drill only)", () => {
+    expect("drill").toBe("this-failure-is-intentional");
   });
 });
 

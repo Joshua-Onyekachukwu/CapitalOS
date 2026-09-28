@@ -140,6 +140,34 @@ All admin operations logged to `admin_audit_log`:
 | `MICROSOFT_CLIENT_SECRET` | **Secret** | Server only |
 | `EMAIL_TOKEN_ENCRYPTION_KEY` | **Secret** | Server only |
 
+## Nightly Access-Control Monitoring
+
+The authorization model is verified against production every night by
+`.github/workflows/security-nightly.yml` (03:15 UTC, or manual dispatch):
+
+- **Static scan** — every `/api/admin/*` handler's first statement is
+  `requireAdmin` (bootstrap endpoint excepted: `requireAuth` + fails-closed).
+- **Live matrix** — every admin route returns 401 unauthenticated and 403
+  as a non-admin; an admin session passes (positive control).
+- **IDOR regressions** — suppression, warmup, and dashboard/admin stay
+  caller-scoped (the three historically vulnerable surfaces).
+
+On failure, two alert channels fire:
+
+1. A deduplicated GitHub issue labeled `security-alert`
+   ("security: access-control suite failing against production") that
+   updates while failing and auto-closes on the next passing run.
+2. A `security_nightly` row in `background_jobs` (via
+   `POST /api/cron/security-alert`, gated by `CRON_SECRET`) — failures
+   surface in **/admin/intelligence → job_status** recent failures.
+
+To drill the alert path end to end: run the workflow with the
+`force_failure` input set to `true` — the DRILL test fails on purpose,
+the issue opens, and the next passing run closes it automatically.
+Required repo secrets: `TEST_FOUNDER_EMAIL/PASSWORD`,
+`TEST_ADMIN_EMAIL/PASSWORD`, `TEST_IDOR_VICTIM_ACCOUNT_ID/USER_ID`,
+`CRON_SECRET` (Supabase + Vercel secrets are shared with deploy.yml).
+
 ---
 
-*Last updated: August 22, 2026*
+*Last updated: September 28, 2026*
