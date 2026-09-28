@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Alert } from "@/components/ui/Alert";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 
 interface User {
@@ -27,6 +28,9 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [confirming, setConfirming] = useState<{ user: User; action: "promote" | "demote" } | null>(null);
+  const [roleLoading, setRoleLoading] = useState<string | null>(null);
+  const [roleMessage, setRoleMessage] = useState<{ type: "success" | "danger"; text: string } | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -132,6 +136,24 @@ export default function AdminUsersPage() {
                         <Badge variant={user.role === "admin" ? "danger" : "default"}>
                           {user.role || "user"}
                         </Badge>
+                        {user.role === "admin" ? (
+                          <button
+                            className="block text-[11px] text-gray-400 hover:text-red-500 mt-[4px]"
+                            onClick={() => setConfirming({ user, action: "demote" })}
+                            disabled={roleLoading === user.id}
+                          >
+                            Demote
+                          </button>
+                        ) : (
+                          <button
+                            className="block text-[11px] text-gray-400 hover:text-lime-600 mt-[4px]"
+                            onClick={() => setConfirming({ user, action: "promote" })
+                            }
+                            disabled={roleLoading === user.id}
+                          >
+                            Promote
+                          </button>
+                        )}
                       </td>
                       <td className="py-[12px] px-[16px]">
                         <Badge variant={user.signup_source === "email_activation" ? "success" : "default"}>
@@ -156,6 +178,69 @@ export default function AdminUsersPage() {
           )}
         </CardBody>
       </Card>
+
+      {/* Role change confirmation */}
+      {confirming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 rounded-[12px] p-[24px] max-w-[440px] w-full mx-[16px] shadow-xl">
+            <h4 className="text-[16px] font-semibold !mb-[8px]">
+              {confirming.action === "promote" ? "Promote to admin?" : "Demote admin?"}
+            </h4>
+            <p className="text-[13px] text-gray-500 !mb-[16px]">
+              {confirming.action === "promote"
+                ? `${confirming.user.email} will gain full admin access: user management, data imports, merges, and all /admin surfaces.`
+                : `${confirming.user.email} will lose admin access immediately. This cannot be undone from this page (another admin must re-promote).`}
+            </p>
+            {roleMessage && (
+              <Alert variant={roleMessage.type} className="mb-[12px]">{roleMessage.text}</Alert>
+            )}
+            <div className="flex justify-end gap-[8px]">
+              <Button variant="ghost" size="sm" onClick={() => { setConfirming(null); setRoleMessage(null); }}>
+                Cancel
+              </Button>
+              <Button
+                variant={confirming.action === "promote" ? "primary" : "danger"}
+                size="sm"
+                loading={roleLoading === confirming.user.id}
+                onClick={async () => {
+                  setRoleLoading(confirming.user.id);
+                  try {
+                    const res = await fetch("/api/admin/users/role", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        userId: confirming.user.id,
+                        action: confirming.action,
+                        confirmToken: confirming.user.id,
+                      }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok) {
+                      setUsers((prev) =>
+                        prev.map((u) =>
+                          u.id === confirming.user.id
+                            ? { ...u, role: confirming.action === "promote" ? "admin" : "user" }
+                            : u
+                        )
+                      );
+                      setConfirming(null);
+                      setRoleMessage(null);
+                    } else {
+                      setRoleMessage({ type: "danger", text: data.error || "Role change failed" });
+                    }
+                  } catch {
+                    setRoleMessage({ type: "danger", text: "Network error" });
+                  } finally {
+                    setRoleLoading(null);
+                  }
+                }}
+              >
+                {confirming.action === "promote" ? "Yes, promote" : "Yes, demote"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

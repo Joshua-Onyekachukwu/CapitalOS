@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   if (user instanceof NextResponse) return user;
 
   try {
-    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.email);
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.email);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }

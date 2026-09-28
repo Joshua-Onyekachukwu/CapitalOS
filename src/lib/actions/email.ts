@@ -32,7 +32,7 @@ export async function getConnectedEmails(userId: string) {
     const sp = getSp();
     const { data } = await sp
       .from("email_accounts")
-      .select("id, provider, email_address, display_name, is_active, created_at")
+      .select("id, provider, email_address, display_name, is_active, created_at, scopes, token_expires_at, last_synced_at, updated_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
     return { success: true, data: data || [] };

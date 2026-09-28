@@ -140,6 +140,45 @@ All admin operations logged to `admin_audit_log`:
 | `MICROSOFT_CLIENT_SECRET` | **Secret** | Server only |
 | `EMAIL_TOKEN_ENCRYPTION_KEY` | **Secret** | Server only |
 
+## RLS Coverage Matrix
+
+All 48 public relations have RLS enabled. **Grants mirror the policy
+surface**: a client role only holds a privilege on a table where a
+user-facing RLS policy exists, and every row-level operation remains
+gated by the policy (owner scoping via `auth.uid()`, admin via
+`is_admin()`, dataset reads via `authenticated`).
+
+Grant notation `A|U`, privileges `R`=SELECT `I`=INSERT `U`=UPDATE
+`D`=DELETE (anon = first column):
+
+| Table | Grants | Policy scope |
+|---|---|---|
+| `investors` | anon:R, auth:R | public read (deliberate shared dataset) |
+| `investor_firms/sectors/data_sources/employment_history/profiles` | auth:R | authenticated read |
+| `data_change_log`, `email_messages` (read) | auth:R | authenticated read (timeline UI); writes service-only |
+| `duplicate_candidates`, `v_pending_duplicates` | auth:R | admin-only read (`is_admin()`); writes service-only |
+| `v_data_health`, `v_investors_with_firms` | auth:R | definer read-windows over service aggregates |
+| `profiles` | auth:R,U | own row (`auth.uid() = id`) |
+| `company_profiles` | auth:R,I,U | own rows |
+| `company_documents`, `company_team_members` | auth:R,I,U,D | via own company_profile |
+| `campaigns` + 4 sequence tables, `campaign_investors` (read) | auth:R,(I,U,D) | own rows (`auth.uid() = user_id`) |
+| `saved_investors`, `saved_filters`, `copilot_conversations`, `pipeline_events`, `user_pipeline_entries`, `investor_search_history` | auth:R,I,U,D | own rows |
+| `email_accounts` | auth:R,I,U,D | own rows |
+| `email_threads`, `email_warmup`, `email_tracking_events` | auth:R,I,U,D | own rows |
+| `email_suppression_list`, `email_sending_log`, `email_health_events/scores` | auth:R | own rows; writes service-only |
+| `credit_ledger`, `billing_events`, `user_subscriptions`, `background_jobs`, `audit_log` (own), `founding_members` | auth:R | own rows; writes service-only |
+| `billing_plans`, `credit_costs` | auth:R | authenticated read |
+| `firm_aliases`, `waitlist` | auth:R | waitlist admin-only; firm_aliases authenticated |
+| `admin_audit_log`, `audit_log` (admin view), `data_providers`, `raw_records`, `email_domain_health` | none | service-role only |
+| `v_provider_usage`, `v_user_billing` | none | definer-owned aggregates |
+
+**Hardening history:** TRUNCATE/REFERENCES/TRIGGER were revoked from
+client roles on all tables (2026-09-28); blanket GRANT ALL row grants
+were replaced with the policy-mirroring matrix above the same day —
+51 tables × 4 row-DML grants reduced to SELECT-only on 12 shared/read
+surfaces plus owner-scoped writes on the user-owned tables.
+TRUNCATE is not RLS-gated, so it must never be granted to client roles.
+
 ## Nightly Access-Control Monitoring
 
 The authorization model is verified against production every night by

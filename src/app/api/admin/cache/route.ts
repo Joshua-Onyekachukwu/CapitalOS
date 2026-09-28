@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
 
-  const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+  const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.api);
   if (rateLimitResponse) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
   }
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
 
-  const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+  const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.api);
   if (rateLimitResponse) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
   }

@@ -28,7 +28,7 @@ function serviceClient() {
 export async function POST(request: NextRequest) {
   // Per-IP rate limit (signup abuse vector)
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = checkRateLimit(`signup:${ip}`, RATE_LIMITS.auth);
+  const { allowed } = await checkRateLimit(`signup:${ip}`, RATE_LIMITS.auth);
   if (!allowed) {
     return NextResponse.json({ error: "Too many attempts — try again in a minute." }, { status: 429 });
   }

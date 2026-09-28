@@ -9,7 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: NextRequest) {
   try {
-    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }

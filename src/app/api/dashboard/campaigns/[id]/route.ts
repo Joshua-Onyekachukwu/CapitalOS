@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
@@ -110,7 +110,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }

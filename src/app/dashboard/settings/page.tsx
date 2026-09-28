@@ -21,6 +21,47 @@ interface EmailAccount {
   display_name: string;
   is_active: boolean;
   created_at: string;
+  scopes?: string[] | null;
+  token_expires_at?: string | null;
+  last_synced_at?: string | null;
+  updated_at?: string | null;
+}
+
+/** Token freshness buckets for the OAuth grant display. */
+function tokenFreshness(account: EmailAccount): {
+  label: string;
+  variant: "success" | "warning" | "danger" | "default";
+  needsReconnect: boolean;
+} {
+  if (account.provider !== "google") {
+    return { label: "No OAuth token", variant: "default", needsReconnect: false };
+  }
+  const expiresAt = account.token_expires_at ? new Date(account.token_expires_at).getTime() : 0;
+  const refreshedAt = account.updated_at ? new Date(account.updated_at).getTime() : 0;
+  const now = Date.now();
+  if (expiresAt > now) {
+    const mins = Math.round((expiresAt - now) / 60000);
+    return {
+      label: `Access token fresh (expires in ${mins >= 60 ? `${Math.round(mins / 60)}h` : `${mins}m`})`,
+      variant: "success",
+      needsReconnect: false,
+    };
+  }
+  // Access token expired — fine as long as the refresh token still works.
+  // Stale refresh heuristics: never synced/updated since grant, or silent for
+  // over 60 days (Google may have revoked the grant).
+  if (!refreshedAt) {
+    return { label: "Never synced — reconnect recommended", variant: "warning", needsReconnect: true };
+  }
+  const days = Math.floor((now - refreshedAt) / 86_400_000);
+  if (days > 60) {
+    return { label: `Grant possibly revoked (${days}d since last refresh) — reconnect`, variant: "danger", needsReconnect: true };
+  }
+  return {
+    label: `Access token expired — auto-refresh on next use (${days}d since last refresh)`,
+    variant: "warning",
+    needsReconnect: false,
+  };
 }
 
 export default function SettingsPage() {
@@ -436,10 +477,37 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-[14px] font-medium text-[#06201b] dark:text-white !mb-[2px]">{account.display_name || account.email_address}</p>
                       <p className="text-[12px] text-gray-400 !mb-0">{account.email_address} • {account.provider === "google" ? "Gmail" : account.provider === "custom_smtp" ? "Custom SMTP" : "Outlook"}</p>
+                      {account.provider === "google" && (
+                        <div className="mt-[6px] space-y-[3px]">
+                          <p className="text-[11px] text-gray-400 !mb-0">
+                            <i className="ri-shield-keyhole-line mr-[4px]"></i>
+                            Scopes: {(account.scopes || []).length > 0
+                              ? account.scopes!.map((s) => s.replace("https://mail.google.com/", "mail.google.com").replace("https://www.googleapis.com/auth/", "")).join(", ")
+                              : "not recorded"}
+                          </p>
+                          <p className="text-[11px] !mb-0 flex items-center gap-[6px]">
+                            <i className="ri-time-line"></i>
+                            {(() => {
+                              const f = tokenFreshness(account);
+                              const color =
+                                f.variant === "success" ? "text-green-600 dark:text-green-400"
+                                : f.variant === "warning" ? "text-amber-600 dark:text-amber-400"
+                                : f.variant === "danger" ? "text-red-600 dark:text-red-400"
+                                : "text-gray-400";
+                              return <span className={color}>{f.label}</span>;
+                            })()}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-[8px]">
                     <Badge variant={account.is_active ? "success" : "default"} size="sm">{account.is_active ? "Active" : "Disconnected"}</Badge>
+                    {account.provider === "google" && tokenFreshness(account).needsReconnect && (
+                      <a href="/api/auth/google" className="no-underline">
+                        <Button size="sm">Reconnect</Button>
+                      </a>
+                    )}
                     {account.is_active && (
                       <Button variant="danger" size="sm" loading={disconnecting === account.provider} onClick={() => handleDisconnect(account.provider)}>
                         Disconnect

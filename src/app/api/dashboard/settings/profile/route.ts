@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   if (user instanceof NextResponse) return user;
 
   try {
-    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest) {
   if (user instanceof NextResponse) return user;
 
   try {
-    const rateLimitResponse = applyRateLimit(request, RATE_LIMITS.api);
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.api);
     if (rateLimitResponse) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: rateLimitResponse.status, headers: rateLimitResponse.headers });
     }
