@@ -28,15 +28,26 @@ export async function GET(request: NextRequest) {
     const accountId = searchParams.get("accountId");
 
     if (accountId) {
+      // Ownership check: only the account owner may read its warmup status.
+      const { data: owned } = await sp
+        .from("email_accounts")
+        .select("id")
+        .eq("id", accountId)
+        .eq("user_id", authUser.id)
+        .maybeSingle();
+      if (!owned) {
+        return NextResponse.json({ error: "Account not found" }, { status: 404 });
+      }
       const status = await getWarmupStatus(accountId);
       return NextResponse.json({ warmup: status });
     }
 
-    // Get all accounts with warmup status
+    // List warmup status for the caller's own accounts only
     const { data: accounts } = await sp
       .from("email_accounts")
       .select("id, email_address, provider, warmup_status, warmup_day, recommended_daily_limit")
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .eq("user_id", authUser.id);
 
     if (!accounts?.length) {
       return NextResponse.json({ warmups: [] });
@@ -89,7 +100,8 @@ export async function POST(request: NextRequest) {
       .from("email_accounts")
       .select("user_id")
       .eq("id", accountId)
-      .single();
+      .eq("user_id", authUser.id) // ownership check — never operate on another user's account
+      .maybeSingle();
 
     if (!account) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });

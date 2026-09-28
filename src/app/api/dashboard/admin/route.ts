@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { getUserRole } from "@/lib/roles";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,19 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 export async function GET(_request: NextRequest) {
   const user = await requireAuth(_request);
   if (user instanceof NextResponse) return user;
+
+  // Admin-statistics surface. Both consumers (/admin and /dashboard/admin)
+  // render only behind the admin layout gate, and cross-user enumeration is
+  // refused: user-scoped fields must be requested with a userId owned by the
+  // caller. Non-admins get aggregate platform stats only.
+  const url = new URL(_request.url);
+  const requestedUserId = url.searchParams.get("userId");
+  if (requestedUserId) {
+    const roleInfo = await getUserRole(user.id, user.email);
+    if (!roleInfo.isAdmin && requestedUserId !== user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
 
   try {
     // Return cached stats if fresh
