@@ -217,6 +217,98 @@ Required repo secrets: `TEST_FOUNDER_EMAIL/PASSWORD`,
 `CRON_SECRET`; optional: `SLACK_WEBHOOK_URL`, `RESEND_API_KEY`,
 `ALERT_EMAIL_TO` (Supabase + Vercel secrets are shared with deploy.yml).
 
+For an on-demand version of the same journey (no vitest, plain Node,
+human-readable pass/fail summary):
+
+```
+node scripts/smoke-prod.cjs --base-url https://capital-os-nine.vercel.app
+```
+
+17 assertions: preflight, signup (unique `buffy.qa+smoke-*` address,
+duplicate → 409), session cookie mints and authenticates, founder
+journey (cockpit / investors / outreach metrics / suppression
+round-trip / send+draft validation gates), admin-route 401/403 role
+guards, admin positive control (users + audit-logs filters), and IDOR
+spot-checks on a foreign `accountId` (404). Requires the Supabase
+anon/public env and `TEST_ADMIN_EMAIL/PASSWORD`; optional
+`TEST_IDOR_VICTIM_ACCOUNT_ID`. Re-run sparingly: signup is rate-limited
+10/min per IP.
+
+## Credential-Grant Health (Nightly Probe)
+
+Every nightly `GET /api/cron/daily` run ends with
+`runCredentialHealthProbe()` (`src/lib/services/email/credential-health.ts`):
+
+- For every `email_accounts` row with `provider='google'` and
+  `is_active=true`, it decrypts the stored refresh token and POSTs a real
+  `grant_type=refresh_token` request to Google's token endpoint.
+- Verdicts: `healthy` (access token minted), `revoked` (Google answers
+  `invalid_grant`/`unauthorized_client` — user revoked access, changed
+  the password, or removed the app), `unverified` (no stored grant),
+  `error` (network/unknown — not attributed to the grant).
+- Persisted to `email_accounts.health_status`
+  (`healthy` | `reconnect_required` | `unverified`) +
+  `health_last_checked_at`. The settings card renders a red
+  "Grant revoked by Google — reconnect required" state with the
+  reconnect button when `reconnect_required`.
+- Observability: a `credential_health` row lands in `background_jobs`
+  (status `failed` if any grant was revoked) → visible under
+  /admin/intelligence → recent failures.
+
+Requires `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in the Vercel env
+(they are already needed for OAuth; without them accounts are reported
+`unverified`/`error`, never falsely `healthy`).
+
+## Distributed Rate Limiting (Upstash Redis)
+
+`src/lib/middleware/rate-limit.ts` implements a fixed-window counter
+with a pluggable backend. When `UPSTASH_REDIS_REST_URL` +
+`UPSTASH_REDIS_REST_TOKEN` are set, the counter is an atomic
+`INCR` + `EXPIRE NX` pipeline against Upstash REST — shared across all
+serverless instances. Without them (or on Redis error) each instance
+counts in its own process memory, which under-multiplies limits across
+instances. Every 429 carries `X-RateLimit-Backend: redis|memory`
+(via `applyRateLimit`, or `rateLimitHeaders` on routes that build
+their own 429, e.g. signup).
+
+**Live verification** (burst past the signup limit of 10/min/IP):
+
+```
+for i in $(seq 1 12); do curl -s -o /dev/null -D - \
+  -X POST https://capital-os-nine.vercel.app/api/auth/signup \
+  -H 'Content-Type: application/json' \
+  -d '{"fullName":"RL Probe","email":"buffy.qa+rlprobe-'$i'-'$RANDOM'@gmail.com","password":"RateLimit!2026x"}' \
+  | grep -i -E 'HTTP/|x-ratelimit-backend'; done
+```
+
+Expect: first 10 attempts `200`/`400`, then `429` with
+`X-RateLimit-Backend: memory` (pre-Redis) or `: redis` (post-provision).
+
+**Provisioning Upstash (manual, ~5 minutes):**
+
+1. Sign in at console.upstash.com → **Create Database** → name
+   `capital-os-ratelimit`, pick the AWS region matching the Vercel
+   function region (e.g. `us-east-1`), REST is enabled by default. The
+   free tier's daily command allowance is ample for this traffic.
+2. From the database dashboard copy **UPSTASH_REDIS_REST_URL** and
+   **UPSTASH_REDIS_REST_TOKEN**.
+3. Add both to Vercel for the `production` and `preview`
+   environments:
+
+   ```
+   vercel env add UPSTASH_REDIS_REST_URL production
+   vercel env add UPSTASH_REDIS_REST_URL preview
+   vercel env add UPSTASH_REDIS_REST_TOKEN production
+   vercel env add UPSTASH_REDIS_REST_TOKEN preview
+   ```
+
+   (or Vercel dashboard → Project → Settings → Environment Variables).
+4. **Redeploy** (`vercel --prod` or push an empty commit) — env vars
+   only bind to functions at deploy time.
+5. Re-run the burst probe above and confirm `x-ratelimit-backend:
+   redis`; the Upstash dashboard Metrics view should show the `INCR`
+   commands streaming in.
+
 ---
 
 *Last updated: September 28, 2026*

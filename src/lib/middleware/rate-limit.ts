@@ -159,17 +159,28 @@ export async function applyRateLimit(
   const { allowed, remaining, resetAt, backend } = await checkRateLimit(ip, config);
 
   if (!allowed) {
-    return {
-      status: 429,
-      headers: {
-        "X-RateLimit-Limit": String(config.maxRequests),
-        "X-RateLimit-Remaining": "0",
-        "X-RateLimit-Reset": String(Math.ceil(resetAt / 1000)),
-        "Retry-After": String(Math.ceil((resetAt - Date.now()) / 1000)),
-        "X-RateLimit-Backend": backend,
-      },
-    };
+    return { status: 429, headers: rateLimitHeaders(config, resetAt, backend) };
   }
 
   return null;
+}
+
+/**
+ * Standard rate-limit response headers for any 429 a route builds itself
+ * (routes that can't use applyRateLimit directly, e.g. custom bodies).
+ * The backend header is the live-verification signal: `redis` proves the
+ * request was counted in the shared store, not this instance's memory.
+ */
+export function rateLimitHeaders(
+  config: RateLimitConfig,
+  resetAt: number,
+  backend: "redis" | "memory"
+): Record<string, string> {
+  return {
+    "X-RateLimit-Limit": String(config.maxRequests),
+    "X-RateLimit-Remaining": "0",
+    "X-RateLimit-Reset": String(Math.ceil(resetAt / 1000)),
+    "Retry-After": String(Math.ceil((resetAt - Date.now()) / 1000)),
+    "X-RateLimit-Backend": backend,
+  };
 }

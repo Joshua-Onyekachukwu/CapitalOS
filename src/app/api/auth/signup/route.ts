@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { checkRateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 
 function serviceClient() {
   return createClient(
@@ -28,9 +28,14 @@ function serviceClient() {
 export async function POST(request: NextRequest) {
   // Per-IP rate limit (signup abuse vector)
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = await checkRateLimit(`signup:${ip}`, RATE_LIMITS.auth);
+  const { allowed, resetAt, backend } = await checkRateLimit(`signup:${ip}`, RATE_LIMITS.auth);
   if (!allowed) {
-    return NextResponse.json({ error: "Too many attempts — try again in a minute." }, { status: 429 });
+    // rateLimitHeaders includes X-RateLimit-Backend so live verification can
+    // distinguish the shared Redis counter from this instance's memory.
+    return NextResponse.json(
+      { error: "Too many attempts — try again in a minute." },
+      { status: 429, headers: rateLimitHeaders(RATE_LIMITS.auth, resetAt, backend) }
+    );
   }
 
   let body: { fullName?: string; email?: string; password?: string };
