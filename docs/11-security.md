@@ -216,6 +216,25 @@ Required repo secrets: `TEST_FOUNDER_EMAIL/PASSWORD`,
 `TEST_ADMIN_EMAIL/PASSWORD`, `TEST_IDOR_VICTIM_ACCOUNT_ID/USER_ID`,
 `CRON_SECRET`; optional: `SLACK_WEBHOOK_URL`, `RESEND_API_KEY`,
 `ALERT_EMAIL_TO` (Supabase + Vercel secrets are shared with deploy.yml).
+The Slack and email steps are built and self-skip until those secrets
+are added — no code changes are needed to activate them.
+
+Suite coverage notes:
+
+- The authflow suite pins CSRF on the auth boundary: a cross-origin
+  signup POST (attacker Origin) must get 403, same-origin must pass,
+  and signup bursts must trip 429 with limiter headers
+  (`X-RateLimit-Backend` proves which limiter handled it). Origin
+  validation is host-aware — Origin is compared against the serving
+  `x-forwarded-host` — so it holds on every deployment URL without a
+  static allowlist.
+- The access-control suite IDOR-probes the notes endpoint
+  (attribution must be the caller, never another user id) and the
+  role-change endpoint (non-admin 403; self-demotion refused 409).
+- Run history is visible in-app: **/admin/system → Nightly Security
+  Suites** (passing streak, failures/30d, per-run detail + GitHub run
+  links) sourced from the `security_nightly` rows in `background_jobs
+  via the requireAdmin `/api/admin/system-security` route.
 
 For an on-demand version of the same journey (no vitest, plain Node,
 human-readable pass/fail summary):

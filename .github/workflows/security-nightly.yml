@@ -259,7 +259,9 @@ jobs:
           if [ "$AC" = "0" ] && [ "$AF" = "0" ]; then
             PAYLOAD=$(printf '{"jobType":"security_nightly","status":"completed","runUrl":"%s","sha":"%s"}' "$RUN_URL" "$SHA")
           else
-            PAYLOAD=$(printf '{"jobType":"security_nightly","status":"failed","runUrl":"%s","sha":"%s","detail":"access-control=$AC authflow=$AF"}' "$RUN_URL" "$SHA")
+            # %s placeholders (not bare $AC/$AF): printf does not expand
+            # shell variables inside its format string.
+            PAYLOAD=$(printf '{"jobType":"security_nightly","status":"failed","runUrl":"%s","sha":"%s","detail":"access-control=%s authflow=%s"}' "$RUN_URL" "$SHA" "$AC" "$AF")
           fi
           curl -sS --max-time 30 -X POST \
             "${{ secrets.SECURITY_ALERT_URL || 'https://capital-os-nine.vercel.app/api/cron/security-alert' }}" \
