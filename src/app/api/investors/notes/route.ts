@@ -11,8 +11,11 @@ function getSupabase() {
 }
 
 // POST — Add a note to an investor's timeline
-// Notes live in data_change_log (change_type = 'note'). Writes to that table
-// are service-role-only under RLS, so notes are attributed server-side here
+// Notes live in data_change_log with field_name='note' and
+// change_type='update' (the table's CHECK constraint only allows
+// create/update/merge/delete/revert; the UI renders these rows
+// generically as "<field> updated"). Writes to that table are
+// service-role-only under RLS, so notes are attributed server-side here
 // instead of being inserted directly from the browser client.
 export async function POST(request: NextRequest) {
   const user = await requireAuth(request);
@@ -63,8 +66,12 @@ export async function POST(request: NextRequest) {
         investor_id: investorId,
         field_name: "note",
         new_value: note,
-        change_type: "note",
-        source_type: "manual",
+        // Constraints: change_type CHECK allows create/update/merge/
+        // delete/revert ('note' would violate it), and the source_type
+        // enum's member is 'manual_entry' ('manual' would violate it) —
+        // either mismatch makes every note insert fail with 500.
+        change_type: "update",
+        source_type: "manual_entry",
         detected_by: user.id,
       })
       .select("id, created_at")

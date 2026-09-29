@@ -123,9 +123,11 @@ function checkCsrf(request: NextRequest): boolean {
   // GET/HEAD/OPTIONS never need CSRF
   if (CSRF_EXEMPT_METHODS.has(method)) return true;
 
-  // Check if path is public (auth callbacks, tracking)
-  const pathname = request.nextUrl.pathname;
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return true;
+  // NOTE: there is deliberately NO public-path exemption here. Auth and
+  // tracking endpoints are exactly where a forged cross-origin POST hurts
+  // (signup spam, credential stuffing); browsers attach Origin to every
+  // cross-site POST, so the origin check below rejects those while
+  // same-origin browsers and credential-less server clients pass.
 
   // Verify same-origin via Origin/Referer header. Browsers attach Origin
   // to every cross-site POST, so a forged request always carries the
