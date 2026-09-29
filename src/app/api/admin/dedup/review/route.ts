@@ -70,8 +70,10 @@ export async function POST(request: NextRequest) {
 
     if (updateError) throw updateError;
 
+    const { data: me } = await sp.auth.admin.getUserById(user.id);
     await sp.from("admin_audit_log").insert({
       user_id: user.id,
+      user_email: me?.user?.email ?? null,
       action: `duplicate_review_${action}`,
       entity_type: "duplicate_candidate",
       entity_id: candidateId,

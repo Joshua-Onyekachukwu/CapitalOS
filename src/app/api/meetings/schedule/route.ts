@@ -48,8 +48,10 @@ export async function POST(request: NextRequest) {
 
     // Log the meeting request
     try {
+      const { data: me } = await sp.auth.admin.getUserById(user.id);
       await sp.from("audit_log").insert({
         user_id: user.id,
+        user_email: me?.user?.email ?? null,
         action: "meeting_scheduled",
         details: {
           investorId,

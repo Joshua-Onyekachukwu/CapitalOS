@@ -25,9 +25,13 @@ interface EmailAccount {
   token_expires_at?: string | null;
   last_synced_at?: string | null;
   updated_at?: string | null;
+  health_status?: string | null;
+  health_last_checked_at?: string | null;
 }
 
-/** Token freshness buckets for the OAuth grant display. */
+/** Token freshness buckets for the OAuth grant display.
+ *  The nightly credentials-health probe writes health_status; a verified
+ *  'reconnect_required' verdict overrides the heuristics. */
 function tokenFreshness(account: EmailAccount): {
   label: string;
   variant: "success" | "warning" | "danger" | "default";
@@ -35,6 +39,19 @@ function tokenFreshness(account: EmailAccount): {
 } {
   if (account.provider !== "google") {
     return { label: "No OAuth token", variant: "default", needsReconnect: false };
+  }
+  // Nightly probe verdict is authoritative when present.
+  if (account.health_status === "reconnect_required") {
+    const checked = account.health_last_checked_at
+      ? ` (checked ${new Date(account.health_last_checked_at).toLocaleDateString()})`
+      : "";
+    return { label: `Grant revoked by Google — reconnect required${checked}`, variant: "danger", needsReconnect: true };
+  }
+  if (account.health_status === "healthy") {
+    const checked = account.health_last_checked_at
+      ? ` — verified ${new Date(account.health_last_checked_at).toLocaleDateString()}`
+      : "";
+    return { label: `Grant verified healthy by nightly probe${checked}`, variant: "success", needsReconnect: false };
   }
   const expiresAt = account.token_expires_at ? new Date(account.token_expires_at).getTime() : 0;
   const refreshedAt = account.updated_at ? new Date(account.updated_at).getTime() : 0;
@@ -48,8 +65,6 @@ function tokenFreshness(account: EmailAccount): {
     };
   }
   // Access token expired — fine as long as the refresh token still works.
-  // Stale refresh heuristics: never synced/updated since grant, or silent for
-  // over 60 days (Google may have revoked the grant).
   if (!refreshedAt) {
     return { label: "Never synced — reconnect recommended", variant: "warning", needsReconnect: true };
   }

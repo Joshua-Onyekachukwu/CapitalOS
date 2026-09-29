@@ -14,6 +14,7 @@ import { pollEmailAccounts } from "@/lib/services/email/reply-poller";
 import { pollImapAccounts } from "@/lib/services/email/imap-poller";
 import { runApolloEnrichment } from "@/lib/services/investor/apollo-enrichment";
 import { runEdgarReverification } from "@/lib/services/investor/edgar-reverify";
+import { runCredentialHealthProbe } from "@/lib/services/email/credential-health";
 import { runSnapshotExport } from "@/lib/services/investor/snapshot-archive";
 import { runQualificationPass } from "@/lib/services/investor/qualification-tiers";
 
@@ -56,13 +57,19 @@ export async function GET(request: NextRequest) {
     // last so the archive captures this run's stamps.
     const snapshot = await runSnapshotExport();
 
+    // Credentials-health probe: exercise every stored Gmail refresh token
+    // so revoked grants are detected nightly (settings card shows the
+    // reconnect state; failures surface in background_jobs).
+    const grantProbe = await runCredentialHealthProbe();
+
     console.log(
       `[cron/daily] polled ${allResults.length} accounts, ${totalChecked} checked, ${totalReplies} replies, ` +
       `${errors.length} account errors, apollo=${apollo.status} ` +
       `(matched=${apollo.matched}/emails=${apollo.emailsFound}), edgar=${edgar.status} ` +
       `(rechecked=${edgar.rechecked}/refreshed=${edgar.filingsRefreshed}/drift=${edgar.sicDrift}), ` +
       `qualification=${qualification.status} (verified=${qualification.tierCounts.verified}/derived=${qualification.tierCounts.derived}/up=${qualification.upgrades}/down=${qualification.downgrades}), ` +
-      `snapshot=${snapshot.status} (${snapshot.rows} rows), ${Date.now() - startedAt}ms`
+      `snapshot=${snapshot.status} (${snapshot.rows} rows), ` +
+      `grants=${grantProbe.summary.healthy}h/${grantProbe.summary.revoked}r/${grantProbe.summary.unverified}u/${grantProbe.summary.error}e, ${Date.now() - startedAt}ms`
     );
 
     return NextResponse.json({
@@ -77,6 +84,7 @@ export async function GET(request: NextRequest) {
       edgarReverification: edgar,
       qualification: qualification,
       snapshot: snapshot,
+      grantHealth: grantProbe.summary,
     });
   } catch (err) {
     console.error("[cron/daily] failed:", err);
