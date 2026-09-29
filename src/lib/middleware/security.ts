@@ -95,6 +95,28 @@ function getSecurityHeaders(): Record<string, string> {
 
 // ── CSRF Protection ──
 
+/**
+ * Host-aware origin validation. An origin is trusted when it is the same
+ * as the host that received the request (x-forwarded-host/host) — true for
+ * any deployment URL, custom domain, or preview — or when it appears in the
+ * explicit allowlist. This is the correct CSRF primitive: an attacker's
+ * page lives on the attacker's host, so its Origin can never match ours.
+ */
+export function isOriginAllowed(request: NextRequest, originStr: string | null): boolean {
+  if (!originStr) return false;
+  let originUrl: URL;
+  try {
+    originUrl = new URL(originStr);
+  } catch {
+    return false;
+  }
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  if (host && originUrl.host === host.trim()) return true;
+  if (ALLOWED_ORIGINS.some((allowed) => originStr.startsWith(allowed))) return true;
+  if (isDev && originUrl.hostname === "localhost") return true;
+  return false;
+}
+
 function checkCsrf(request: NextRequest): boolean {
   const method = request.method;
 
@@ -105,33 +127,27 @@ function checkCsrf(request: NextRequest): boolean {
   const pathname = request.nextUrl.pathname;
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return true;
 
-  // Verify same-origin via Origin/Referer header
+  // Verify same-origin via Origin/Referer header. Browsers attach Origin
+  // to every cross-site POST, so a forged request always carries the
+  // attacker's origin here and is rejected. Requests without Origin or
+  // Referer are non-browser clients (server-to-server) — they hold no
+  // ambient cookies to abuse, so they are allowed through.
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
 
   if (origin) {
-    // In development, allow any localhost origin
-    if (isDev && origin.startsWith("http://localhost")) return true;
-    return ALLOWED_ORIGINS.some((allowed) => origin.startsWith(allowed));
+    return isOriginAllowed(request, origin);
   }
 
   if (referer) {
     try {
-      const refererUrl = new URL(referer);
-      // In development, allow any localhost referer
-      if (isDev && refererUrl.hostname === "localhost") return true;
-      return ALLOWED_ORIGINS.some((allowed) => {
-        const allowedUrl = new URL(allowed);
-        return refererUrl.hostname === allowedUrl.hostname;
-      });
+      return isOriginAllowed(request, new URL(referer).origin);
     } catch {
       return false;
     }
   }
 
-  // No Origin or Referer — might be a direct API call (ok for non-browser clients)
-  // For extra security, require Origin on POST/PUT/DELETE:
-  // return false;
+  // No Origin or Referer — direct API call (non-browser, credential-less)
   return true;
 }
 
@@ -212,11 +228,10 @@ export function securityMiddleware(
 
   // 3. Block disallowed origins on API routes
   if (pathname.startsWith("/api/") && origin) {
-    const isAllowed = ALLOWED_ORIGINS.some((allowed) => origin.startsWith(allowed));
-    const isDevOrigin = isDev && origin.startsWith("http://localhost");
+    const isAllowed = isOriginAllowed(request, origin);
     const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
-    if (!isAllowed && !isDevOrigin && !isPublic) {
+    if (!isAllowed && !isPublic) {
       console.warn(
         `[security] CORS blocked: ${request.method} ${pathname} from ${origin}`
       );

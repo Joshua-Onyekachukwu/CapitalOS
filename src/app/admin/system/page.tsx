@@ -17,6 +17,21 @@ interface SystemStatus {
   environment: string;
 }
 
+interface SecurityRun {
+  id: string;
+  status: "completed" | "failed";
+  startedAt: string;
+  detail: string | null;
+  runUrl: string | null;
+  sha: string | null;
+}
+
+interface SecuritySummary {
+  passingStreak: number;
+  failures30d: number;
+  lastRun: SecurityRun | null;
+}
+
 export default function AdminSystemPage() {
   const [status, setStatus] = useState<SystemStatus>({
     database: "healthy",
@@ -29,10 +44,24 @@ export default function AdminSystemPage() {
     environment: "production",
   });
   const [loading, setLoading] = useState(true);
+  const [secRuns, setSecRuns] = useState<SecurityRun[]>([]);
+  const [secSummary, setSecSummary] = useState<SecuritySummary | null>(null);
 
   useEffect(() => {
     checkSystem();
+    loadSecurityHistory();
   }, []);
+
+  const loadSecurityHistory = async () => {
+    try {
+      const res = await fetch("/api/admin/system-security");
+      if (res.ok) {
+        const data = await res.json();
+        setSecRuns(data.runs || []);
+        setSecSummary(data.summary || null);
+      }
+    } catch {}
+  };
 
   const checkSystem = async () => {
     try {
@@ -143,6 +172,77 @@ export default function AdminSystemPage() {
           </CardBody>
         </Card>
       </div>
+
+      {/* Nightly Security Suites */}
+      <Card className="mb-[25px]">
+        <CardBody>
+          <div className="flex items-center justify-between !mb-[16px]">
+            <h3 className="!text-[16px] !font-semibold !mb-0">Nightly Security Suites</h3>
+            {secSummary && (
+              <div className="flex items-center gap-[8px]">
+                <Badge variant={secSummary.passingStreak > 0 ? "success" : "danger"}>
+                  {secSummary.passingStreak > 0
+                    ? `${secSummary.passingStreak} passing streak`
+                    : "failing"}
+                </Badge>
+                <Badge variant={secSummary.failures30d === 0 ? "default" : "warning"}>
+                  {secSummary.failures30d} failures / 30d
+                </Badge>
+              </div>
+            )}
+          </div>
+          {secRuns.length === 0 ? (
+            <p className="text-[13px] text-gray-400 !mb-0">
+              No nightly suite runs recorded yet — the first run lands after
+              03:15 UTC, or dispatch “Nightly Security Tests” in GitHub Actions.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-[8px] px-[8px] font-semibold text-gray-500">When</th>
+                    <th className="text-left py-[8px] px-[8px] font-semibold text-gray-500">Outcome</th>
+                    <th className="text-left py-[8px] px-[8px] font-semibold text-gray-500">Detail</th>
+                    <th className="text-right py-[8px] px-[8px] font-semibold text-gray-500">Run</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {secRuns.slice(0, 14).map((run) => (
+                    <tr key={run.id} className="border-b border-gray-50 dark:border-gray-800/50">
+                      <td className="py-[8px] px-[8px] text-gray-400 text-[12px] whitespace-nowrap">
+                        {new Date(run.startedAt).toLocaleString()}
+                      </td>
+                      <td className="py-[8px] px-[8px]">
+                        <Badge variant={run.status === "completed" ? "success" : "danger"}>
+                          {run.status === "completed" ? "passed" : "failed"}
+                        </Badge>
+                      </td>
+                      <td className="py-[8px] px-[8px] text-gray-500 text-[12px]">
+                        {run.detail || (run.status === "completed" ? "all suites green" : "—")}
+                      </td>
+                      <td className="py-[8px] px-[8px] text-right">
+                        {run.runUrl ? (
+                          <a
+                            href={run.runUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-lime-600 dark:text-lime-400 hover:underline text-[12px]"
+                          >
+                            open <i className="ri-external-link-line align-[-1px]" />
+                          </a>
+                        ) : (
+                          <span className="text-gray-400 text-[12px]">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       {/* Quick Actions */}
       <Card>

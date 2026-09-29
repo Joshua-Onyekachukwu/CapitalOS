@@ -457,3 +457,104 @@ describe.skipIf(
     );
   }
 );
+
+describe.skipIf(
+  !liveCredsReady || !SERVICE_KEY || !VICTIM_USER_ID
+)(
+  "D2. IDOR — notes attribution + role-change guards",
+  () => {
+    let adminCookie: string | null;
+    let founderCookie: string | null;
+    let founderId = "";
+    let service: SupabaseClient;
+
+    beforeAll(async () => {
+      [adminCookie, founderCookie] = await Promise.all([
+        signIn(ADMIN_EMAIL, ADMIN_PASSWORD),
+        signIn(FOUNDER_EMAIL, FOUNDER_PASSWORD),
+      ]);
+      service = createClient(SUPABASE_URL, SERVICE_KEY);
+      // Resolve both test users' ids for attribution assertions.
+      const { data: users } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      founderId =
+        (users?.users || []).find((u) => u.email === FOUNDER_EMAIL)?.id || "";
+      expect(founderId).toBeTruthy();
+    }, TEST_TIMEOUT);
+
+    it(
+      "notes: POST is attributed to the caller, never to another user",
+      async () => {
+        expect(founderCookie).toBeTruthy();
+        const { data: inv } = await service.from("investors").select("id").limit(1);
+        expect(inv?.length).toBe(1);
+
+        const post = await req("/api/investors/notes", {
+          method: "POST",
+          headers: { Cookie: founderCookie! },
+          body: JSON.stringify({
+            investorId: inv![0].id,
+            note: `access-control attribution probe ${Date.now()}`,
+          }),
+        });
+        expect(post.status).toBe(201);
+        const { note } = await post.json();
+
+        // Ground truth: the row's detected_by is the CALLER (founder), not
+        // the victim user — notes must never inherit another user's id.
+        const { data: row } = await service
+          .from("data_change_log")
+          .select("detected_by")
+          .eq("id", note.id)
+          .single();
+        expect(row?.detected_by).toBe(founderId);
+        expect(row?.detected_by).not.toBe(VICTIM_USER_ID);
+
+        // cleanup of the exact probe row
+        const del = await service.from("data_change_log").delete().eq("id", note.id);
+        expect(del.error).toBeNull();
+      },
+      TEST_TIMEOUT
+    );
+
+    it(
+      "role change: non-admin cannot touch the role endpoint (403)",
+      async () => {
+        expect(founderCookie).toBeTruthy();
+        const res = await req("/api/admin/users/role", {
+          method: "POST",
+          headers: { Cookie: founderCookie! },
+          body: JSON.stringify({
+            userId: VICTIM_USER_ID,
+            action: "demote",
+            confirmToken: VICTIM_USER_ID,
+          }),
+        });
+        expect(res.status).toBe(403);
+      },
+      TEST_TIMEOUT
+    );
+
+    it(
+      "role change: self-demotion is refused with 409 (lockout guard)",
+      async () => {
+        expect(adminCookie).toBeTruthy();
+        const { data: users } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const adminId = (users?.users || []).find((u) => u.email === ADMIN_EMAIL)?.id;
+        expect(adminId).toBeTruthy();
+
+        const res = await req("/api/admin/users/role", {
+          method: "POST",
+          headers: { Cookie: adminCookie! },
+          body: JSON.stringify({
+            userId: adminId,
+            action: "demote",
+            confirmToken: adminId,
+          }),
+        });
+        // 409 = the guardrail refused the change; nothing was mutated.
+        expect(res.status).toBe(409);
+      },
+      TEST_TIMEOUT
+    );
+  }
+);
