@@ -81,6 +81,11 @@ function toInvestorRow(rec: InvestorRecord) {
     verification_status: rec.claim_tier === "verified" ? "verified" : rec.claim_tier === "supported" ? "derived" : rec.claim_tier === "inferred" ? "ai_classified" : "unknown",
     last_verified_at: rec.last_verified_at,
     is_active: rec.is_active,
+    iapd_firm_id: rec.iapd_firm_id,
+    iapd_row: !!rec.iapd_firm_id,
+    evidence_streams: rec.iapd_firm_id
+      ? [{ provider: rec.source_kind || "iapd", crd: rec.iapd_firm_id, source_url: rec.source_url, linked_at: null }]
+      : [],
   };
 }
 
@@ -130,17 +135,41 @@ export async function ingestQualified(
     if (inserted >= maxRows) break;
     const chunk = slice.slice(i, i + batchSize);
 
-    // skip rows already present (provider + legal_name)
-    const names = chunk.map((r) => r.legal_name || r.canonical_name);
-    const { data: existing } = await sp
-      .from("investors")
-      .select("id, full_name")
-      .eq("source_provider", "iapd")
-      .in("full_name", names);
-    const existingNames = new Set((existing || []).map((e) => e.full_name));
+    // skip rows already present. For CRD-bearing IAPD rows the firm number
+    // is authoritative: the same legal name can belong to two distinct SEC
+    // registrants (affiliate registrants share a name), and one firm can
+    // file name variants — so skip only on an exact CRD match. Name-based
+    // skipping remains the check for CRD-less sources.
+    const crds = chunk.map((r) => r.iapd_firm_id).filter((c): c is string => !!c);
+    const existingCrds = new Set<string>();
+    const existingNames = new Set<string>();
+    if (crds.length > 0) {
+      const { data: byCrd } = await sp
+        .from("investors")
+        .select("iapd_firm_id")
+        .in("iapd_firm_id", crds);
+      for (const e of byCrd || []) existingCrds.add(e.iapd_firm_id as string);
+    }
+    const crdless = chunk.filter((r) => !r.iapd_firm_id);
+    if (crdless.length > 0) {
+      const names = crdless.map((r) => r.legal_name || r.canonical_name);
+      const { data: byName } = await sp
+        .from("investors")
+        .select("full_name")
+        .eq("source_provider", "iapd")
+        .in("full_name", names);
+      for (const e of byName || []) existingNames.add(e.full_name);
+    }
 
     const toInsert = chunk
       .filter((r) => {
+        if (r.iapd_firm_id) {
+          if (existingCrds.has(r.iapd_firm_id)) {
+            skipped++;
+            return false;
+          }
+          return true;
+        }
         const n = r.legal_name || r.canonical_name;
         if (existingNames.has(n)) {
           skipped++;
@@ -154,7 +183,20 @@ export async function ingestQualified(
 
     const { error, count } = await sp.from("investors").insert(toInsert, { count: "exact" });
     if (error) {
-      errors.push(`investors batch ${i}: ${error.message}`);
+      if ((error as { code?: string }).code === "23505") {
+        // One row in the chunk hit a unique constraint (e.g. CRD already
+        // present under a name variant) — retry row-by-row so a single
+        // conflict doesn't discard up to 199 good rows.
+        let chunkOk = 0;
+        for (const row of toInsert) {
+          const { error: rowErr } = await sp.from("investors").insert(row);
+          if (rowErr) skipped++;
+          else chunkOk++;
+        }
+        inserted += chunkOk;
+      } else {
+        errors.push(`investors batch ${i}: ${error.message}`);
+      }
     } else {
       inserted += toInsert.length;
     }

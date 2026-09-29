@@ -273,6 +273,8 @@ export function qualify(inputs: QualifyInputs): QualifyResult {
     claim_tier: "unknown",
     source_provider: source.provider,
     source_url: source.source_url,
+    iapd_firm_id: typeof payload.firm_id === "string" && payload.firm_id.trim() ? payload.firm_id.trim() : null,
+    source_kind: source.kind || null,
     first_discovered_at: now,
     last_verified_at: now,
   };

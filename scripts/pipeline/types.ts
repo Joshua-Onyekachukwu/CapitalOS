@@ -139,6 +139,10 @@ export interface InvestorRecord {
   /** Provenance of the record itself. */
   source_provider: string;
   source_url: string | null;
+  /** IAPD/CRD firm number when the source is IAPD (linking + idempotency key). */
+  iapd_firm_id: string | null;
+  /** Sub-source discriminator (iapd_adviser = registered, iapd_ecr = exempt). */
+  source_kind: string | null;
   first_discovered_at: string;
   last_verified_at: string;
 }

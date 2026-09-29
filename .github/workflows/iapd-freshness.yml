@@ -1,0 +1,110 @@
+name: IAPD Monthly Freshness
+
+# Monthly IAPD freshness pass. The SEC republishes the full registered /
+# exempt adviser compilations early each month; this workflow re-acquires
+# them on a US runner, pushes NEW adviser rows through the pipeline
+# (dedup + CRD idempotency make re-ingestion a no-op for existing firms),
+# links fresh IAPD records to EDGAR-verified investors, and backfills
+# embeddings for the newly inserted rows.
+#
+# Runs on the 4th of each month at 07:00 UTC (after the SEC's monthly
+# publication) and can be dispatched manually with a row limit.
+
+on:
+  schedule:
+    - cron: "0 7 4 * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Max rows per file to convert (0 = full volume)"
+        required: false
+        default: "0"
+
+concurrency:
+  group: iapd-freshness
+  cancel-in-progress: false
+
+jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Acquire latest SEC compilations
+        run: |
+          set -e
+          UA="CapitalOS Pipeline admin@capital-os.example"
+          LISTING="https://www.sec.gov/data-research/sec-markets-data/information-about-registered-investment-advisers-exempt-reporting-advisers"
+          curl -sS --max-time 60 -A "$UA" "$LISTING" -o listing.html
+
+          LINKS=$(node - <<'EOF'
+          const fs = require("fs");
+          const html = fs.readFileSync("listing.html", "utf8");
+          const hrefs = [...html.matchAll(/href="([^"]+\.zip)"/gi)].map(m => m[1]);
+          const abs = [...new Set(hrefs.map(h => new URL(h, "https://www.sec.gov").toString()))];
+          const era = abs.find(u => /exempt[^/]*\.zip$/i.test(u)) || "";
+          const ria = abs.find(u => !/exempt/i.test(u.split("/").pop()) && /ia\d{6}|\.zip$/i.test(u)) || "";
+          if (!ria || !era) { console.error("could not disambiguate zip links"); process.exit(3); }
+          console.log(`${ria} ${era}`);
+          EOF
+          )
+          RIA_URL=$(echo $LINKS | cut -d' ' -f1)
+          ERA_URL=$(echo $LINKS | cut -d' ' -f2)
+
+          curl -sS --max-time 300 -A "$UA" -o ria.zip "$RIA_URL"
+          curl -sS --max-time 120 -A "$UA" -o era.zip "$ERA_URL"
+          unzip -o ria.zip -d ria_x >/dev/null; unzip -o era.zip -d era_x >/dev/null
+          mkdir -p data/iapd out
+          ROW_LIMIT="${{ github.event.inputs.limit || 0 }}"
+          node scripts/iapd-convert.cjs ria_x data/iapd/iapd-advisers.json "$ROW_LIMIT" registered
+          node scripts/iapd-convert.cjs era_x data/iapd/iapd-exempt.json "$ROW_LIMIT" exempt
+          ls -la data/iapd
+
+      - name: Run pipeline (process → qualify → dedup → ingest)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npx tsx scripts/pipeline/run-batch.ts \
+            --limit 20000 \
+            --ingest \
+            --max-rows 20000 \
+            --concurrency 16
+
+      - name: Link IAPD records to EDGAR-verified firms
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx scripts/pipeline/link-edgar.ts
+
+      - name: Backfill embeddings for new rows
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        run: npx tsx scripts/backfill-embeddings.ts --batch 128
+
+      - name: Report coverage
+        if: always()
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node - <<'EOF'
+          const { createClient } = require("@supabase/supabase-js");
+          const sp = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+          (async () => {
+            const c = async (q) => (await q).count ?? "n/a";
+            console.log("iapd rows:      ", await c(sp.from("investors").select("id", { count: "exact", head: true }).eq("source_provider", "iapd")));
+            console.log("edgar-linked:   ", await c(sp.from("investors").select("id", { count: "exact", head: true }).not("iapd_linked_investor_id", "is", null)));
+            console.log("embedded:       ", await c(sp.from("investors").select("id", { count: "exact", head: true }).not("thesis_embedding", "is", null)));
+          })();
+          EOF

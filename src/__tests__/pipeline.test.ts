@@ -86,7 +86,7 @@ describe("quality score", () => {
     country: "United States", city: "San Francisco", region: "north_america", geographies: ["north_america"],
     stages: ["seed"], sectors: ["ai"], min_check_usd: null, max_check_usd: null, thesis: null,
     portfolio: [], is_active: true, evidence: {}, quality_score: 0, claim_tier: "unknown",
-    source_provider: "test", source_url: null,
+    source_provider: "test", source_url: null, iapd_firm_id: null, source_kind: null,
     first_discovered_at: new Date().toISOString(), last_verified_at: new Date().toISOString(),
   };
 
@@ -114,6 +114,7 @@ describe("dedup", () => {
     country: null, city: null, region: null, geographies: [], stages: [], sectors: [],
     min_check_usd: null, max_check_usd: null, thesis: null, portfolio: [], is_active: true,
     evidence: {}, quality_score: 0, claim_tier: "unknown", source_provider: "t", source_url: null,
+    iapd_firm_id: null, source_kind: null,
     first_discovered_at: new Date().toISOString(), last_verified_at: new Date().toISOString(),
     ...over,
   });

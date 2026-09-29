@@ -29,9 +29,9 @@ import { ingestQualified } from "./ingest";
 // ── CLI ──────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
-const arg = (name: string, def?: string): string | undefined => {
+const arg = (name: string, def = ""): string => {
   const i = args.indexOf(`--${name}`);
-  return i >= 0 ? args[i + 1] : def;
+  return i >= 0 && args[i + 1] && !args[i + 1].startsWith("--") ? args[i + 1] : def;
 };
 const flag = (name: string): boolean => args.includes(`--${name}`);
 
@@ -41,12 +41,36 @@ const AI_ENABLED = process.env.OPENROUTER_API_KEY && flag("ai") ? true : false;
 const DO_AI = AI_ENABLED;
 const DO_INGEST = flag("ingest");
 const MAX_ROWS = parseInt(arg("max-rows", "500") || "500", 10);
+// Parallel record workers during qualify. AI calls are I/O bound so the
+// default is aggressive; dedup verdicts can shift slightly with ordering
+// (accepted for bulk runs — the dedup index still collapses all in-batch
+// copies to exactly one qualified record).
+const CONCURRENCY = Math.max(1, Math.min(32, parseInt(arg("concurrency", DO_AI ? "8" : "16"), 10)));
 const PROVIDER = "iapd";
+
+/** Minimal promise-concurrency limiter (no dependency). */
+function pLimit(concurrency: number) {
+  const queue: Array<() => void> = [];
+  let active = 0;
+  const release = () => {
+    active--;
+    if (queue.length) queue.shift()!();
+  };
+  return function run<T>(fn: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const start = () => {
+        active++;
+        fn().then(resolve, reject).finally(release);
+      };
+      if (active < concurrency) start();
+      else queue.push(start);
+    });
+  };
+}
 
 // ── Stage 1: acquire (reads pre-fetched files; see workflow) ─
 
-function acquireRaw(): SourceRecord[] {
-  const files = listParts("raw", PROVIDER).filter((f) => !f.includes("processed"));
+function acquireRaw(kindFilter?: string): SourceRecord[] {
   const srcDir = "data/iapd";
   const fs = require("fs") as typeof import("fs");
   const path = require("path") as typeof import("path");
@@ -57,10 +81,12 @@ function acquireRaw(): SourceRecord[] {
       const parsed = JSON.parse(fs.readFileSync(path.join(srcDir, f), "utf8")) as any;
       const rows: any[] = Array.isArray(parsed) ? parsed : parsed?.data?.rows || [];
       for (const r of rows) {
+        const kind = r.kind || "iapd_adviser";
+        if (kindFilter && kind !== kindFilter) continue;
         sources.push({
           key: `iapd:${r.firm_id || r.sec_number || r.firm_name}`,
           provider: PROVIDER,
-          kind: r.kind || "iapd_adviser",
+          kind,
           payload: r,
           source_url: `https://adviserinfo.sec.gov/firm/summary/${r.firm_id ?? ""}`,
           collected_at: parsed.collected_at || new Date().toISOString(),
@@ -120,7 +146,8 @@ interface QualifiedRow {
 
 async function qualifyAll(
   records: SourceRecord[],
-  index: DedupIndex
+  index: DedupIndex,
+  crdSeen: Set<string> = new Set()
 ): Promise<{
   qualified: QualifiedRow[];
   rejected: QualifiedRow[];
@@ -132,91 +159,121 @@ async function qualifyAll(
   const m = emptyMetrics("qualify");
   m.input = records.length;
 
-  const qualified: QualifiedRow[] = [];
-  const rejected: QualifiedRow[] = [];
-  const duplicates: QualifiedRow[] = [];
-  const failed: QualifiedRow[] = [];
+  const results: Array<QualifiedRow | null> = new Array(records.length).fill(null);
+  const limit = pLimit(CONCURRENCY);
 
-  for (const src of records) {
-    try {
-      const name = (src.payload.firm_name as string) || "unknown";
-      const blurb = Object.entries(src.payload)
-        .filter(([, v]) => typeof v === "string")
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(". ");
+  await Promise.all(
+    records.map((src, i) =>
+      limit(async () => {
+        try {
+          const name = (src.payload.firm_name as string) || "unknown";
+          const blurb = Object.entries(src.payload)
+            .filter(([, v]) => typeof v === "string")
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(". ");
 
-      // Lightweight pre-check on canonical name (cheap path, before AI spend)
-      const probeName = canonicalizeName(name);
-      const preDupNameKey = `${probeName}|`;
-      // exact name+region dup probe against the index
-      const existingNames = index.hasNameRegion(probeName, null);
-      if (existingNames) {
-        m.duplicates++;
-        duplicates.push({
-          record: { id: "", canonical_name: probeName } as any,
-          outcome: "duplicate",
-          dup_verdict: "exact_duplicate",
-          dup_matched_on: "name+region",
-        });
-        continue;
-      }
-
-      let tier1: Tier1Verdict | null = null;
-      let tier2: Tier2Qualification | null = null;
-      if (DO_AI) {
-        const t1 = await tier1Classify(name, blurb);
-        if (t1) {
-          tier1 = t1.data;
-          m.ai_calls++;
-          m.ai_prompt_tokens += t1.usage.prompt_tokens;
-          m.ai_completion_tokens += t1.usage.completion_tokens;
-          m.ai_cost_usd += t1.usage.cost_usd;
-        }
-        if (tier1?.is_investor_entity && blurb.length > 400) {
-          const t2 = await tier2Qualify(name, blurb);
-          if (t2) {
-            tier2 = t2.data;
-            m.ai_calls++;
-            m.ai_prompt_tokens += t2.usage.prompt_tokens;
-            m.ai_completion_tokens += t2.usage.completion_tokens;
-            m.ai_cost_usd += t2.usage.cost_usd;
+          // Lightweight pre-check on canonical name (cheap path, before AI spend)
+          const probeName = canonicalizeName(name);
+          const existingNames = index.hasNameRegion(probeName, null);
+          if (existingNames) {
+            m.duplicates++;
+            results[i] = {
+              record: { id: "", canonical_name: probeName } as any,
+              outcome: "duplicate",
+              dup_verdict: "exact_duplicate",
+              dup_matched_on: "name+region",
+            };
+            return;
           }
+
+          let tier1: Tier1Verdict | null = null;
+          let tier2: Tier2Qualification | null = null;
+          if (DO_AI) {
+            const t1 = await tier1Classify(name, blurb);
+            if (t1) {
+              tier1 = t1.data;
+              m.ai_calls++;
+              m.ai_prompt_tokens += t1.usage.prompt_tokens;
+              m.ai_completion_tokens += t1.usage.completion_tokens;
+              m.ai_cost_usd += t1.usage.cost_usd;
+            }
+            if (tier1?.is_investor_entity && blurb.length > 400) {
+              const t2 = await tier2Qualify(name, blurb);
+              if (t2) {
+                tier2 = t2.data;
+                m.ai_calls++;
+                m.ai_prompt_tokens += t2.usage.prompt_tokens;
+                m.ai_completion_tokens += t2.usage.completion_tokens;
+                m.ai_cost_usd += t2.usage.cost_usd;
+              }
+            }
+          }
+
+          const res = qualify({ source: src, tier1, tier2 });
+          if (res.outcome === "failed") {
+            m.failed++;
+            results[i] = { record: undefined as any, outcome: "failed", reason: res.reason };
+            return;
+          }
+          if (res.outcome === "rejected" || !res.record) {
+            m.rejected++;
+            results[i] = { record: undefined as any, outcome: "rejected", reason: res.reason };
+            return;
+          }
+
+          // CRD identity: the SEC issues one CRD per registered firm, so
+          // for IAPD records the firm number IS the entity key — different
+          // CRDs are different registrants even when names/domains are
+          // similar (fund families register many affiliates separately).
+          // Name/website heuristics only decide records without a CRD.
+          if (res.record.iapd_firm_id) {
+            if (crdSeen.has(res.record.iapd_firm_id)) {
+              // Same firm filing under a name variant (or a refresh re-run);
+              // first variant wins, later variants are dropped as dups.
+              m.duplicates++;
+              results[i] = {
+                record: res.record,
+                outcome: "duplicate",
+                dup_verdict: "exact_duplicate",
+                dup_matched_on: "iapd_firm_id",
+              };
+              return;
+            }
+            crdSeen.add(res.record.iapd_firm_id);
+            index.add(res.record);
+            m.output++;
+            results[i] = { record: res.record, outcome: "qualified" };
+            return;
+          }
+
+          // Full dedup with the complete record (CRD-less sources)
+          const dup = index.check(res.record);
+          if (dup && dup.verdict !== "distinct") {
+            m.duplicates++;
+            results[i] = {
+              record: res.record,
+              outcome: "duplicate",
+              dup_verdict: dup.verdict,
+              dup_matched_on: dup.matched_on,
+            };
+            return;
+          }
+
+          index.add(res.record);
+          m.output++;
+          results[i] = { record: res.record, outcome: "qualified" };
+        } catch (err) {
+          m.failed++;
+          results[i] = { record: undefined as any, outcome: "failed", reason: String(err) };
         }
-      }
+      })
+    )
+  );
 
-      const res = qualify({ source: src, tier1, tier2 });
-      if (res.outcome === "failed") {
-        m.failed++;
-        failed.push({ record: undefined as any, outcome: "failed", reason: res.reason });
-        continue;
-      }
-      if (res.outcome === "rejected" || !res.record) {
-        m.rejected++;
-        rejected.push({ record: undefined as any, outcome: "rejected", reason: res.reason });
-        continue;
-      }
-
-      // Full dedup with the complete record
-      const dup = index.check(res.record);
-      if (dup && dup.verdict !== "distinct") {
-        m.duplicates++;
-        duplicates.push({
-          record: res.record,
-          outcome: "duplicate",
-          dup_verdict: dup.verdict,
-          dup_matched_on: dup.matched_on,
-        });
-        continue;
-      }
-
-      index.add(res.record);
-      m.output++;
-      qualified.push({ record: res.record, outcome: "qualified" });
-    } catch (err) {
-      m.failed++;
-      failed.push({ record: undefined as any, outcome: "failed", reason: String(err) });
-    }
-  }
+  const qualified = results.filter((r): r is QualifiedRow => r?.outcome === "qualified");
+  const rejected = results.filter((r): r is QualifiedRow => r?.outcome === "rejected");
+  const duplicates = results.filter((r): r is QualifiedRow => r?.outcome === "duplicate");
+  const failed = results.filter((r): r is QualifiedRow => r?.outcome === "failed");
 
   m.duration_ms = Date.now() - t0;
   return { qualified, rejected, duplicates, failed, metrics: m };
@@ -227,45 +284,74 @@ async function qualifyAll(
 async function main() {
   const runId = `iapd-${BATCH}`;
   const metrics: StageMetrics[] = [];
-  console.log(`▶ pipeline run ${runId}  limit=${LIMIT} ai=${DO_AI} ingest=${DO_INGEST}`);
+  console.log(`▶ pipeline run ${runId}  limit=${LIMIT} ai=${DO_AI} ingest=${DO_INGEST} concurrency=${CONCURRENCY}`);
 
-  const raw = acquireRaw().slice(0, LIMIT);
-  console.log(`  raw rows: ${raw.length}`);
+  // --kind exempt|iapd_ecr restricts to one sub-source (e.g. only the ERA
+  // file); default processes every source file present.
+  const kindArg = arg("kind");
+  const kindFilter = kindArg
+    ? kindArg === "exempt"
+      ? "iapd_ecr"
+      : kindArg === "registered"
+        ? "iapd_adviser"
+        : kindArg
+    : undefined;
+  const raw = acquireRaw(kindFilter).slice(0, LIMIT);
+  console.log(`  raw rows: ${raw.length}${kindFilter ? ` (kind=${kindFilter})` : ""}`);
 
   const processed = processRecords(raw);
   metrics.push(processed.metrics);
   console.log(`  processed: ${processed.metrics.output} (rejected ${processed.metrics.rejected}, dups ${processed.metrics.duplicates})`);
   appendJsonl("processed", PROVIDER, BATCH, processed.records);
 
-  // Seed dedup index from already-ingested iapd investors (idempotency)
+  // Seed dedup index from already-ingested iapd investors (idempotency).
+  // Paginated: PostgREST caps a single request at 1000 rows.
   const index = new DedupIndex();
+  // CRDs already ingested — declared outside the try so qualifyAll can
+  // still enforce CRD-level idempotency when the seed partially fails.
+  const crdSeen = new Set<string>();
   try {
     const { createClient } = await import("@supabase/supabase-js");
     const dotenv = await import("dotenv");
     dotenv.config({ path: ".env.local" });
     const sp = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL as string, process.env.SUPABASE_SERVICE_ROLE_KEY as string);
-    const { data } = await sp
-      .from("investors")
-      .select("id, full_name, website_url, email, country")
-      .eq("source_provider", "iapd")
-      .limit(5000);
-    index.seed(
-      (data || []).map((r: any) => ({
-        id: r.id,
-        canonical_name: r.full_name,
-        website: r.website_url ? r.website_url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0] : null,
-        email: r.email,
-        region: null,
-        country: r.country,
-      }))
-    );
-    console.log(`  dedup index seeded with ${(data || []).length} existing iapd records`);
+    let seeded = 0;
+    let from = 0;
+    for (;;) {
+      const { data, error } = await sp
+        .from("investors")
+        .select("id, full_name, website_url, email, country, iapd_firm_id")
+        .eq("source_provider", "iapd")
+        // Stable order is REQUIRED: without it, PostgREST pagination can
+        // overlap pages (skewed counts, missed CRDs) between requests.
+        .order("created_at", { ascending: true })
+        .range(from, from + 999);
+      if (error) throw new Error(error.message);
+      const rows = data || [];
+      if (rows.length === 0) break;
+      for (const r of rows as any[]) {
+        if (r.iapd_firm_id) crdSeen.add(String(r.iapd_firm_id));
+      }
+      index.seed(
+        rows.map((r: any) => ({
+          id: r.id,
+          canonical_name: r.full_name,
+          website: r.website_url ? r.website_url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0] : null,
+          email: r.email,
+          region: null,
+          country: r.country,
+        }))
+      );
+      seeded += rows.length;
+      from += 1000;
+      if (rows.length < 1000) break;
+    }
+    console.log(`  dedup index seeded with ${seeded} existing iapd records (${crdSeen.size} CRDs)`);
   } catch (e) {
-    console.log("  (dedup seed skipped: no Supabase access)");
+    console.log(`  (dedup seed incomplete: ${(e as Error).message})`);
   }
 
-  const t = qualifyAll(processed.records, index);
-  const q = await t;
+  const q = await qualifyAll(processed.records, index, crdSeen);
   metrics.push(q.metrics);
   console.log(
     `  qualified: ${q.qualified.length} | rejected: ${q.rejected.length} | dups: ${q.duplicates.length} | failed: ${q.failed.length}`

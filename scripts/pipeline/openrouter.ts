@@ -97,14 +97,16 @@ async function callTier(
 ): Promise<{ content: string; usage: AiUsage }> {
   let lastErr: Error | null = null;
   for (const model of models) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
         return await callOnce(model, messages, maxTokens, timeoutMs);
       } catch (err: any) {
         lastErr = err;
-        const retriable = /429|5\d\d|timeout|abort/i.test(err?.message || "");
-        if (!retriable || attempt === 1) break;
-        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+        // Local-network flakes surface as undici connect timeouts / fetch
+        // failed — retry those too, not just API-side 429/5xx.
+        const retriable = /429|5\d\d|timeout|abort|fetch failed|ECONN/i.test(err?.message || "") || err?.cause?.code;
+        if (!retriable || attempt === 2) break;
+        await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
       }
     }
     // fall through to next model in the chain

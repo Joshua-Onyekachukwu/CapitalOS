@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { chatCompletion } from "@/lib/ai";
+import { embedTexts, EMBEDDING_MODEL } from "@/lib/services/investor/embeddings";
 import { createClient } from "@supabase/supabase-js";
 
 // ── Structured shape the AI must return ──
@@ -145,9 +146,51 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // ── Build the database query ──
     const baseSelect = "id, full_name, job_title, country, city, fit_score, fit_score_breakdown, investor_type, investment_stages, investment_sectors, email, linkedin_url, outreach_readiness, bio, is_verified, data_quality_score, edgar_last_filing_date, verification_status, source_provider";
 
+    // ── Hybrid semantic + structured search ──
+    // 1. Embed the query and rank by Reciprocal Rank Fusion of vector
+    //    cosine + full-text scores (match_investors_hybrid RPC).
+    // 2. Hydrate the fused ids, then apply the structured post-filters
+    //    (types, email, filing recency, SEC evidence) that the vector
+    //    index cannot express.
+    // 3. Structured-filter results (the pre-vector behavior) are appended
+    //    after the semantic matches so the page is never worse than before,
+    //    and the whole path degrades to structured-only on any failure.
+    let semanticRows: any[] | null = null;
+    if (query.length > 3) {
+      try {
+        const { embeddings } = await embedTexts([query], { inputType: "query" });
+        const { data: fused, error: rpcErr } = await supabase.rpc("match_investors_hybrid", {
+          p_query_embedding: `[${embeddings[0].map((x: number) => Number(x.toFixed(6))).join(",")}]`,
+          p_query_text: query,
+          p_match_count: limit,
+        });
+        if (rpcErr) throw new Error(rpcErr.message);
+        const ids: string[] = (fused || []).map((f: { id: string }) => f.id);
+        if (ids.length > 0) {
+          let hq = supabase.from("investors").select(baseSelect).in("id", ids).eq("is_active", true);
+          if (parsed?.investor_types.length) hq = hq.in("investor_type", parsed.investor_types);
+          if (parsed?.has_email) hq = hq.not("email", "is", null).neq("email", "");
+          if (filingRecency) {
+            const cutoff = new Date(Date.now() - (filingRecency === "1y" ? 365 : 3 * 365) * 86_400_000).toISOString().slice(0, 10);
+            hq = hq.gte("edgar_last_filing_date", cutoff);
+          }
+          if (hasSecEvidence) hq = hq.not("edgar_sic_code", "is", null);
+          const { data: hydrated, error: hErr } = await hq.limit(limit);
+          if (hErr) throw new Error(hErr.message);
+          // preserve the RPC's fusion order
+          const rank = new Map(ids.map((id, i) => [id, i]));
+          semanticRows = (hydrated || []).sort((a: any, b: any) => (rank.get(a.id) ?? 9e9) - (rank.get(b.id) ?? 9e9));
+        }
+      } catch (err) {
+        // Degrade silently to the structured path; surface why in the payload.
+        console.error("[discover] semantic path failed:", (err as Error).message);
+        semanticRows = null;
+      }
+    }
+
+    // ── Build the structured query ──
     // Text search: keywords go to name/title/bio. When AI parsing failed,
     // extract meaningful words from the query (never search the raw sentence
     // as one blob — it can never match).
@@ -211,7 +254,17 @@ export async function POST(request: NextRequest) {
     );
 
     const today = new Date().toISOString().slice(0, 10);
-    const decorated = (investors || []).map((row: any) => ({
+
+    // Merge: semantic matches lead; structured-only rows follow (deduped).
+    let merged: any[] = investors || [];
+    let semanticUsed = false;
+    if (semanticRows && semanticRows.length > 0) {
+      semanticUsed = true;
+      const seen = new Set(semanticRows.map((r: any) => r.id));
+      merged = [...semanticRows, ...(investors || []).filter((r: any) => !seen.has(r.id))].slice(0, limit);
+    }
+
+    const decorated = merged.map((row: any) => ({
       ...row,
       filing_recency: row.edgar_last_filing_date
         ? Date.now() - new Date(row.edgar_last_filing_date).getTime() <= 365 * 86_400_000
@@ -225,9 +278,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       investors: decorated,
-      total: count || investors?.length || 0,
+      total: semanticUsed ? Math.max(count || 0, merged.length) : count || investors?.length || 0,
       parsed: parsed || null, // let the UI show how the query was understood
       fallback: !parsed && query.length > 3,
+      semantic: { used: semanticUsed, model: semanticUsed ? EMBEDDING_MODEL : null },
     });
   } catch (err) {
     console.error("Discover search error:", err);

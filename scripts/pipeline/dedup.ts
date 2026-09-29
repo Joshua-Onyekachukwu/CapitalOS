@@ -60,9 +60,17 @@ export function compareRecords(
     country: string | null;
   }
 ): DupCandidate | null {
-  // 1. website domain
+  // 1. website domain — same site alone does NOT prove same firm: fund
+  // platforms and multi-fund families share domains (8 exempt advisers on
+  // lhcap.cn; Sequoia US/China on one site). Require name agreement;
+  // otherwise the firms are DISTINCT (kept — a shared platform domain is
+  // weak counter-evidence against differing legal names).
   if (rec.website && existing.website && rec.website === existing.website) {
-    return { verdict: "exact_duplicate", matched_on: "website", other_id: existing.id, other_name: existing.canonical_name };
+    const nameSim = tokenSetSimilarity(rec.canonical_name, existing.canonical_name);
+    if (nameSim >= 0.5) {
+      return { verdict: "exact_duplicate", matched_on: "website", other_id: existing.id, other_name: existing.canonical_name };
+    }
+    return { verdict: "distinct", matched_on: "shared_website", other_id: existing.id, other_name: existing.canonical_name };
   }
   // 2. email domain (institutional domains only)
   if (rec.email && existing.email) {
@@ -161,10 +169,22 @@ export class DedupIndex {
   }
 
   check(rec: InvestorRecord): DupCandidate | null {
-    // exact checks (O(1))
+    // Order matters: identity (name) signals outrank attribute (website)
+    // signals. A website collision only marks a duplicate when names agree;
+    // a shared platform domain with a different legal name is a DISTINCT
+    // firm (kept, matched_on=shared_website) — never silently dropped.
+    const key = `${rec.canonical_name}|${rec.region || ""}`;
+    if (this.byNameRegion.has(key)) {
+      const e = this.byNameRegion.get(key)!;
+      return { verdict: "exact_duplicate", matched_on: "name+region", other_id: e.id, other_name: e.canonical_name };
+    }
     if (rec.website && this.byWebsite.has(rec.website)) {
       const e = this.byWebsite.get(rec.website)!;
-      return { verdict: "exact_duplicate", matched_on: "website", other_id: e.id, other_name: e.canonical_name };
+      const nameSim = tokenSetSimilarity(rec.canonical_name, e.canonical_name);
+      if (nameSim >= 0.5) {
+        return { verdict: "exact_duplicate", matched_on: "website", other_id: e.id, other_name: e.canonical_name };
+      }
+      return { verdict: "distinct", matched_on: "shared_website", other_id: e.id, other_name: e.canonical_name };
     }
     if (rec.email) {
       const d = rec.email.split("@")[1];
@@ -173,11 +193,6 @@ export class DedupIndex {
         const e = this.names.find((n) => n.id === otherId);
         return { verdict: "exact_duplicate", matched_on: "email_domain", other_id: otherId, other_name: e?.canonical_name || otherId };
       }
-    }
-    const key = `${rec.canonical_name}|${rec.region || ""}`;
-    if (this.byNameRegion.has(key)) {
-      const e = this.byNameRegion.get(key)!;
-      return { verdict: "exact_duplicate", matched_on: "name+region", other_id: e.id, other_name: e.canonical_name };
     }
     // fuzzy scan (O(n) within batch — fine for controlled batches; see doc for 1M plan)
     for (const e of this.names) {

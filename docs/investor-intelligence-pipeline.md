@@ -162,15 +162,52 @@ not change the AI economics materially.
 1. **The scraper** (blocked on the missing repo) — needed for investor
    website enrichment (thesis/portfolio/check-size evidence), the biggest
    quality lever left.
-2. **Scale beyond 240**: run the full IAPD compilation (~15k ERA + ~65k
-   RIA rows) once quality gates are tuned on a 1k batch; already supported
-   by batch/limit/max-rows flags and checkpoints.
-3. Enrichment pass linking IAPD records to existing EDGAR-verified investors
-   (same firm, two evidence streams).
-4. pgvector embeddings + hybrid search when semantic discovery ships.
-5. Freshness loop: monthly IAPD re-acquisition (cron-able in the same
-   workflow) + `last_verified_at`-driven refresh, mirroring the EDGAR
-   re-verification pattern.
+2. **Full RIA ingestion** (~65k rows): the ERA side is complete (6,685/6,686
+   CRDs); registered advisers use the same path with `--kind registered`.
+3. **Enrichment pass** on IAPD rows (thesis/sectors are text-signal only
+   today; Apollo + scraper would fill the evidence gaps).
+4. **Semantic-search tuning**: query-side reranking weights (currently
+   plain RRF k=60) and a judged eval set for Discover quality.
+
+## 10b. Shipped since the first cut (Sept 29, 2026)
+
+- **Full ERA ingestion**: 6,686 exempt reporting advisers → 6,685 distinct
+  CRDs in `investors` (99.98%). Dedup is CRD-authoritative for IAPD
+  records; the pipeline/ingest skip and resume logic converge on the raw
+  file exactly (a re-run inserts nothing).
+- **CRD idempotency**: `investors.iapd_firm_id` unique-partial index;
+  `ingest.ts` skips on exact CRD, `run-batch.ts` treats a repeated CRD as
+  the same firm (first name variant wins) and CRD-less rows still dedup
+  by name/region/website+name heuristics.
+- **Data-quality reports**: `scripts/pipeline/quality-report.ts` writes
+  funnel/score/tier/coverage/type breakdowns to
+  `data/pipeline/quality-report-*.md` (see `quality-report-ERA-FINAL.md`):
+  median quality 63, 74.6% in the 60–74 band, 0 unusable rows; stage and
+  sector extraction are sparse (0.2% / 1.6%) because ERA filings carry no
+  investment language — enrichment is the lever, not scoring tweaks.
+- **IAPD ↔ EDGAR linking** (`scripts/pipeline/link-edgar.ts` +
+  `link_investor_iapd` RPC): 237 firms matched (exact-canonical-name +
+  country, one fuzzy ≥0.85; domain rule requires name agreement ≥0.4 to
+  survive shared fund-platform domains). The EDGAR row becomes the
+  canonical record (claims the CRD, merges `evidence_streams`, website/
+  city backfill, DQS floor 85); the IAPD twin is kept as an auditable
+  pointer (`iapd_linked_investor_id`). Atomic two-step swap inside one
+  transaction, idempotent on re-run.
+- **pgvector semantic search**: `investors.thesis_embedding`
+  halfvec(2048) + HNSW (`halfvec_cosine_ops`; `vector` cannot be
+  HNSW-indexed above 2000 dims). Model `nvidia/nemotron-3-embed-1b` via
+  the NVIDIA integrate API (`src/lib/services/investor/embeddings.ts`);
+  `match_investors_hybrid` RPC fuses vector + full-text ranks with RRF.
+  `/api/investors/discover` embeds the query (`input_type="query"`),
+  hydrates fused ids, applies structured post-filters, and appends
+  structured results after semantic ones — degrading to the pre-vector
+  behavior on any failure. Backfill:
+  `npx tsx scripts/backfill-embeddings.ts` (idempotent, resumable,
+  ~1,000 rows/min when the network holds).
+- **Monthly freshness cron**: `.github/workflows/iapd-freshness.yml`
+  (4th of each month 07:00 UTC, dispatchable with `limit`) — re-acquire →
+  pipeline (new CRDs only) → link → embed backfill → coverage report.
+  Requires the `NVIDIA_API_KEY` repo secret (set).
 
 ## 11. Decisions needed from you
 
