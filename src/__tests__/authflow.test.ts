@@ -138,10 +138,17 @@ describe.skipIf(!serverAvailable || !SUPABASE_URL || !SUPABASE_ANON_KEY)(
             email: `no-such-account-${Date.now()}@example.invalid`,
           }),
         });
-        // Supabase returns 200 for both by design — the test pins that
-        // behavior so a regression that leaks account existence fails here.
-        expect(existing.status).toBe(200);
-        expect(nonexistent.status).toBe(200);
+        // Supabase returns 200 for both by design — pin the equality so a
+        // regression that leaks account existence fails here. 429 means the
+        // shared email quota (2/hour on the built-in provider) is spent —
+        // repeated suite runs hit this — and it applies to both addresses
+        // equally, which is still non-enumerating; skip the strict assert
+        // only when BOTH are quota-blocked.
+        const quotaBlocked = existing.status === 429 && nonexistent.status === 429;
+        if (!quotaBlocked) {
+          expect(existing.status).toBe(200);
+          expect(nonexistent.status).toBe(200);
+        }
       },
       TEST_TIMEOUT
     );
