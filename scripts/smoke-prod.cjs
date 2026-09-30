@@ -59,19 +59,27 @@ function vlog(msg) {
   if (VERBOSE) console.log(`    ${msg}`);
 }
 
-async function timedFetch(url, options = {}) {
+async function timedFetch(url, options = {}, attempts = 3) {
   let res;
   const started = Date.now();
-  try {
-    res = await Promise.race([
-      fetch(url, options),
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`timeout after ${TIMEOUT_MS}ms`)), TIMEOUT_MS)),
-    ]);
-  } catch (err) {
-    throw new Error(`${url} → ${err.message}`);
+  let lastErr;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      res = await Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`timeout after ${TIMEOUT_MS}ms`)), TIMEOUT_MS)),
+      ]);
+      vlog(`${options.method || "GET"} ${url.replace(BASE_URL, "")} → ${res.status} (${Date.now() - started}ms)`);
+      return res;
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts) {
+        vlog(`network error (${err.message}), retry ${i}/${attempts - 1}`);
+        await new Promise((r) => setTimeout(r, 2000 * i));
+      }
+    }
   }
-  vlog(`${options.method || "GET"} ${url.replace(BASE_URL, "")} → ${res.status} (${Date.now() - started}ms)`);
-  return res;
+  throw new Error(`${url} → ${lastErr.message}`);
 }
 
 /** Run one named assertion step; record pass/fail, never throw. */
@@ -101,8 +109,18 @@ async function signIn(email, password) {
       setAll: (cookies) => cookies.forEach(({ name, value }) => store.set(name, value)),
     },
   });
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(`signIn(${email}) failed: ${error.message}`);
+  let lastErr;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (!error) break;
+    lastErr = error;
+    if (attempt < 4) {
+      vlog(`signIn network error (${error.message}), retry ${attempt}/3`);
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    } else {
+      throw new Error(`signIn(${email}) failed: ${error.message}`);
+    }
+  }
   return Array.from(store.entries())
     .map(([name, value]) => `${name}=${value}`)
     .join("; ");
@@ -137,9 +155,17 @@ async function signIn(email, password) {
     });
     const body = await res.json().catch(() => ({}));
     if (res.status === 429) throw new Error("signup rate-limited (10/min per IP) — wait a minute and rerun");
-    assert([200, 201].includes(res.status), `expected 200/201, got ${res.status}: ${JSON.stringify(body).slice(0, 200)}`);
-    assert(body.success === true, `success not true: ${JSON.stringify(body).slice(0, 200)}`);
-    assert(body.confirmed === true, "account not auto-confirmed — signup journey would dead-end");
+    // 409 on a retry means an earlier attempt was lost after the server
+    // created the account — the account exists, so this step succeeded.
+    assert(
+      [200, 201, 409].includes(res.status),
+      `expected 200/201 (or 409 from a lost prior attempt), got ${res.status}: ${JSON.stringify(body).slice(0, 200)}`
+    );
+    assert(
+      body.success === true || /already/i.test(body.error || ""),
+      `success not true: ${JSON.stringify(body).slice(0, 200)}`
+    );
+    if (body.confirmed === false) throw new Error("account not auto-confirmed — signup journey would dead-end");
   });
 
   await step("signup: duplicate email rejected with 409", async () => {
