@@ -13,6 +13,7 @@
 // rejected with 535 5.7.8 when app-password access is revoked on the account.
 
 import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { decryptToken } from "@/lib/services/email/crypto";
 
@@ -118,12 +119,12 @@ async function getGlobalOAuth2AccessToken(): Promise<OAuth2Config | null> {
 // Transport selection
 // =============================================
 
-const transportCache = new Map<string, nodemailer.Transporter>();
+const transportCache = new Map<string, Transporter>();
 
 async function getTransporter(
   config?: SmtpConfig,
   oauth2?: OAuth2Config
-): Promise<nodemailer.Transporter> {
+): Promise<Transporter> {
   // 1) XOAUTH2 transports are NOT cached: their embedded access token
   //    expires (~1h) and a pooled transport would keep sending with a stale
   //    token. The token itself is cached above with a 60s safety margin, so
@@ -149,7 +150,7 @@ async function getTransporter(
     return transportCache.get(cacheKey)!;
   }
 
-  let transport: nodemailer.Transporter;
+  let transport: Transporter;
 
   if (config) {
     // 2) Per-user custom SMTP (password auth — user's own server)

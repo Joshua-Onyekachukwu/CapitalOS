@@ -6,6 +6,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  checkRateLimit,
+  rateLimitHeaders,
+  RATE_LIMITS,
+  type RateLimitConfig,
+} from "@/lib/middleware/rate-limit";
 
 function getSupabase() {
   return createClient(
@@ -16,6 +22,22 @@ function getSupabase() {
 
 // POST — Join the waitlist
 export async function POST(request: NextRequest) {
+  // Per-IP rate limit: the waitlist is a public write-and-count endpoint.
+  // Shares the auth limiter's 10/min window; cast for RATE_LIMITS' narrow
+  // inferred keyPrefix type.
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed, resetAt, backend } = await checkRateLimit(
+    `waitlist:${ip}`,
+    RATE_LIMITS.auth as RateLimitConfig
+  );
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts — try again in a minute." },
+      { status: 429, headers: rateLimitHeaders(RATE_LIMITS.auth as RateLimitConfig, resetAt, backend) }
+    );
+  }
+
   try {
     const body = await request.json();
     const { email, name, referralCode } = body;
