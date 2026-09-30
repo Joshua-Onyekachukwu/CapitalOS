@@ -330,4 +330,44 @@ Expect: first 10 attempts `200`/`400`, then `429` with
 
 ---
 
-*Last updated: September 28, 2026*
+## Cross-Tenant Isolation Testing (two-tenant matrix)
+
+`scripts/cross-tenant-test.cjs` creates an isolated second tenant via the
+production signup API, seeds private rows for both tenants (saved filter,
+email account, warmup, suppression entry, private note on the shared investor
+dataset), then attacks in both directions at three layers:
+
+- **RLS** — supabase-js with each tenant's own JWT against the anon key
+- **API** — app routes with each tenant's real session cookie
+- **Anon** — unauthenticated requests
+
+Coverage: read/update/delete/insert cross-tenant, ownership forgery (insert
+with a foreign user_id), notes privacy on the shared investors dataset,
+admin route gates, and positive controls proving legit same-tenant flows still
+work. Network calls retry to tolerate local flakiness.
+
+```bash
+node scripts/cross-tenant-test.cjs --base-url https://capital-os-nine.vercel.app
+```
+
+Latest result: **44/44 passed** — every cross-tenant attempt blocked.
+`data_change_log` and `email_suppression_list` grant `authenticated`
+SELECT-only privileges, so cross-tenant write attempts there fail with
+permission denied (42501) before RLS even evaluates — defense in depth.
+
+RLS lockdown history (migrations 010/011):
+
+- `data_change_log` SELECT was `USING (true)` — every user could read every
+  user's private notes. Now owner-scoped via `detected_by`; system provenance
+  rows (field_name <> 'note') stay visible.
+- `set_investor_embeddings` / `link_investor_iapd` (SECURITY DEFINER) were
+  executable by any anon/authenticated caller; EXECUTE revoked.
+- `audit_log` / `email_health_events` / `email_health_scores` INSERT policies
+  allowed any JWT; now TO service_role.
+- `email_accounts.provider` CHECK rejected the canonical `custom_smtp` value
+  used by the settings UI and poller — every custom SMTP save failed with 500;
+  constraint now allows it.
+
+---
+
+*Last updated: September 30, 2026*
