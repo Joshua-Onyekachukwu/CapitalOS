@@ -6,17 +6,21 @@ Capital OS helps founders discover relevant investors, understand investor fit
 (with explanations, not just scores), prepare personalized outreach, and manage
 the entire fundraising pipeline from one place.
 
-> **Project status (Sept 26, 2026):** Phase 1 stabilization complete — 0 type
-> errors, 44 passing unit tests, production build green. Backend re-provisioning
-> in progress after the original Supabase projects were removed; see
-> `docs/DATABASE-SETUP-RUNBOOK.md` and `docs/19-phase1-audit.md`.
+> **Project status (Oct 25, 2026):** Stabilized and production-serving at
+> `capital-os-nine.vercel.app` — 0 type errors, 87 passing offline tests,
+> production build green. Full system audit delivered in `docs/audit/`
+> (start with `EXECUTIVE_SUMMARY.md`). Current focus: contact-data completeness
+> (SEC-filed + directory-verified emails) and the first outreach campaign.
+> Candlelight ops: see `docs/DATABASE-SETUP-RUNBOOK.md` if the Supabase free tier
+> auto-pauses.
 
 ---
 
 ## What it does
 
-1. **Discover** — search an 83K+ investor database (SEC EDGAR 13F/Form D/N-CEN,
-   Apollo, CSV imports) by stage, sector, geography, and check size.
+1. **Discover** — search a ~19K-investor database (SEC EDGAR 13F/Form D/N-CEN,
+   directory sources, CSV imports), US/UK/EU focus, by stage, sector, geography,
+   and check size.
 2. **Qualify** — deterministic 7-factor fit scoring with a written explanation
    per factor; AI research summaries per investor.
 3. **Prepare** — AI-drafted, investor-specific outreach emails (founder approves
@@ -24,7 +28,8 @@ the entire fundraising pipeline from one place.
 4. **Send** — Gmail / Microsoft Graph / SMTP with OAuth, CAN-SPAM compliance,
    open/click tracking, reply detection, health scoring and warmup.
 5. **Manage** — 11-stage fundraising pipeline, campaigns, sequences, analytics,
-   admin suite, credit-based billing architecture (Stripe adapter stubbed).
+   admin suite, credit-based billing with a Stripe founding-member checkout
+   (checkout/webhook implemented; E2E purchase pending verification).
 
 ## Tech stack (as built)
 
@@ -34,12 +39,12 @@ the entire fundraising pipeline from one place.
 | Auth | Supabase Auth (email/password, Google, Microsoft OAuth) |
 | Database | **Supabase (PostgreSQL)** with RLS on all tenant tables |
 | Data access | Typed Postgrest clients + legacy `query()` shim (`src/lib/db.ts`) |
-| Real-time | Convex (job progress, metrics, notifications) |
+| Jobs & progress | PostgreSQL tables (`raw_records`, `import_job_id`, cron routes) |
 | AI | NVIDIA NIM (Llama 3.3 Nemotron) with key rotation + mock mode |
 | Email | Gmail API, Microsoft Graph, SMTP (nodemailer) |
 | Files | Supabase Storage; PPTX/PDF via pptxgenjs + pdf-lib |
 | Hosting | Vercel |
-| Tests | Vitest (44 offline unit tests; integration suite self-skips) |
+| Tests | Vitest (87 offline unit tests; integration suites self-skip without a prod target) |
 
 > Historical note: earlier versions of this README described a CockroachDB
 > primary. That migration to Supabase is complete; `ARCHITECTURE.md` reflects
@@ -65,8 +70,7 @@ npm run dev             # http://localhost:3456
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | yes | database + auth |
 | `NVIDIA_API_KEY` (+ `_1`, `_2`, …) | for AI features | LLM calls; rotate multiple keys |
 | `AI_MOCK_MODE` | no (`true` default) | offline/mock AI responses |
-| `NEXT_PUBLIC_CONVEX_URL` | for real-time features | Convex deployment |
-| `CONVEX_DEPLOYMENT` / `CONVEX_DEPLOY_KEY` | for `npx convex codegen` | type regeneration |
+| `DATABASE_URL` / `SUPABASE_DB_PASSWORD` | ops scripts only | direct Postgres (pooler) for backup/restore tooling |
 | `EMAIL_TOKEN_ENCRYPTION_KEY` | production | AES-256-GCM key for OAuth tokens |
 | `GOOGLE_*` / `MICROSOFT_*` client id/secret | for OAuth email sending | token refresh |
 | `NEXT_PUBLIC_APP_URL` | production | absolute links (tracking, unsubscribe) |
@@ -86,13 +90,7 @@ npm run build       # production build
 npm run typecheck   # tsc --noEmit — must be 0 errors
 npm test            # vitest (offline suites)
 npm run lint        # eslint
-npm run format      # prettier
-```
-
-Convex type regeneration (from repo root):
-
-```bash
-CONVEX_DEPLOYMENT=<ref> CONVEX_DEPLOY_KEY=<key> npx convex codegen
+npm run format        # prettier
 ```
 
 ## Project structure
@@ -115,8 +113,7 @@ src/
 │   ├── services/          # investor/, email/, deck/, intelligence/, pipeline/
 │   └── supabase/          # client/server/middleware helpers
 └── scripts/               # EDGAR/CSV/Apollo ingestion & verification tooling
-convex/                    # real-time schema + functions
-supabase/                  # migrations 001–008
+supabase/                  # migrations 001–013
 supabase-*.sql             # RLS fix, pipeline stage, tracking, etc.
 backups/                   # investor data backups (gitignored)
 docs/                      # product/engineering docs + runbooks
@@ -142,7 +139,7 @@ docs/                      # product/engineering docs + runbooks
 | [`docs/DATABASE-SETUP-RUNBOOK.md`](docs/DATABASE-SETUP-RUNBOOK.md) | ordered provisioning + RLS + restore + verification |
 | [`docs/19-phase1-audit.md`](docs/19-phase1-audit.md) | Phase 1 audit: defects found/fixed, known issues, Phase 2 plan |
 | [`docs/14-feature-status.md`](docs/14-feature-status.md) | feature matrix |
-| `docs/00…18-*.md` | product/architecture deep dives (older; verify against code) |
+| `docs/00…18-*.md` | product/architecture deep dives (older; verify against code — `02` and `12` were moved to `docs/archive/`) |
 
 ## Security
 

@@ -6,12 +6,14 @@
 ## One-paragraph summary
 
 Capital OS is a Next.js 16 (App Router) application deployed on Vercel.
-**Supabase is the primary datastore and auth provider.** Convex provides
-real-time job/metric/notification state. NVIDIA NIM provides LLM completions
-behind a small client abstraction. EDGAR/Apollo/CSV pipelines feed the investor
-database; Gmail / Microsoft Graph / SMTP send outbound email with open/click
-tracking. A legacy CockroachDB deployment was replaced by Supabase; its
+**Supabase is the primary datastore and auth provider.** NVIDIA NIM provides
+LLM completions behind a small client abstraction. EDGAR/directory/CSV
+pipelines feed the investor database (~19K active rows, US/UK/EU focus);
+Gmail / Microsoft Graph / SMTP send outbound email with open/click tracking.
+A legacy CockroachDB deployment was replaced by Supabase; its
 `query()/queryAs()` API is preserved through a SQL→Postgrest translation shim.
+Job/progress state lives in Postgres (`raw_records`, `import_job_id`) behind
+cron routes — Convex was removed in 2026 and nothing depends on it.
 
 ## System diagram
 
@@ -21,31 +23,31 @@ tracking. A legacy CockroachDB deployment was replaced by Supabase; its
                     ┌──────────────┴──────────────┐
                     │   Next.js 16 App Router     │
                     │   53 pages · 70 API routes  │
-                    └──────┬──────────────┬───────┘
+                    └──────────────┬──────────────┘
                            │              │
              server actions│              │REST (service role)
                            ▼              ▼
-                ┌────────────────┐   ┌────────────────┐
-                │    SUPABASE    │   │     CONVEX     │
-                │  (permanent)   │   │  (real-time)   │
-                ├────────────────┤   ├────────────────┤
-                │ Auth+OAuth     │   │ researchJobs   │
-                │ PostgreSQL     │   │ scrapingJobs   │
-                │ 30+ tables+RLS │   │ dashboardMetrics│
-                │ Storage (docs) │   │ notifications  │
-                └────────────────┘   └────────────────┘
-                           ▲              ▲
-        SQL→Postgrest shim │              │ subscriptions
-        (src/lib/db.ts)    │              │
-                ┌──────────┴──────────┐   │
-                │  services/actions   ├───┘
+                ┌──────────────────────────────┐
+                │           SUPABASE           │
+                │        (permanent)           │
+                ├──────────────────────────────┤
+                │ Auth+OAuth                   │
+                │ PostgreSQL (30+ tables + RLS)│
+                │ Jobs: raw_records, import_*  │
+                │ Storage (docs)               │
+                └──────────────────────────────┘
+                           ▲
+        SQL→Postgrest shim │
+        (src/lib/db.ts)    │
+                ┌──────────┴──────────┐
+                │  services/actions   │
                 │  (business logic)   │
                 └──────────┬──────────┘
                            │
           ┌────────────────┼────────────────┐
           ▼                ▼                ▼
    NVIDIA NIM client   Email senders   Ingestion pipelines
-   (key rotation,      Gmail API       EDGAR · Apollo · CSV
+   (key rotation,      Gmail API       EDGAR · directory · CSV
    mock mode)          MS Graph SMTP   normalization · dedup
                                        fit scoring
 ```
@@ -55,10 +57,10 @@ tracking. A legacy CockroachDB deployment was replaced by Supabase; its
 | Concern | Owner | Notes |
 |---|---|---|
 | Users, sessions, OAuth identities | Supabase Auth | email/password + Google + Microsoft |
-| Investors, firms, taxonomy | Supabase `public` schema | shared read, 83K+ rows |
+| Investors, firms, taxonomy | Supabase `public` schema | shared read, ~19K active rows (US/UK/EU) |
 | Per-user data (profiles, saved investors, campaigns, emails, documents) | Supabase tenant tables | **RLS enforced** via `auth.uid()` policies (`supabase-rls-fix.sql`) |
-| Billing (plans, credits, ledger) | Supabase | architecture complete; Stripe adapter stubbed |
-| Job progress, live metrics, notifications | Convex | reactive queries; no polling |
+| Billing (plans, credits, ledger) | Supabase | Stripe founding-member checkout/webhook implemented (E2E purchase pending) |
+| Job progress, live metrics | PostgreSQL (`raw_records`, `import_job_id`) + cron routes | no external job service |
 | AI completions | NVIDIA NIM via `src/lib/ai/` | key rotation, retries, `AI_MOCK_MODE` |
 | Files (decks, documents) | Supabase Storage | PDF/PPTX generation via pptxgenjs + pdf-lib |
 | Outbound email | Gmail API / MS Graph / SMTP | AES-256-GCM encrypted OAuth tokens; CAN-SPAM footer; open/click tracking |
@@ -123,7 +125,7 @@ legacy `outreach_readiness`), so per-founder isolation is incomplete until the
 | Local | `npm run dev` (port 3456) | `.env.local`; `AI_MOCK_MODE=true` avoids AI costs |
 | Production | Vercel (`capital-os-nine.vercel.app`) | env vars set in Vercel; redeploy after changes |
 | Supabase | free tier | **Projects get auto-paused on inactivity — this took production down once (Sept 2026). Restore = dashboard → Restore, then run `docs/DATABASE-SETUP-RUNBOOK.md` Phase C verification.** |
-| Convex | free tier (`exciting-bat-92`) | `npx convex codegen` needs `CONVEX_DEPLOYMENT` + `CONVEX_DEPLOY_KEY` |
+| Convex | — | removed; no dependency remains (kept only in git history) |
 
 ## Key source map
 
@@ -137,6 +139,5 @@ legacy `outreach_readiness`), so per-founder isolation is incomplete until the
 | `src/lib/services/pipeline/stages.ts` | pipeline stage definitions |
 | `src/lib/db.ts` | SQL→Postgrest shim (see above) |
 | `src/lib/ai/` | NIM client: key rotation, models, retries |
-| `convex/` | real-time jobs/metrics/notifications |
 | `supabase/migrations/`, `supabase-*.sql` | schema + RLS (apply per runbook) |
-| `scripts/`, `src/scripts/` | EDGAR/CSV/Apollo data tooling |
+| `scripts/`, `src/scripts/` | EDGAR/CSV/directory data tooling |
