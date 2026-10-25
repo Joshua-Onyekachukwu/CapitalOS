@@ -119,7 +119,7 @@ const DataVizChart: React.FC = () => {
           fontFamily="system-ui, sans-serif"
           fontWeight="500"
         >
-          16,142 investors
+          18,995 investors
         </text>
         <text
           x="130"

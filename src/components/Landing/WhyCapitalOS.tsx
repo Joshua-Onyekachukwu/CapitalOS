@@ -7,7 +7,7 @@ const whyItems = [
   {
     title: "Real Investor Data, Not Just Names",
     description:
-      "Over 1M+ verified investors sourced from SEC 13F filings, Form D, venture databases, and curated profiles. Each record includes investment history, check sizes, sectors, and portfolio companies.",
+      "Nearly 19,000 investors sourced from SEC 13F filings, Form D, venture databases, and curated profiles — covering US, UK, and Europe — with 4,900+ verified contactable emails. Each record includes investment history, check sizes, sectors, and portfolio companies.",
   },
   {
     title: "AI That Scores, Not Just Searches",

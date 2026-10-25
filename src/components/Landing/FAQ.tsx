@@ -17,7 +17,7 @@ const faqData = [
   {
     question: "How does the AI investor matching work?",
     answer:
-      "We match you against a database of over 1M+ verified investors using multiple factors: your industry, stage, location, check size, and investment history. Every match comes with a score and a clear explanation of why that investor is a good fit.",
+      "We match you against a database of nearly 19,000 investors across the US, UK, and Europe using multiple factors: your industry, stage, location, check size, and investment history. Every match comes with a score and a clear explanation of why that investor is a good fit.",
   },
   {
     question: "What's included in the Professional plan?",
@@ -82,7 +82,7 @@ const FAQ: React.FC = () => {
               />
               <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 px-[20px]">
                 <h3 className="!mb-[8px] italic !leading-none !text-[30px] md:!text-4xl -tracking-[1.08px] !text-black">
-                  1M+
+                  18,995
                 </h3>
                 <span className="block uppercase font-bold tracking-[1.95px] text-xs md:text-sm text-[#8F3E13]">
                   Investors

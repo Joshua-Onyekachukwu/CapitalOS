@@ -9,7 +9,7 @@ const features = [
     icon: "ri-radar-line",
     title: "Investor Intelligence Database",
     description:
-      "Over 1M+ verified investors sourced from SEC filings, venture databases, and curated profiles. Filter by stage, sector, geography, check size, and investment activity.",
+      "Nearly 19,000 investors sourced from SEC filings, venture databases, and curated profiles — covering US, UK, and Europe — with 4,900+ verified contactable emails. Filter by stage, sector, geography, check size, and investment activity.",
   },
   {
     icon: "ri-brain-line",
