@@ -8,6 +8,11 @@
  */
 import { describe, it, expect, vi } from "vitest";
 
+// Mutable test state reachable from inside the vi.mock factory (hoisting-safe).
+const state = vi.hoisted(() => ({
+  failAuditInsert: false as boolean | "hard",
+}));
+
 // ── Mock the SQL shim ─────────────────────────────────────
 type Query = { sql: string; params: any[] };
 const queries: Query[] = [];
@@ -38,6 +43,15 @@ function makeRowsFor(sql: string): any[] {
 vi.mock("@/lib/db", () => ({
   query: async (sql: string, params: any[] = []) => {
     queries.push({ sql, params });
+    if (
+      state.failAuditInsert &&
+      /INSERT\s+INTO\s+email_messages/i.test(sql)
+    ) {
+      if (state.failAuditInsert === "hard") {
+        throw new Error("connection refused");
+      }
+      throw new Error("column email_messages.sequence_id does not exist");
+    }
     return makeRowsFor(sql);
   },
 }));
@@ -68,9 +82,15 @@ const step = (o: Partial<SequenceStep> = {}) =>
 async function runSendToCompletion(
   options: { sendFails?: boolean; sender?: any } = {}
 ) {
-  if (options.sender) {
-    (sendEmail as any).mockImplementation(options.sender);
-  }
+  // Reset all mocks so a previous test's mockImplementation / call history
+  // (e.g. the refund test's failing sender) can't leak into the next test.
+  (sendEmail as any).mockReset();
+  (sendEmail as any).mockImplementation(
+    options.sender ?? (async () => ({ success: true, messageId: "m-1" }))
+  );
+  (hasCredits as any).mockClear();
+  (consumeCredits as any).mockClear();
+  (addCredits as any).mockClear();
 
   // executeSend() needs the account query and the enrollment query;
   // both come back from makeRowsFor() above.
@@ -121,6 +141,27 @@ describe("send audit trail (2.3)", () => {
       "email_send_refund",
       expect.objectContaining({ reason: "sequence_send_failed" })
     );
+  });
+
+  it("pre-migration: audit insert rejection (42703) never fails a finished send", async () => {
+    state.failAuditInsert = true;
+    try {
+      const result = await runSendToCompletion();
+      expect(result).toBe(true);
+      // The send succeeded, so no refund is taken.
+      expect(addCredits).not.toHaveBeenCalled();
+    } finally {
+      state.failAuditInsert = false;
+    }
+  });
+
+  it("pre-migration: other email_messages insert errors still fail loudly", async () => {
+    state.failAuditInsert = "hard";
+    try {
+      await expect(runSendToCompletion()).rejects.toThrow(/connection refused/);
+    } finally {
+      state.failAuditInsert = false;
+    }
   });
 
   it("schema accepts the optional audit refs; rejects garbage ids", () => {

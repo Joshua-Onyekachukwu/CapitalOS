@@ -483,21 +483,33 @@ export async function executeSend(
 
   // Also log in email_messages for the outreach tracking system
   // (sequence_id/campaign_id close the send→approval chain, migration 014).
-  await query(
-    `INSERT INTO email_messages (user_id, investor_id, direction, subject, body_html, from_address, to_address, status, sent_at, message_id, ai_generated, campaign_id, sequence_id)
-     VALUES ($1, $2, 'outbound', $3, $4, $5, $6, 'sent', NOW(), $7, true, $8, $9)`,
-    [
-      userId,
-      enrollment.investor_id,
-      subject,
-      bodyHtml,
-      account.email_address,
-      investorEmail,
-      result.messageId,
-      enrollment.campaign_id,
-      enrollment.sequence_id,
-    ]
-  );
+  try {
+    await query(
+      `INSERT INTO email_messages (user_id, investor_id, direction, subject, body_html, from_address, to_address, status, sent_at, message_id, ai_generated, campaign_id, sequence_id)
+       VALUES ($1, $2, 'outbound', $3, $4, $5, $6, 'sent', NOW(), $7, true, $8, $9)`,
+      [
+        userId,
+        enrollment.investor_id,
+        subject,
+        bodyHtml,
+        account.email_address,
+        investorEmail,
+        result.messageId,
+        enrollment.campaign_id,
+        enrollment.sequence_id,
+      ]
+    );
+  } catch (err) {
+    // Forward-compat (migration 014): until the audit columns exist the insert
+    // fails with 42703 on sequence_id. The send and enrollment update already
+    // succeeded — losing only the outreach-tracking log row is the safe
+    // degradation; any other error is a real failure and re-thrown.
+    if (String((err as Error)?.message ?? "").includes("sequence_id")) {
+      console.warn("[sequence::executeSend] email_messages audit insert skipped — apply migration 014 (", (err as Error).message, ")");
+      return true;
+    }
+    throw err;
+  }
 
   return true;
 }

@@ -16,6 +16,23 @@ function getSp() {
   );
 }
 
+// Task 2.3 forward-compat: the sequence_id / approved_draft_id audit columns
+// arrive with migration 014. Until it is applied to the production database
+// PostgREST rejects any INSERT/SELECT mentioning them (SQLSTATE 42703), which
+// would silently drop the whole email_messages row. Probe once per process and
+// omit the audit fields when the schema doesn't have them yet.
+let auditColumnsSupported: boolean | null = null;
+async function supportsAuditColumns(sp: any): Promise<boolean> {
+  if (auditColumnsSupported !== null) return auditColumnsSupported;
+  try {
+    const { error } = await sp.from("email_messages").select("sequence_id").limit(1);
+    auditColumnsSupported = !error;
+  } catch {
+    auditColumnsSupported = false;
+  }
+  return auditColumnsSupported;
+}
+
 interface SendEmailParams {
   userId: string;
   to: string;
@@ -347,7 +364,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
 
   if (result.success) {
     try {
-      const { data: msgRecord } = await sp.from("email_messages").insert({
+      const messageRow: Record<string, unknown> = {
         user_id: params.userId,
         direction: "outbound",
         subject: params.subject,
@@ -366,9 +383,12 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
         click_count: 0,
         investor_id: params.investorId || null,
         campaign_id: params.campaignId || null,
-        sequence_id: params.sequenceId || null,
-        approved_draft_id: params.approvedDraftId || null,
-      }).select("id").single();
+      };
+      if (await supportsAuditColumns(sp)) {
+        messageRow.sequence_id = params.sequenceId || null;
+        messageRow.approved_draft_id = params.approvedDraftId || null;
+      }
+      const { data: msgRecord } = await sp.from("email_messages").insert(messageRow).select("id").single();
 
       // Log to sending_log and health events
       await logSend({
