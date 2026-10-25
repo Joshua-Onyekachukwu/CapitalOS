@@ -34,7 +34,9 @@ export type EventType =
   | "daily_limit_reached"
   | "warmup_started"
   | "warmup_paused"
-  | "warmup_completed";
+  | "warmup_completed"
+  | "auth_deliverability_failed"
+  | "auth_deliverability_recovered";
 
 export type Severity = "info" | "warning" | "critical";
 

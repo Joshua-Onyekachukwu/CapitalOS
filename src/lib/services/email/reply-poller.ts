@@ -221,6 +221,23 @@ export async function processReply(email: IncomingEmail, userId: string, investo
     );
   }
 
+  // ── Reply understanding: classify interest, draft a suggested response,
+  // auto-pause active sequence enrollments (stop_on_reply), persist insight.
+  // Fully best-effort — a failure here must never lose the detected reply.
+  try {
+    const { understandReply } = await import("./reply-understanding");
+    await understandReply({
+      userId,
+      investorId: resolvedInvestorId,
+      threadId,
+      messageId: email.messageId,
+      subject: email.subject,
+      body: email.bodyPreview,
+    });
+  } catch {
+    // Logged upstream by the poller result; detection itself already succeeded.
+  }
+
   return true;
 }
 

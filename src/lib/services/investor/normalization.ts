@@ -20,6 +20,9 @@ export interface NormalizedInvestor {
   location?: string;
   country?: string;
   city?: string;
+  currentFirmName?: string;
+  currentFirmDomain?: string;
+  currentFirmWebsite?: string;
   investorType: string;
   investmentStages: string[];
   investmentSectors: string[];
@@ -28,7 +31,6 @@ export interface NormalizedInvestor {
   maxCheckSize?: number;
   currency: string;
   portfolioCount: number;
-  currentFirmName?: string;
   websiteUrl?: string;
   avatarUrl?: string;
   source: string;
@@ -111,8 +113,20 @@ const TYPE_MAP: Record<string, string> = {
 
 export function normalizeInvestorType(type: string): string {
   const lower = type.toLowerCase().trim();
-  return TYPE_MAP[lower] || lower.replace(/\s+/g, "_");
+  const mapped = TYPE_MAP[lower] || lower.replace(/\s+/g, "_");
+  // Investor type is a Postgres enum — values outside it (e.g. IAPD's
+  // "other", "growth_equity", "corporate_vc") would fail every insert in
+  // the batch. Coerce unknowns to the dataset's default type instead.
+  return CANONICAL_INVESTOR_TYPES.has(mapped) ? mapped : "angel_investor";
 }
+
+// Must match the investor_type enum in the DB exactly.
+const CANONICAL_INVESTOR_TYPES = new Set([
+  "angel_investor", "angel_syndicate", "venture_capital", "corporate_venture",
+  "family_office", "private_equity", "accelerator", "incubator",
+  "government_fund", "university_fund", "venture_studio", "micro_vc",
+  "impact_investor", "strategic_investor", "debt_investor", "fund_of_funds",
+]);
 
 // =============================================
 // Sector Normalization
@@ -259,6 +273,11 @@ export function normalizeInvestor(
     location: raw.location,
     country: raw.country ? normalizeCountry(raw.country) : undefined,
     city: raw.city,
+    // Firm/company context used by ingestion to link or create investor_firms.
+    // Previously dropped here, which silently discarded company data on import.
+    currentFirmName: raw.firmName,
+    currentFirmDomain: raw.firmDomain,
+    currentFirmWebsite: raw.firmWebsite,
     investorType: raw.investorType
       ? normalizeInvestorType(raw.investorType)
       : "angel_investor",

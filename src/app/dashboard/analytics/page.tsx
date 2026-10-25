@@ -59,95 +59,21 @@ export default function AnalyticsPage() {
       const activeCampaigns = json.activeCampaigns || 0;
       const withLinkedIn = json.withLinkedIn || 0;
 
-      // For charts, fetch a sampled subset (1000 investors) for distribution data
-      let investors: Array<{
-        fit_score: number; investment_sectors: string[];
-        country: string | null; investor_type: string;
-        outreach_readiness: string; created_at: string;
-      }> = [];
-      try {
-        const sampleRes = await fetch("/api/investors?limit=1000&fields=fit_score,investment_sectors,country,investor_type,outreach_readiness,created_at");
-        if (sampleRes.ok) {
-          const sampleJson = await sampleRes.json();
-          investors = sampleJson.investors || [];
-        }
-      } catch { /* chart data not available */ }
-
-      // Sector distribution
-      const sectorMap: Record<string, number> = {};
-      investors.forEach((inv) => {
-        (inv.investment_sectors || []).forEach((s: string) => {
-          sectorMap[s] = (sectorMap[s] || 0) + 1;
-        });
-      });
-      const topSectors = Object.entries(sectorMap)
-        .map(([sector, count]) => ({ sector: sector.replace(/_/g, " "), count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 8);
-
-      // Country distribution
-      const countryMapFixed: Record<string, number> = {};
-      investors.forEach((inv) => {
-        if (inv.country) {
-          countryMapFixed[inv.country] = (countryMapFixed[inv.country] || 0) + 1;
-        }
-      });
-      const topCountries = Object.entries(countryMapFixed)
-        .map(([country, count]) => ({ country, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 8);
-
-      // Investor type distribution
-      const typeMap: Record<string, number> = {};
-      investors.forEach((inv) => {
-        const type = (inv.investor_type || "unknown").replace(/_/g, " ");
-        typeMap[type] = (typeMap[type] || 0) + 1;
-      });
-      const investorTypes = Object.entries(typeMap)
-        .map(([type, count]) => ({ type, count }))
-        .sort((a, b) => b.count - a.count);
-
-      // Fit score distribution
-      const fitBuckets = [
-        { range: "0-20", min: 0, max: 20 },
-        { range: "21-40", min: 21, max: 40 },
-        { range: "41-60", min: 41, max: 60 },
-        { range: "61-80", min: 61, max: 80 },
-        { range: "81-100", min: 81, max: 100 },
-      ];
-      const fitDistribution = fitBuckets.map((bucket) => ({
-        range: bucket.range,
-        count: investors.filter((i) => (i.fit_score || 0) >= bucket.min && (i.fit_score || 0) <= bucket.max).length,
-      }));
-
-      // Readiness breakdown
-      const readinessMap: Record<string, number> = {};
-      investors.forEach((inv) => {
-        const stage = inv.outreach_readiness || "not_ready";
-        readinessMap[stage] = (readinessMap[stage] || 0) + 1;
-      });
-      const readinessBreakdown = Object.entries(readinessMap)
-        .map(([stage, count]) => ({ stage, count }))
-        .sort((a, b) => b.count - a.count);
-
-      // Weekly trend (placeholder with empty weeks)
-      const weeklyMap: Record<string, number> = {};
-      for (let i = 7; i >= 0; i--) {
-        const weekLabel = `W${8 - i}`;
-        weeklyMap[weekLabel] = 0;
-      }
-      investors.forEach((inv) => {
-        const created = new Date(inv.created_at);
-        const now = new Date();
-        const weeksAgo = Math.floor((now.getTime() - created.getTime()) / (7 * 24 * 60 * 60 * 1000));
-        if (weeksAgo >= 0 && weeksAgo < 8) {
-          const weekLabel = `W${8 - weeksAgo}`;
-          if (weeklyMap[weekLabel] !== undefined) {
-            weeklyMap[weekLabel]++;
-          }
-        }
-      });
-      const weeklyInvestors = Object.entries(weeklyMap).map(([week, count]) => ({ week, count }));
+      // Exact distributions from the server (get_analytics_distributions RPC,
+      // migration 013) — replaces the old arbitrary-100-investor sample.
+      const dist = json.distributions || null;
+      const topSectors: Array<{ sector: string; count: number }> =
+        (dist?.sectors || []).map((s: any) => ({ sector: String(s.sector).replace(/_/g, " "), count: s.count }));
+      const topCountries: Array<{ country: string; count: number }> =
+        (dist?.countries || []).map((c: any) => ({ country: c.country, count: c.count }));
+      const investorTypes: Array<{ type: string; count: number }> =
+        (dist?.types || []).map((t: any) => ({ type: String(t.type).replace(/_/g, " "), count: t.count }));
+      const readinessBreakdown: Array<{ stage: string; count: number }> =
+        (dist?.readiness || []).map((r: any) => ({ stage: r.stage, count: r.count }));
+      const fitDistribution: Array<{ range: string; count: number }> =
+        (dist?.fitBuckets || []).map((b: any) => ({ range: b.range, count: b.count }));
+      const weeklyInvestors: Array<{ week: string; count: number }> =
+        (dist?.weekly || []).map((w: any) => ({ week: w.week, count: w.count }));
 
       setData({
         totalInvestors,

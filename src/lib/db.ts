@@ -469,8 +469,18 @@ function resolveParamValue(val: string, params: any[]): any {
   const trimmed = val.trim();
 
   // $N param (with optional cast incl. array types like ::text[])
-  const paramMatch = trimmed.match(/^\$(\d+)(?:::[\w[\]]+)?$/);
-  if (paramMatch) return params[parseInt(paramMatch[1]) - 1];
+  const paramMatch = trimmed.match(/^\$(\d+)(?:::([\w[\]]+))?$/);
+  if (paramMatch) {
+    const value = params[parseInt(paramMatch[1]) - 1];
+    // A ::jsonb cast on a string param means the caller passed JSON.stringify()
+    // output. Passing the string through to supabase-js double-encodes it (the
+    // column ends up holding a JSON *string* scalar instead of an object), so
+    // parse it here. Mirrors the fix in parseParamValues for INSERTs.
+    if (paramMatch[2] === "jsonb" && typeof value === "string") {
+      return resolveJsonbParam(value, params);
+    }
+    return value;
+  }
 
   // String literal
   if ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
@@ -499,8 +509,17 @@ function parseParamValues(valuesStr: string, params: any[]): any[] {
   const parts = valuesStr.split(",").map((v) => v.trim());
   return parts.map((part) => {
     // $N::type (cast suffix may include array brackets, e.g. ::text[])
-    const castMatch = part.match(/^\$(\d+)::[\w[\]]+$/);
-    if (castMatch) return params[parseInt(castMatch[1]) - 1];
+    const castMatch = part.match(/^\$(\d+)::([\w[\]]+)$/);
+    if (castMatch) {
+      const value = params[parseInt(castMatch[1]) - 1];
+      // ::jsonb string params are JSON.stringify() output — parse them so
+      // supabase-js sends a real JSON object instead of a double-encoded
+      // JSON string scalar (which made raw_data/normalized_data unusable).
+      if (castMatch[2] === "jsonb" && typeof value === "string") {
+        return resolveJsonbParam(value, params);
+      }
+      return value;
+    }
 
     // $N
     const paramMatch = part.match(/^\$(\d+)$/);
@@ -508,6 +527,14 @@ function parseParamValues(valuesStr: string, params: any[]): any[] {
 
     return resolveParamValue(part, params);
   });
+}
+
+function resolveJsonbParam(value: string, params: any[]): any {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
 }
 
 // ─────────────────────────────────────────────

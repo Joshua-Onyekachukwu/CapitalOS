@@ -303,7 +303,9 @@ export async function getPendingSends(limit = 50): Promise<
       continue;
     }
 
-    // Check if investor replied (stop on reply)
+    // Check if investor replied (stop on reply). 'paused' is the enum-legal
+    // lifecycle value (migration 012); 'stopped' never existed in step_status
+    // and this write would have failed at runtime.
     if (enrollment.stop_on_reply) {
       const replies = await query<any>(
         `SELECT id FROM campaign_sequence_emails WHERE investor_id = $1 AND status = 'replied' LIMIT 1`,
@@ -312,7 +314,7 @@ export async function getPendingSends(limit = 50): Promise<
 
       if (replies.length > 0) {
         await query(
-          `UPDATE campaign_sequence_enrollments SET status = 'stopped', stopped_reason = 'replied' WHERE id = $1`,
+          `UPDATE campaign_sequence_enrollments SET status = 'paused', paused_reason = 'replied', paused_at = NOW(), stopped_reason = 'replied' WHERE id = $1`,
           [enrollment.id]
         );
         continue;
@@ -500,8 +502,8 @@ export async function getSequenceStats(
     totalEnrolled: enrollments.length,
     activeNow: enrollments.filter((e) => e.status === "scheduled").length,
     completed: enrollments.filter((e) => e.status === "completed").length,
-    replied: enrollments.filter((e) => e.status === "stopped" && e.stopped_reason === "replied").length,
-    bounced: enrollments.filter((e) => e.status === "stopped" && e.stopped_reason === "bounced").length,
+    replied: enrollments.filter((e) => (e.status === "paused" || e.status === "stopped") && e.stopped_reason === "replied").length,
+    bounced: enrollments.filter((e) => (e.status === "paused" || e.status === "stopped") && e.stopped_reason === "bounced").length,
     emailsSent: totalEmails,
   };
 }

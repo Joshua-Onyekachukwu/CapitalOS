@@ -1,0 +1,139 @@
+name: Auth Email Watchdog
+
+# Proves that Supabase Auth emails (password reset) are actually DELIVERED —
+# not merely accepted by GoTrue. Every day it:
+#   1. Triggers a password-reset for a fresh plus-alias of the watchdog inbox
+#   2. IMAP-polls that inbox until the message lands (exit 0) or times out (exit 1)
+#   3. On failure: opens/updates a GitHub issue; on recovery: auto-closes it
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   NEXT_PUBLIC_SUPABASE_URL        e.g. https://tvekoojdilkjptjzpvqo.supabase.co
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY   the anon key from the same project
+#   WATCHDOG_EMAIL_USER             QA inbox address, e.g. buffy.qa@gmail.com
+#   WATCHDOG_EMAIL_PASS             Gmail App Password for that inbox (IMAP)
+# Optional secrets:
+#   SUPABASE_ACCESS_TOKEN           PAT — enables the GoTrue log sweep on failure
+#   SUPABASE_SERVICE_ROLE_KEY       enables in-product alerting (email_health_events)
+# Optional:
+#   WATCHDOG_IMAP_HOST              default imap.gmail.com
+#   WATCHDOG_TIMEOUT_MIN            default 5
+#
+# The watchdog inbox needs 2FA + an app password (Gmail) — IMAP must be
+# enabled. No other Gmail setting is required; plus-aliases need no setup.
+
+on:
+  schedule:
+    - cron: "0 7 * * *" # daily 07:00 UTC
+  workflow_dispatch:
+    inputs:
+      timeout_min:
+        description: "Minutes to wait for delivery"
+        default: "5"
+
+concurrency:
+  group: auth-smtp-watchdog
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  deliverability:
+    name: Probe auth email delivery
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Trigger reset + wait for the email in the inbox
+        id: probe
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          WATCHDOG_EMAIL_USER: ${{ secrets.WATCHDOG_EMAIL_USER }}
+          WATCHDOG_EMAIL_PASS: ${{ secrets.WATCHDOG_EMAIL_PASS }}
+          WATCHDOG_IMAP_HOST: ${{ secrets.WATCHDOG_IMAP_HOST }}
+          WATCHDOG_TIMEOUT_MIN: ${{ github.event.inputs.timeout_min || '5' }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/auth-smtp-values.js --await-inbox
+
+      - name: Raise alert on failure
+        if: steps.probe.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Auth email deliverability DOWN — watchdog probe failed";
+            const runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}";
+            const failedLegs = "${{ steps.probe.outputs.failed_legs }}" || "(unknown)";
+            const resetStatus = "${{ steps.probe.outputs.reset_status }}" || "(unknown)";
+            const signupStatus = "${{ steps.probe.outputs.signup_status }}" || "(not run)";
+            const body = [
+              "**The daily deliverability probe failed.**",
+              "",
+              `Failing legs: **${failedLegs}**`,
+              `Leg statuses — reset: \`${resetStatus}\`, signup: \`${signupStatus}\``,
+              `Run: ${runUrl}`,
+              `Date: ${new Date().toISOString()}`,
+              "",
+              "The probe triggers a real password-reset (and signup confirmation),",
+              "then waits for the messages over IMAP. A timeout means the message",
+              "never arrived — check, in order:",
+              "1. Supabase Dashboard → Authentication → SMTP Settings (custom SMTP still enabled? credentials valid?)",
+              "2. Authentication → Logs → filter by error (SMTP errors appear here)",
+              "3. Gmail sender account: app password revoked? daily quota hit?",
+              "4. If `reset=timeout` but `signup=delivered` — only the reset template/send is broken, not the SMTP connection",
+              "",
+              "Failures are also mirrored into the app's Email Health timeline",
+              "(`auth_deliverability_failed`) when SUPABASE_SERVICE_ROLE_KEY is set.",
+              "",
+              "This issue is opened automatically by the auth-smtp-watchdog workflow.",
+              "It closes itself when a probe passes again.",
+            ].join("\n");
+            const label = "auth-deliverability";
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              labels: label, state: "open", per_page: 1,
+            });
+            if (issues.data.length) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: `Still failing — ${runUrl}`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: [label],
+              });
+            }
+
+      - name: Auto-close alert on recovery
+        if: steps.probe.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              labels: "auth-deliverability", state: "open", per_page: 1,
+            });
+            for (const issue of issues.data) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Deliverability recovered — probe passed at ${new Date().toISOString()}. Auto-closing.`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number, state: "closed",
+              });
+            }

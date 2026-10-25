@@ -9,6 +9,17 @@ import {
   normalizeInvestor,
   type NormalizedInvestor,
 } from "./normalization";
+
+// Map a loose URL/domain string to a bare hostname for domain matching.
+function domainFromWebsite(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  try {
+    return new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`)
+      .hostname.replace(/^www\./, "").toLowerCase() || undefined;
+  } catch {
+    return undefined;
+  }
+}
 import { findMatchingInvestor } from "./matching";
 import { mapColumns } from "./columns";
 
@@ -142,7 +153,8 @@ export async function stageRecords(
 // =============================================
 
 export async function processRawRecords(
-  batchSize = 100
+  batchSize = 100,
+  sourceProvider?: string
 ): Promise<IngestionResult> {
   const result: IngestionResult = {
     totalRecords: 0,
@@ -154,10 +166,17 @@ export async function processRawRecords(
     errorMessages: [],
   };
 
-  const pendingRecords = await query<any>(
-    `SELECT * FROM raw_records WHERE status = 'pending' ORDER BY created_at ASC LIMIT $1`,
-    [batchSize]
-  );
+  // Optional provider filter so a new import (e.g. apollo-contacts) can be
+  // processed without touching older pending records from other sources.
+  const pendingRecords = sourceProvider
+    ? await query<any>(
+        `SELECT * FROM raw_records WHERE status = 'pending' AND source_provider = $2 ORDER BY created_at ASC LIMIT $1`,
+        [batchSize, sourceProvider]
+      )
+    : await query<any>(
+        `SELECT * FROM raw_records WHERE status = 'pending' ORDER BY created_at ASC LIMIT $1`,
+        [batchSize]
+      );
 
   result.totalRecords = pendingRecords.length;
 
@@ -169,14 +188,30 @@ export async function processRawRecords(
         [record.id]
       );
 
-      // Normalize the raw data
-      const raw = record.raw_data as Record<string, string>;
+      // Normalize the raw data. Rows staged before the db-layer ::jsonb
+      // double-encoding fix hold a JSON string scalar here — parse defensively
+      // so the IAPD backlog (and any other legacy rows) normalize correctly
+      // instead of collapsing into "Unknown" investors.
+      let raw = record.raw_data as Record<string, string>;
+      if (typeof raw === "string") {
+        try {
+          raw = JSON.parse(raw) as Record<string, string>;
+        } catch {
+          raw = {} as Record<string, string>;
+        }
+      }
+      // IAPD (and other provider) records store snake_case fields — fall back
+      // to them so firm-style records don't collapse into "Unknown".
+      const first = raw.firstName || raw.first_name || "";
+      const last = raw.lastName || raw.last_name || "";
       const providerResult = {
-        providerId: raw.sourceId || record.id,
+        providerId: raw.sourceId || raw.id || record.id,
         providerName: record.source_provider || "unknown",
-        firstName: raw.firstName,
-        lastName: raw.lastName,
-        fullName: raw.fullName || `${raw.firstName || ""} ${raw.lastName || ""}`.trim(),
+        firstName: first || undefined,
+        lastName: last || undefined,
+        fullName: raw.fullName || raw.legal_name || raw.canonical_name
+          || `${first} ${last}`.trim()
+          || "Unknown",
         email: raw.email,
         phone: raw.phone,
         linkedinUrl: raw.linkedinUrl,
@@ -185,16 +220,16 @@ export async function processRawRecords(
         location: raw.location,
         country: raw.country,
         city: raw.city,
-        investorType: raw.investorType,
-        firmName: raw.firmName,
-        firmDomain: raw.firmDomain,
-        firmWebsite: raw.firmWebsite,
+        investorType: raw.investorType || raw.investor_type || undefined,
+        firmName: raw.firmName || raw.firm_name || raw.company || undefined,
+        firmDomain: raw.firmDomain || raw.firm_domain || (raw.website ? domainFromWebsite(raw.website) : undefined),
+        firmWebsite: raw.firmWebsite || raw.firm_website || undefined,
         investmentStages: raw.investmentStages ? raw.investmentStages.split(/[;|,]/).map((s: string) => s.trim()) : [],
         investmentSectors: raw.investmentSectors ? raw.investmentSectors.split(/[;|,]/).map((s: string) => s.trim()) : [],
         investmentGeographies: raw.investmentGeographies ? raw.investmentGeographies.split(/[;|,]/).map((s: string) => s.trim()) : [],
         portfolioCount: raw.portfolioCount ? parseInt(raw.portfolioCount) : undefined,
-        websiteUrl: raw.websiteUrl,
-        avatarUrl: raw.avatarUrl,
+        websiteUrl: raw.websiteUrl || raw.website || undefined,
+        avatarUrl: raw.avatarUrl || raw.avatar_url || undefined,
         raw: raw,
       };
 
@@ -222,11 +257,11 @@ export async function processRawRecords(
             [matchResult.investorId, matchResult.confidence, record.id]
           );
 
-          await query(
-            `INSERT INTO duplicate_candidates (investor_a_id, investor_b_id, confidence, match_signals, status)
-             VALUES ($1, NULL, $2, $3::jsonb, 'pending')`,
-            [matchResult.investorId, matchResult.confidence, JSON.stringify(matchResult.signals)]
-          );
+          // NOTE: duplicate_candidates.investor_b_id is NOT NULL and the incoming
+          // record has no investor id yet — this INSERT used to fail every time,
+          // silently flipping mid-confidence matches to status='error' and losing
+          // them. The match stays queryable on raw_records
+          // (matched_investor_id + match_confidence) for manual review instead.
           result.duplicates++;
         } else {
           await query(
@@ -257,29 +292,86 @@ export async function processRawRecords(
 }
 
 // =============================================
+// Firm resolution: find or create investor_firms row
+// =============================================
+
+async function resolveFirmId(norm: NormalizedInvestor): Promise<string | null> {
+  if (!norm.currentFirmName || !norm.currentFirmName.trim()) return null;
+  const name = norm.currentFirmName.trim();
+  const domain = norm.currentFirmDomain
+    ? norm.currentFirmDomain.toLowerCase().replace(/^www\./, "")
+    : null;
+
+  if (domain) {
+    const byDomain = await query<{ id: string }>(
+      `SELECT id FROM investor_firms WHERE domain = $1 LIMIT 1`,
+      [domain]
+    );
+    if (byDomain.length) return byDomain[0].id;
+  }
+
+  const byName = await query<{ id: string }>(
+    `SELECT id FROM investor_firms WHERE name = $1 LIMIT 1`,
+    [name]
+  );
+  if (byName.length) return byName[0].id;
+
+  const created = await query<{ id: string }>(
+    `INSERT INTO investor_firms (name, domain, website, source, source_provider)
+     VALUES ($1, $2, $3, 'provider', $4)
+     RETURNING id`,
+    [name, domain, norm.currentFirmWebsite || null, norm.source]
+  );
+  return created[0]?.id ?? null;
+}
+
+// =============================================
 // Stage 3: Promote new records to canonical investors
 // =============================================
 
 export async function promoteNewRecords(
-  batchSize = 100
+  batchSize = 100,
+  sourceProvider?: string
 ): Promise<{ promoted: number; errors: number }> {
   let promoted = 0;
   let errors = 0;
 
-  const newRecords = await query<any>(
-    `SELECT * FROM raw_records WHERE status = 'new' ORDER BY created_at ASC LIMIT $1`,
-    [batchSize]
-  );
+  const newRecords = sourceProvider
+    ? await query<any>(
+        `SELECT * FROM raw_records WHERE status = 'new' AND source_provider = $2 ORDER BY created_at ASC LIMIT $1`,
+        [batchSize, sourceProvider]
+      )
+    : await query<any>(
+        `SELECT * FROM raw_records WHERE status = 'new' ORDER BY created_at ASC LIMIT $1`,
+        [batchSize]
+      );
 
   for (const record of newRecords) {
     try {
-      const norm = record.normalized_data as NormalizedInvestor;
+      // Rows written before the db-layer ::jsonb double-encoding fix carry a
+      // JSON string scalar here instead of an object — parse defensively.
+      let norm = record.normalized_data as NormalizedInvestor;
+      if (typeof norm === "string") {
+        try {
+          norm = JSON.parse(norm) as NormalizedInvestor;
+        } catch {
+          norm = undefined as unknown as NormalizedInvestor;
+        }
+      }
       if (!norm || !norm.fullName) continue;
+
+      // Find or create the firm so company context survives promotion.
+      let firmId: string | null = null;
+      try {
+        firmId = await resolveFirmId(norm);
+      } catch {
+        // Firm resolution is non-critical — the investor is still promoted.
+      }
 
       // Insert as canonical investor
       const rows = await query<{ id: string }>(
-        `INSERT INTO investors (full_name, first_name, last_name, email, phone, linkedin_url, job_title, bio, location, country, city, investor_type, investment_stages, investment_sectors, investment_geographies, min_check_size, max_check_size, currency, portfolio_count, website_url, avatar_url, source, source_id, source_provider, data_quality_score, outreach_readiness, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+        `INSERT INTO investors (full_name, first_name, last_name, email, phone, linkedin_url, job_title, bio, location, country, city, investor_type, investment_stages, investment_sectors, investment_geographies, min_check_size, max_check_size, currency, portfolio_count, website_url, avatar_url, source, source_id, source_provider, data_quality_score, outreach_readiness, is_active, current_firm_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
          RETURNING id`,
         [
           norm.fullName, norm.firstName, norm.lastName, norm.email, norm.phone,
@@ -287,7 +379,7 @@ export async function promoteNewRecords(
           norm.city, norm.investorType, norm.investmentStages, norm.investmentSectors,
           norm.investmentGeographies, norm.minCheckSize, norm.maxCheckSize, norm.currency,
           norm.portfolioCount, norm.websiteUrl, norm.avatarUrl, norm.source, norm.sourceId,
-          norm.source, norm.email ? 50 : 20, "not_ready", true,
+          norm.source, norm.email ? 50 : 20, "not_ready", true, firmId,
         ]
       );
 

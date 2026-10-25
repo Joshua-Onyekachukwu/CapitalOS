@@ -75,15 +75,30 @@ async function computeAnalytics() {
   pendingDuplicates = dupResult.status === "fulfilled" ? (dupResult.value.count || 0) : 0;
   activeCampaigns = campaignResult.status === "fulfilled" ? (campaignResult.value.count || 0) : 0;
 
+  // Exact distributions from the get_analytics_distributions RPC (migration 013).
+  // Replaces the old client-side "sample 100 investors" approximation.
+  let distributions: any = null;
+  try {
+    const { data, error } = await sp.rpc("get_analytics_distributions");
+    if (!error) distributions = data ?? null;
+  } catch {
+    distributions = null;
+  }
+
+  // Prefer the RPC's exact totals when available (avgFit was previously a
+  // 1000-row approximation).
+  const totals = distributions?.totals ?? null;
+
   return {
-    totalInvestors,
-    highFitInvestors: highFit,
-    avgFitScore,
-    withEmail,
-    withLinkedIn,
+    totalInvestors: totals?.active ?? totalInvestors,
+    highFitInvestors: totals?.highFit ?? highFit,
+    avgFitScore: totals?.avgFit ?? avgFitScore,
+    withEmail: totals?.withEmail ?? withEmail,
+    withLinkedIn: totals?.withLinkedIn ?? withLinkedIn,
     emailsSent,
     replyRate,
     activeCampaigns,
     pendingDuplicates,
+    distributions,
   };
 }
