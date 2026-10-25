@@ -83,6 +83,10 @@ export default function SettingsPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
+  // Privacy pack (Phase 3): export + guarded delete-account.
+  const [exportingData, setExportingData] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -682,6 +686,80 @@ export default function SettingsPage() {
             <p className="text-[13px] text-gray-400 !mb-0">Sign out of your account on this device.</p>
           </div>
           <Button variant="danger" size="sm" loading={signingOut} onClick={handleSignOut}>Sign Out</Button>
+        </CardBody>
+      </Card>
+
+      {/* =============================================
+          Privacy Pack — export & erasure (Phase 3)
+          ============================================= */}
+      <Card>
+        <CardHeader>
+          <h3 className="!text-[16px] !font-semibold !mb-0">Privacy & Data</h3>
+        </CardHeader>
+        <CardBody className="space-y-[16px]">
+          <div className="flex items-center justify-between flex-wrap gap-[16px]">
+            <div>
+              <p className="text-[14px] font-medium !mb-[2px]">Export my data</p>
+              <p className="text-[13px] text-gray-400 !mb-0">Download a JSON archive of everything Capital OS holds about your account (credentials excluded).</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              loading={exportingData}
+              onClick={async () => { setExportingData(true); try {
+                const res = await fetch("/api/privacy/export");
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `capital-os-export-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                toast.success("Export downloaded.");
+              } catch { toast.error("Export failed. Please try again."); } finally { setExportingData(false); } }}
+            >
+              <i className="ri-download-2-line text-[14px] mr-[4px]"></i>
+              Export
+            </Button>
+          </div>
+
+          <Alert variant="info">
+            Financial and audit records (subscriptions, billing events, credit ledger) are retained pseudonymously for billing integrity even after account deletion — see our privacy posture docs.
+          </Alert>
+
+          <div className="flex items-center justify-between flex-wrap gap-[16px] border-t border-gray-700 pt-[16px]">
+            <div>
+              <p className="text-[14px] font-medium !mb-[2px] text-danger-600">Delete my account</p>
+              <p className="text-[13px] text-gray-400 !mb-0">Permanent. Removes all your data; sign-in is impossible afterward. Type DELETE to confirm.</p>
+            </div>
+            <div className="flex items-center gap-[8px]">
+              <Input
+                value={deleteConfirm}
+                placeholder="DELETE"
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                className="!w-[140px] !py-[8px]"
+              />
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={deleteConfirm !== "DELETE"}
+                loading={deletingAccount}
+                onClick={async () => { setDeletingAccount(true); try {
+                  const res = await fetch("/api/privacy/delete-account", { method: "POST", body: JSON.stringify({ confirm: "DELETE MY ACCOUNT" }) });
+                  if (!res.ok) throw new Error(await res.text());
+                  // Server deleted the auth user — clear the local browser session.
+                  const { createClient } = await import("@/lib/supabase/client");
+                  const supabase = createClient();
+                  await supabase.auth.signOut().catch(() => {});
+                  window.location.href = "/";
+                } catch { toast.error("Deletion failed. Please try again or contact support."); } finally { setDeletingAccount(false); } }}
+              >
+                <i className="ri-delete-bin-line text-[14px] mr-[4px]"></i>
+                Delete Account
+              </Button>
+            </div>
+          </div>
         </CardBody>
       </Card>
     </div>
