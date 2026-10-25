@@ -100,6 +100,14 @@ const Footer: React.FC = () => {
                     </li>
                     <li className="mb-[12px] md:mb-[15px] last:mb-0">
                       <Link
+                        href="/support"
+                        className="text-black dark:text-white transition-all hover:text-[#D15616]"
+                      >
+                        Support
+                      </Link>
+                    </li>
+                    <li className="mb-[12px] md:mb-[15px] last:mb-0">
+                      <Link
                         href="/terms"
                         className="text-black dark:text-white transition-all hover:text-[#D15616]"
                       >
