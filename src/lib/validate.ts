@@ -76,6 +76,9 @@ export const sendEmailSchema = z.object({
     content: z.string(), // base64
     mimeType: z.string(),
   })).max(5).optional(),
+  // Audit-trail refs (task 2.3): written into email_messages alongside the send.
+  campaignId: idSchema.optional(),
+  approvedDraftId: idSchema.optional(),
 });
 
 export const draftEmailSchema = z.object({

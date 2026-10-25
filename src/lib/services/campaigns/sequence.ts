@@ -351,6 +351,8 @@ export async function getPendingSends(limit = 50): Promise<
 // Execute Send
 // =============================================
 
+import { hasCredits, consumeCredits, addCredits } from "@/lib/billing/credits";
+
 export async function executeSend(
   enrollmentId: string,
   step: SequenceStep,
@@ -373,8 +375,35 @@ export async function executeSend(
 
   const account = accounts[0];
 
+  // Pre-send credit gate + deduction (task 2.3 audit trail). A send without
+  // credits never happens; leave the enrollment scheduled for another day.
+  const { hasCredits: gatePassed, balance, cost } = await hasCredits(userId, "email_send");
+  if (!gatePassed) {
+    console.error(`Sequence send blocked: insufficient credits for user ${userId} (need ${cost}, have ${balance})`);
+    return false;
+  }
+  const deducted = await consumeCredits(userId, "email_send");
+  if (!deducted.success) {
+    console.error(`Sequence send blocked at deduction: ${deducted.error}`);
+    return false;
+  }
+
   // Import and use the email sender
   const { sendEmail } = await import("@/lib/services/email/sender");
+
+  // Get sequence/campaign refs from the enrollment (audit trail)
+  const enrollments = await query<any>(
+    `SELECT investor_id, sequence_id, campaign_id, current_step FROM campaign_sequence_enrollments WHERE id = $1`,
+    [enrollmentId]
+  );
+  if (!enrollments.length) {
+    await addCredits(userId, deducted.cost, "email_send_refund", {
+      reason: "enrollment_missing",
+      enrollmentId,
+    });
+    return false;
+  }
+  const enrollment = enrollments[0];
 
   const result = await sendEmail({
     userId,
@@ -382,22 +411,19 @@ export async function executeSend(
     subject,
     bodyHtml,
     enableTracking: true,
+    investorId: enrollment.investor_id,
+    campaignId: enrollment.campaign_id,
+    sequenceId: enrollment.sequence_id,
   });
 
   if (!result.success) {
     console.error("Email send failed:", result.error);
+    await addCredits(userId, deducted.cost, "email_send_refund", {
+      reason: "sequence_send_failed",
+      enrollmentId,
+    });
     return false;
   }
-
-  // Get investor_id from enrollment
-  const enrollments = await query<any>(
-    `SELECT investor_id, sequence_id, current_step FROM campaign_sequence_enrollments WHERE id = $1`,
-    [enrollmentId]
-  );
-
-  if (!enrollments.length) return false;
-
-  const enrollment = enrollments[0];
 
   // Log the sent email
   await query(
@@ -456,9 +482,10 @@ export async function executeSend(
   }
 
   // Also log in email_messages for the outreach tracking system
+  // (sequence_id/campaign_id close the send→approval chain, migration 014).
   await query(
-    `INSERT INTO email_messages (user_id, investor_id, direction, subject, body_html, from_address, to_address, status, sent_at, message_id, ai_generated)
-     VALUES ($1, $2, 'outbound', $3, $4, $5, $6, 'sent', NOW(), $7, true)`,
+    `INSERT INTO email_messages (user_id, investor_id, direction, subject, body_html, from_address, to_address, status, sent_at, message_id, ai_generated, campaign_id, sequence_id)
+     VALUES ($1, $2, 'outbound', $3, $4, $5, $6, 'sent', NOW(), $7, true, $8, $9)`,
     [
       userId,
       enrollment.investor_id,
@@ -467,6 +494,8 @@ export async function executeSend(
       account.email_address,
       investorEmail,
       result.messageId,
+      enrollment.campaign_id,
+      enrollment.sequence_id,
     ]
   );
 

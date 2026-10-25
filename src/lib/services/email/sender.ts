@@ -26,6 +26,12 @@ interface SendEmailParams {
   /** Base64-encoded file contents — passed through to Gmail/Graph/SMTP */
   attachments?: Array<{ filename: string; content: string; mimeType?: string }>;
   enableTracking?: boolean;
+  /** Audit-trail refs: which investor/campaign/sequence (approved draft) this
+   *  send belongs to. Written into email_messages on insert. */
+  investorId?: string;
+  campaignId?: string;
+  sequenceId?: string;
+  approvedDraftId?: string;
 }
 
 interface SendResult {
@@ -358,6 +364,10 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
         tracking_enabled: trackingEnabled,
         open_count: 0,
         click_count: 0,
+        investor_id: params.investorId || null,
+        campaign_id: params.campaignId || null,
+        sequence_id: params.sequenceId || null,
+        approved_draft_id: params.approvedDraftId || null,
       }).select("id").single();
 
       // Log to sending_log and health events
