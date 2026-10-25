@@ -1,0 +1,161 @@
+name: Infra Heartbeat
+
+# Guards against the Sept 2026 outage class: the free-tier Supabase project
+# was auto-paused while production sat idle and the whole platform went down.
+#
+#   1. heartbeat          — daily, pings the Supabase project (DNS, auth
+#                           health, REST layer); opens/updates a GitHub issue
+#                           and auto-closes on recovery.
+#   2. artifact-guard     — after every push to main, builds the app, extracts
+#                           the NEXT_PUBLIC_SUPABASE_URL ref baked into the
+#                           bundle, and fails if the ref does not resolve
+#                           (catches deploys pointed at a dead/paused project).
+#
+# Required repo secrets: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+# (already required by auth-smtp-watchdog.yml — no new secrets).
+
+on:
+  schedule:
+    - cron: "30 5 * * *" # daily 05:30 UTC (offset from the 07:00 auth probe)
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: infra-heartbeat-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  heartbeat:
+    name: Supabase anti-pause heartbeat
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Probe the Supabase project
+        id: probe
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: node scripts/prod-heartbeat.cjs
+
+      - name: Raise alert on failure
+        if: steps.probe.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Supabase project DOWN — anti-pause heartbeat failed";
+            const runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}";
+            const body = [
+              "**The daily Supabase heartbeat failed.**",
+              "",
+              "Run: " + runUrl,
+              "Date: " + new Date().toISOString(),
+              "",
+              "This is the same failure mode as the Sept 2026 outage (free-tier",
+              "project auto-paused while idle). Check, in order:",
+              "1. Supabase Dashboard — is the project paused? Restore it.",
+              "2. If restored, re-run this workflow to confirm recovery.",
+              "3. If it keeps pausing, upgrade the plan or add periodic usage.",
+              "",
+              "This issue is opened automatically by the infra-heartbeat workflow.",
+              "It closes itself when a heartbeat passes again.",
+            ].join("\n");
+            const label = "supabase-outage";
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              labels: label, state: "open", per_page: 1,
+            });
+            if (issues.data.length) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: `Still failing — ${runUrl}`,
+              });
+            } else {
+              await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body, labels: [label] });
+            }
+
+      - name: Auto-close alert on recovery
+        if: steps.probe.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              labels: "supabase-outage", state: "open", per_page: 1,
+            });
+            for (const issue of issues.data) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Heartbeat recovered — probe passed at ${new Date().toISOString()}. Auto-closing.`,
+              });
+              await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, state: "closed" });
+            }
+
+  artifact-guard:
+    name: Build artifact Supabase-ref guard
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the app (public env needed for the ref to be baked in)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: npm run build
+      - name: Extract the baked-in Supabase ref and verify it resolves
+        env:
+          EXPECTED_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        run: |
+          node - <<'EOF'
+          const fs = require("fs");
+          const path = require("path");
+          const dns = require("dns").promises;
+
+          function walk(dir, out = []) {
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              const p = path.join(dir, e.name);
+              if (e.isDirectory()) walk(p, out);
+              else out.push(p);
+            }
+            return out;
+          }
+
+          const root = ".next";
+          let ref = null;
+          const re = /([a-z0-9]{20})\.supabase\.co/g;
+          for (const f of walk(root)) {
+            if (!/\.(js|mjs|html)$/.test(f)) continue;
+            const txt = fs.readFileSync(f, "utf8");
+            const m = txt.match(re);
+            if (m) { ref = m[0]; break; }
+          }
+          if (!ref) { console.error("No supabase project ref found inside .next — NEXT_PUBLIC_SUPABASE_URL is not reaching the bundle. A deploy from this artifact would be dead on arrival."); process.exit(1); }
+          console.log("bundle ref:", ref);
+          dns.resolve4(ref)
+            .then(() => { console.log("ref resolves — artifact OK"); process.exit(0); })
+            .catch(async (e) => {
+              console.error("ref does NOT resolve:", e.message);
+              console.error("This matches the Sept 2026 outage signature (ref NXDOMAIN = project paused/removed).");
+              process.exit(1);
+            });
+          EOF
