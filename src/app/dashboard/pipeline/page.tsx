@@ -23,7 +23,9 @@ interface PipelineInvestor {
   firm_name: string | null;
   investor_type: string;
   fit_score: number;
-  outreach_readiness: string;
+  /** Task 2.5: shared batch-qualification status (renamed from
+   *  outreach_readiness so it reads as dataset state, not the user's stage). */
+  dataset_status: string | null;
   pipeline_stage: string;
   country: string | null;
   email: string | null;
@@ -123,6 +125,14 @@ function InvestorCard({
         <Badge variant="default" size="sm">
           {investor.investor_type.replace(/_/g, " ")}
         </Badge>
+        {investor.dataset_status && (
+          <span
+            className="text-[10px] text-gray-400"
+            title="Dataset qualification status (shared batch data). Your pipeline stage on the left column is yours alone."
+          >
+            Base: {investor.dataset_status.replace(/_/g, " ")}
+          </span>
+        )}
         {investor.country && (
           <span className="text-[10px] text-gray-400">{investor.country}</span>
         )}
@@ -176,6 +186,7 @@ export default function PipelinePage() {
   const [movingId, setMovingId] = useState<string | null>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
   const [hasPipelineStage, setHasPipelineStage] = useState(false);
+  const [countsExplanation, setCountsExplanation] = useState<string | null>(null);
 
   // Load the stage summary (counts only — fast). Background mode skips the
   // skeleton flash when reconciling after a move.
@@ -187,6 +198,7 @@ export default function PipelinePage() {
       const data = await res.json();
       setStages(data.stages || []);
       setHasPipelineStage(data.hasPipelineStage || false);
+      setCountsExplanation(data.countsExplanation || null);
     } catch (err) {
       console.error("Pipeline summary error:", err);
     } finally {
@@ -330,7 +342,7 @@ export default function PipelinePage() {
               Pipeline running in compatibility mode
             </p>
             <p className="text-[12px] text-amber-700 dark:text-amber-300 !mb-0">
-              Run the pipeline migration to enable full stage tracking. Currently using outreach status as a proxy.
+              Run the pipeline migration to enable full stage tracking. Currently using the dataset qualification status as a proxy.
             </p>
           </div>
         </div>
@@ -344,6 +356,9 @@ export default function PipelinePage() {
         </div>
       ) : (
         <>
+          {countsExplanation && (
+            <p className="text-[12px] text-gray-400 !mb-[12px]">{countsExplanation}</p>
+          )}
           {/* Stage summary tiles */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-[12px] mb-[24px]">
             {stages.map((stage) => (

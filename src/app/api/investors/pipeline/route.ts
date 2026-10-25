@@ -59,8 +59,12 @@ function flattenFirmName(inv: { investor_firms?: { name: string } | { name: stri
 function toUiInvestor(inv: Record<string, any>, stage: PipelineStageId) {
   return {
     ...inv,
-    firm_name: flattenFirmName(inv),
-    investor_firms: undefined,
+    // Task 2.5: the shared batch-qualification status is renamed
+    // `dataset_status` so it can't be confused with the investor's personal
+    // `pipeline_stage` (owned by user_pipeline_entries per founder; the
+    // shared investors table is never written by this API).
+    dataset_status: inv.outreach_readiness,
+    outreach_readiness: undefined,
     pipeline_stage: stage,
   };
 }
@@ -208,6 +212,11 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       hasPipelineStage: true,
+      // Task 2.5: one sentence that explains what the counts are.
+      countsExplanation:
+        "Counts combine investors you have explicitly moved with the dataset's " +
+        "default qualification buckets (dataset_status); a stage you assign " +
+        "always overrides the dataset default for you.",
     });
   } catch (err) {
     console.error("Pipeline API error:", err);

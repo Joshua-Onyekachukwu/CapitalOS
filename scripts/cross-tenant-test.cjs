@@ -354,6 +354,56 @@ async function main() {
     }
   }
 
+  // ── 3.5 Pipeline stage isolation (per-user entries vs dataset defaults) ─
+  log("  API layer — pipeline stage isolation");
+  {
+    // Pick a shared investor and its dataset default stage. The stage A moves
+    // it to must differ from the default so a cross-user leak is unambiguous.
+    const { data: invs } = await service.from("investors").select("id, outreach_readiness").eq("is_active", true).limit(4);
+    assert(invs && invs.length >= 2, "investors dataset too small for pipeline test");
+    const pick = invs.find((i) => i.id !== SHARED_INVESTOR) || invs[0];
+    const PIPE_INVESTOR = pick.id;
+    const DEFAULT_STAGE_MAP = {
+      not_ready: "discovered", needs_verification: "qualified", ready: "outreach",
+      contacted: "contacted", do_not_contact: "passed",
+    };
+    const defaultStage = DEFAULT_STAGE_MAP[pick.outreach_readiness] || "discovered";
+    const chosenStage = defaultStage === "term_sheet" ? "due_diligence" : "term_sheet";
+
+    let r = await api(A_COOKIE, "/api/investors/pipeline", {
+      method: "POST",
+      body: JSON.stringify({ investorId: PIPE_INVESTOR, stage: chosenStage, notes: `xtenant-${stamp}` }),
+    });
+    const movedOk = r.status === 200 && r.body?.success === true;
+    record("API: A moves shared investor (own entry) → OK", movedOk, `status ${r.status}`);
+
+    r = await api(A_COOKIE, `/api/investors/pipeline?stage=${chosenStage}&limit=50`);
+    const aRows = (r.body?.investors || []);
+    const aHas = aRows.some((i) => i.id === PIPE_INVESTOR && i.pipeline_stage === chosenStage);
+    record("API: A sees own move at chosen stage", aHas, `status ${r.status} rows ${aRows.length}`);
+    if (aHas) {
+      const row = aRows.find((i) => i.id === PIPE_INVESTOR);
+      record("payload: A's row carries dataset_status, no outreach_readiness", row.dataset_status !== undefined && !("outreach_readiness" in row), `dataset_status=${row.dataset_status}`);
+    }
+
+    r = await api(B_COOKIE, `/api/investors/pipeline?stage=${chosenStage}&limit=50`);
+    const bRows = (r.body?.investors || []);
+    const bLeak = bRows.some((i) => i.id === PIPE_INVESTOR);
+    record("API: B does NOT see A's stage move in A's chosen stage", !bLeak, `status ${r.status} rows ${bRows.length}`);
+
+    r = await api(B_COOKIE, "/api/investors/pipeline");
+    record("API: B pipeline summary loads (dataset defaults only)", r.status === 200 && Array.isArray(r.body?.stages), `status ${r.status}`);
+
+    // generic rejection: invalid stage id must 400 for anyone
+    r = await api(A_COOKIE, "/api/investors/pipeline", { method: "POST", body: JSON.stringify({ investorId: PIPE_INVESTOR, stage: "not_a_stage" }) });
+    record("API: invalid stage id → 400", r.status === 400, `status ${r.status}`);
+
+    // cleanup: A's entry + audit event
+    const del = await service.from("user_pipeline_entries").delete().eq("user_id", A_ID).eq("investor_id", PIPE_INVESTOR);
+    vlog(`cleanup user_pipeline_entries: ${del.error ? del.error.message : "ok"}`);
+    await service.from("pipeline_events").delete().eq("user_id", A_ID).eq("investor_id", PIPE_INVESTOR);
+  }
+
   log("  API layer — unauthenticated attacks");
   {
     let r = await api(null, "/api/saved-filters?page=investors");
