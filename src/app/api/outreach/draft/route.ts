@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatCompletion } from "@/lib/ai";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { requireAuth } from "@/lib/middleware/api-auth";
+import { captureServerEvent, serverEvents } from "@/lib/analytics/server";
 import { brandedOutreachEmail, type UserBranding } from "@/lib/services/email/branded-template";
 import { createClient } from "@supabase/supabase-js";
 
@@ -314,6 +315,11 @@ Rules:
       context: qualificationReason,
       branding,
       unsubscribeEmail: user.email,
+    });
+
+    void captureServerEvent(user.id, serverEvents.DRAFT_GENERATED, {
+      investor_name: investorName || null,
+      tone: tone || "warm",
     });
 
     return NextResponse.json({

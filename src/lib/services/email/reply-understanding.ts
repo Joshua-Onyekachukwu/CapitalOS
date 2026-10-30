@@ -12,6 +12,7 @@
 
 import { query } from "@/lib/db";
 import { chatCompletion, isAiConfigured } from "@/lib/ai";
+import { captureServerEvent, serverEvents } from "@/lib/analytics/server";
 
 // =============================================
 // Types
@@ -379,11 +380,16 @@ async function persistInsight(params: {
         params.understanding.interestLevel,
         params.understanding.confidence,
         params.understanding.rationale,
-        params.understanding.suggestedReply,
-        params.understanding.suggestedReplySubject,
+        params.understanding.suggestedReply,    params.understanding.suggestedReplySubject,
         params.understanding.engine,
+
       ]
     );
+    void captureServerEvent(params.userId, serverEvents.REPLY_RECEIVED, {
+      interest_level: params.understanding.interestLevel,
+      confidence: params.understanding.confidence,
+      engine: params.understanding.engine,
+    });
   } catch {
     // Insight persistence must never break the poll loop
   }

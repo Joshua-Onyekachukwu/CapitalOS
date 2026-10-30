@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/middleware/rate-limit";
+import { captureServerEvent, serverEvents } from "@/lib/analytics/server";
 
 function serviceClient() {
   return createClient(
@@ -81,6 +82,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
 
+      void captureServerEvent(data.user?.id || email, serverEvents.SIGNUP_COMPLETED, {});
+
       return NextResponse.json({
         success: true,
         confirmed: true,
@@ -113,6 +116,8 @@ export async function POST(request: NextRequest) {
       }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+
+    void captureServerEvent(email, serverEvents.SIGNUP_COMPLETED, { activation: "email" });
 
     return NextResponse.json({
       success: true,

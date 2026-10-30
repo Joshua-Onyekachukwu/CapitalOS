@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { captureServerEvent, serverEvents } from "@/lib/analytics/server";
 
 export const runtime = "nodejs";
 
@@ -131,6 +132,12 @@ export async function POST(request: NextRequest) {
         console.error("Failed to save founding member:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
+
+      void captureServerEvent(email, serverEvents.UPGRADED, {
+        amount: session.amount_total / 100,
+        currency: session.currency,
+        plan: "founding_member",
+      });
 
       // Try to link to existing user if they have an account
       try {

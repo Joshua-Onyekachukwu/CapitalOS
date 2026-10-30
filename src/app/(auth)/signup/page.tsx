@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -8,9 +8,15 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { signupSchema, type SignupInput } from "@/lib/validators/auth";
+import { captureEvent, ANALYTICS_EVENTS } from "@/lib/analytics/posthog";
 
 export default function SignupPage() {
   const router = useRouter();
+
+  // Phase 3 analytics: signup funnel entry (once per mount)
+  useEffect(() => {
+    void captureEvent(ANALYTICS_EVENTS.SIGNUP_STARTED, { page: "signup" });
+  }, []);
 
   const [form, setForm] = useState<SignupInput>({
     fullName: "",

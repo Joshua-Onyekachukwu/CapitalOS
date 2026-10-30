@@ -168,9 +168,15 @@ const PITCH_DECK_STYLES = [
 // Onboarding Page
 // =============================================
 
+import { captureEvent, ANALYTICS_EVENTS } from "@/lib/analytics/posthog";
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const goStep = (next: number) => {
+    // Phase 3 analytics: onboarding funnel per step (client-side event)
+    void captureEvent(ANALYTICS_EVENTS.ONBOARDING_STEP, { step: next });
+    setStep(next);
+  };
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [launchStage, setLaunchStage] = useState(-1);
@@ -351,14 +357,14 @@ export default function OnboardingPage() {
       await saveTeamMembers();
     }
     if (step < 7) {
-      setStep(step + 1);
+      goStep(step + 1);
       window.scrollTo(0, 0);
     }
   };
 
   const handleBack = () => {
     if (step > 1) {
-      setStep(step - 1);
+      goStep(step - 1);
       window.scrollTo(0, 0);
     }
   };

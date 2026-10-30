@@ -10,6 +10,7 @@ import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { chatCompletion } from "@/lib/ai";
 import { embedTexts, EMBEDDING_MODEL } from "@/lib/services/investor/embeddings";
+import { captureServerEvent, serverEvents } from "@/lib/analytics/server";
 import { createClient } from "@supabase/supabase-js";
 
 // ── Structured shape the AI must return ──
@@ -275,6 +276,13 @@ export async function POST(request: NextRequest) {
         : "no_evidence",
       sec_verified: row.verification_status === "verified" && !!row.edgar_last_filing_date && !!(row.source_provider || "").toLowerCase().match(/edgar|sec/),
     }));
+
+    void captureServerEvent(user.id, serverEvents.INVESTORS_SEARCHED, {
+      query: query.slice(0, 200),
+      query_shape: parsed ? JSON.stringify(parsed) : null,
+      used_semantic: semanticUsed,
+      result_count: semanticUsed ? Math.max(count || 0, merged.length) : count || investors?.length || 0,
+    });
 
     return NextResponse.json({
       investors: decorated,

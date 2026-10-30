@@ -1,31 +1,20 @@
-/**
- * Next.js Instrumentation
- *
- * Runs once when the server starts. Used to initialize background services
- * like the job runner that need to persist across requests.
- *
- * Only runs on the server side, never in the browser.
- *
- * Note: In serverless environments (Vercel), the job runner processes jobs
- * within the same process. For production at scale, consider moving to
- * a dedicated worker (e.g., BullMQ + Redis, or a separate Node.js process).
- */
+// =============================================
+// Sentry server instrumentation
+// =============================================
+// No-op until NEXT_PUBLIC_SENTRY_DSN is configured (server-side) — errors are
+// still logged to console/stderr, so wiring is lossless without Sentry.
+
+import * as Sentry from "@sentry/nextjs";
 
 export async function register() {
-  // Only run on server side
-  if (typeof window !== "undefined") return;
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN ?? process.env.SENTRY_DSN;
+  if (!dsn) return;
 
-  // Only initialize once per process
-  if ((global as any).__jobRunnerInitialized) return;
-  (global as any).__jobRunnerInitialized = true;
-
-  try {
-    // Dynamic import to avoid bundling Node.js modules (pg, dns, fs, net)
-    // into Edge Runtime bundles during the build
-    const handlers = await import(/* webpackIgnore: true */ "@/lib/jobs/handlers");
-    handlers.initializeJobRunner();
-    console.log("[instrumentation] Background job runner initialized");
-  } catch (err) {
-    console.error("[instrumentation] Failed to initialize job runner:", err);
-  }
+  Sentry.init({
+    dsn,
+    environment: process.env.VERCEL_ENV || process.env.NODE_ENV || "development",
+    tracesSampleRate: 0.2,
+  });
 }
+
+export const onRequestError = Sentry.captureRequestError;

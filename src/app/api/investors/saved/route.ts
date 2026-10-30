@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { createClient } from "@supabase/supabase-js";
+import { captureServerEvent, serverEvents } from "@/lib/analytics/server";
 
 function getSupabase() {
   return createClient(
@@ -88,6 +89,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    void captureServerEvent(user.id, serverEvents.INVESTOR_SAVED, { investor_id: investorId });
 
     return NextResponse.json({ success: true, savedId: data.id });
   } catch (err) {
