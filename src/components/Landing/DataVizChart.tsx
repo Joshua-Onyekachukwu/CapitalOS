@@ -128,7 +128,7 @@ const DataVizChart: React.FC = () => {
           fontSize="8"
           fontFamily="system-ui, sans-serif"
         >
-          Live data
+          SEC-sourced
         </text>
       </svg>
     </div>

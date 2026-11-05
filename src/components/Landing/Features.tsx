@@ -9,7 +9,7 @@ const features = [
     icon: "ri-radar-line",
     title: "Investor Intelligence Database",
     description:
-      "Nearly 19,000 investors sourced from SEC filings, venture databases, and curated profiles — covering US, UK, and Europe — with 4,900+ verified contactable emails. Filter by stage, sector, geography, check size, and investment activity.",
+      "18,995 investor firms compiled from SEC 13F, Form D and IAPD filings, 4,921 of them with a contact email on file. Filter by stage, sector and geography; cheque size, thesis and portfolio fields appear only where the source recorded them.",
   },
   {
     icon: "ri-brain-line",

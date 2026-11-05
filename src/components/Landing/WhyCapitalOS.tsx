@@ -7,7 +7,7 @@ const whyItems = [
   {
     title: "Real Investor Data, Not Just Names",
     description:
-      "Nearly 19,000 investors sourced from SEC 13F filings, Form D, venture databases, and curated profiles — covering US, UK, and Europe — with 4,900+ verified contactable emails. Each record includes investment history, check sizes, sectors, and portfolio companies.",
+      "18,995 investor firms compiled from SEC 13F, Form D and IAPD filings, 4,921 with a contact email on file. Sector, stage and location are recorded per firm; cheque size and thesis text are present only where the filing disclosed them.",
   },
   {
     title: "AI That Scores, Not Just Searches",

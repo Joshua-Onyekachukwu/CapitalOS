@@ -17,12 +17,12 @@ const faqData = [
   {
     question: "How does the AI investor matching work?",
     answer:
-      "We match you against a database of nearly 19,000 investors across the US, UK, and Europe using multiple factors: your industry, stage, location, check size, and investment history. Every match comes with a score and a clear explanation of why that investor is a good fit.",
+      "We match you against 18,995 investor firms registered in the US, drawn from SEC and IAPD filings, using your industry, stage and location. A field the filing never disclosed is treated as unknown rather than as a mismatch, and every match shows the score breakdown it came from.",
   },
   {
-    question: "What's included in the Professional plan?",
+    question: "What's included in the 6-Month Pro Sprint?",
     answer:
-      "Everything you need to run a professional fundraise. Unlimited investor discovery, AI-powered matching, personalized outreach, full analytics, and priority support. No limits on what you can do.",
+      "The full 3-Month Sprint with a longer window: extended AI research and outreach capacity, more sequences and more investor research, and six months under management instead of three.",
   },
   {
     question: "Is there a free trial available?",

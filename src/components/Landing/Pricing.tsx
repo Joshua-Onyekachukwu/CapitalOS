@@ -6,17 +6,21 @@ import PricingIcon from "./PricingIcon";
 
 const plans = [
   {
-    name: "STARTER",
-    price: "$49",
-    suffix: "/month",
+    name: "3-MONTH SPRINT",
+    price: "$499",
+    suffix: "paid upfront",
     features: [
-      "AI-powered investor discovery",
-      "Up to 500 investor matches",
-      "AI email drafting & outreach",
-      "Visual pipeline board",
-      "500 Capital Credits/month",
+      "Everything for an actively raising founder",
+      "AI investor discovery, matching & fit scoring",
+      "Personalized AI email drafts, reviewed before send",
+      "7 branded templates with open/click tracking & CAN-SPAM",
+      "Drip sequences with stop-on-reply & business-hours sending",
+      "21-stage pipeline Kanban + email health dashboard",
+      "Pitch deck generator (PPTX + PDF)",
+      "AI Copilot that answers questions about your investors",
+      "3-month window",
     ],
-    cta: "Get Started Now",
+    cta: "Start My Raise",
     bgColor: "bg-[#06201b]",
     textColor: "text-white",
     iconColor: "text-lime-500",
@@ -24,17 +28,16 @@ const plans = [
     image: "/images/real-estate-agent/building2.png",
   },
   {
-    name: "PROFESSIONAL",
-    price: "$199",
-    suffix: "/month",
+    name: "6-MONTH PRO SPRINT",
+    price: "$999",
+    suffix: "paid upfront",
     features: [
-      "Unlimited investor discovery",
-      "Advanced AI matching & scoring",
-      "Personalized outreach at scale",
-      "Full analytics & reporting",
-      "2,000 Capital Credits/month",
+      "Full Sprint for a longer or more complex raise",
+      "Extended AI research and outreach capacity",
+      "More sequences, more investor research, more time under management",
+      "6-month window",
     ],
-    cta: "Get Started Now",
+    cta: "Start My Raise",
     bgColor: "bg-[#D15616]",
     textColor: "text-white",
     iconColor: "text-black",
@@ -47,87 +50,75 @@ const Pricing: React.FC = () => {
   return (
     <div className="pb-[60px] md:pb-[80px] lg:pb-[100px] xl:pb-[120px]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4px] md:gap-[8px] lg:gap-[24px]">
-          <div className="ltr:xl:pr-[20px] rtl:xl:pl-[20px]">
-            <div className="md:flex lg:block xl:flex items-center justify-between bg-[#06201b] rounded-[16px] p-[20px] md:p-[24px] lg:p-[30px] xl:px-[40px] xl:py-[50px] lg:sticky top-[100px]">
-              <div>
-                <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[12px] md:mb-[14px] lg:mb-[16px]">
-                  {plans[0].name}
+        <div className="grid grid-cols-1 gap-[16px]">
+          {plans.map((plan, index) => (
+            <div key={plan.name}>
+              <div
+                className={`${plan.bgColor} rounded-[16px] p-[20px] md:p-[24px] lg:p-[30px] xl:px-[40px] xl:py-[50px]`}
+              >
+                <span
+                  className={`block uppercase text-xs md:text-sm tracking-[1.95px] font-bold mb-[12px] md:mb-[14px] lg:mb-[16px] ${
+                    index === 0 ? "text-[#D15616]" : "text-black"
+                  }`}
+                >
+                  {plan.name}
                 </span>
+
                 <div className="leading-none text-white font-black text-[34px] md:text-5xl lg:text-[46px] -tracking-[0.14px] md:-tracking-[0.18px] lg:-tracking-[0.22px]">
-                  {plans[0].price}{" "}
-                  <span className="text-sm md:text-base -tracking-[0.14px] font-medium text-[#9E948E]">
-                    {plans[0].suffix}
+                  {plan.price}{" "}
+                  <span
+                    className={`text-sm md:text-base -tracking-[0.14px] font-medium ${
+                      index === 0 ? "text-[#9E948E]" : "text-white/70"
+                    }`}
+                  >
+                    {plan.suffix}
                   </span>
                 </div>
-                <ul className="text-[#E3E3E3] my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[16px] lg:text-md -tracking-[0.16px]">
-                  {plans[0].features.map((feature, i) => (
+
+                <ul
+                  className={`${
+                    index === 0 ? "text-[#E3E3E3]" : "text-white/80"
+                  } my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[16px] -tracking-[0.16px]`}
+                >
+                  {plan.features.map((feature, i) => (
                     <li
                       key={i}
                       className="relative mb-[10px] last:mb-0 ltr:pl-[26px] rtl:pr-[26px]"
                     >
-                      <i className="ri-checkbox-circle-fill absolute top-1/2 -translate-y-1/2 ltr:left-0 rtl:right-0 text-[#FFCB33] text-lg"></i>
+                      <i
+                        className={`ri-checkbox-circle-fill absolute top-1/2 -translate-y-1/2 ltr:left-0 rtl:right-0 text-lg ${
+                          index === 0 ? "text-[#FFCB33]" : "text-black"
+                        }`}
+                      ></i>
                       {feature}
                     </li>
                   ))}
                 </ul>
+
                 <Link
                   href="/signup"
-                  className="inline-block relative font-medium text-[#FFC813] text-base md:text-[16px] lg:text-md -tracking-[0.16px] transition-all hover:underline md:-mt-[5px]"
+                  className={`inline-block relative font-medium text-base md:text-[16px] -tracking-[0.16px] transition-all hover:underline md:-mt-[5px] ${
+                    index === 0 ? "text-[#FFC813]" : "text-black"
+                  }`}
                 >
-                  {plans[0].cta} <i className="ri-arrow-right-long-line"></i>
+                  {plan.cta} <i className="ri-arrow-right-long-line"></i>
                 </Link>
               </div>
-              <div className="text-center flex-none mt-[20px] md:mt-0 lg:mt-[25px] xl:mt-0">
-                <PricingIcon plan="starter" />
+
+              <div className="flex justify-center mt-[20px]">
+                <PricingIcon plan={index === 0 ? "starter" : "professional"} />
               </div>
             </div>
-          </div>
-          <div className="ltr:xl:pl-[20px] rtl:xl:pr-[20px]">
-            <div className="mt-[30px] md:mt-[40px] lg:mt-0 mb-[30px] md:mb-[40px] lg:mb-[50px]">
-              <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
-                Pricing
-              </span>
-              <h2 className="!mb-0 !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
-                Flexible{" "}
-                <span className="font-semibold italic">Pricing Plans</span>{" "}
-                Designed to Fit Every Founder
-              </h2>
-            </div>
-            <div className="md:flex lg:block xl:flex items-center justify-between bg-[#D15616] rounded-[16px] p-[20px] md:p-[24px] lg:p-[30px] xl:px-[40px] xl:py-[50px]">
-              <div>
-                <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-black mb-[12px] md:mb-[14px] lg:mb-[16px]">
-                  {plans[1].name}
-                </span>
-                <div className="leading-none text-white font-black text-[34px] md:text-5xl lg:text-[46px] -tracking-[0.14px] md:-tracking-[0.18px] lg:-tracking-[0.22px]">
-                  {plans[1].price}{" "}
-                  <span className="text-sm md:text-base -tracking-[0.14px] font-medium">
-                    {plans[1].suffix}
-                  </span>
-                </div>
-                <ul className="text-white/80 my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[16px] lg:text-md -tracking-[0.16px]">
-                  {plans[1].features.map((feature, i) => (
-                    <li
-                      key={i}
-                      className="relative mb-[10px] last:mb-0 ltr:pl-[26px] rtl:pr-[26px]"
-                    >
-                      <i className="ri-checkbox-circle-fill absolute top-1/2 -translate-y-1/2 ltr:left-0 rtl:right-0 text-black text-lg"></i>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/signup"
-                  className="inline-block relative font-medium text-black text-base md:text-[16px] lg:text-md -tracking-[0.16px] transition-all hover:underline md:-mt-[5px]"
-                >
-                  {plans[1].cta} <i className="ri-arrow-right-long-line"></i>
-                </Link>
-              </div>
-              <div className="text-center flex-none mt-[20px] md:mt-0 lg:mt-[25px] xl:mt-0">
-                <PricingIcon plan="professional" />
-              </div>
-            </div>
-          </div>
+          ))}
+        </div>
+
+        <div className="mt-[24px] text-center">
+          <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
+            Choose Your Engagement
+          </span>
+          <h2 className="!mb-0 !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
+            Fundraising Lifecycle Pricing
+          </h2>
         </div>
       </div>
     </div>
