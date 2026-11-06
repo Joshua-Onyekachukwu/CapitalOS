@@ -121,27 +121,27 @@ async function computeCockpit(userId: string) {
       });
   }
 
-  const scored = savedInvestorDetails.filter((i) => typeof i.fit_score === "number" && i.fit_score > 0);
+  let scored = savedInvestorDetails.filter((i) => typeof i.fit_score === "number" && i.fit_score > 0);
 
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const investorsThisWeek = savedInvestorDetails.filter(
+  let investorsThisWeek = savedInvestorDetails.filter(
     (i) => new Date(i.saved_at).getTime() >= weekAgo
   ).length;
 
-  const highFitInvestors = savedInvestorDetails.filter(
+  let highFitInvestors = savedInvestorDetails.filter(
     (i) => (i.fit_score ?? 0) >= 80
   ).length;
 
-  const readyInvestors = savedInvestorDetails.filter(
+  let readyInvestors = savedInvestorDetails.filter(
     (i) => i.outreach_readiness === "ready"
   ).length;
 
-  const avgFitScore =
+  let avgFitScore =
     scored.length > 0
       ? Math.round(scored.reduce((sum, i) => sum + (i.fit_score ?? 0), 0) / scored.length)
       : null; // null = nothing scored yet, not "average of zero"
 
-  const totalFirms = new Set(
+  let totalFirms = new Set(
     savedInvestorDetails.map((i) => i.current_firm_id).filter(Boolean)
   ).size;
 
@@ -153,7 +153,7 @@ async function computeCockpit(userId: string) {
       sectorCounts.set(sector, (sectorCounts.get(sector) ?? 0) + 1);
     }
   }
-  const topSectors = [...sectorCounts.entries()]
+  let topSectors = [...sectorCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([sector, count]) => ({ sector, count }));
@@ -256,6 +256,65 @@ async function computeCockpit(userId: string) {
       );
     }
   }
+
+  // ── Pipeline-only investors are still this founder's tracked investors ──
+  // A founder who moves straight from Matches into the pipeline never saves
+  // an investor, so counting saved rows alone reported zero for someone who
+  // is actively working a round.
+  if (pipelineRows.length > 0) {
+    const savedIds = new Set(savedInvestorDetails.map((i) => i.investor_id));
+    const pipelineOnly = [...new Set(pipelineRows.map((r) => r.investor_id))].filter(
+      (id) => !savedIds.has(id)
+    );
+    if (pipelineOnly.length > 0) {
+      const { data: extra } = await sp
+        .from("investors")
+        .select("id, full_name, investor_type, current_firm_id, fit_score, outreach_readiness, investment_sectors, created_at")
+        .in("id", pipelineOnly);
+      const entryDate = new Map(pipelineRows.map((r) => [r.investor_id, r.created_at]));
+      for (const inv of extra ?? []) {
+        savedInvestorDetails.push({
+          investor_id: inv.id,
+          saved_at: entryDate.get(inv.id) ?? inv.created_at,
+          full_name: inv.full_name,
+          investor_type: inv.investor_type,
+          current_firm_id: inv.current_firm_id,
+          fit_score: inv.fit_score,
+          outreach_readiness: inv.outreach_readiness,
+          investment_sectors: inv.investment_sectors,
+          created_at: inv.created_at,
+        });
+      }
+      savedInvestorDetails.sort((a, b) => (a.saved_at < b.saved_at ? 1 : -1));
+    }
+  }
+
+  // Recompute every derived stat over the merged set so the tiles, the JSON
+  // and the next-action reasons all describe the same population.
+  scored = savedInvestorDetails.filter((i) => typeof i.fit_score === "number" && i.fit_score > 0);
+  investorsThisWeek = savedInvestorDetails.filter(
+    (i) => new Date(i.saved_at).getTime() >= weekAgo
+  ).length;
+  highFitInvestors = savedInvestorDetails.filter((i) => (i.fit_score ?? 0) >= 80).length;
+  readyInvestors = savedInvestorDetails.filter((i) => i.outreach_readiness === "ready").length;
+  avgFitScore =
+    scored.length > 0
+      ? Math.round(scored.reduce((sum, i) => sum + (i.fit_score ?? 0), 0) / scored.length)
+      : null;
+  totalFirms = new Set(
+    savedInvestorDetails.map((i) => i.current_firm_id).filter(Boolean)
+  ).size;
+  const mergedSectors = new Map<string, number>();
+  for (const inv of savedInvestorDetails) {
+    for (const sector of inv.investment_sectors ?? []) {
+      if (!sector) continue;
+      mergedSectors.set(sector, (mergedSectors.get(sector) ?? 0) + 1);
+    }
+  }
+  topSectors = [...mergedSectors.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([sector, count]) => ({ sector, count }));
 
   // ── Round money: one definition, shared with the pipeline page ──
   const { data: eventRows } = await sp

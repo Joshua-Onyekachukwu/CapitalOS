@@ -3,6 +3,7 @@
 // =============================================
 
 import { createClient } from "@supabase/supabase-js";
+import { sendEmailViaSmtp } from "./smtp-sender";
 import { encryptToken, decryptToken } from "./crypto";
 import { generateTrackingId, injectTracking } from "./tracking";
 import { isSuppressed } from "./suppression";
@@ -55,6 +56,8 @@ interface SendResult {
   success: boolean;
   messageId?: string;
   error?: string;
+  /** True when the message was recorded in the developer outbox, not delivered. */
+  outbox?: boolean;
 }
 
 async function sendViaGmail(
@@ -291,6 +294,43 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
     .eq("is_active", true)
     .limit(1);
 
+  // Explicit developer outbox. Only when EMAIL_PROVIDER=outbox is set, so a
+  // production deployment with no mailbox still fails honestly instead of
+  // pretending to deliver. The row is written as queued_dev and is never
+  // reported as sent anywhere in the product.
+  if ((!accounts || accounts.length === 0) && process.env.EMAIL_PROVIDER === "outbox") {
+    const { data: queued, error: queueError } = await sp
+      .from("email_messages")
+      .insert({
+        user_id: params.userId,
+        direction: "outbound",
+        subject: params.subject,
+        body_html: params.bodyHtml,
+        body_text: params.bodyText ?? null,
+        from_address: "outbox@capital-os.local",
+        to_address: params.to,
+        cc_addresses: params.cc || [],
+        status: "queued_dev",
+        investor_id: params.investorId || null,
+        campaign_id: params.campaignId || null,
+        tracking_enabled: false,
+        open_count: 0,
+        click_count: 0,
+      })
+      .select("id")
+      .single();
+
+    if (queueError) {
+      return { success: false, error: `Outbox write failed: ${queueError.message}` };
+    }
+
+    return {
+      success: true,
+      messageId: queued?.id ? `outbox-${queued.id}` : "outbox",
+      outbox: true,
+    };
+  }
+
   if (!accounts?.length) {
     return { success: false, error: "No email account connected. Please connect one in Settings." };
   }
@@ -358,6 +398,31 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
     result = await sendViaGmail(accessToken, sendParams);
   } else if (account.provider === "microsoft") {
     result = await sendViaMicrosoft(accessToken, sendParams);
+  } else if (account.smtp_host && account.smtp_user && account.smtp_pass_encrypted) {
+    // Custom SMTP account (password auth) — the shape the SMTP save endpoint
+    // persists for provider "other". Reuses the same transport the SMTP
+    // fallback path uses; tracking ID and compliance footer are already baked
+    // into sendParams above, and sendEmailViaSmtp is footer-idempotent.
+    let smtpPass = account.smtp_pass_encrypted;
+    if (/^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i.test(smtpPass)) {
+      try {
+        smtpPass = decryptToken(smtpPass);
+      } catch {
+        return { success: false, error: "Stored SMTP credentials could not be decrypted — re-save the account in Settings." };
+      }
+    }
+    result = await sendEmailViaSmtp({
+      ...sendParams,
+      smtpConfig: {
+        host: account.smtp_host,
+        port: account.smtp_port || 587,
+        user: account.smtp_user,
+        pass: smtpPass,
+        secure: account.smtp_secure ?? true,
+        fromName: account.display_name,
+        fromEmail: account.email_address,
+      },
+    });
   } else {
     return { success: false, error: `Unsupported provider: ${account.provider}` };
   }
