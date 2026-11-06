@@ -2,9 +2,11 @@
 // Fundraising Pipeline API — per-user (Phase 2)
 // =============================================
 // Pipeline state lives in `user_pipeline_entries` (per founder) with an
-// audit trail in `pipeline_events`. Investors WITHOUT an explicit entry
-// fall back to a default stage derived from the shared `outreach_readiness`
-// column. The shared investors table is never written by this API.
+// audit trail in `pipeline_events`. Stage counts and stage listings are this
+// founder's entries ONLY — the shared `outreach_readiness` column is a batch
+// qualification of the whole corpus and is returned separately as `dataset`,
+// labelled with its source. The shared investors table is never written by
+// this API.
 //
 // GET  /api/investors/pipeline          → stage summary (+ investors when ?stage=)
 // POST /api/investors/pipeline          → move investor to a new stage
@@ -18,6 +20,11 @@ import {
   isPipelineStageId,
   type PipelineStageId,
 } from "@/lib/services/pipeline/stages";
+import {
+  computeRoundMetrics,
+  type PipelineEntry as RoundEntry,
+  type PipelineMoveEvent,
+} from "@/lib/services/pipeline/metrics";
 
 function getSp() {
   return createClient(
@@ -33,6 +40,8 @@ type EntryRow = {
   id: string;
   stage: PipelineStageId;
   created_at: string;
+  expected_amount: number | string | null;
+  probability: number | null;
   investor: {
     id: string;
     full_name: string;
@@ -88,18 +97,43 @@ export async function GET(request: NextRequest) {
     // 1. All of this user's pipeline entries (small — one founder's tracking)
     const { data: entries, error: entriesError } = await sp
       .from("user_pipeline_entries")
-      .select("id, stage, created_at, investor:investors(outreach_readiness)")
+      .select(
+        "id, investor_id, stage, created_at, updated_at, expected_amount, probability, lost_reason, stage_entered_at"
+      )
       .eq("user_id", user.id);
     if (entriesError) throw entriesError;
     const userEntries = (entries || []) as unknown as {
       id: string;
+      investor_id: string;
       stage: PipelineStageId;
       created_at: string;
-      investor: { outreach_readiness: string } | null;
+      updated_at: string | null;
+      expected_amount: number | string | null;
+      probability: number | null;
+      lost_reason: string | null;
+      stage_entered_at: string | null;
     }[];
 
-    // 2. Default-bucket counts from shared readiness (5 indexed-able counts)
-    const rawByReadiness: Record<string, number> = {};
+    // 2. Counts are the founder's own entries. The pipeline is what this user
+    //    moved — not what the shared corpus happens to be qualified as. A new
+    //    account with nothing tracked shows zero here, which is the truth: the
+    //    old code added all 18,995 batch-qualified records to every founder's
+    //    stage counts, so "your pipeline" opened at 12,108 qualified investors
+    //    on day one.
+    const explicitCounts: Record<string, number> = {};
+    for (const e of userEntries) {
+      explicitCounts[e.stage] = (explicitCounts[e.stage] || 0) + 1;
+    }
+
+    const stageCounts: Record<string, number> = {};
+    for (const s of PIPELINE_STAGES) {
+      stageCounts[s.id] = explicitCounts[s.id] || 0;
+    }
+
+    // 3. The database's batch qualification is a different fact about a
+    //    different population, so it is returned separately and labelled with
+    //    its source rather than folded into the counts above.
+    const datasetByReadiness: Record<string, number> = {};
     await Promise.all(
       DB_READINESS_VALUES.map(async (r) => {
         const { count } = await sp
@@ -107,41 +141,67 @@ export async function GET(request: NextRequest) {
           .select("id", { count: "exact", head: true })
           .eq("is_active", true)
           .eq("outreach_readiness", r);
-        rawByReadiness[r] = count || 0;
+        datasetByReadiness[r] = count || 0;
       })
     );
 
-    // 3. Combine: explicit entries own their investor; defaults apply to the rest
-    const explicitCounts: Record<string, number> = {};
-    const defaultDeltas: Record<string, number> = {};
-    const trackedIds: string[] = [];
-    // entries need investor ids for exclusion — fetch separately (cheap)
-    const { data: idRows } = await sp
-      .from("user_pipeline_entries")
-      .select("investor_id")
-      .eq("user_id", user.id);
-    for (const row of idRows || []) trackedIds.push(row.investor_id);
-
-    for (const e of userEntries) {
-      explicitCounts[e.stage] = (explicitCounts[e.stage] || 0) + 1;
-      const mapped = e.investor ? READINESS_TO_STAGE[e.investor.outreach_readiness] : undefined;
-      if (mapped && mapped !== e.stage) {
-        defaultDeltas[mapped] = (defaultDeltas[mapped] || 0) - 1;
-      }
-    }
-
-    const rawByStage: Record<string, number> = {};
-    for (const [readiness, cnt] of Object.entries(rawByReadiness)) {
+    const datasetByStage: Record<string, number> = {};
+    for (const [readiness, cnt] of Object.entries(datasetByReadiness)) {
       const s = READINESS_TO_STAGE[readiness];
-      if (s) rawByStage[s] = (rawByStage[s] || 0) + cnt;
+      if (s) datasetByStage[s] = (datasetByStage[s] || 0) + cnt;
     }
 
-    const stageCounts: Record<string, number> = {};
-    for (const s of PIPELINE_STAGES) {
-      stageCounts[s.id] =
-        (explicitCounts[s.id] || 0) +
-        Math.max(0, (rawByStage[s.id] || 0) + (defaultDeltas[s.id] || 0));
-    }
+    const dataset = {
+      source: "database_batch_qualification" as const,
+      label: "Database batch qualification — every record, not your pipeline",
+      byStage: datasetByStage,
+      total: Object.values(datasetByReadiness).reduce((sum, n) => sum + n, 0),
+    };
+
+    // ── Round targets, expected money and conversion ──
+    // One computation feeds the pipeline header, the dashboard and reports, so
+    // "committed" cannot mean two different numbers in two places.
+    const { data: profileRow } = await sp
+      .from("company_profiles")
+      .select("funding_amount, target_valuation, round_type, target_cheque_min, target_cheque_max")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const { data: eventRows } = await sp
+      .from("pipeline_events")
+      .select("investor_id, to_stage, created_at")
+      .eq("user_id", user.id);
+
+    const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+
+    const round = computeRoundMetrics({
+      targets: {
+        targetAmount: num(profileRow?.funding_amount),
+        targetValuation: num(profileRow?.target_valuation),
+        instrument: (profileRow?.round_type as string | null) ?? null,
+        chequeMin: num(profileRow?.target_cheque_min),
+        chequeMax: num(profileRow?.target_cheque_max),
+      },
+      entries: userEntries.map(
+        (e): RoundEntry => ({
+          id: e.id,
+          investorId: e.investor_id,
+          stage: e.stage,
+          expectedAmount: num(e.expected_amount),
+          probability: num(e.probability),
+          lostReason: e.lost_reason,
+          stageEnteredAt: e.stage_entered_at,
+          createdAt: e.created_at,
+        })
+      ),
+      events: (eventRows || []).map(
+        (e): PipelineMoveEvent => ({
+          investorId: e.investor_id as string,
+          toStage: e.to_stage as string | null,
+          createdAt: e.created_at as string,
+        })
+      ),
+    });
 
     // ── Investors for a specific stage (if requested) ──
     let investors: any[] = [];
@@ -153,56 +213,31 @@ export async function GET(request: NextRequest) {
       }
       const stageId = stage as PipelineStageId;
 
-      // Explicit entries at this stage (always shown first)
+      // Only entries: this stage belongs to the founder, so no corpus rows are
+      // mixed in. Pagination is on the entries themselves.
       const { data: entryRows, error: listError } = await sp
         .from("user_pipeline_entries")
         .select(
-          `id, stage, created_at, investor:investors!inner(${INVESTOR_FIELDS}, investor_firms(name))`
+          `id, stage, created_at, expected_amount, probability, investor:investors!inner(${INVESTOR_FIELDS}, investor_firms(name))`
         )
         .eq("user_id", user.id)
         .eq("stage", stageId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
       if (listError) throw listError;
 
-      const explicitRows = ((entryRows || []) as unknown as EntryRow[]).map((row) =>
+      investors = ((entryRows || []) as unknown as EntryRow[]).map((row) =>
         toUiInvestor(
-          { ...(row.investor as Record<string, any>), entry_created_at: row.created_at },
+          {
+            ...(row.investor as Record<string, any>),
+            entry_created_at: row.created_at,
+            expected_amount: row.expected_amount === null ? null : Number(row.expected_amount),
+            probability: row.probability === null ? null : Number(row.probability),
+          },
           stageId
         )
       );
-
-      // Default bucket: shared-readiness investors without explicit entries
-      const readinessValues = DB_READINESS_VALUES.filter((r) => READINESS_TO_STAGE[r] === stageId);
-      let defaultRows: any[] = [];
-      let defaultTotal = 0;
-
-      if (readinessValues.length > 0) {
-        let query = sp
-          .from("investors")
-          .select(`${INVESTOR_FIELDS}, investor_firms(name)`, { count: "exact" })
-          .eq("is_active", true)
-          .in("outreach_readiness", readinessValues);
-
-        // Investors the user explicitly tracks are owned by the explicit bucket.
-        // (URL-length guard: skip exclusion only in the pathological case.)
-        if (trackedIds.length > 0 && trackedIds.length <= 500) {
-          query = query.not("id", "in", `(${trackedIds.join(",")})`);
-        }
-
-        query = query
-          .order("fit_score", { ascending: false, nullsFirst: false })
-          .range(offset, offset + limit - 1);
-
-        const { data, count, error } = await query;
-        if (error) throw error;
-        defaultRows = (data || []).map((inv: any) => toUiInvestor(inv, stageId));
-        defaultTotal = count || 0;
-      }
-
-      investors = [...explicitRows, ...defaultRows];
-      total = (explicitCounts[stageId] || 0) + Math.max(0, (rawByStage[stageId] || 0) + (defaultDeltas[stageId] || 0));
-      // keep defaultTotal referenced for shape parity
-      void defaultTotal;
+      total = explicitCounts[stageId] || 0;
     }
 
     return NextResponse.json({
@@ -214,9 +249,10 @@ export async function GET(request: NextRequest) {
       hasPipelineStage: true,
       // Task 2.5: one sentence that explains what the counts are.
       countsExplanation:
-        "Counts combine investors you have explicitly moved with the dataset's " +
-        "default qualification buckets (dataset_status); a stage you assign " +
-        "always overrides the dataset default for you.",
+        "Counts are investors you have moved. The database's batch " +
+        "qualification is reported separately and is not your pipeline.",
+      dataset,
+      round,
     });
   } catch (err) {
     console.error("Pipeline API error:", err);

@@ -6,6 +6,12 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
+import {
+  ChequeEditor,
+  RoundSummary,
+  RoundTargetsForm,
+} from "@/components/Dashboard/PipelineRound";
+import type { RoundMetrics } from "@/lib/services/pipeline/metrics";
 import { toast } from "sonner";
 
 // ── Types ──
@@ -15,6 +21,11 @@ interface PipelineStage {
   color: string;
   description: string;
   count: number;
+}interface DatasetStatus {
+  source: string;
+  label: string;
+  byStage: Record<string, number>;
+  total: number;
 }
 
 interface PipelineInvestor {
@@ -30,6 +41,10 @@ interface PipelineInvestor {
   country: string | null;
   email: string | null;
   created_at: string;
+  /** Expected cheque for this investor; null means "not set", not zero. */
+  expected_amount: number | null;
+  /** Explicit 0-100, or null to use the stage default. */
+  probability: number | null;
 }
 
 interface StageData {
@@ -75,11 +90,13 @@ function InvestorCard({
   stages,
   onMove,
   moving,
+  onSaved,
 }: {
   investor: PipelineInvestor;
   stages: PipelineStage[];
   onMove: (investorId: string, stage: string, fromStage?: string) => void;
   moving: boolean;
+  onSaved: () => void;
 }) {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -138,6 +155,16 @@ function InvestorCard({
         )}
       </div>
 
+      {/* Expected cheque - the input that turns stage counts into money */}
+      <div className="mb-[8px]">
+        <ChequeEditor
+          investorId={investor.id}
+          expectedAmount={investor.expected_amount ?? null}
+          probability={investor.probability ?? null}
+          onSaved={onSaved}
+        />
+      </div>
+
       {/* Footer */}
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-gray-300 dark:text-gray-600">{timeAgo(investor.created_at)}</span>
@@ -185,8 +212,9 @@ export default function PipelinePage() {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
-  const [hasPipelineStage, setHasPipelineStage] = useState(false);
   const [countsExplanation, setCountsExplanation] = useState<string | null>(null);
+  const [dataset, setDataset] = useState<DatasetStatus | null>(null);
+  const [round, setRound] = useState<RoundMetrics | null>(null);
 
   // Load the stage summary (counts only — fast). Background mode skips the
   // skeleton flash when reconciling after a move.
@@ -197,8 +225,9 @@ export default function PipelinePage() {
       if (!res.ok) throw new Error("Failed to load pipeline");
       const data = await res.json();
       setStages(data.stages || []);
-      setHasPipelineStage(data.hasPipelineStage || false);
       setCountsExplanation(data.countsExplanation || null);
+      setDataset(data.dataset || null);
+      setRound(data.round || null);
     } catch (err) {
       console.error("Pipeline summary error:", err);
     } finally {
@@ -322,7 +351,7 @@ export default function PipelinePage() {
     <div>
       <PageHeader
         title="Fundraising Pipeline"
-        description={`${totalInvestors.toLocaleString()} investors across ${activeStages.length} active stage${activeStages.length !== 1 ? "s" : ""}.`}
+        description={`${totalInvestors.toLocaleString()} investor${totalInvestors !== 1 ? "s" : ""} in your pipeline across ${activeStages.length} active stage${activeStages.length !== 1 ? "s" : ""}.`}
         actions={
           <Link href="/dashboard/investors/discover">
             <Button size="sm">
@@ -333,20 +362,8 @@ export default function PipelinePage() {
         }
       />
 
-      {/* Migration hint when pipeline_stage column doesn't exist */}
-      {!hasPipelineStage && !summaryLoading && (
-        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-[12px] p-[14px] mb-[20px] flex items-start gap-[10px]">
-          <i className="ri-information-line text-amber-600 text-[18px] flex-none mt-[1px]"></i>
-          <div>
-            <p className="text-[13px] font-semibold text-amber-800 dark:text-amber-200 !mb-[2px]">
-              Pipeline running in compatibility mode
-            </p>
-            <p className="text-[12px] text-amber-700 dark:text-amber-300 !mb-0">
-              Run the pipeline migration to enable full stage tracking. Currently using the dataset qualification status as a proxy.
-            </p>
-          </div>
-        </div>
-      )}
+      <RoundTargetsForm onSaved={() => loadSummary(true)} />
+      {round && <RoundSummary round={round} />}
 
       {summaryLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-[12px] mb-[24px]">
@@ -383,6 +400,29 @@ export default function PipelinePage() {
               </button>
             ))}
           </div>
+
+          {/* The corpus's batch qualification is a different fact about a
+              different population, so it is shown separately and labelled with
+              its source instead of being counted as this founder's pipeline. */}
+          {dataset && dataset.total > 0 && (
+            <div className="border border-gray-200 dark:border-gray-800 rounded-[12px] px-[14px] py-[10px] mb-[24px] bg-gray-50 dark:bg-white/5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 !mb-[6px]">
+                {dataset.label}
+              </p>
+              <div className="flex flex-wrap gap-x-[16px] gap-y-[4px]">
+                {stages
+                  .filter((s) => (dataset.byStage?.[s.id] || 0) > 0)
+                  .map((s) => (
+                    <span key={s.id} className="text-[12px] text-gray-500 dark:text-gray-400">
+                      {s.label}:{" "}
+                      <span className="font-semibold">
+                        {(dataset.byStage[s.id] || 0).toLocaleString()}
+                      </span>
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
 
           {/* Expanded stage view */}
           {expandedStage && (
@@ -434,6 +474,7 @@ export default function PipelinePage() {
                                 stages={stages}
                                 onMove={handleMove}
                                 moving={movingId === inv.id}
+                                onSaved={() => loadSummary(true)}
                               />
                             ))}
                           </div>
