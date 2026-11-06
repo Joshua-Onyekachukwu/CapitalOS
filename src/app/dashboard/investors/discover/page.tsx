@@ -104,6 +104,16 @@ export default function InvestorDiscoverPage() {
   const [sortBy, setSortBy] = useState("fit_score");
   const [filingRecency, setFilingRecency] = useState("");
   const [secOnly, setSecOnly] = useState(false);
+  const [firm, setFirm] = useState("");
+  const [minCheque, setMinCheque] = useState("");
+  const [maxCheque, setMaxCheque] = useState("");
+  const [hasThesis, setHasThesis] = useState("");
+  const [leadPreference, setLeadPreference] = useState("");
+  // Counts from the precomputed rollup: used to label sparse filters honestly.
+  const [facets, setFacets] = useState<{
+    total: number;
+    dataAvailability: { total: number; cheque: number; thesis: number; leadPreference: number };
+  } | null>(null);
 
   // Analyze state
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
@@ -113,6 +123,19 @@ export default function InvestorDiscoverPage() {
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
   const [parsedFilters, setParsedFilters] = useState<{ stages: string[]; sectors: string[]; countries: string[]; investor_types: string[] } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/investors/facets")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.dataAvailability) setFacets(d);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSearch = useCallback(async () => {
     setIsSearching(true);
@@ -129,6 +152,11 @@ export default function InvestorDiscoverPage() {
           country: geography,
           filingRecency: filingRecency || undefined,
           hasSecEvidence: secOnly,
+          firm: firm || undefined,
+          minCheque: minCheque ? Number(minCheque) : undefined,
+          maxCheque: maxCheque ? Number(maxCheque) : undefined,
+          hasThesis: hasThesis === "true" ? true : undefined,
+          leadPreference: leadPreference || undefined,
           sortBy,
           sortDirection: "desc",
           limit: 50,
@@ -145,7 +173,7 @@ export default function InvestorDiscoverPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [query, sector, stage, geography, sortBy, filingRecency, secOnly]);
+  }, [query, sector, stage, geography, sortBy, filingRecency, secOnly, firm, minCheque, maxCheque, hasThesis, leadPreference]);
 
   const handleUseMyProfile = async () => {
     try {
@@ -426,6 +454,84 @@ export default function InvestorDiscoverPage() {
               </select>
             </div>
           </div>
+
+          {/* Firm, cheque, thesis and lead/follow filters */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-[16px]">
+            <div>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Firm name</label>
+              <input
+                value={firm}
+                onChange={(e) => setFirm(e.target.value)}
+                placeholder="e.g. Sequoia, Andreessen"
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-lime-500/30"
+              />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Cheque size (min)</label>
+              <select
+                value={minCheque}
+                onChange={(e) => setMinCheque(e.target.value)}
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+              >
+                <option value="">Any size</option>
+                <option value="250000">$250k and up</option>
+                <option value="500000">$500k and up</option>
+                <option value="1000000">$1M and up</option>
+                <option value="5000000">$5M and up</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Cheque size (max)</label>
+              <select
+                value={maxCheque}
+                onChange={(e) => setMaxCheque(e.target.value)}
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+              >
+                <option value="">Any size</option>
+                <option value="500000">Up to $500k</option>
+                <option value="1000000">Up to $1M</option>
+                <option value="5000000">Up to $5M</option>
+                <option value="10000000">Up to $10M</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px] mb-[16px]">
+            <div>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Thesis</label>
+              <select
+                value={hasThesis}
+                onChange={(e) => setHasThesis(e.target.value)}
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+              >
+                <option value="">Any</option>
+                <option value="true">Has written thesis</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Lead / follow</label>
+              <select
+                value={leadPreference}
+                onChange={(e) => setLeadPreference(e.target.value)}
+                className="w-full py-[8px] px-[16px] text-[14px] bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[8px]"
+              >
+                <option value="">Any</option>
+                <option value="lead">Leads rounds</option>
+                <option value="co_lead">Co-leads</option>
+                <option value="follower">Follows</option>
+              </select>
+            </div>
+          </div>
+
+          {facets?.dataAvailability && (
+            <p className="text-[12px] text-gray-500 dark:text-gray-400 !mb-[16px]">
+              Cheque size is recorded for {facets.dataAvailability.cheque.toLocaleString()} of{" "}
+              {facets.dataAvailability.total.toLocaleString()} firms · written thesis for{" "}
+              {facets.dataAvailability.thesis.toLocaleString()} · lead/follow preference for{" "}
+              {facets.dataAvailability.leadPreference.toLocaleString()}. Filters on these fields return few results by
+              design — they never invent a value that is missing.
+            </p>
+          )}
 
           {/* Free text */}
           <div className="mb-[16px]">
@@ -825,7 +931,7 @@ export default function InvestorDiscoverPage() {
                                 await fetch("/api/investors/pipeline", {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ investorId: investor.id, stage: "qualified" }),
+                                  body: JSON.stringify({ investorId: investor.id, stage: "shortlisted" }),
                                 });
                                 // Update local state to show it was added
                                 setResults((prev) =>

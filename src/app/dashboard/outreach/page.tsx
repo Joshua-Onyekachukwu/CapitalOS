@@ -34,7 +34,7 @@ interface EmailDraft {
   body: string;
   html?: string;
   text?: string;
-  status: "draft" | "approved" | "sent" | "replied";
+  status: "draft" | "approved" | "sent" | "replied" | "queued_dev";
   createdAt: string;
   fitScore: number;
   aiAnalysis?: string;
@@ -54,6 +54,7 @@ const statusConfig: Record<string, { label: string; variant: "success" | "warnin
   approved: { label: "Approved", variant: "success" },
   sent: { label: "Sent", variant: "info" },
   replied: { label: "Replied", variant: "success" },
+  queued_dev: { label: "Queued — not sent", variant: "warning" },
 };
 
 export default function OutreachPage() {
@@ -94,6 +95,8 @@ export default function OutreachPage() {
   // Email account state
   const [emailConnected, setEmailConnected] = useState<boolean | null>(null);
   const [emailProvider, setEmailProvider] = useState<string | null>(null);
+  // EMAIL_PROVIDER=outbox on the server means sends are recorded, not delivered.
+  const [outboxEnabled, setOutboxEnabled] = useState(false);
 
   // Inline editing state
   const [editingDraft, setEditingDraft] = useState<string | null>(null);
@@ -191,6 +194,19 @@ export default function OutreachPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    fetch("/api/integrations/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d) setOutboxEnabled(!!d.email?.outboxEnabled);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     loadInvestors();
   }, [loadInvestors]);
 
@@ -198,12 +214,15 @@ export default function OutreachPage() {
     { id: "drafts", label: "Drafts", count: drafts.filter((d) => d.status === "draft").length },
     { id: "approved", label: "Approved", count: drafts.filter((d) => d.status === "approved").length },
     { id: "sent", label: "Sent", count: drafts.filter((d) => d.status === "sent").length },
+    { id: "outbox", label: "Outbox (not sent)", count: drafts.filter((d) => d.status === "queued_dev").length },
     { id: "replies", label: "Replies", count: drafts.filter((d) => d.status === "replied").length },
   ];
 
   const filteredDrafts = activeTab === "replies"
     ? drafts.filter((d) => d.status === "replied")
-    : drafts.filter((d) => d.status === activeTab);
+    : activeTab === "outbox"
+      ? drafts.filter((d) => d.status === "queued_dev")
+      : drafts.filter((d) => d.status === activeTab);
 
   const handleGenerateSingle = async (draft: EmailDraft) => {
     setGenerating(true);
@@ -365,13 +384,20 @@ export default function OutreachPage() {
       const result = await response.json();
 
       if (response.ok && result.success) {
+        const queued = result.status === "queued_dev" || result.queued === true;
+        const nextStatus = queued ? ("queued_dev" as const) : ("sent" as const);
         setDrafts((prev) =>
-          prev.map((d) => (d.id === draft.id ? { ...d, status: "sent" as const } : d))
+          prev.map((d) => (d.id === draft.id ? { ...d, status: nextStatus } : d))
         );
         setSelectedDraft((prev) =>
-          prev?.id === draft.id ? { ...prev, status: "sent" as const } : prev
+          prev?.id === draft.id ? { ...prev, status: nextStatus } : prev
         );
-        setSendResult({ type: "success", text: "Email sent successfully!" });
+        setSendResult({
+          type: "success",
+          text: queued
+            ? "Saved to the outbox — not delivered. No sending account is connected yet."
+            : "Email sent successfully!",
+        });
       } else {
         const errorMsg = result.error || "Failed to send email.";
         if (errorMsg.includes("No email account connected")) {
@@ -471,6 +497,20 @@ export default function OutreachPage() {
                 Connect Email
               </Button>
             </a>
+          </div>
+        </div>
+      )}
+      {outboxEnabled && emailConnected !== true && (
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-[12px] p-[16px] mb-[20px] flex items-start gap-[8px]">
+          <i className="ri-inbox-archive-line text-[16px] text-amber-600 mt-[2px]"></i>
+          <div>
+            <p className="text-[13px] font-medium text-amber-800 dark:text-amber-300 !mb-[2px]">
+              Sending is switched off — approved emails go to the outbox
+            </p>
+            <p className="text-[12px] text-amber-700 dark:text-amber-400 !mb-0">
+              No mailbox is connected yet, so nothing leaves the app. Each email is stored with
+              status <span className="font-mono">queued_dev</span> and is never marked as sent.
+            </p>
           </div>
         </div>
       )}
@@ -763,11 +803,21 @@ export default function OutreachPage() {
                     <Button
                       onClick={() => handleSend(selectedDraft)}
                       loading={sending}
-                      disabled={emailConnected === false}
-                      title={emailConnected === false ? "Connect an email account in Settings first" : undefined}
+                      disabled={emailConnected === false && !outboxEnabled}
+                      title={
+                        emailConnected === false && !outboxEnabled
+                          ? "Connect an email account in Settings first"
+                          : undefined
+                      }
                     >
                       <i className="ri-send-plane-line text-[16px]"></i>
-                      Send Now
+                      {outboxEnabled && emailConnected !== true ? "Queue to outbox" : "Send Now"}
+                    </Button>
+                  )}
+                  {selectedDraft.status === "queued_dev" && (
+                    <Button variant="outline" disabled>
+                      <i className="ri-inbox-archive-line text-[16px]"></i>
+                      Queued — not sent
                     </Button>
                   )}
                   {selectedDraft.status === "sent" && (

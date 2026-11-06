@@ -1,26 +1,70 @@
 // =============================================
 // Investors Facets API Route (Supabase)
 // =============================================
-// Returns available filter values with counts for the search UI.
+// Served from the precomputed `investor_facets` rollup (migration 030) rather
+// than scanning a 5,000-row sample. Two indexed reads, independent of corpus
+// size, and the counts describe the whole corpus instead of a slice of it.
+//
+// The rollup is refreshed when it is missing or older than six hours, so the
+// numbers cannot silently rot after an import. The response keeps the old
+// field names (types/sectors/stages/countries/readiness/evidence) and adds the
+// sparse-field availability block the UI uses for its "limited data" labels.
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { createClient } from "@supabase/supabase-js";
 import { cache, userCacheKey, CACHE_TTL } from "@/lib/cache";
 
+const ROLLUP_TTL_MS = 6 * 60 * 60 * 1000;
+
+interface FacetRow {
+  dimension: string;
+  value: string;
+  count: number;
+}
+
+interface FacetMeta {
+  total: number | null;
+  with_email: number | null;
+  with_linkedin: number | null;
+  verified: number | null;
+  ready: number | null;
+  needs_verification: number | null;
+  with_thesis: number | null;
+  with_cheque: number | null;
+  with_lead_pref: number | null;
+  firms_linked: number | null;
+  refreshed_at: string | null;
+}
+
+const EVIDENCE_LABELS: Record<string, string> = {
+  verified: "Source-verified",
+  derived: "Derived",
+  ai_classified: "AI-classified",
+  unknown: "Unqualified",
+};
+
+function getSp() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
+
 export async function GET(request: NextRequest) {
   const user = await requireAuth(request);
   if (user instanceof NextResponse) return user;
 
   try {
-    // Check cache first (facets change infrequently)
-    const cacheKey = userCacheKey(user.id, "facets");
     const cached = await cache.getOrSet(
-      cacheKey,
+      userCacheKey(user.id, "facets:v2"),
       () => computeFacets(),
       { ttlMs: CACHE_TTL.medium }
     );
-    return NextResponse.json(cached);
+    return NextResponse.json(cached, {
+      headers: { "Cache-Control": "private, max-age=300" },
+    });
   } catch (err) {
     console.error("Facets error:", err);
     return NextResponse.json({ error: "Failed to load facets" }, { status: 500 });
@@ -28,116 +72,95 @@ export async function GET(request: NextRequest) {
 }
 
 async function computeFacets() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSp();
 
-  // 1. Get accurate counts for key stats using head:true (fast, no data transfer)
-  // All counts exclude merged/deactivated rows (is_active=false) so the stats
-  // match the filtered investor list.
-  const [
-    { count: totalCount },
-    { count: withEmailCount },
-    { count: withLinkedinCount },
-    { count: verifiedCount },
-    { count: readyCount },
-    { count: needsVerificationCount },
-    { count: evidenceVerifiedCount },
-    { count: evidenceDerivedCount },
-    { count: evidenceAiCount },
-    { count: evidenceUnknownCount },
-  ] = await Promise.all([
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).not("email", "is", null).neq("email", ""),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).not("linkedin_url", "is", null).neq("linkedin_url", ""),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("is_verified", true),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("outreach_readiness", "ready"),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("outreach_readiness", "needs_verification"),
-    // Evidence tier counts (mirror the qualification pass's verification_status stamps)
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("verification_status", "verified"),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("verification_status", "derived"),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("verification_status", "ai_classified"),
-    supabase.from("investors").select("*", { count: "exact", head: true }).eq("is_active", true).eq("verification_status", "unknown"),
-  ]);
+  let meta: FacetMeta | null = null;
+  {
+    const { data } = await supabase
+      .from("investor_facet_meta")
+      .select("*")
+      .maybeSingle();
+    meta = (data as FacetMeta | null) ?? null;
+  }
 
-  // 2. Fetch a larger sample for category facets (type, sector, stage, country)
-  const SAMPLE_SIZE = 5000;
-  const { data: investors } = await supabase
-    .from("investors")
-    .select("investor_type, investment_sectors, investment_stages, country, city, outreach_readiness, verification_status")
-    .eq("is_active", true)
-    .limit(SAMPLE_SIZE);
+  const isStale =
+    !meta?.refreshed_at ||
+    Date.now() - new Date(meta.refreshed_at).getTime() > ROLLUP_TTL_MS;
 
-  const rows = investors || [];
-
-  // Compute category facets from sample
-  const typeCounts: Record<string, number> = {};
-  const sectorCounts: Record<string, number> = {};
-  const stageCounts: Record<string, number> = {};
-  const countryCounts: Record<string, number> = {};
-  const readinessCounts: Record<string, number> = {};
-  const evidenceCounts: Record<string, number> = {};
-
-  for (const inv of rows) {
-    if (inv.investor_type) {
-      typeCounts[inv.investor_type] = (typeCounts[inv.investor_type] || 0) + 1;
-    }
-    if (Array.isArray(inv.investment_sectors)) {
-      for (const s of inv.investment_sectors) {
-        if (s) sectorCounts[s] = (sectorCounts[s] || 0) + 1;
-      }
-    }
-    if (Array.isArray(inv.investment_stages)) {
-      for (const s of inv.investment_stages) {
-        if (s) stageCounts[s] = (stageCounts[s] || 0) + 1;
-      }
-    }
-    if (inv.country) {
-      countryCounts[inv.country] = (countryCounts[inv.country] || 0) + 1;
-    }
-    if (inv.outreach_readiness) {
-      readinessCounts[inv.outreach_readiness] = (readinessCounts[inv.outreach_readiness] || 0) + 1;
-    }
-    if (inv.verification_status) {
-      evidenceCounts[inv.verification_status] = (evidenceCounts[inv.verification_status] || 0) + 1;
+  if (isStale) {
+    const { error } = await supabase.rpc("refresh_investor_facets");
+    if (error) {
+      // A refresh failure must not blank the UI: fall through to whatever the
+      // table already holds (possibly empty) and say so via _rollup.
+      console.error("Facet rollup refresh failed:", error.message);
+    } else {
+      const { data } = await supabase
+        .from("investor_facet_meta")
+        .select("*")
+        .maybeSingle();
+      meta = (data as FacetMeta | null) ?? meta;
     }
   }
 
-  // Sort and format
-  const sortDesc = (obj: Record<string, number>) =>
-    Object.entries(obj)
-      .sort((a, b) => b[1] - a[1])
-      .map(([value, count]) => ({ value, count }));
+  const { data: rows, error: rowsError } = await supabase
+    .from("investor_facets")
+    .select("dimension, value, count");
+
+  if (rowsError) throw new Error(rowsError.message);
+
+  const byDimension = new Map<string, FacetRow[]>();
+  for (const row of (rows ?? []) as FacetRow[]) {
+    const list = byDimension.get(row.dimension) ?? [];
+    list.push(row);
+    byDimension.set(row.dimension, list);
+  }
+
+  const sorted = (dimension: string) =>
+    (byDimension.get(dimension) ?? [])
+      .slice()
+      .sort((a, b) => b.count - a.count)
+      .map((r) => ({ value: r.value, count: r.count }));
+
+  const total = meta?.total ?? 0;
+  const withEmail = meta?.with_email ?? 0;
+  const withLinkedin = meta?.with_linkedin ?? 0;
+  const verified = meta?.verified ?? 0;
+  const evidenceRows = sorted("evidence");
+  const evidence = evidenceRows.map((r) => ({
+    value: r.value,
+    label: EVIDENCE_LABELS[r.value] ?? r.value,
+    count: r.count,
+  }));
 
   return {
-    total: totalCount || 0,
-    types: sortDesc(typeCounts),
-    sectors: sortDesc(sectorCounts),
-    stages: sortDesc(stageCounts),
-    countries: sortDesc(countryCounts),
-    readiness: sortDesc(readinessCounts),
-    evidence: [
-      { value: "verified", label: "Source-verified", count: evidenceVerifiedCount || 0 },
-      { value: "derived", label: "Derived", count: evidenceDerivedCount || 0 },
-      { value: "ai_classified", label: "AI-classified", count: evidenceAiCount || 0 },
-      { value: "unknown", label: "Unqualified", count: evidenceUnknownCount || 0 },
-    ],
-    emailStats: {
-      with: withEmailCount || 0,
-      without: (totalCount || 0) - (withEmailCount || 0),
+    total,
+    types: sorted("type"),
+    sectors: sorted("sector"),
+    stages: sorted("stage"),
+    countries: sorted("country"),
+    readiness: sorted("readiness"),
+    evidence,
+    // Sparse dimensions. `unknown` is a real bucket, not an omission: a null
+    // cheque size means "not recorded", never "invests nothing".
+    cheque: sorted("cheque"),
+    thesis: sorted("thesis"),
+    leadPreference: sorted("lead"),
+    emailStats: { with: withEmail, without: Math.max(0, total - withEmail) },
+    linkedinStats: { with: withLinkedin, without: Math.max(0, total - withLinkedin) },
+    verifiedStats: { yes: verified, no: Math.max(0, total - verified) },
+    readyToOutreach: meta?.ready ?? 0,
+    needsVerification: meta?.needs_verification ?? 0,
+    // How much of the corpus actually carries each filterable field. The UI
+    // renders these next to the filters so "0 results" is explainable.
+    dataAvailability: {
+      total,
+      cheque: meta?.with_cheque ?? 0,
+      thesis: meta?.with_thesis ?? 0,
+      leadPreference: meta?.with_lead_pref ?? 0,
+      firmsLinked: meta?.firms_linked ?? 0,
+      refreshedAt: meta?.refreshed_at ?? null,
     },
-    linkedinStats: {
-      with: withLinkedinCount || 0,
-      without: (totalCount || 0) - (withLinkedinCount || 0),
-    },
-    verifiedStats: {
-      yes: verifiedCount || 0,
-      no: (totalCount || 0) - (verifiedCount || 0),
-    },
-    readyToOutreach: readyCount || 0,
-    needsVerification: needsVerificationCount || 0,
-    _sampleSize: rows.length,
-    _sampleTotal: totalCount || 0,
+    _rollup: true,
+    _refreshedAt: meta?.refreshed_at ?? null,
   };
 }

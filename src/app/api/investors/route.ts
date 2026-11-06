@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { createClient } from "@supabase/supabase-js";
+import { parseAdvancedFilters, applyAdvancedFilters } from "@/lib/services/investors/filters";
 
 export async function GET(request: NextRequest) {
   const user = await requireAuth(request);
@@ -58,6 +59,9 @@ export async function GET(request: NextRequest) {
     const stagesParam = sp.get("stages") || "";
     const sectors = sectorsParam ? sectorsParam.split(",").map((s) => s.trim()).filter(Boolean) : [];
     const stages = stagesParam ? stagesParam.split(",").map((s) => s.trim()).filter(Boolean) : [];
+    // Cheque size, thesis, lead/follow and firm name. Shared with the Discover
+    // endpoint so the same input means the same thing in both places.
+    const advanced = parseAdvancedFilters(sp);
 
     // ── Sorting ──
     const validSorts = ["created_at", "fit_score", "full_name", "data_quality_score", "portfolio_count"];
@@ -108,6 +112,7 @@ export async function GET(request: NextRequest) {
       // Array overlap — any of the specified values must be in the array columns
       if (stages.length > 0) q = q.overlaps("investment_stages", stages);
       if (sectors.length > 0) q = q.overlaps("investment_sectors", sectors);
+      q = applyAdvancedFilters(q, advanced);
       return q;
     };
 

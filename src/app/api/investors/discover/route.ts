@@ -12,6 +12,7 @@ import { chatCompletion } from "@/lib/ai";
 import { embedTexts, EMBEDDING_MODEL } from "@/lib/services/investor/embeddings";
 import { captureServerEvent, serverEvents } from "@/lib/analytics/server";
 import { createClient } from "@supabase/supabase-js";
+import { parseAdvancedFilters, applyAdvancedFilters } from "@/lib/services/investors/filters";
 
 // ── Structured shape the AI must return ──
 interface ParsedQuery {
@@ -124,6 +125,9 @@ export async function POST(request: NextRequest) {
     // Dormancy + evidence filters (targeting active SEC filers, not stale rows)
     const filingRecency: string | null = ["1y", "3y"].includes(body.filingRecency) ? body.filingRecency : null;
     const hasSecEvidence: boolean = body.hasSecEvidence === true;
+    // Cheque size, thesis, lead/follow and firm name come straight from the
+    // dropdowns; absent values are null and apply nothing.
+    const advanced = parseAdvancedFilters(body as Record<string, unknown>);
 
     // ── Parse natural language into structured filters (best effort) ──
     let parsed: ParsedQuery | null = null;
@@ -237,6 +241,7 @@ export async function POST(request: NextRequest) {
         b = b.gte("edgar_last_filing_date", cutoff);
       }
       if (hasSecEvidence) b = b.not("edgar_sic_code", "is", null); // SEC-verified rows carry their SIC classification
+      b = applyAdvancedFilters(b, advanced);
       return b;
     };
 
