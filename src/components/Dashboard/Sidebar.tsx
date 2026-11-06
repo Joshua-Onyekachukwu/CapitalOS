@@ -34,6 +34,7 @@ interface NavSection {
       title: "Startup",
       items: [
         { label: "My Startup", href: "/dashboard/startup", icon: "ri-rocket-2-line" },
+        { label: "Readiness", href: "/dashboard/readiness", icon: "ri-checkbox-circle-line" },
         { label: "Edit Profile", href: "/dashboard/startup/edit", icon: "ri-edit-line" },
         { label: "Onboarding", href: "/onboarding", icon: "ri-flask-line" },
         { label: "Documents", href: "/dashboard/documents", icon: "ri-file-text-line" },

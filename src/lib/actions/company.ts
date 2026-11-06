@@ -1,6 +1,10 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import {
+  assessReadiness,
+  type ReadinessProfile,
+} from "@/lib/services/readiness/score";
 
 // =============================================
 // Types
@@ -22,6 +26,9 @@ export interface CompanyProfile {
   currentlyRaising: boolean;
   fundingAmount: number | null;
   roundType: string | null;
+  /** Target cheque range for this round — drives readiness and matching. */
+  targetChequeMin: number | null;
+  targetChequeMax: number | null;
   targetInvestorGeographies: string[];
   hasPitchDeck: boolean;
   mrr: number | null;
@@ -35,6 +42,16 @@ export interface CompanyProfile {
   readinessScore: number;
   createdAt: string;
   updatedAt: string;
+  // Email branding — rendered by branded-template.ts into investor outreach
+  emailBrandName?: string | null;
+  emailTagline?: string | null;
+  emailAccentColor?: string | null;
+  emailLogoUrl?: string | null;
+  emailWebsite?: string | null;
+  emailFooterText?: string | null;
+  emailCtaText?: string | null;
+  emailCtaUrl?: string | null;
+  emailSignature?: string | null;
 }
 
 export interface TeamMember {
@@ -118,6 +135,8 @@ export async function updateCompanyProfile(
   if (updates.currentlyRaising !== undefined) dbUpdates.currently_raising = updates.currentlyRaising;
   if (updates.fundingAmount !== undefined) dbUpdates.funding_amount = updates.fundingAmount;
   if (updates.roundType !== undefined) dbUpdates.round_type = updates.roundType;
+  if (updates.targetChequeMin !== undefined) dbUpdates.target_cheque_min = updates.targetChequeMin;
+  if (updates.targetChequeMax !== undefined) dbUpdates.target_cheque_max = updates.targetChequeMax;
   if (updates.targetInvestorGeographies !== undefined) dbUpdates.target_investor_geographies = updates.targetInvestorGeographies;
   if (updates.hasPitchDeck !== undefined) dbUpdates.has_pitch_deck = updates.hasPitchDeck;
   if (updates.mrr !== undefined) dbUpdates.mrr = updates.mrr;
@@ -128,9 +147,23 @@ export async function updateCompanyProfile(
   if (updates.employeeCount !== undefined) dbUpdates.employee_count = updates.employeeCount;
   if (updates.onboardingCompleted !== undefined) dbUpdates.onboarding_completed = updates.onboardingCompleted;
   if (updates.onboardingStep !== undefined) dbUpdates.onboarding_step = updates.onboardingStep;
+  // Email branding fields — consumed by the outreach draft route + branded templates
+  if (updates.emailBrandName !== undefined) dbUpdates.email_brand_name = updates.emailBrandName;
+  if (updates.emailTagline !== undefined) dbUpdates.email_tagline = updates.emailTagline;
+  if (updates.emailAccentColor !== undefined) dbUpdates.email_accent_color = updates.emailAccentColor;
+  if (updates.emailLogoUrl !== undefined) dbUpdates.email_logo_url = updates.emailLogoUrl;
+  if (updates.emailWebsite !== undefined) dbUpdates.email_website = updates.emailWebsite;
+  if (updates.emailFooterText !== undefined) dbUpdates.email_footer_text = updates.emailFooterText;
+  if (updates.emailCtaText !== undefined) dbUpdates.email_cta_text = updates.emailCtaText;
+  if (updates.emailCtaUrl !== undefined) dbUpdates.email_cta_url = updates.emailCtaUrl;
+  if (updates.emailSignature !== undefined) dbUpdates.email_signature = updates.emailSignature;
 
-  // Calculate readiness score
-  dbUpdates.readiness_score = calculateReadinessScore({ ...profile, ...updates });
+  // Readiness has exactly one definition (src/lib/services/readiness/score.ts),
+  // so the stored column, the readiness page and the dashboard cannot disagree.
+  dbUpdates.readiness_score = await computeReadinessScore(supabase, profile.id, {
+    ...profile,
+    ...updates,
+  });
 
   const { data, error } = await supabase
     .from("company_profiles")
@@ -328,39 +361,68 @@ export async function deleteCompanyDocument(
 // Readiness Score Calculation
 // =============================================
 
-function calculateReadinessScore(profile: Partial<CompanyProfile>): number {
-  let score = 0;
-  const weights = {
-    companyName: 10,
-    industry: 10,
-    companyStage: 10,
-    oneLiner: 10,
-    differentiator: 10,
-    targetCustomer: 10,
-    currentlyRaising: 5,
-    fundingAmount: 5,
-    roundType: 5,
-    mrr: 5,
-    customerCount: 5,
-    employeeCount: 5,
-    hasPitchDeck: 10,
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+function toReadinessProfile(profile: Partial<CompanyProfile>): ReadinessProfile {
+  return {
+    companyName: profile.companyName ?? null,
+    industry: profile.industry ?? null,
+    location: profile.location ?? null,
+    websiteUrl: profile.websiteUrl ?? null,
+    companyStage: profile.companyStage ?? null,
+    businessModel: profile.businessModel ?? null,
+    oneLiner: profile.oneLiner ?? null,
+    description: profile.description ?? null,
+    differentiator: profile.differentiator ?? null,
+    targetCustomer: profile.targetCustomer ?? null,
+    currentlyRaising: Boolean(profile.currentlyRaising),
+    fundingAmount: profile.fundingAmount ?? null,
+    roundType: profile.roundType ?? null,
+    targetChequeMin: profile.targetChequeMin ?? null,
+    targetChequeMax: profile.targetChequeMax ?? null,
+    mrr: profile.mrr ?? null,
+    arr: profile.arr ?? null,
+    customerCount: profile.customerCount ?? null,
+    growthRate: profile.growthRate ?? null,
+    milestones: profile.milestones ?? [],
+    employeeCount: profile.employeeCount ?? null,
   };
+}
 
-  if (profile.companyName) score += weights.companyName;
-  if (profile.industry) score += weights.industry;
-  if (profile.companyStage) score += weights.companyStage;
-  if (profile.oneLiner) score += weights.oneLiner;
-  if (profile.differentiator) score += weights.differentiator;
-  if (profile.targetCustomer) score += weights.targetCustomer;
-  if (profile.currentlyRaising) score += weights.currentlyRaising;
-  if (profile.fundingAmount) score += weights.fundingAmount;
-  if (profile.roundType) score += weights.roundType;
-  if (profile.mrr) score += weights.mrr;
-  if (profile.customerCount) score += weights.customerCount;
-  if (profile.employeeCount) score += weights.employeeCount;
-  if (profile.hasPitchDeck) score += weights.hasPitchDeck;
+/**
+ * Documents and team live in separate tables but both feed the score, so a
+ * profile save has to read them — otherwise editing your profile would silently
+ * drop the points you earned by uploading a deck.
+ */
+async function computeReadinessScore(
+  supabase: SupabaseServerClient,
+  companyId: string,
+  profile: Partial<CompanyProfile>
+): Promise<number> {
+  const [docs, team] = await Promise.all([
+    supabase
+      .from("company_documents")
+      .select("document_type, file_url")
+      .eq("company_id", companyId),
+    supabase
+      .from("company_team_members")
+      .select("name, title, bio, is_founder")
+      .eq("company_id", companyId),
+  ]);
 
-  return Math.min(100, score);
+  return assessReadiness({
+    profile: toReadinessProfile(profile),
+    documents: (docs.data || []).map((d) => ({
+      documentType: d.document_type as string,
+      hasFile: typeof d.file_url === "string" && d.file_url.length > 0,
+    })),
+    teamMembers: (team.data || []).map((m) => ({
+      name: m.name as string,
+      title: m.title as string | null,
+      bio: m.bio as string | null,
+      isFounder: Boolean(m.is_founder),
+    })),
+  }).score;
 }
 
 // =============================================
@@ -384,6 +446,12 @@ function mapProfile(row: Record<string, unknown>): CompanyProfile {
     currentlyRaising: row.currently_raising as boolean,
     fundingAmount: row.funding_amount as number | null,
     roundType: row.round_type as string | null,
+    targetChequeMin: row.target_cheque_min === null || row.target_cheque_min === undefined
+      ? null
+      : Number(row.target_cheque_min),
+    targetChequeMax: row.target_cheque_max === null || row.target_cheque_max === undefined
+      ? null
+      : Number(row.target_cheque_max),
     targetInvestorGeographies: (row.target_investor_geographies as string[]) || [],
     hasPitchDeck: row.has_pitch_deck as boolean,
     mrr: row.mrr as number | null,
