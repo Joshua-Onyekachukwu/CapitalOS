@@ -219,18 +219,23 @@ When relevant, guide the user to the right page:
 
 /**
  * Main copilot chat function — builds context and calls AI
- */export async function chatWithCopilot(messages: CopilotMessage[], userId: string): Promise<string> {
+ */export async function chatWithCopilot(messages: CopilotMessage[], userId: string, extraContext?: string): Promise<string> {
   try {
     console.log("[Copilot] Building context...");
     const context = await buildContext(userId);
-    console.log("[Copilot] Context built, length:", context.length, "chars");
+    // Live tool output for this turn only. It is appended after the static
+    // context so the model can quote real rows instead of guessing.
+    const systemPrompt = extraContext
+      ? `${context}\n\n═══ LIVE TOOL RESULT (this turn — quote it, do not extend it) ═══\n${extraContext}`
+      : context;
+    console.log("[Copilot] Context built, length:", systemPrompt.length, "chars");
 
     const { chatCompletion } = await import("@/lib/ai");
     console.log("[Copilot] Calling AI...");
     const response = await chatCompletion({
       userId,
       task: "research_summary",
-      systemPrompt: context,
+      systemPrompt: systemPrompt,
       messages: messages.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,

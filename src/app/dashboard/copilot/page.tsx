@@ -138,6 +138,9 @@ export default function CopilotPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingTool, setPendingTool] = useState<{ id: string; name: string; summary: string } | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [deciding, setDeciding] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -155,6 +158,39 @@ export default function CopilotPage() {
         }
       } catch {}
     }
+  }, []);
+
+  // Conversation history lives on the server now. localStorage is only a fast
+  // path; the database is what survives a different browser or device.
+  useEffect(() => {
+    if (localStorage.getItem("copilot_messages")) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await fetch("/api/copilot/conversations").then((r) => (r.ok ? r.json() : null));
+        const latest = list?.conversations?.[0];
+        if (!latest || cancelled) return;
+        const detail = await fetch(`/api/copilot/conversations?id=${latest.id}`).then((r) =>
+          r.ok ? r.json() : null
+        );
+        const stored = detail?.conversation?.messages;
+        if (cancelled || !Array.isArray(stored) || stored.length === 0) return;
+        setConversationId(latest.id);
+        setMessages(
+          stored.map((m: { role: "user" | "assistant"; content: string }) => ({
+            role: m.role,
+            content: m.content,
+            isStreaming: false,
+          }))
+        );
+        setShowSuggestions(false);
+      } catch {
+        /* start fresh */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -269,6 +305,7 @@ export default function CopilotPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          conversationId,
           messages: [...messages, userMessage]
             .filter((m) => !m.isStreaming)
             .map((m) => ({ role: m.role, content: m.content })),
@@ -276,6 +313,9 @@ export default function CopilotPage() {
       });
 
       const data = await response.json();
+
+      if (data.conversationId) setConversationId(data.conversationId);
+      setPendingTool(data.pendingTool ?? null);
 
       if (!response.ok) {
         setMessages((prev) => {
@@ -310,6 +350,29 @@ export default function CopilotPage() {
     }
   };
 
+  const decideTool = async (action: "approve" | "reject") => {
+    if (!pendingTool) return;
+    setDeciding(true);
+    try {
+      const res = await fetch(`/api/copilot/tools/${pendingTool.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      const text =
+        action === "reject"
+          ? "Discarded — nothing changed."
+          : res.ok
+            ? `Done: ${pendingTool.summary}`
+            : `Could not run that: ${data.error || res.status}`;
+      setMessages((prev) => [...prev, { role: "assistant", content: text, isStreaming: false }]);
+      setPendingTool(null);
+    } finally {
+      setDeciding(false);
+    }
+  };
+
   const lastAssistantMessage = [...messages]
     .reverse()
     .find((m) => m.role === "assistant" && !m.isStreaming);
@@ -325,6 +388,8 @@ export default function CopilotPage() {
           onClick={() => {
             setMessages([{ role: "assistant", content: GREETING, isStreaming: false }]);
             localStorage.removeItem("copilot_messages");
+            setPendingTool(null);
+            setConversationId(null);
             setShowSuggestions(true);
           }}
           className="flex items-center gap-[6px] px-[12px] py-[6px] text-[13px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -428,6 +493,31 @@ export default function CopilotPage() {
                 <span>{s.label}</span>
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Approval gate for mutating tools */}
+      {pendingTool && (
+        <div className="mb-[16px] rounded-[12px] border border-amber-300 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10 p-[14px]">
+          <div className="flex items-start gap-[8px]">
+            <i className="ri-shield-check-line text-amber-600 text-[16px] mt-[1px]"></i>
+            <div className="flex-1">
+              <p className="text-[13px] font-semibold text-amber-800 dark:text-amber-300 !mb-[2px]">
+                Approval needed — nothing has changed yet
+              </p>
+              <p className="text-[13px] text-amber-700 dark:text-amber-400 !mb-[10px]">
+                {pendingTool.summary}
+              </p>
+              <div className="flex gap-[8px]">
+                <Button onClick={() => decideTool("approve")} loading={deciding}>
+                  Approve and run
+                </Button>
+                <Button variant="outline" onClick={() => decideTool("reject")} disabled={deciding}>
+                  Discard
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}

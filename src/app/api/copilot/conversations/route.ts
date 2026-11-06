@@ -13,6 +13,19 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // A single conversation (with its messages) when ?id= is given; otherwise
+    // the recent list. Ownership is always part of the filter.
+    const id = request.nextUrl.searchParams.get("id");
+    if (id) {
+      const { data } = await sp
+        .from("copilot_conversations")
+        .select("id, title, messages, created_at, updated_at")
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return NextResponse.json({ conversation: data ?? null });
+    }
+
     const { data: conversations, error } = await sp
       .from("copilot_conversations")
       .select("id, title, created_at, updated_at")
