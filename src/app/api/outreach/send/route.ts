@@ -46,6 +46,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No email address found for this investor" }, { status: 404 });
     }
 
+    // The audit-trail refs come from the request body, so they have to be
+    // checked against the sender's own data before they are written into
+    // email_messages — otherwise a forged campaign_id attaches this send to
+    // another tenant's campaign and the trail points at the wrong thing.
+    // Validated here, before the credit gate, so a bad ref never touches the
+    // ledger.
+    if (campaignId) {
+      const { data: campaign } = await sp
+        .from("campaigns")
+        .select("id")
+        .eq("id", campaignId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!campaign) {
+        return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+      }
+    }
+
     // Pre-send credit gate: the ledger entry must exist before the send happens
     // (task 2.3 audit trail). No balance → 402, never a silent fail-open.
     const credits = await hasCredits(userId, "email_send");
@@ -111,7 +130,23 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      return NextResponse.json({ success: true, messageId: result.messageId });
+      // An outbox write is not a delivery. Propagate it so no caller — this
+      // route's UI included — can present a queued message as sent.
+      const queued = (result as { outbox?: boolean }).outbox === true;
+      if (queued) {
+        // Nothing left the app, so the pre-send credit charge is refunded.
+        await addCredits(userId, deducted.cost, "email_send_refund", {
+          reason: "outbox_queued",
+          investorId,
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        messageId: result.messageId,
+        status: queued ? "queued_dev" : "sent",
+        queued,
+      });
     } else {
       // Send failed after crediting — refund so users aren't charged for a
       // failed delivery; the refund is also visible in credit_ledger.

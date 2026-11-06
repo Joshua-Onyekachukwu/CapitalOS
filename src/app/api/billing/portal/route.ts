@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
-import { query } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
 import { getStripe, STRIPE_UNCONFIGURED } from "@/lib/services/billing/stripe";
 
 export const runtime = "nodejs";
@@ -29,11 +29,16 @@ export async function POST(request: NextRequest) {
 
   let customerId: string | null = null;
   try {
-    const rows = await query<{ stripe_customer_id: string | null }>(
-      `select stripe_customer_id from user_subscriptions where user_id = $1 limit 1`,
-      [user.id]
-    );
-    customerId = rows[0]?.stripe_customer_id ?? null;
+    const { data } = await createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    )
+      .from("user_subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .limit(1);
+    customerId = data?.[0]?.stripe_customer_id ?? null;
   } catch (err) {
     console.error("[billing/portal] customer lookup failed:", err);
   }

@@ -10,16 +10,27 @@
 //   checkout.session.completed      → create/claim the local subscription
 //   customer.subscription.*         → status and period changes (renew, cancel)
 //   invoice.payment_failed          → past_due, without dropping access
+//
+// Writes go through the Supabase client, not lib/db's query(): that helper only
+// parses a subset of SQL and silently cannot express these updates.
 
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import { query } from "@/lib/db";
 import { getStripe, STRIPE_UNCONFIGURED } from "@/lib/services/billing/stripe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type LocalStatus = "active" | "past_due" | "cancelled" | "trialing";
+
+function getSp() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
 
 function mapStatus(status: Stripe.Subscription.Status): LocalStatus {
   switch (status) {
@@ -67,34 +78,50 @@ async function upsertLocalSubscription(params: {
   periodEnd: Date | null;
   cancelAt: Date | null;
 }): Promise<void> {
-  const existing = await query<{ id: string }>(
-    `select id from user_subscriptions where user_id = $1 order by created_at desc limit 1`,
-    [params.userId]
-  );
+  const sp = getSp();
 
-  if (existing.length > 0) {
-    await query(
-      `update user_subscriptions set
-         plan_id = coalesce($2, plan_id),
-         status = $3,
-         stripe_customer_id = coalesce($4, stripe_customer_id),
-         stripe_subscription_id = coalesce($5, stripe_subscription_id),
-         current_period_start = coalesce($6, current_period_start),
-         current_period_end = coalesce($7, current_period_end),
-         cancel_at = $8,
-         updated_at = now()
-       where id = $1`,
-      [
-        existing[0].id,
-        params.planId,
-        params.status,
-        params.customerId,
-        params.subscriptionId,
-        params.periodStart,
-        params.periodEnd,
-        params.cancelAt,
-      ]
-    );
+  const { data: existing, error: findError } = await sp
+    .from("user_subscriptions")
+    .select("id")
+    .eq("user_id", params.userId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (findError) throw new Error(findError.message);
+
+  const full = {
+    user_id: params.userId,
+    plan_id: params.planId,
+    status: params.status,
+    stripe_customer_id: params.customerId,
+    stripe_subscription_id: params.subscriptionId,
+    current_period_start: params.periodStart?.toISOString() ?? null,
+    current_period_end: params.periodEnd?.toISOString() ?? null,
+    cancel_at: params.cancelAt?.toISOString() ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existing && existing.length > 0) {
+    // Only overwrite fields this event actually carries, so a subscription
+    // update cannot blank the plan or the Stripe customer recorded earlier.
+    const patch: Record<string, unknown> = {
+      status: full.status,
+      updated_at: full.updated_at,
+      cancel_at: full.cancel_at,
+    };
+    for (const key of [
+      "plan_id",
+      "stripe_customer_id",
+      "stripe_subscription_id",
+      "current_period_start",
+      "current_period_end",
+    ] as const) {
+      if (full[key] !== null) patch[key] = full[key];
+    }
+    const { error } = await sp
+      .from("user_subscriptions")
+      .update(patch)
+      .eq("id", existing[0].id);
+    if (error) throw new Error(error.message);
     return;
   }
 
@@ -102,22 +129,11 @@ async function upsertLocalSubscription(params: {
     throw new Error("Cannot create a subscription row without a plan");
   }
 
-  await query(
-    `insert into user_subscriptions (
-       user_id, plan_id, status, stripe_customer_id, stripe_subscription_id,
-       current_period_start, current_period_end, cancel_at, created_at, updated_at
-     ) values ($1,$2,$3,$4,$5,$6,$7,$8, now(), now())`,
-    [
-      params.userId,
-      params.planId,
-      params.status,
-      params.customerId,
-      params.subscriptionId,
-      params.periodStart,
-      params.periodEnd,
-      params.cancelAt,
-    ]
-  );
+  const { error } = await sp.from("user_subscriptions").insert({
+    ...full,
+    created_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(error.message);
 }
 
 async function syncFromSubscription(subscription: Stripe.Subscription): Promise<void> {
@@ -130,7 +146,9 @@ async function syncFromSubscription(subscription: Stripe.Subscription): Promise<
 
   const { start, end } = periodBounds(subscription);
   const customerId =
-    typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id ?? null;
+    typeof subscription.customer === "string"
+      ? subscription.customer
+      : subscription.customer?.id ?? null;
 
   await upsertLocalSubscription({
     userId,
@@ -144,10 +162,7 @@ async function syncFromSubscription(subscription: Stripe.Subscription): Promise<
   });
 }
 
-async function syncFromCheckout(
-  session: Stripe.Checkout.Session,
-  stripe: Stripe
-): Promise<void> {
+async function syncFromCheckout(session: Stripe.Checkout.Session, stripe: Stripe): Promise<void> {
   const userId = session.metadata?.user_id || session.client_reference_id || null;
   const planId = session.metadata?.plan_id || null;
   if (!userId) {
@@ -159,7 +174,7 @@ async function syncFromCheckout(
     typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
 
   // A subscription id on the session is the authoritative link; retrieve it so
-  // periods and status come from Stripe rather than being assumed "active".
+  // status and periods come from Stripe rather than being assumed "active".
   const subscriptionId =
     typeof session.subscription === "string"
       ? session.subscription
@@ -167,34 +182,37 @@ async function syncFromCheckout(
 
   if (subscriptionId) {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    // metadata on subscription_data may lag; the session's plan is authoritative.
     const merged: Stripe.Subscription = {
       ...subscription,
-      metadata: { ...subscription.metadata, user_id: userId, ...(planId ? { plan_id: planId } : {}) },
+      metadata: {
+        ...subscription.metadata,
+        user_id: userId,
+        ...(planId ? { plan_id: planId } : {}),
+      },
     };
     await syncFromSubscription(merged);
     return;
   }
 
-  const { start, end } = { start: null as Date | null, end: null as Date | null };
   await upsertLocalSubscription({
     userId,
     planId,
     status: "active",
     customerId,
     subscriptionId: null,
-    periodStart: start,
-    periodEnd: end,
+    periodStart: null,
+    periodEnd: null,
     cancelAt: null,
   });
 }
 
 async function markPastDueByCustomer(customerId: string): Promise<void> {
-  await query(
-    `update user_subscriptions set status = 'past_due', updated_at = now()
-     where stripe_customer_id = $1 and status in ('active','trialing')`,
-    [customerId]
-  );
+  const { error } = await getSp()
+    .from("user_subscriptions")
+    .update({ status: "past_due", updated_at: new Date().toISOString() })
+    .eq("stripe_customer_id", customerId)
+    .in("status", ["active", "trialing"]);
+  if (error) throw new Error(error.message);
 }
 
 export async function POST(request: NextRequest) {
