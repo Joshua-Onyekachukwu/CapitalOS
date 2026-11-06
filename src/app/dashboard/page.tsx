@@ -13,12 +13,26 @@ interface DashboardStats {
   activeCampaigns: number;
   emailsSent: number;
   emailsReplied: number;
-  meetingsScheduled: number;
+  /** null = could not be computed (feature not provisioned), not zero. */
+  meetingsScheduled: number | null;
   highFitInvestors: number;
   investorsThisWeek: number;
   readyInvestors: number;
-  avgFitScore: number;
-  totalCreditsUsed: number;
+  /** null = none of the user's investors have a score yet. */
+  avgFitScore: number | null;
+  totalCreditsUsed: number | null;
+}
+
+interface Availability {
+  outreach: boolean;
+  meetings: boolean;
+  pipeline: boolean;
+}
+
+/** Render a stat that may be unknown. Never prints a fake 0. */
+function statValue(value: number | null | undefined, suffix = ""): string {
+  if (value === null || value === undefined) return "—";
+  return `${value.toLocaleString()}${suffix}`;
 }
 
 interface RecentInvestor {
@@ -51,12 +65,30 @@ interface CompanyProfile {
   readinessScore: number;
 }
 
+interface RoundState {
+  committed: number;
+  projected: number;
+  percentOfTarget: number | null;
+  remaining: number | null;
+}
+
+interface NextAction {
+  id: string;
+  label: string;
+  reason: string;
+  href: string;
+}
+
 interface CockpitData {
   stats: DashboardStats;
+  availability?: Availability;
   recentInvestors: RecentInvestor[];
   pipeline: PipelineStage[];
   topSectors: { sector: string; count: number }[];
   companyProfile?: CompanyProfile | null;
+  round?: RoundState | null;
+  nextActions?: NextAction[];
+  pipelineInvestors?: number;
 }
 
 const stageColors: Record<string, string> = {
@@ -120,6 +152,7 @@ export default function DashboardPage() {
   }, []);
 
   const stats = data?.stats;
+  const availability = data?.availability;
   const recentInvestors = data?.recentInvestors || [];
   const pipeline = data?.pipeline || [];
 
@@ -129,11 +162,14 @@ export default function DashboardPage() {
     if (stats.totalInvestors === 0) {
       nextSteps.push({ label: "Discover your first investors", href: "/dashboard/investors/discover", icon: "ri-radar-line" });
     }
-    if (stats.highFitInvestors === 0 && stats.totalInvestors > 0) {
-      nextSteps.push({ label: "Run fit analysis on your investors", href: "/dashboard/investors", icon: "ri-star-line" });
+    if (stats.avgFitScore === null && stats.totalInvestors > 0) {
+      nextSteps.push({ label: "Run fit analysis on your investors", href: "/dashboard/investors/matches", icon: "ri-star-line" });
     }
     if (stats.totalInvestors > 0 && stats.readyInvestors === 0) {
       nextSteps.push({ label: "Complete your company profile", href: "/onboarding", icon: "ri-building-line" });
+    }
+    if (availability?.meetings === false) {
+      nextSteps.push({ label: "Apply migration 020 to enable meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" });
     }
   }
   if (nextSteps.length === 0) {
@@ -173,10 +209,10 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px] md:gap-[20px] mb-[25px] md:mb-[30px]">
         {[
-          { label: "Total Investors", value: (stats?.totalInvestors || 0).toLocaleString(), icon: "ri-database-2-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
-          { label: "High-Fit Investors", value: (stats?.highFitInvestors || 0).toLocaleString(), icon: "ri-star-line", color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600" },
-          { label: "Avg Fit Score", value: `${stats?.avgFitScore || 0}%`, icon: "ri-percent-line", color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600" },
-          { label: "Ready for Outreach", value: (stats?.readyInvestors || 0).toLocaleString(), icon: "ri-send-plane-line", color: "bg-green-50 dark:bg-green-900/20", iconColor: "text-green-600" },
+          { label: "Saved Investors", value: statValue(stats?.totalInvestors), icon: "ri-database-2-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
+          { label: "High-Fit Investors", value: statValue(stats?.highFitInvestors), icon: "ri-star-line", color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600" },
+          { label: "Avg Fit Score", value: stats?.avgFitScore === null || stats?.avgFitScore === undefined ? "—" : `${stats.avgFitScore}%`, icon: "ri-percent-line", color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600" },
+          { label: "Ready for Outreach", value: statValue(stats?.readyInvestors), icon: "ri-send-plane-line", color: "bg-green-50 dark:bg-green-900/20", iconColor: "text-green-600" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="flex items-center gap-[16px]">
@@ -192,13 +228,79 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Round money — computed server-side, never estimated here */}
+      {data?.round && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-[16px] mb-[25px] md:mb-[30px]">
+          <Card>
+            <CardBody>
+              <p className="text-[12px] text-gray-400 !mb-[2px]">Committed</p>
+              <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">
+                {formatCurrency(data.round.committed)}
+              </p>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <p className="text-[12px] text-gray-400 !mb-[2px]">Projected total</p>
+              <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">
+                {formatCurrency(data.round.projected)}
+              </p>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <p className="text-[12px] text-gray-400 !mb-[2px]">Of target</p>
+              <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">
+                {data.round.percentOfTarget === null
+                  ? "—"
+                  : Math.round(data.round.percentOfTarget * 100) + "%"}
+              </p>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <p className="text-[12px] text-gray-400 !mb-[2px]">Still to raise</p>
+              <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">
+                {data.round.remaining === null ? "—" : formatCurrency(data.round.remaining)}
+              </p>
+            </CardBody>
+          </Card>
+        </div>
+      )}
+
+      {/* Next actions — each one names the state that triggered it */}
+      {data?.nextActions && data.nextActions.length > 0 && (
+        <Card className="mb-[25px] md:mb-[30px]">
+          <CardBody>
+            <h3 className="!text-[16px] !font-semibold !mb-[12px]">Next actions</h3>
+            <div className="space-y-[8px]">
+              {data.nextActions.map((a) => (
+                <Link
+                  key={a.id}
+                  href={a.href}
+                  className="flex items-start gap-[10px] p-[10px] rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-lime-300 dark:hover:border-lime-700"
+                >
+                  <i className="ri-arrow-right-circle-line text-[16px] text-lime-600 mt-[1px]"></i>
+                  <span>
+                    <span className="block text-[13px] font-semibold text-[#06201b] dark:text-white">
+                      {a.label}
+                    </span>
+                    <span className="block text-[11px] text-gray-400">{a.reason}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       {/* Email & Campaign Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-[16px] mb-[25px] md:mb-[30px]">
         {[
-          { label: "Emails Sent", value: (stats?.emailsSent || 0).toLocaleString(), icon: "ri-mail-send-line", color: "text-blue-600" },
-          { label: "Replies Received", value: (stats?.emailsReplied || 0).toLocaleString(), icon: "ri-reply-line", color: "text-green-600" },
-          { label: "Active Campaigns", value: (stats?.activeCampaigns || 0).toLocaleString(), icon: "ri-megaphone-line", color: "text-purple-600" },
-          { label: "Credits Used", value: (stats?.totalCreditsUsed || 0).toLocaleString(), icon: "ri-vip-diamond-line", color: "text-amber-600" },
+          { label: "Emails Sent", value: stats?.emailsSent && availability?.outreach === false ? "—" : statValue(stats?.emailsSent), icon: "ri-mail-send-line", color: "text-blue-600" },
+          { label: "Replies Received", value: statValue(stats?.emailsReplied), icon: "ri-reply-line", color: "text-green-600" },
+          { label: "Active Campaigns", value: statValue(stats?.activeCampaigns), icon: "ri-megaphone-line", color: "text-purple-600" },
+          { label: "Credits Used", value: stats?.totalCreditsUsed === null ? "—" : statValue(stats?.totalCreditsUsed), icon: "ri-vip-diamond-line", color: "text-amber-600" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="flex items-center gap-[12px]">

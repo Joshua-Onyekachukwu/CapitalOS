@@ -47,7 +47,7 @@ interface NavSection {
         { label: "Discover", href: "/dashboard/investors/discover", icon: "ri-radar-line" },
         { label: "Investor Database", href: "/dashboard/investors", icon: "ri-database-2-line" },
         { label: "Saved Investors", href: "/dashboard/investors/saved", icon: "ri-bookmark-line" },
-        { label: "Fit Analysis", href: "/dashboard/investors/fit", icon: "ri-pie-chart-line" },
+        { label: "Matches", href: "/dashboard/investors/matches", icon: "ri-pie-chart-line" },
       ],
     },
     {

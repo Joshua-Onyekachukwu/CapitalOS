@@ -191,7 +191,7 @@ You can advise on ALL of these topics with specific, data-backed answers:
 When relevant, guide the user to the right page:
 • /dashboard/investors — Browse investor database
 • /dashboard/investors/discover — AI-powered investor discovery
-• /dashboard/investors/fit — Fit analysis and scoring
+• /dashboard/investors/matches — Fit analysis and scoring
 • /dashboard/investors/saved — Saved investors list
 • /dashboard/outreach — Email outreach campaigns
 • /dashboard/campaigns — Campaign management
