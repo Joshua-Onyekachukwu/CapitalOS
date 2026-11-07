@@ -1,0 +1,55 @@
+{
+  "_note": "Synthetic fixture. Every firm, filing and number here is invented for the importer test; nothing is real SEC data.",
+  "filings": [
+    {
+      "accessionNumber": "0000000000-26-000001",
+      "cik": "0000000001",
+      "entityName": "Fixture Ridge Capital Fund III, L.P.",
+      "industryGroupType": "Pooled Investment Fund",
+      "investmentFundType": "Venture Capital Fund",
+      "businessCity": "Fixtureville",
+      "businessStateOrCountry": "CA",
+      "minCheckSize": "$250k",
+      "maxCheckSize": "$2M",
+      "totalOfferingAmount": "50000000",
+      "dateOfFirstSale": "2026-02-01",
+      "filingUrl": "https://example.invalid/form-d/0000000000-26-000001"
+    },
+    {
+      "accessionNumber": "0000000000-26-000002",
+      "cik": "0000000002",
+      "entityName": "Fixture Harbor Buyout Fund II, L.P.",
+      "industryGroupType": "Pooled Investment Fund",
+      "investmentFundType": "Private Equity Fund",
+      "businessCity": "Fixtureville",
+      "businessStateOrCountry": "NY",
+      "totalOfferingAmount": "120000000",
+      "dateOfFirstSale": "2026-01-15",
+      "filingUrl": "https://example.invalid/form-d/0000000000-26-000002"
+    },
+    {
+      "accessionNumber": "0000000000-26-000003",
+      "cik": "0000000003",
+      "entityName": "Fixture Lattice Systems, Inc.",
+      "industryGroupType": "Other",
+      "investmentFundType": "Other",
+      "businessCity": "Fixtureville",
+      "businessStateOrCountry": "TX",
+      "totalOfferingAmount": "3000000",
+      "dateOfFirstSale": "2026-03-04",
+      "filingUrl": "https://example.invalid/form-d/0000000000-26-000003"
+    },
+    {
+      "accessionNumber": "0000000000-26-000004",
+      "cik": "0000000004",
+      "entityName": "Fixture Meridian Macro Fund, L.P.",
+      "industryGroupType": "Pooled Investment Fund",
+      "investmentFundType": "Hedge Fund",
+      "businessCity": "Fixtureville",
+      "businessStateOrCountry": "CT",
+      "totalOfferingAmount": "80000000",
+      "dateOfFirstSale": "2026-02-20",
+      "filingUrl": "https://example.invalid/form-d/0000000000-26-000004"
+    }
+  ]
+}

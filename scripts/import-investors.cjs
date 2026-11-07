@@ -50,7 +50,7 @@ const LIMIT = flag("limit") ? Number(flag("limit")) : Infinity;
 const BATCH = flag("batch") ? Number(flag("batch")) : 200;
 const SOURCE_OVERRIDE = flag("source");
 
-if (!CSV_PATH && !FORMD_PATH) {
+if (require.main === module && !CSV_PATH && !FORMD_PATH) {
   console.error(
     [
       "usage: node scripts/import-investors.cjs --csv=<file> [--dry-run] [--limit=N]",
@@ -61,13 +61,22 @@ if (!CSV_PATH && !FORMD_PATH) {
 }
 
 const MODE = FORMD_PATH ? "form_d" : "csv";
-const FILE = path.resolve(FORMD_PATH || CSV_PATH);
+// Null when the module is required by tests rather than run as a script.
+const FILE = FORMD_PATH || CSV_PATH ? path.resolve(FORMD_PATH || CSV_PATH) : null;
 
-const sp = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
-);
+// The client is created lazily so the pure functions below can be required by
+// tests without credentials or a live database.
+let _sp = null;
+function db() {
+  if (!_sp) {
+    _sp = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false } }
+    );
+  }
+  return _sp;
+}
 
 // ── Column aliases ──────────────────────────────────────────────────────────
 // Every alias is normalised (lowercase, alphanumerics only) before matching, so
@@ -327,25 +336,44 @@ function qualityScore(row) {
   return Math.min(score, 100);
 }
 
-function isPooledFund(flat) {
-  const industry = String(pick(flat, "investor_type") || "");
-  const fundType = Object.keys(flat)
-    .filter((key) => key.includes("investmentfundtype"))
-    .map((key) => String(flat[key]))
-    .join(" ");
-  return /pooled investment fund/i.test(industry) || fundType.trim().length > 0;
+/**
+ * EDGAR puts the useful classification in investmentFundType and a generic
+ * "Pooled Investment Fund" in industryGroupType. Reading whichever alias comes
+ * first in the flattened object would classify every venture fund as an
+ * untyped pooled fund, so the fund type is preferred explicitly.
+ */
+function formDFundType(flat) {
+  for (const key of Object.keys(flat)) {
+    if (!key.includes("investmentfundtype")) continue;
+    const value = clean(flat[key]);
+    if (value) return value;
+  }
+  return null;
 }
 
-function buildRecord(flat, source, rowNumber, fileName) {
+function isPooledFund(flat, fundType = formDFundType(flat)) {
+  const industry = String(pick(flat, "investor_type") || "");
+  // "Other" is EDGAR's placeholder, not a fund classification.
+  const meaningful = String(fundType ?? "")
+    .replace(/\bother\b/gi, "")
+    .trim();
+  return /pooled investment fund/i.test(industry) || meaningful.length > 0;
+}
+
+function buildRecord(flat, source, rowNumber, fileName, mode = MODE) {
   let fullName = clean(pick(flat, "full_name"));
   const first = clean(pick(flat, "first_name"));
   const last = clean(pick(flat, "last_name"));
   if (!fullName && first && last) fullName = `${first} ${last}`;
   if (!fullName || fullName.length < 2) return { skip: "invalid" };
 
-  if (MODE === "form_d" && !isPooledFund(flat)) return { skip: "not_pooled_fund" };
+  let typeRaw = clean(pick(flat, "investor_type"));
+  if (mode === "form_d") {
+    const fundType = formDFundType(flat);
+    if (!isPooledFund(flat, fundType)) return { skip: "not_pooled_fund" };
+    typeRaw = fundType || typeRaw;
+  }
 
-  const typeRaw = clean(pick(flat, "investor_type"));
   const mappedType = mapInvestorType(typeRaw);
   if (typeRaw && !mappedType) return { skip: `unmapped_type:${typeRaw.slice(0, 40)}` };
 
@@ -403,7 +431,7 @@ function buildRecord(flat, source, rowNumber, fileName) {
     importer: "scripts/import-investors.cjs",
     imports: [
       {
-        kind: MODE,
+        kind: mode,
         source,
         file: fileName,
         row: rowNumber,
@@ -427,7 +455,7 @@ async function loadIndex() {
   let from = 0;
 
   for (;;) {
-    const { data, error } = await sp
+    const { data, error } = await db()
       .from("investors")
       .select("id, email, full_name, name_normalized, source, source_id")
       .range(from, from + 999);
@@ -485,7 +513,7 @@ function isEmpty(value) {
 }
 
 async function fillExisting(existingId, record, provenanceEntry) {
-  const { data: current, error } = await sp
+  const { data: current, error } = await db()
     .from("investors")
     .select(`id, provenance, ${FILLABLE.join(", ")}`)
     .eq("id", existingId)
@@ -508,7 +536,7 @@ async function fillExisting(existingId, record, provenanceEntry) {
 
   if (DRY_RUN) return { changed: true, fields: Object.keys(patch).filter((k) => k !== "provenance") };
 
-  const { error: writeError } = await sp.from("investors").update(patch).eq("id", existingId);
+  const { error: writeError } = await db().from("investors").update(patch).eq("id", existingId);
   return writeError
     ? { changed: false, error: writeError.message }
     : { changed: true, fields: Object.keys(patch).filter((k) => k !== "provenance") };
@@ -522,7 +550,7 @@ async function insertRows(rows) {
 
   for (let i = 0; i < rows.length; i += BATCH) {
     const batch = rows.slice(i, i + BATCH);
-    const { error } = await sp.from("investors").insert(batch);
+    const { error } = await db().from("investors").insert(batch);
 
     if (!error) {
       inserted += batch.length;
@@ -531,7 +559,7 @@ async function insertRows(rows) {
 
     // One bad row must not hide the rest of the batch.
     for (const row of batch) {
-      const { error: rowError } = await sp.from("investors").insert(row);
+      const { error: rowError } = await db().from("investors").insert(row);
       if (rowError) errors.push(`${row.full_name}: ${rowError.message}`);
       else inserted++;
     }
@@ -542,7 +570,7 @@ async function insertRows(rows) {
 
 // ── Main ────────────────────────────────────────────────────────────────────
 
-(async () => {
+async function main() {
   if (!fs.existsSync(FILE)) {
     console.error(`file not found: ${FILE}`);
     process.exit(1);
@@ -686,7 +714,27 @@ async function insertRows(rows) {
   }
 
   console.log(JSON.stringify(report, null, 2));
-})().catch((err) => {
-  console.error("import failed:", err instanceof Error ? err.message : err);
-  process.exit(1);
-});
+}
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error("import failed:", err instanceof Error ? err.message : err);
+    process.exit(1);
+  });
+}
+
+// Exported for the unit tests: the source-row → corpus-record mapping is the
+// part worth pinning, and it should be testable without a database.
+module.exports = {
+  parseCsv,
+  flatten,
+  readCsvFile,
+  readFormDFile,
+  buildRecord,
+  formDFundType,
+  isPooledFund,
+  mapInvestorType,
+  parseChequeRange,
+  parseMoney,
+  looseNameKey,
+};
