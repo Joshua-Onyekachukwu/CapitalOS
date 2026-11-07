@@ -1,73 +1,112 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 
-interface ImportProgress {
-  status: "idle" | "parsing" | "importing" | "done" | "error";
+interface ImportCounts {
   totalRows: number;
   parsed: number;
   normalized: number;
   duplicates: number;
   inserted: number;
+  wouldInsert?: number;
   failed: number;
   errors: string[];
 }
 
+type Phase = "idle" | "previewing" | "previewed" | "importing" | "done";
+
+function Count({ value, label, tone }: { value: number; label: string; tone: string }) {
+  return (
+    <div className="text-center p-[12px] bg-gray-50 dark:bg-gray-800/30 rounded-[8px]">
+      <p className={`text-[20px] font-bold ${tone} !mb-0`}>{value}</p>
+      <p className="text-[11px] text-gray-400 !mb-0">{label}</p>
+    </div>
+  );
+}
+
 export default function ImportPage() {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [progress, setProgress] = useState<ImportProgress>({
-    status: "idle",
-    totalRows: 0,
-    parsed: 0,
-    normalized: 0,
-    duplicates: 0,
-    inserted: 0,
-    failed: 0,
-    errors: [],
-  });
-  const [fileName, setFileName] = useState<string>("");
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [fileName, setFileName] = useState("");
+  const [csvContent, setCsvContent] = useState("");
+  const [preview, setPreview] = useState<ImportCounts | null>(null);
+  const [previewToken, setPreviewToken] = useState<string | null>(null);
+  const [result, setResult] = useState<ImportCounts | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleUpload = async () => {
-    const file = fileRef.current?.files?.[0];
-    if (!file) return;
+  const busy = phase === "previewing" || phase === "importing";
 
+  const reset = () => {
+    setPhase("idle");
+    setFileName("");
+    setCsvContent("");
+    setPreview(null);
+    setPreviewToken(null);
+    setResult(null);
+    setError(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const chooseFile = async (file: File) => {
+    setError(null);
+    setResult(null);
+    setPreview(null);
+    setPreviewToken(null);
     setFileName(file.name);
-    setProgress({ status: "parsing", totalRows: 0, parsed: 0, normalized: 0, duplicates: 0, inserted: 0, failed: 0, errors: [] });
+    setPhase("previewing");
 
     try {
       const content = await file.text();
-
-      setProgress((p) => ({ ...p, status: "importing" }));
-
-      const response = await fetch("/api/admin/import", {
+      const response = await fetch("/api/admin/import/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ csvContent: content, source: "csv_import" }),
       });
-
-      const result = await response.json();
+      const body = await response.json();
 
       if (!response.ok) {
-        setProgress((p) => ({ ...p, status: "error", errors: [result.error || "Import failed"] }));
+        setPhase("idle");
+        setError(body.error || "Could not preview this file.");
         return;
       }
 
-      setProgress({
-        status: "done",
-        totalRows: result.totalRows,
-        parsed: result.parsed,
-        normalized: result.normalized,
-        duplicates: result.duplicates,
-        inserted: result.inserted,
-        failed: result.failed,
-        errors: result.errors || [],
-      });
+      setCsvContent(content);
+      setPreview(body);
+      setPreviewToken(body.previewToken);
+      setPhase("previewed");
     } catch (err) {
-      setProgress((p) => ({ ...p, status: "error", errors: [String(err)] }));
+      setPhase("idle");
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const confirmImport = async () => {
+    setError(null);
+    setPhase("importing");
+
+    try {
+      const response = await fetch("/api/admin/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csvContent, source: "csv_import", previewToken }),
+      });
+      const body = await response.json();
+
+      if (!response.ok) {
+        // The token may have expired while the preview sat open.
+        setPhase("previewed");
+        setError(body.error || "Import failed.");
+        return;
+      }
+
+      setResult(body);
+      setPhase("done");
+    } catch (err) {
+      setPhase("previewed");
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -75,10 +114,9 @@ export default function ImportPage() {
     <div>
       <PageHeader
         title="Import Investors"
-        description="Upload a CSV file to bulk import investor data into your database."
+        description="Upload a CSV, review exactly what would change, then confirm the write."
       />
 
-      {/* Upload Card */}
       <Card className="mb-[20px]">
         <CardBody>
           <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[12px] p-[40px] text-center">
@@ -89,7 +127,7 @@ export default function ImportPage() {
               Upload CSV File
             </h3>
             <p className="text-[14px] text-gray-400 !mb-[20px]">
-              Supports any CSV with investor names, emails, firms, sectors, stages, and more.
+              Nothing is written until you confirm the preview.
               <br />
               Column names are auto-detected (e.g., &quot;full_name&quot;, &quot;name&quot;, &quot;investor_name&quot; all work).
             </p>
@@ -99,75 +137,133 @@ export default function ImportPage() {
               type="file"
               accept=".csv,.tsv,.txt"
               className="hidden"
-              onChange={handleUpload}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void chooseFile(file);
+              }}
             />
 
             <div className="flex items-center justify-center gap-[12px]">
-              <Button onClick={() => fileRef.current?.click()} disabled={progress.status === "parsing" || progress.status === "importing"}>
-                {progress.status === "parsing" || progress.status === "importing" ? (
+              <Button onClick={() => fileRef.current?.click()} disabled={busy}>
+                {phase === "previewing" ? (
                   <>
-                    <svg className="animate-spin h-[16px] w-[16px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 8.5824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {progress.status === "parsing" ? "Parsing..." : "Importing..."}
+                    <i className="ri-loader-4-line animate-spin text-[18px]"></i>
+                    Reading file...
                   </>
                 ) : (
                   <>
                     <i className="ri-file-upload-line text-[18px]"></i>
-                    Select CSV File
+                    {preview ? "Choose a different file" : "Select CSV File"}
                   </>
                 )}
               </Button>
             </div>
+
+            {fileName && (
+              <p className="text-[12px] text-gray-400 !mb-0 mt-[12px]">{fileName}</p>
+            )}
           </div>
         </CardBody>
       </Card>
 
-      {/* Results */}
-      {progress.status === "done" && (
+      {error && (
+        <Card className="mb-[20px]">
+          <CardBody>
+            <p className="text-[13px] text-red-600 !mb-0">{error}</p>
+          </CardBody>
+        </Card>
+      )}
+
+      {preview && phase === "previewed" && (
+        <Card className="mb-[20px]">
+          <CardBody>
+            <div className="flex items-center gap-[8px] mb-[16px]">
+              <i className="ri-eye-line text-amber-600 text-[20px]"></i>
+              <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-0">
+                Dry run — nothing has been written yet
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-[12px] mb-[16px]">
+              <Count value={preview.totalRows} label="Rows" tone="text-gray-600" />
+              <Count value={preview.wouldInsert ?? 0} label="Would insert" tone="text-green-600" />
+              <Count value={preview.duplicates} label="Duplicates" tone="text-amber-600" />
+              <Count value={preview.failed} label="Failed" tone="text-red-600" />
+              <Count value={preview.normalized} label="Normalised" tone="text-blue-600" />
+            </div>
+
+            {preview.errors.length > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-900/10 rounded-[8px] p-[12px] mb-[16px]">
+                <p className="text-[13px] font-medium text-amber-700 !mb-[8px]">
+                  Rows that would be skipped:
+                </p>
+                <ul className="text-[12px] text-amber-700 space-y-[4px]">
+                  {preview.errors.slice(0, 10).map((err, i) => (
+                    <li key={i}>• {err}</li>
+                  ))}
+                  {preview.errors.length > 10 && (
+                    <li className="text-gray-400">... and {preview.errors.length - 10} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex items-center gap-[10px]">
+              <Button onClick={confirmImport} disabled={busy}>
+                <i className="ri-check-double-line text-[18px]"></i>
+                Confirm import
+              </Button>
+              <Button variant="outline" onClick={reset} disabled={busy}>
+                Cancel
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
+      {phase === "importing" && (
+        <Card className="mb-[20px]">
+          <CardBody>
+            <p className="text-[13px] text-gray-500 !mb-0">Importing the previewed rows…</p>
+          </CardBody>
+        </Card>
+      )}
+
+      {result && phase === "done" && (
         <Card className="mb-[20px]">
           <CardBody>
             <div className="flex items-center gap-[8px] mb-[16px]">
               <i className="ri-check-double-line text-lime-600 text-[20px]"></i>
               <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-0">
-                Import Complete — {fileName}
+                Import complete — {fileName}
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-[12px] mb-[16px]">
-              {[
-                { label: "Total Rows", value: progress.totalRows, color: "text-gray-600" },
-                { label: "Parsed", value: progress.parsed, color: "text-blue-600" },
-                { label: "Inserted", value: progress.inserted, color: "text-green-600" },
-                { label: "Duplicates", value: progress.duplicates, color: "text-amber-600" },
-                { label: "Failed", value: progress.failed, color: "text-red-600" },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center p-[12px] bg-gray-50 dark:bg-gray-800/30 rounded-[8px]">
-                  <p className={`text-[20px] font-bold ${stat.color} !mb-0`}>{stat.value}</p>
-                  <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-[12px] mb-[16px]">
+              <Count value={result.totalRows} label="Total rows" tone="text-gray-600" />
+              <Count value={result.inserted} label="Inserted" tone="text-green-600" />
+              <Count value={result.duplicates} label="Duplicates" tone="text-amber-600" />
+              <Count value={result.failed} label="Failed" tone="text-red-600" />
             </div>
 
-            {progress.errors.length > 0 && (
+            {result.errors.length > 0 && (
               <div className="bg-red-50 dark:bg-red-900/10 rounded-[8px] p-[12px]">
                 <p className="text-[13px] font-medium text-red-600 !mb-[8px]">Errors:</p>
                 <ul className="text-[12px] text-red-500 space-y-[4px]">
-                  {progress.errors.slice(0, 10).map((err, i) => (
+                  {result.errors.slice(0, 10).map((err, i) => (
                     <li key={i}>• {err}</li>
                   ))}
-                  {progress.errors.length > 10 && (
-                    <li className="text-gray-400">... and {progress.errors.length - 10} more</li>
-                  )}
                 </ul>
               </div>
             )}
+
+            <Button variant="outline" onClick={reset} className="mt-[16px]">
+              Import another file
+            </Button>
           </CardBody>
         </Card>
       )}
 
-      {/* Expected CSV Format */}
       <Card>
         <CardBody>
           <h3 className="text-[16px] font-semibold text-[#06201b] dark:text-white !mb-[12px]">

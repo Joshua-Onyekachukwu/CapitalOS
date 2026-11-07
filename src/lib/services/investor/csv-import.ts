@@ -30,6 +30,8 @@ export interface ImportResult {
   normalized: number;
   duplicates: number;
   inserted: number;
+  /** Set by a dry run: the rows that would be written. */
+  wouldInsert?: number;
   failed: number;
   errors: string[];
 }
@@ -132,7 +134,7 @@ function csvRowToProviderResult(row: CsvRow, source: string) {
 export async function importCsvToSupabase(
   csvContent: string,
   source: string = "csv_import",
-  options?: { onConflict?: string }
+  options?: { onConflict?: string; dryRun?: boolean }
 ): Promise<ImportResult> {
   const result: ImportResult = {
     totalRows: 0,
@@ -223,6 +225,13 @@ export async function importCsvToSupabase(
         if (inv.email) existingEmails.add(inv.email.toLowerCase());
         if (inv.linkedinUrl) existingLinkedins.add(inv.linkedinUrl.toLowerCase().replace(/\/+$/, ""));
       }
+    }
+
+    // A dry run has done all the work that can duplicate production behaviour
+    // (parsing, normalisation, dedupe against the live table) and stops here.
+    if (options?.dryRun) {
+      result.wouldInsert = unique.length;
+      return result;
     }
 
     // 4. Batch insert into CockroachDB (500 at a time)
