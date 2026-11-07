@@ -39,19 +39,29 @@ test.describe("signed-in product smoke", () => {
     await composer.fill("what is my pipeline status?");
     await composer.press("Enter");
 
-    const conversations = await expect
+    // The user's turn must be stored as soon as it is accepted, not only after
+    // the model answers, so a slow model cannot make the thread look lost.
+    const persisted = await expect
       .poll(
         async () => {
-          const response = await page.request.get("/api/copilot/conversations");
-          if (response.status() !== 200) return 0;
-          const body = await response.json();
-          return (body.conversations ?? []).length;
+          const list = await page.request.get("/api/copilot/conversations");
+          if (list.status() !== 200) return 0;
+          const body = await list.json();
+          const latest = body.conversations?.[0];
+          if (!latest) return 0;
+          const detail = await page.request.get(`/api/copilot/conversations?id=${latest.id}`);
+          if (detail.status() !== 200) return 0;
+          const stored = await detail.json();
+          const messages = stored.conversation?.messages;
+          return Array.isArray(messages)
+            ? messages.filter((m: { role: string }) => m.role === "user").length
+            : 0;
         },
         { timeout: 60_000 }
       )
       .toBeGreaterThan(0);
 
-    void conversations;
+    void persisted;
 
     // Clear the local cache so the next load can only come from the database.
     await page.evaluate(() => localStorage.removeItem("copilot_messages"));
@@ -69,14 +79,16 @@ test.describe("signed-in product smoke", () => {
     const target = discovered.investors?.[0];
     expect(target?.id, "corpus returned no investor to stage").toBeTruthy();
 
+    // Stage ids come from the app's own list, not the wider DB check
+    // constraint: "shortlisted" is valid SQL but not a pipeline stage here.
     const staged = await page.request.post("/api/investors/pipeline", {
-      data: { investorId: target.id, stage: "shortlisted" },
+      data: { investorId: target.id, stage: "discovered" },
     });
-    expect(staged.ok()).toBeTruthy();
+    expect(staged.ok(), await staged.text()).toBeTruthy();
 
     await page.reload();
     const approvalComposer = page.getByPlaceholder(/Ask about investors/i);
-    await approvalComposer.fill(`move "${target.full_name}" to Contacted`);
+    await approvalComposer.fill(`move "${target.full_name}" to First Meeting Completed`);
     await approvalComposer.press("Enter");
 
     await expect(page.getByText(/Approval needed/i)).toBeVisible({ timeout: 60_000 });

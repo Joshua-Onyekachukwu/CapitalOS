@@ -101,6 +101,17 @@ export async function POST(request: NextRequest) {
       lastUser.content
     );
 
+    // Persist the question before calling the model. If the AI call is slow or
+    // the function is cut off, the conversation still records what was asked —
+    // otherwise a reload shows an empty thread that looks like data loss.
+    const userTurn: StoredMessage = { role: "user", content: lastUser.content };
+    const withUser: StoredMessage[] = [...conversation.messages, userTurn].slice(-100);
+    await getSp()
+      .from("copilot_conversations")
+      .update({ messages: withUser, updated_at: new Date().toISOString() })
+      .eq("id", conversation.id)
+      .eq("user_id", user.id);
+
     // ── Tool planning ──
     const request_ = detectToolRequest(lastUser.content);
     const tool = request_ ? getTool(request_.tool) : undefined;
@@ -147,13 +158,12 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Persist both turns ──
-    const userTurn: StoredMessage = { role: "user", content: lastUser.content };
     const assistantTurn: StoredMessage = {
       role: "assistant",
       content: reply,
       ...(pendingTool ? { pendingTool } : {}),
     };
-    const stored: StoredMessage[] = [...conversation.messages, userTurn, assistantTurn].slice(-100);
+    const stored: StoredMessage[] = [...withUser, assistantTurn].slice(-100);
 
     await getSp()
       .from("copilot_conversations")
