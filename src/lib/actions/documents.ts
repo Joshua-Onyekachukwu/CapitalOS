@@ -1,3 +1,5 @@
+"use server";
+
 // Document Upload Actions
 // Serves /dashboard/documents and the onboarding / startup document surfaces.
 //
@@ -33,7 +35,7 @@ import {
  * Enforced server-side (see ALLOWED_MIME below) and mirrored by the bucket's
  * allowed_mime_types, so a bad type is rejected before it reaches storage.
  */
-export const DOCUMENT_MIME_TYPES: Record<string, string[]> = {
+const DOCUMENT_MIME_TYPES: Record<string, string[]> = {
   pitch_deck: [
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "application/vnd.ms-powerpoint",
@@ -52,7 +54,7 @@ export const DOCUMENT_MIME_TYPES: Record<string, string[]> = {
 };
 
 /** Hard ceiling, matches the bucket's file_size_limit (25 MiB). */
-export const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
+const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
 
 const ALLOWED_MIME = new Set(
   Object.values(DOCUMENT_MIME_TYPES).flat()
