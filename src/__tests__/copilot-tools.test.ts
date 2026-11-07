@@ -6,7 +6,13 @@
 // as requiring approval (so the API persists it instead of executing it).
 
 import { describe, it, expect } from "vitest";
-import { COPILOT_TOOLS, detectToolRequest, getTool } from "@/lib/copilot/tools";
+import {
+  COPILOT_TOOLS,
+  detectToolRequest,
+  findPipelineTarget,
+  getTool,
+  type PipelineEntrySummary,
+} from "@/lib/copilot/tools";
 import { PIPELINE_STAGES } from "@/lib/services/pipeline/stages";
 
 describe("copilot tool registry", () => {
@@ -72,5 +78,73 @@ describe("copilot intent detection", () => {
 
   it("falls through to conversation for ordinary advice questions", () => {
     expect(detectToolRequest("how should I price my seed round?")).toBeNull();
+  });
+});
+
+describe("pipeline name matching", () => {
+  const entries: PipelineEntrySummary[] = [
+    {
+      id: "e1",
+      investor_id: "11111111-1111-4111-8111-111111111111",
+      stage: "discovered",
+      full_name: "Zoom Video Communications, Inc. (ZM)",
+    },
+    {
+      id: "e2",
+      investor_id: "22222222-2222-4222-8222-222222222222",
+      stage: "contacted",
+      full_name: "Sequoia Capital",
+    },
+  ];
+
+  it("matches a name with commas, brackets and a legal suffix", () => {
+    // Regression: the old ILIKE path turned this into "%Zoom Video Communications  Inc   ZM %"
+    // and matched nothing.
+    const found = findPipelineTarget(
+      entries,
+      "",
+      "Zoom Video Communications, Inc. (ZM)"
+    );
+    expect(found.kind).toBe("match");
+    if (found.kind === "match") expect(found.entry.id).toBe("e1");
+  });
+
+  it("matches the same firm written without punctuation or suffix", () => {
+    const found = findPipelineTarget(entries, "", "Zoom Video Communications Inc");
+    expect(found.kind).toBe("match");
+    if (found.kind === "match") expect(found.entry.id).toBe("e1");
+  });
+
+  it("matches a partial name once it is long enough", () => {
+    const found = findPipelineTarget(entries, "", "Sequoia");
+    expect(found.kind).toBe("match");
+    if (found.kind === "match") expect(found.entry.id).toBe("e2");
+  });
+
+  it("prefers the explicit id over a name", () => {
+    const found = findPipelineTarget(
+      entries,
+      "22222222-2222-4222-8222-222222222222",
+      "Zoom Video Communications, Inc. (ZM)"
+    );
+    expect(found.kind).toBe("match");
+    if (found.kind === "match") expect(found.entry.id).toBe("e2");
+  });
+
+  it("reports an unknown name instead of guessing", () => {
+    expect(findPipelineTarget(entries, "", "Nonexistent Partners").kind).toBe("none");
+  });
+
+  it("reports ambiguity rather than picking one", () => {
+    const twins: PipelineEntrySummary[] = [
+      ...entries,
+      {
+        id: "e3",
+        investor_id: "33333333-3333-4333-8333-333333333333",
+        stage: "discovered",
+        full_name: "Sequoia Capital India",
+      },
+    ];
+    expect(findPipelineTarget(twins, "", "Sequoia").kind).toBe("ambiguous");
   });
 });

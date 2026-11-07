@@ -43,6 +43,69 @@ const asText = (value: unknown, max = 120): string =>
 const stageLabel = (id: string): string =>
   PIPELINE_STAGES.find((s) => s.id === id)?.label ?? id;
 
+export interface PipelineEntrySummary {
+  id: string;
+  investor_id: string;
+  stage: string;
+  full_name: string;
+}
+
+export type PipelineMatch =
+  | { kind: "match"; entry: PipelineEntrySummary }
+  | { kind: "ambiguous"; names: string[] }
+  | { kind: "none" };
+
+/** Lowercase, punctuation and spacing folded away. */
+export function normalizePersonName(value: string): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Resolve the investor a move refers to, among the caller's pipeline entries.
+ *
+ * This is deliberately done in code rather than as an ILIKE pattern: a name
+ * such as `Zoom Video Communications, Inc. (ZM)` turns into
+ * `%Zoom Video Communications  Inc   ZM %` once punctuation is stripped, which
+ * matches no row at all. Ranked match: exact name, then punctuation-folded
+ * equality, then containment — and an ambiguous name is reported, never guessed.
+ */
+export function findPipelineTarget(
+  entries: PipelineEntrySummary[],
+  investorId: string,
+  investorName: string
+): PipelineMatch {
+  if (investorId) {
+    const byId = entries.find((entry) => entry.investor_id === investorId);
+    if (byId) return { kind: "match", entry: byId };
+  }
+  if (!investorName) return { kind: "none" };
+
+  const wantedExact = investorName.toLowerCase().trim();
+  const wantedLoose = normalizePersonName(investorName);
+
+  const exact = entries.filter((e) => e.full_name.toLowerCase().trim() === wantedExact);
+  if (exact.length === 1) return { kind: "match", entry: exact[0] };
+  if (exact.length > 1) return { kind: "ambiguous", names: exact.map((e) => e.full_name) };
+
+  const loose = entries.filter((e) => normalizePersonName(e.full_name) === wantedLoose);
+  if (loose.length === 1) return { kind: "match", entry: loose[0] };
+  if (loose.length > 1) return { kind: "ambiguous", names: loose.map((e) => e.full_name) };
+
+  // Short fragments would match everything, so containment needs 4 characters.
+  if (wantedLoose.length < 4) return { kind: "none" };
+  const partial = entries.filter((e) => {
+    const candidate = normalizePersonName(e.full_name);
+    return candidate.includes(wantedLoose) || wantedLoose.includes(candidate);
+  });
+  if (partial.length === 1) return { kind: "match", entry: partial[0] };
+  if (partial.length > 1) return { kind: "ambiguous", names: partial.map((e) => e.full_name) };
+
+  return { kind: "none" };
+}
+
 export const COPILOT_TOOLS: CopilotTool[] = [
   {
     name: "search_investors",
@@ -133,39 +196,44 @@ export const COPILOT_TOOLS: CopilotTool[] = [
       const sp = getSp();
 
       // Only rows already owned by this user are eligible — the copilot cannot
-      // add investors to a pipeline on its own.
-      const { data: entries, error: entryError } = await sp
+      // add investors to a pipeline on its own. Names come from the joined
+      // investor row and are matched in code (see findPipelineTarget).
+      const { data: rows, error: entryError } = await sp
         .from("user_pipeline_entries")
-        .select("id, investor_id, stage")
+        .select("id, investor_id, stage, investor:investors!inner(full_name)")
         .eq("user_id", userId);
       if (entryError) throw new Error(entryError.message);
-      if (!entries || entries.length === 0) {
+
+      const entries: PipelineEntrySummary[] = (rows ?? []).map((row) => {
+        const record = row as unknown as {
+          id: string;
+          investor_id: string;
+          stage: string;
+          investor: { full_name?: string } | { full_name?: string }[] | null;
+        };
+        const investor = Array.isArray(record.investor) ? record.investor[0] : record.investor;
+        return {
+          id: record.id,
+          investor_id: record.investor_id,
+          stage: String(record.stage),
+          full_name: String(investor?.full_name ?? ""),
+        };
+      });
+
+      if (entries.length === 0) {
         throw new Error("Your pipeline is empty, so there is nothing to move");
       }
 
-      let target = entries.find((e) => e.investor_id === investorId);
-
-      if (!target && investorName) {
-        const { data: matches, error: matchError } = await sp
-          .from("investors")
-          .select("id, full_name")
-          .eq("is_active", true)
-          .ilike("full_name", `%${investorName.replace(/[,()%]/g, " ")}%`)
-          .limit(5);
-        if (matchError) throw new Error(matchError.message);
-        const ids = new Set((matches ?? []).map((m) => m.id));
-        const inPipeline = entries.filter((e) => ids.has(e.investor_id));
-        if (inPipeline.length === 0) {
-          throw new Error(`No investor matching “${investorName}” is in your pipeline`);
-        }
-        if (inPipeline.length > 1) {
-          const names = (matches ?? []).map((m) => m.full_name).join("; ");
-          throw new Error(`That name matches several pipeline investors: ${names}. Be specific.`);
-        }
-        target = inPipeline[0];
+      const found = findPipelineTarget(entries, investorId, investorName);
+      if (found.kind === "none") {
+        throw new Error(`No investor matching “${investorName || investorId}” is in your pipeline`);
       }
-
-      if (!target) throw new Error("That investor is not in your pipeline");
+      if (found.kind === "ambiguous") {
+        throw new Error(
+          `That name matches several pipeline investors: ${found.names.join("; ")}. Be specific.`
+        );
+      }
+      const target = found.entry;
 
       const { error: updateError } = await sp
         .from("user_pipeline_entries")
