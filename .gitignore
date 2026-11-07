@@ -26,6 +26,9 @@ supabase/.env
 # Testing
 coverage/
 .nyc_output/
+test-results/
+playwright-report/
+blob-report/
 
 # IDE
 .vscode/
@@ -87,3 +90,6 @@ data/investors/snapshots/*.jsonl.gz
 # Pipeline data lake (raw staging; reproducible, do not commit)
 data/pipeline/
 data/iapd/
+
+# pooler region cache written by scripts/db.cjs
+.migration-region

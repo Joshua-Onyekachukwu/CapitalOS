@@ -296,6 +296,22 @@ function nameKey(value) {
     .trim();
 }
 
+/**
+ * The corpus stores a stricter normalisation than the raw name: "NetEase, Inc.
+ * (NTES, NETTF)" is stored as "netease". Matching on the raw name alone would
+ * re-import every firm whose legal suffix or ticker differs, so the importer
+ * also compares a suffix-stripped key.
+ */
+function looseNameKey(value) {
+  const stripped = String(value ?? "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(
+      /\b(inc|incorporated|llc|l l c|ltd|limited|corp|corporation|co|company|lp|l p|llp|plc|gmbh|sa|s a|ag|nv|bv|pty|pte|holdings)\b/gi,
+      " "
+    );
+  return nameKey(stripped);
+}
+
 function qualityScore(row) {
   let score = 0;
   if (row.full_name) score += 15;
@@ -420,12 +436,17 @@ async function loadIndex() {
 
     for (const row of data) {
       if (row.email) byEmail.set(String(row.email).toLowerCase(), row);
-      // Index the stored normalisation *and* this script's own. The two can
-      // differ (the corpus keeps suffixes the importer drops), and matching
-      // only one of them silently duplicates firms.
-      if (row.name_normalized) byName.set(row.name_normalized, row);
+      // Index the stored normalisation *and* two local variants. Matching only
+      // one form silently duplicates firms whose legal suffix differs.
+      if (row.name_normalized) {
+        byName.set(`s:${nameKey(row.name_normalized)}`, row);
+        const looseStored = looseNameKey(row.name_normalized);
+        if (looseStored) byName.set(`l:${looseStored}`, row);
+      }
       const own = nameKey(row.full_name || "");
-      if (own) byName.set(own, row);
+      if (own) byName.set(`s:${own}`, row);
+      const loose = looseNameKey(row.full_name || "");
+      if (loose) byName.set(`l:${loose}`, row);
       if (row.source && row.source_id) bySourceKey.set(`${row.source}::${row.source_id}`, row);
     }
 
@@ -590,7 +611,9 @@ async function insertRows(rows) {
 
     // 2. Same person/firm by email, or same firm name.
     const existing =
-      (record.email && index.byEmail.get(record.email)) || index.byName.get(nameKey(record.full_name));
+      (record.email && index.byEmail.get(record.email)) ||
+      index.byName.get(`l:${looseNameKey(record.full_name)}`) ||
+      index.byName.get(`s:${nameKey(record.full_name)}`);
 
     if (existing) {
       // A placeholder reserved earlier in this same file: the first row owns the
@@ -628,7 +651,8 @@ async function insertRows(rows) {
     // Reserve the identity so two rows in the same file cannot both insert.
     index.bySourceKey.set(sourceKey, { id: null });
     if (record.email) index.byEmail.set(record.email, { id: null });
-    index.byName.set(nameKey(record.full_name), { id: null });
+    index.byName.set(`s:${nameKey(record.full_name)}`, { id: null });
+    index.byName.set(`l:${looseNameKey(record.full_name)}`, { id: null });
 
     toInsert.push(insertRow);
     report.wouldInsert++;
