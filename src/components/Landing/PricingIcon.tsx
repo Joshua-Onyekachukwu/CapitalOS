@@ -10,6 +10,7 @@ const PricingIcon: React.FC<PricingIconProps> = ({ plan }) => {
   if (plan === "starter") {
     return (
       <div
+        data-pricing-icon="starter"
         className="inline-flex items-center justify-center rounded-[12px] relative overflow-hidden"
         style={{
           width: 120,
@@ -60,6 +61,7 @@ const PricingIcon: React.FC<PricingIconProps> = ({ plan }) => {
 
   return (
     <div
+      data-pricing-icon="professional"
       className="inline-flex items-center justify-center rounded-[12px] relative overflow-hidden"
       style={{
         width: 120,
