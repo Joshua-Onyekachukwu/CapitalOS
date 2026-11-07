@@ -19,5 +19,7 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // Uses the system Edge build: the bundled Chromium download is not required
+  // for a smoke test, and this machine already has a supported browser.
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], channel: "msedge" } }],
 });

@@ -212,16 +212,23 @@ export default function CopilotPage() {
       let idx = 0;
       const timer = setInterval(() => {
         idx += 2; // 2 chars per tick for speed
+        // Only ever replace the placeholder. Saved history can arrive from the
+        // server while the greeting is still typing, and blindly replacing the
+        // array would erase the conversation this page just restored.
         if (idx >= GREETING.length) {
           idx = GREETING.length;
           clearInterval(timer);
-          setMessages((prev) => [
-            { role: "assistant", content: GREETING, isStreaming: false },
-          ]);
+          setMessages((prev) =>
+            prev.length === 1 && prev[0].isStreaming
+              ? [{ role: "assistant", content: GREETING, isStreaming: false }]
+              : prev
+          );
         } else {
-          setMessages((prev) => [
-            { role: "assistant", content: GREETING.slice(0, idx), isStreaming: true },
-          ]);
+          setMessages((prev) =>
+            prev.length === 1 && prev[0].isStreaming
+              ? [{ role: "assistant", content: GREETING.slice(0, idx), isStreaming: true }]
+              : prev
+          );
         }
       }, 20);
       return () => clearInterval(timer);
