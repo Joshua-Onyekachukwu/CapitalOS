@@ -23,6 +23,7 @@ import {
   hashToken,
   type RpcClient,
 } from "@/lib/data-room/rate-limit";
+import { notifyDataRoomOwner } from "@/lib/data-room/notify";
 
 const BUCKET = "company-documents";
 const SIGNED_URL_TTL_SECONDS = 60 * 10;
@@ -45,6 +46,45 @@ type AuditOutcome =
   | "error";
 
 type Admin = ReturnType<typeof getAdmin>;
+
+// A link that no longer works being poked repeatedly is the signal an owner
+// wants; one 410 is not. The notification itself is throttled to once per six
+// hours, so this only decides whether the burst is worth naming.
+const BLOCKED_ATTEMPT_WINDOW_MINUTES = 10;
+const BLOCKED_ATTEMPT_THRESHOLD = 5;
+
+async function maybeWarnBlockedAttempts(
+  sp: Admin,
+  share: { id: string; user_id: string; label: string | null }
+) {
+  const since = new Date(
+    Date.now() - BLOCKED_ATTEMPT_WINDOW_MINUTES * 60_000
+  ).toISOString();
+
+  const { count, error } = await sp
+    .from("data_room_access_log")
+    .select("id", { count: "exact", head: true })
+    .eq("share_id", share.id)
+    .in("outcome", ["revoked", "expired"])
+    .gte("accessed_at", since);
+
+  if (error) {
+    console.error("[data-room] blocked-attempt count failed:", error.message);
+    return;
+  }
+  if ((count ?? 0) < BLOCKED_ATTEMPT_THRESHOLD) return;
+
+  await notifyDataRoomOwner(sp, {
+    userId: share.user_id,
+    shareId: share.id,
+    kind: "blocked",
+    title: "Repeated blocked attempts on your data room link",
+    summary: `${count} blocked attempts in the last ${BLOCKED_ATTEMPT_WINDOW_MINUTES} minutes on “${
+      share.label || "Untitled share"
+    }”.`,
+    detail: { attempts: count, window_minutes: BLOCKED_ATTEMPT_WINDOW_MINUTES },
+  });
+}
 
 async function auditDenial(
   sp: Admin,
@@ -158,6 +198,7 @@ export async function GET(
       userAgent,
       outcome: "revoked",
     });
+    await maybeWarnBlockedAttempts(sp, share);
     return NextResponse.json({ error: "This link has been revoked." }, { status: 410 });
   }
   if (new Date(share.expires_at).getTime() <= Date.now()) {
@@ -168,6 +209,7 @@ export async function GET(
       userAgent,
       outcome: "expired",
     });
+    await maybeWarnBlockedAttempts(sp, share);
     return NextResponse.json({ error: "This link has expired." }, { status: 410 });
   }
 
@@ -219,6 +261,20 @@ export async function GET(
     // is entitled to know the record is incomplete.
     console.error("[data-room] access log failed:", logError.message);
   }
+
+  // Throttled by the notification table itself: one alert per share per hour.
+  // The owner's email is queued after the response so the investor is not kept
+  // waiting on someone else's mail provider.
+  await notifyDataRoomOwner(sp, {
+    userId: share.user_id,
+    shareId: share.id,
+    kind: "opened",
+    title: "Your data room link was opened",
+    summary: `${documents.length} document${
+      documents.length === 1 ? "" : "s"
+    } opened${ip ? ` from ${ip}` : ""} on “${share.label || "Untitled share"}”.`,
+    detail: { documents: documents.length, ip },
+  });
 
   return NextResponse.json(
     {

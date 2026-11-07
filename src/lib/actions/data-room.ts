@@ -184,6 +184,64 @@ export interface AccessLogEntry {
   outcome: string;
 }
 
+export interface DataRoomNotification {
+  id: string;
+  kind: string;
+  title: string;
+  summary: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export async function listDataRoomNotifications(): Promise<
+  ShareResult<DataRoomNotification[]>
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You are not signed in." };
+
+  // RLS scopes this to the caller's own rows, so no owner filter is required
+  // here (and a guessed id still returns nothing).
+  const { data, error } = await supabase
+    .from("data_room_notifications")
+    .select("id, kind, title, detail, created_at, read_at")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) return { ok: false, error: error.message };
+
+  return {
+    ok: true,
+    value: (data ?? []).map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      title: row.title,
+      summary: String((row.detail as { summary?: string } | null)?.summary ?? ""),
+      createdAt: row.created_at,
+      readAt: row.read_at,
+    })),
+  };
+}
+
+export async function markDataRoomNotificationsRead(): Promise<ShareResult<true>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You are not signed in." };
+
+  const { error } = await supabase
+    .from("data_room_notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .is("read_at", null);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, value: true };
+}
+
 export async function getDataRoomAccessLog(
   shareId: string
 ): Promise<ShareResult<AccessLogEntry[]>> {

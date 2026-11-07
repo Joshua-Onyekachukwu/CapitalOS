@@ -4,7 +4,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
-import type { AccessLogEntry, DataRoomShare } from "@/lib/actions/data-room";
+import type {
+  AccessLogEntry,
+  DataRoomNotification,
+  DataRoomShare,
+} from "@/lib/actions/data-room";
 
 interface PanelDocument {
   id: string;
@@ -35,6 +39,7 @@ export function DataRoomPanel({ documents }: { documents: PanelDocument[] }) {
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
   const [logFor, setLogFor] = useState<string | null>(null);
   const [log, setLog] = useState<AccessLogEntry[]>([]);
+  const [notifications, setNotifications] = useState<DataRoomNotification[]>([]);
 
   const loadShares = useCallback(async () => {
     try {
@@ -49,9 +54,26 @@ export function DataRoomPanel({ documents }: { documents: PanelDocument[] }) {
     }
   }, []);
 
+  const loadNotifications = useCallback(async () => {
+    const { listDataRoomNotifications } = await import("@/lib/actions/data-room");
+    const result = await listDataRoomNotifications();
+    if (result.ok) setNotifications(result.value);
+  }, []);
+
+  const markAlertsRead = async () => {
+    const { markDataRoomNotificationsRead } = await import("@/lib/actions/data-room");
+    const result = await markDataRoomNotificationsRead();
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    await loadNotifications();
+  };
+
   useEffect(() => {
     loadShares();
-  }, [loadShares]);
+    loadNotifications();
+  }, [loadShares, loadNotifications]);
 
   const toggle = (id: string) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -293,6 +315,55 @@ export function DataRoomPanel({ documents }: { documents: PanelDocument[] }) {
                       )}
                     </div>
                   )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-[16px] border-t border-gray-100 dark:border-gray-800 pt-[12px]">
+          <div className="flex items-center justify-between gap-[8px] mb-[8px]">
+            <p className="text-[12px] font-semibold text-gray-600 dark:text-gray-300 !mb-0">
+              Alerts
+            </p>
+            {notifications.some((n) => !n.readAt) && (
+              <button
+                onClick={markAlertsRead}
+                className="text-[11px] text-lime-600 hover:underline"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
+
+          {notifications.length === 0 ? (
+            <p className="text-[11px] text-gray-400 !mb-0">
+              No alerts yet. You will be told here when a link is opened, or when one is
+              being hammered with attempts that no longer work.
+            </p>
+          ) : (
+            <div className="space-y-[6px]">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="border border-gray-200 dark:border-gray-800 rounded-[8px] px-[10px] py-[8px]"
+                >
+                  <div className="flex items-center gap-[6px] flex-wrap">
+                    <span className="text-[12px] font-medium text-[#06201b] dark:text-white">
+                      {notification.title}
+                    </span>
+                    {!notification.readAt && (
+                      <span className="text-[9px] font-bold uppercase tracking-wide text-lime-700 bg-lime-100 dark:bg-lime-900/30 dark:text-lime-300 px-[5px] py-[1px] rounded-full">
+                        new
+                      </span>
+                    )}
+                  </div>
+                  {notification.summary && (
+                    <p className="text-[11px] text-gray-500 !mb-0">{notification.summary}</p>
+                  )}
+                  <p className="text-[10px] text-gray-400 !mb-0">
+                    {new Date(notification.createdAt).toLocaleString()}
+                  </p>
                 </div>
               ))}
             </div>
