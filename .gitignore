@@ -93,3 +93,6 @@ data/iapd/
 
 # pooler region cache written by scripts/db.cjs
 .migration-region
+
+# transient checkout used by scripts/check-tracked-imports.cjs
+.import-check/

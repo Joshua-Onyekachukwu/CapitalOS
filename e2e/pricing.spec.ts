@@ -39,16 +39,23 @@ test("each pricing icon renders inside its own card", async ({ page }) => {
   }
 });
 
-test("the plans keep the stacked, full-width layout", async ({ page }) => {
+test("the plans keep the original two-column layout", async ({ page }) => {
   await page.goto("/#pricing");
 
   const starter = await page.locator('[data-pricing-card="starter"]').boundingBox();
   const professional = await page.locator('[data-pricing-card="professional"]').boundingBox();
+  const heading = page.getByText(/Designed to Fit Every Founder/);
 
   expect(starter).not.toBeNull();
   expect(professional).not.toBeNull();
+  await expect(heading).toBeVisible();
+  const headingBox = await heading.boundingBox();
 
-  // Stacked: same column, second card starts below the first.
-  expect(Math.abs(starter!.x - professional!.x)).toBeLessThanOrEqual(2);
-  expect(professional!.y).toBeGreaterThan(starter!.y + starter!.height / 2);
+  // Side by side: the Pro card starts to the right of the first card.
+  expect(starter!.x + starter!.width).toBeLessThanOrEqual(professional!.x + 2);
+
+  // The section heading belongs to the second column, above the Pro card.
+  expect(headingBox).not.toBeNull();
+  expect(headingBox!.x).toBeGreaterThan(starter!.x);
+  expect(headingBox!.y).toBeLessThan(professional!.y);
 });

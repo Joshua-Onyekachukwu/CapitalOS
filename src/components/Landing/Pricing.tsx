@@ -4,8 +4,13 @@ import React from "react";
 import Link from "next/link";
 import PricingIcon from "./PricingIcon";
 
+// Two engagement tiers, priced as upfront sprints. The layout is the original
+// editorial one: the primary card holds the left column while the heading and
+// the Pro card sit beside it on the right. Both icons belong inside the card
+// they describe.
 const plans = [
   {
+    id: "starter",
     name: "3-MONTH SPRINT",
     price: "$499",
     suffix: "paid upfront",
@@ -21,13 +26,9 @@ const plans = [
       "3-month window",
     ],
     cta: "Start My Raise",
-    bgColor: "bg-[#06201b]",
-    textColor: "text-white",
-    iconColor: "text-lime-500",
-    linkColor: "text-lime-500",
-    image: "/images/real-estate-agent/building2.png",
   },
   {
+    id: "professional",
     name: "6-MONTH PRO SPRINT",
     price: "$999",
     suffix: "paid upfront",
@@ -38,90 +39,110 @@ const plans = [
       "6-month window",
     ],
     cta: "Start My Raise",
-    bgColor: "bg-[#D15616]",
-    textColor: "text-white",
-    iconColor: "text-black",
-    linkColor: "text-black",
-    image: "/images/real-estate-agent/building.png",
   },
 ];
 
 const Pricing: React.FC = () => {
+  const [starter, professional] = plans;
+
   return (
     <div className="pb-[60px] md:pb-[80px] lg:pb-[100px] xl:pb-[120px]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="grid grid-cols-1 gap-[16px]">
-          {plans.map((plan, index) => (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[4px] md:gap-[8px] lg:gap-[25px]">
+          {/* Primary sprint: stays in view while the right column is read. */}
+          <div className="ltr:xl:pr-[20px] rtl:xl:pl-[20px]">
             <div
-              key={plan.name}
-              data-pricing-card={index === 0 ? "starter" : "professional"}
-              className={`${plan.bgColor} rounded-[16px] p-[20px] md:p-[24px] lg:p-[30px] xl:px-[40px] xl:py-[50px]`}
+              data-pricing-card={starter.id}
+              className="md:flex lg:block xl:flex items-center justify-between bg-[#06201b] rounded-[15px] p-[20px] md:p-[25px] lg:p-[30px] xl:px-[40px] xl:py-[50px] lg:sticky top-[100px]"
             >
-              <div className="flex items-start justify-between gap-[16px] mb-[12px] md:mb-[14px] lg:mb-[16px]">
-                <span
-                  className={`block uppercase text-xs md:text-sm tracking-[1.95px] font-bold ${
-                    index === 0 ? "text-[#D15616]" : "text-black"
-                  }`}
-                >
-                  {plan.name}
+              <div>
+                <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[12px] md:mb-[14px] lg:mb-[16px]">
+                  {starter.name}
                 </span>
-                <div className="shrink-0" data-pricing-icon-slot>
-                  <PricingIcon
-                    plan={index === 0 ? "starter" : "professional"}
-                  />
+                <div className="leading-none text-white font-black text-[34px] md:text-5xl lg:text-[46px] -tracking-[0.14px] md:-tracking-[0.18px] lg:-tracking-[0.22px]">
+                  {starter.price}{" "}
+                  <span className="text-sm md:text-base -tracking-[0.14px] font-medium text-[#9E948E]">
+                    {starter.suffix}
+                  </span>
                 </div>
-              </div>
-
-              <div className="leading-none text-white font-black text-[34px] md:text-5xl lg:text-[46px] -tracking-[0.14px] md:-tracking-[0.18px] lg:-tracking-[0.22px]">
-                {plan.price}{" "}
-                <span
-                  className={`text-sm md:text-base -tracking-[0.14px] font-medium ${
-                    index === 0 ? "text-[#9E948E]" : "text-white/70"
-                  }`}
+                <ul className="text-[#E3E3E3] my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[15px] lg:text-md -tracking-[0.16px]">
+                  {starter.features.map((feature, i) => (
+                    <li
+                      key={i}
+                      className="relative mb-[10px] last:mb-0 ltr:pl-[26px] rtl:pr-[26px]"
+                    >
+                      <i className="ri-checkbox-circle-fill absolute top-1/2 -translate-y-1/2 ltr:left-0 rtl:right-0 text-lg text-[#FFCB33]"></i>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/signup"
+                  className="inline-block relative font-medium text-[#FFC813] text-base md:text-[15px] lg:text-md -tracking-[0.16px] transition-all hover:underline md:-mt-[5px]"
                 >
-                  {plan.suffix}
-                </span>
+                  {starter.cta} <i className="ri-arrow-right-long-line"></i>
+                </Link>
               </div>
-
-              <ul
-                className={`${
-                  index === 0 ? "text-[#E3E3E3]" : "text-white/80"
-                } my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[16px] -tracking-[0.16px]`}
+              <div
+                className="text-center flex-none mt-[20px] md:mt-0 lg:mt-[25px] xl:mt-0"
+                data-pricing-icon-slot
               >
-                {plan.features.map((feature, i) => (
-                  <li
-                    key={i}
-                    className="relative mb-[10px] last:mb-0 ltr:pl-[26px] rtl:pr-[26px]"
-                  >
-                    <i
-                      className={`ri-checkbox-circle-fill absolute top-1/2 -translate-y-1/2 ltr:left-0 rtl:right-0 text-lg ${
-                        index === 0 ? "text-[#FFCB33]" : "text-black"
-                      }`}
-                    ></i>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href="/signup"
-                className={`inline-block relative font-medium text-base md:text-[16px] -tracking-[0.16px] transition-all hover:underline md:-mt-[5px] ${
-                  index === 0 ? "text-[#FFC813]" : "text-black"
-                }`}
-              >
-                {plan.cta} <i className="ri-arrow-right-long-line"></i>
-              </Link>
+                <PricingIcon plan="starter" />
+              </div>
             </div>
-          ))}
-        </div>
+          </div>
 
-        <div className="mt-[24px] text-center">
-          <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
-            Choose Your Engagement
-          </span>
-          <h2 className="!mb-0 !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
-            Fundraising Lifecycle Pricing
-          </h2>
+          {/* Heading and the Pro card share the second column. */}
+          <div className="ltr:xl:pl-[20px] rtl:xl:pr-[20px]">
+            <div className="mt-[30px] md:mt-[40px] lg:mt-0 mb-[30px] md:mb-[40px] lg:mb-[50px]">
+              <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-[#D15616] mb-[10px]">
+                Pricing
+              </span>
+              <h2 className="!mb-0 !font-light !text-2xl md:!text-[38px] lg:!text-[46px] -tracking-[1px] md:-tracking-[1.5px] lg:-tracking-[2px]">
+                Flexible <span className="font-semibold italic">Pricing Plans</span>{" "}
+                Designed to Fit Every Founder
+              </h2>
+            </div>
+            <div
+              data-pricing-card={professional.id}
+              className="md:flex lg:block xl:flex items-center justify-between bg-[#D15616] rounded-[15px] p-[20px] md:p-[25px] lg:p-[30px] xl:px-[40px] xl:py-[50px]"
+            >
+              <div>
+                <span className="block uppercase text-xs md:text-sm tracking-[1.95px] font-bold text-black mb-[12px] md:mb-[14px] lg:mb-[16px]">
+                  {professional.name}
+                </span>
+                <div className="leading-none text-white font-black text-[34px] md:text-5xl lg:text-[46px] -tracking-[0.14px] md:-tracking-[0.18px] lg:-tracking-[0.22px]">
+                  {professional.price}{" "}
+                  <span className="text-sm md:text-base -tracking-[0.14px] font-medium">
+                    {professional.suffix}
+                  </span>
+                </div>
+                <ul className="text-white/80 my-[20px] md:my-[25px] xl:my-[30px] text-base md:text-[15px] lg:text-md -tracking-[0.16px]">
+                  {professional.features.map((feature, i) => (
+                    <li
+                      key={i}
+                      className="relative mb-[10px] last:mb-0 ltr:pl-[26px] rtl:pr-[26px]"
+                    >
+                      <i className="ri-checkbox-circle-fill absolute top-1/2 -translate-y-1/2 ltr:left-0 rtl:right-0 text-black text-lg"></i>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/signup"
+                  className="inline-block relative font-medium text-black text-base md:text-[15px] lg:text-md -tracking-[0.16px] transition-all hover:underline md:-mt-[5px]"
+                >
+                  {professional.cta} <i className="ri-arrow-right-long-line"></i>
+                </Link>
+              </div>
+              <div
+                className="text-center flex-none mt-[20px] md:mt-0 lg:mt-[25px] xl:mt-0"
+                data-pricing-icon-slot
+              >
+                <PricingIcon plan="professional" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

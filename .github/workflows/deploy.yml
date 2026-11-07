@@ -26,6 +26,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - name: Check committed imports resolve
+        # Typechecks a pristine copy of HEAD: a file that exists locally but was
+        # never committed passes `npm run typecheck` and then breaks the build.
+        run: node scripts/check-tracked-imports.cjs
       - run: npm test
 
   deploy:

@@ -1,0 +1,128 @@
+name: Alert email delivery
+
+# Nightly proof that a data room alert email still reaches an inbox end to end.
+#
+# Runs the gated delivery check against production: it opens a temporary share
+# owned by a disposable plus-alias of the platform inbox, waits for the in-app
+# alert to report email_status = "sent", and then waits for the message itself
+# over IMAP. Everything it creates is deleted afterwards.
+#
+# On failure it opens (or updates) a GitHub issue labelled `alert-delivery` and
+# records the run; the next passing run closes it.
+
+on:
+  schedule:
+    - cron: "20 4 * * *" # 04:20 UTC daily, off the top of the hour
+  workflow_dispatch: {}
+
+concurrency:
+  group: alert-delivery-nightly
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  delivery:
+    name: Send and await one real alert
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Delivery probe
+        id: probe
+        continue-on-error: true
+        env:
+          ALERT_DELIVERY: "1"
+          E2E_BASE_URL: https://capital-os-nine.vercel.app
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        run: node scripts/check-platform-alert-delivery.cjs
+
+      - name: Open or update the delivery alert issue
+        if: steps.probe.outcome == 'failure'
+        uses: actions/github-script@v7
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const title = "alert email: data room notifications are not being delivered";
+            const body = [
+              "The nightly alert-delivery probe failed.",
+              "",
+              `- Run: ${process.env.RUN_URL}`,
+              `- Date: ${new Date().toISOString()}`,
+              `- Commit: ${process.env.GITHUB_SHA}`,
+              "",
+              "The probe opens a data room share, waits for the alert row to reach",
+              "`email_status = \"sent\"`, then waits for the message in the inbox.",
+              "",
+              "Check, in order:",
+              "1. Vercel env: `RESEND_API_KEY` + `ALERT_FROM_EMAIL`, or `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS`.",
+              "2. The newest `data_room_notifications` row's `email_status`.",
+              "3. Provider status (SMTP quota, app password revoked, Resend domain unverified).",
+            ].join("\n");
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "alert-delivery",
+              per_page: 5,
+            });
+            const hit = open.data.find((i) => i.title === title);
+            if (hit) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: hit.number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ["alert-delivery"],
+              });
+            }
+
+      - name: Close the alert issue on recovery
+        if: steps.probe.outcome == 'success'
+        uses: actions/github-script@v7
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "alert-delivery",
+              per_page: 5,
+            });
+            for (const issue of open.data) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Delivered again — probe passed at ${new Date().toISOString()} (${process.env.RUN_URL}).`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number, state: "closed",
+              });
+            }
+
+      - name: Fail the job when delivery failed
+        if: steps.probe.outcome == 'failure'
+        run: exit 1
