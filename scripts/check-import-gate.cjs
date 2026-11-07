@@ -100,7 +100,10 @@ async function cleanup() {
     });
     if (grantError) throw new Error(`could not grant admin: ${grantError.message}`);
 
-    browser = await chromium.launch({ channel: "msedge" });
+    // Locally the installed Edge is used; CI sets E2E_BROWSER_CHANNEL=bundled
+    // to use Playwright's own Chromium.
+    const channel = process.env.E2E_BROWSER_CHANNEL || "msedge";
+    browser = await chromium.launch(channel === "bundled" ? {} : { channel });
     const page = await browser.newPage({ baseURL: BASE_URL });
     await page.goto("/login");
     await page.fill('input[name="email"]', EMAIL);

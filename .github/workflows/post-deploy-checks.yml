@@ -1,0 +1,122 @@
+name: Post-deploy live checks
+
+# Every push to main: prove the admin import gate and the data room alert path
+# against production, after that commit is live.
+#
+# Both checks are gated scripts that write only disposable rows — the staging
+# table for the import, a temporary share for the alerts — and delete them in a
+# `finally`. The import check grants admin to the seeded check account for the
+# duration and restores it; a final safety step revokes the grant even if a step
+# is cancelled mid-flight.
+#
+# Required repository secrets:
+#   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_DB_PASSWORD
+#   E2E_EMAIL, E2E_PASSWORD        the seeded check account
+#   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM
+#                                  only for the manual delivery check
+# Optional: VERCEL_TOKEN, VERCEL_PROJECT_ID (wait for this commit's deployment)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      delivery:
+        description: "Also prove a real alert email is delivered (sends mail)"
+        default: "false"
+
+concurrency:
+  group: post-deploy-live-checks
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  live-checks:
+    name: Live checks (production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      E2E_BASE_URL: https://capital-os-nine.vercel.app
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Chromium for the admin import check
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for this commit's production deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "Vercel credentials absent — checking the current production build"
+            exit 0
+          fi
+          for attempt in $(seq 1 40); do
+            STATE=$(curl -sS --max-time 20 \
+              "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&target=production&limit=20" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);const hit=(j.deployments||[]).find(x=>x.meta&&x.meta.githubCommitSha===process.env.GITHUB_SHA);console.log(hit?hit.state:"missing")}catch{console.log("missing")}})')
+            echo "attempt $attempt: $STATE"
+            [ "$STATE" = "READY" ] && exit 0
+            [ "$STATE" = "ERROR" ] && { echo "Deployment for $GITHUB_SHA failed"; exit 1; }
+            sleep 15
+          done
+          echo "::warning::No READY deployment for $GITHUB_SHA after 10 minutes — checking current production"
+
+      - name: Import gate (staging table only)
+        env:
+          IMPORT_GATE: "1"
+          E2E_BROWSER_CHANNEL: bundled
+        run: node scripts/check-import-gate.cjs
+
+      - name: Data room alerts
+        env:
+          ALERTS_CHECK: "1"
+        run: node scripts/check-data-room-alerts.cjs
+
+      - name: Alert email delivery (manual dispatch only)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.delivery == 'true'
+        env:
+          ALERT_DELIVERY: "1"
+        run: node scripts/check-platform-alert-delivery.cjs
+
+      # Runs even when a step above failed or the job was cancelled, so a check
+      # account can never keep the admin role it was granted for the import test.
+      - name: Revoke any lingering admin grant on the check account
+        if: always()
+        run: |
+          node - <<'NODE'
+          const db = require("./scripts/db.cjs");
+          (async () => {
+            const rows = await db.query(
+              "update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) - 'role' " +
+                "where lower(email) = lower($1) and raw_app_meta_data->>'role' = 'admin' returning id",
+              [process.env.E2E_EMAIL]
+            );
+            console.log("admin grants revoked:", rows.length);
+            await db.close();
+          })().catch((err) => {
+            console.error("safety revoke failed:", err.message);
+            process.exit(1);
+          });
+          NODE
