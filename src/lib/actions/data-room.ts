@@ -180,6 +180,8 @@ export interface AccessLogEntry {
   ip: string | null;
   userAgent: string | null;
   documentCount: number;
+  /** granted, or why the attempt was refused. */
+  outcome: string;
 }
 
 export async function getDataRoomAccessLog(
@@ -195,7 +197,7 @@ export async function getDataRoomAccessLog(
   // another founder's access history even if the id is guessed.
   const { data, error } = await supabase
     .from("data_room_access_log")
-    .select("id, accessed_at, ip, user_agent, document_count")
+    .select("id, accessed_at, ip, user_agent, document_count, outcome")
     .eq("share_id", shareId)
     .order("accessed_at", { ascending: false })
     .limit(50);
@@ -210,6 +212,7 @@ export async function getDataRoomAccessLog(
       ip: r.ip,
       userAgent: r.user_agent,
       documentCount: r.document_count ?? 0,
+      outcome: r.outcome ?? "granted",
     })),
   };
 }

@@ -281,6 +281,11 @@ export function DataRoomPanel({ documents }: { documents: PanelDocument[] }) {
                             <p key={entry.id} className="text-[11px] text-gray-500 !mb-0">
                               {new Date(entry.accessedAt).toLocaleString()} · {entry.ip || "ip unknown"} ·{" "}
                               {entry.documentCount} document{entry.documentCount === 1 ? "" : "s"}
+                              {entry.outcome && entry.outcome !== "granted" && (
+                                <span className="ml-[6px] text-amber-600 dark:text-amber-400 font-medium">
+                                  blocked · {entry.outcome.replace(/_/g, " ")}
+                                </span>
+                              )}
                               {entry.userAgent ? ` · ${entry.userAgent.slice(0, 60)}` : ""}
                             </p>
                           ))}

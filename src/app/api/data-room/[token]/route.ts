@@ -4,15 +4,25 @@
 // No session: the token is the credential. That makes this the most exposed
 // endpoint in the app, so it is deliberately paranoid:
 //
-//   • unknown / revoked / expired tokens return no document metadata at all;
+//   • every attempt is rate limited by client address and by token hash before
+//     the share is looked up, so guessing cannot become a free database probe;
+//   • unknown / revoked / expired tokens return no document metadata at all,
+//     and the denial is written to the owner-visible access log;
 //   • document rows are re-checked against the share owner, so a stale or
 //     tampered document_ids array cannot leak someone else's file;
 //   • the URLs returned are short-lived signed URLs, never stored paths;
 //   • the access is recorded atomically (log row + counter) before links are
-//     returned.
+//     returned, and only a granted open increments the counter.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  DATA_ROOM_LIMITS,
+  clientIp,
+  consumeRateLimit,
+  hashToken,
+  type RpcClient,
+} from "@/lib/data-room/rate-limit";
 
 const BUCKET = "company-documents";
 const SIGNED_URL_TTL_SECONDS = 60 * 10;
@@ -25,18 +35,107 @@ function getAdmin() {
   );
 }
 
+type AuditOutcome =
+  | "granted"
+  | "not_found"
+  | "revoked"
+  | "expired"
+  | "rate_limited"
+  | "invalid_token"
+  | "error";
+
+type Admin = ReturnType<typeof getAdmin>;
+
+async function auditDenial(
+  sp: Admin,
+  entry: {
+    shareId?: string | null;
+    tokenHash: string;
+    ip: string | null;
+    userAgent: string | null;
+    outcome: AuditOutcome;
+    documentCount?: number;
+  }
+) {
+  const { error } = await sp.from("data_room_access_log").insert({
+    share_id: entry.shareId ?? null,
+    token_hash: entry.tokenHash,
+    ip: entry.ip,
+    user_agent: entry.userAgent,
+    document_count: Math.max(0, entry.documentCount ?? 0),
+    outcome: entry.outcome,
+  });
+  if (error) {
+    // Losing an audit row must not change the response the caller sees, but it
+    // must be loud: silence here means the owner's log is incomplete.
+    console.error("[data-room] denial audit failed:", error.message);
+  }
+}
+
+function tooManyRequests(retryAfter: number) {
+  return NextResponse.json(
+    { error: "Too many requests. Try again shortly." },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(Math.max(1, Math.round(retryAfter))),
+        "Cache-Control": "no-store",
+      },
+    }
+  );
+}
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ token: string }> }
 ) {
   const { token } = await context.params;
 
+  const sp = getAdmin();
+  const ip = clientIp(request.headers);
+  const userAgent = request.headers.get("user-agent")?.slice(0, 400) ?? null;
+  // Hash before the token reaches the database or a log line.
+  const tokenHash = hashToken(token ?? "");
+
+  // ── 1. Address budget ──
+  const ipDecision = await consumeRateLimit(
+    sp as unknown as RpcClient,
+    "ip",
+    ip ?? "unknown-ip",
+    DATA_ROOM_LIMITS.ip
+  );
+  if (!ipDecision.allowed) {
+    // Only the first blocked request of a window is logged: writing one row per
+    // blocked request would let the limiter itself be used to fill the table.
+    if (ipDecision.hits === DATA_ROOM_LIMITS.ip.limit + 1) {
+      await auditDenial(sp, { tokenHash, ip, userAgent, outcome: "rate_limited" });
+    }
+    return tooManyRequests(ipDecision.retryAfter);
+  }
+
+  // ── 2. Shape check ──
+  // The generator emits 43 base64url characters; anything far outside that is
+  // rejected before it costs a share lookup.
   if (!token || token.length < 20 || token.length > 128) {
+    await auditDenial(sp, { tokenHash, ip, userAgent, outcome: "invalid_token" });
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const sp = getAdmin();
+  // ── 3. Token budget ──
+  const tokenDecision = await consumeRateLimit(
+    sp as unknown as RpcClient,
+    "token",
+    tokenHash,
+    DATA_ROOM_LIMITS.token
+  );
+  if (!tokenDecision.allowed) {
+    if (tokenDecision.hits === DATA_ROOM_LIMITS.token.limit + 1) {
+      await auditDenial(sp, { tokenHash, ip, userAgent, outcome: "rate_limited" });
+    }
+    return tooManyRequests(tokenDecision.retryAfter);
+  }
 
+  // ── 4. Lookup ──
   const { data: share, error } = await sp
     .from("data_room_shares")
     .select("id, user_id, label, document_ids, expires_at, revoked_at")
@@ -47,11 +146,28 @@ export async function GET(
     console.error("[data-room] lookup failed:", error.message);
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (!share) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!share) {
+    await auditDenial(sp, { tokenHash, ip, userAgent, outcome: "not_found" });
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   if (share.revoked_at) {
+    await auditDenial(sp, {
+      shareId: share.id,
+      tokenHash,
+      ip,
+      userAgent,
+      outcome: "revoked",
+    });
     return NextResponse.json({ error: "This link has been revoked." }, { status: 410 });
   }
   if (new Date(share.expires_at).getTime() <= Date.now()) {
+    await auditDenial(sp, {
+      shareId: share.id,
+      tokenHash,
+      ip,
+      userAgent,
+      outcome: "expired",
+    });
     return NextResponse.json({ error: "This link has expired." }, { status: 410 });
   }
 
@@ -91,12 +207,7 @@ export async function GET(
     url: /^https?:\/\//i.test(d.file_url) ? d.file_url : signedByPath.get(d.file_url) ?? null,
   }));
 
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    null;
-  const userAgent = request.headers.get("user-agent")?.slice(0, 400) ?? null;
-
+  // ── 5. Record the granted open ──
   const { error: logError } = await sp.rpc("log_data_room_access", {
     p_share_id: share.id,
     p_ip: ip,
