@@ -58,4 +58,11 @@ test("the plans keep the original two-column layout", async ({ page }) => {
   expect(headingBox).not.toBeNull();
   expect(headingBox!.x).toBeGreaterThan(starter!.x);
   expect(headingBox!.y).toBeLessThan(professional!.y);
+
+  // The fixed header must not cover the top of the section: the eyebrow, plan
+  // name and heading all sit below it after following the #pricing anchor.
+  expect(headingBox!.y).toBeGreaterThan(80);
+  await expect(page.getByText("3-MONTH SPRINT", { exact: true })).toBeVisible();
+  const planLabel = await page.getByText("3-MONTH SPRINT", { exact: true }).boundingBox();
+  expect(planLabel!.y).toBeGreaterThan(80);
 });

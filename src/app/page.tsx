@@ -43,7 +43,9 @@ export default function Home() {
       <div id="testimonials"><Testimonials /></div>
 
       <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
-      <div id="pricing"><Pricing /></div>
+      <div id="pricing" className="scroll-mt-[110px]">
+        <Pricing />
+      </div>
 
       <div className="h-[20px] md:h-[40px] lg:h-[60px]"></div>
       <div id="faq"><FAQ /></div>
