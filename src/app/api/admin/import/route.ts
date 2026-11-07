@@ -12,12 +12,18 @@ import { verifyImportPreview } from "@/lib/admin/import-preview";
 import { logAdminAction } from "@/lib/services/admin/audit";
 
 const MAX_BYTES = 5 * 1024 * 1024;
+const TARGETS = new Set(["investors", "investors_import_staging"]);
 
 export async function POST(request: NextRequest) {
   const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
 
-  let body: { csvContent?: unknown; source?: unknown; previewToken?: unknown };
+  let body: {
+    csvContent?: unknown;
+    source?: unknown;
+    previewToken?: unknown;
+    target?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -29,6 +35,11 @@ export async function POST(request: NextRequest) {
     typeof body.source === "string" && body.source.trim()
       ? body.source.trim().slice(0, 60)
       : "csv_import";
+
+  const target = typeof body.target === "string" ? body.target : "investors";
+  if (!TARGETS.has(target)) {
+    return NextResponse.json({ error: "Unknown import target" }, { status: 400 });
+  }
 
   if (!csvContent.trim()) {
     return NextResponse.json({ error: "csvContent is required" }, { status: 400 });
@@ -51,7 +62,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await importCsvToSupabase(csvContent, source);
+    const result = await importCsvToSupabase(csvContent, source, {
+      table: target === "investors" ? "investors" : "investors_import_staging",
+    });
 
     logAdminAction({
       userId: user.id,
@@ -59,6 +72,7 @@ export async function POST(request: NextRequest) {
       entityType: "investors",
       details: {
         source,
+        target,
         totalRows: result.totalRows,
         inserted: result.inserted,
         duplicates: result.duplicates,

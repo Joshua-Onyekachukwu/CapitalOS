@@ -50,7 +50,7 @@ const Pricing: React.FC = () => {
   return (
     <div className="pb-[60px] md:pb-[80px] lg:pb-[100px] xl:pb-[120px]">
       <div className="container sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1308px] mx-auto px-[12px]">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-[20px] md:gap-[24px] items-start">
+        <div className="grid grid-cols-1 gap-[16px]">
           {plans.map((plan, index) => (
             <div
               key={plan.name}

@@ -134,8 +134,16 @@ function csvRowToProviderResult(row: CsvRow, source: string) {
 export async function importCsvToSupabase(
   csvContent: string,
   source: string = "csv_import",
-  options?: { onConflict?: string; dryRun?: boolean }
+  options?: {
+    onConflict?: string;
+    dryRun?: boolean;
+    /** "investors" by default; the staging table exists for the gate check. */
+    table?: "investors" | "investors_import_staging";
+  }
 ): Promise<ImportResult> {
+  const table = options?.table === "investors_import_staging"
+    ? "investors_import_staging"
+    : "investors";
   const result: ImportResult = {
     totalRows: 0,
     parsed: 0,
@@ -187,7 +195,7 @@ export async function importCsvToSupabase(
       const batch = csvEmails.slice(i, i + 100);
       const placeholders = batch.map((_, j) => `$${j + 1}`).join(", ");
       const data = await query<{ email: string }>(
-        `SELECT email FROM investors WHERE email IN (${placeholders})`,
+        `SELECT email FROM ${table} WHERE email IN (${placeholders})`,
         batch
       );
       data.forEach((inv) => {
@@ -200,7 +208,7 @@ export async function importCsvToSupabase(
       const batch = csvLinkedins.slice(i, i + 100);
       const placeholders = batch.map((_, j) => `$${j + 1}`).join(", ");
       const data = await query<{ linkedin_url: string }>(
-        `SELECT linkedin_url FROM investors WHERE linkedin_url IN (${placeholders})`,
+        `SELECT linkedin_url FROM ${table} WHERE linkedin_url IN (${placeholders})`,
         batch
       );
       data.forEach((inv) => {
@@ -313,7 +321,7 @@ export async function importCsvToSupabase(
           ? ` ON CONFLICT (${options.onConflict}) DO NOTHING`
           : "";
         const insertedRows = await query(
-          `INSERT INTO investors (full_name, first_name, last_name, email, phone, linkedin_url, job_title, bio, location, country, city, investor_type, investment_stages, investment_sectors, investment_geographies, min_check_size, max_check_size, currency, portfolio_count, website_url, avatar_url, source, source_id, source_provider, data_quality_score, outreach_readiness, is_active)
+          `INSERT INTO ${table} (full_name, first_name, last_name, email, phone, linkedin_url, job_title, bio, location, country, city, investor_type, investment_stages, investment_sectors, investment_geographies, min_check_size, max_check_size, currency, portfolio_count, website_url, avatar_url, source, source_id, source_provider, data_quality_score, outreach_readiness, is_active)
            VALUES ${valuePlaceholders.join(", ")}${conflictClause}`,
           params
         );

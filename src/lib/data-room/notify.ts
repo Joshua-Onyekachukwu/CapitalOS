@@ -8,6 +8,11 @@
 // actually connected one.
 
 import { after } from "next/server";
+import {
+  chooseAlertChannel,
+  platformEmailConfigured,
+  sendPlatformEmail,
+} from "@/lib/services/email/platform";
 
 // The data room route builds an untyped service-role client (the generated
 // database types do not cover the tables added here), so pinning this helper to
@@ -45,18 +50,6 @@ async function emailOwner(
   }
 ) {
   try {
-    const { data: accounts } = await sp
-      .from("email_accounts")
-      .select("id")
-      .eq("user_id", params.userId)
-      .eq("is_active", true)
-      .limit(1);
-
-    if (!accounts || accounts.length === 0) {
-      await markEmailStatus(sp, params.notificationId, "skipped_no_account");
-      return;
-    }
-
     const { data: userData } = await sp.auth.admin.getUserById(params.userId);
     const to = userData?.user?.email;
     if (!to) {
@@ -64,7 +57,25 @@ async function emailOwner(
       return;
     }
 
-    const { sendEmail } = await import("@/lib/services/email/sender");
+    const { data: accounts } = await sp
+      .from("email_accounts")
+      .select("id")
+      .eq("user_id", params.userId)
+      .eq("is_active", true)
+      .limit(1);
+
+    // Owner's own mailbox first, then the platform sender, so an owner who has
+    // not connected anything still hears about activity on their link.
+    const channel = chooseAlertChannel({
+      hasMailbox: !!accounts?.length,
+      hasPlatformProvider: platformEmailConfigured(),
+    });
+
+    if (channel === "none") {
+      await markEmailStatus(sp, params.notificationId, "skipped_no_provider");
+      return;
+    }
+
     const html = `
       <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#06201b;line-height:1.5">
         <h2 style="margin:0 0 8px;font-size:18px">${params.title}</h2>
@@ -74,16 +85,29 @@ async function emailOwner(
         </p>
       </div>`;
 
-    const result = await sendEmail({
-      userId: params.userId,
-      to,
-      subject: params.title,
-      bodyHtml: html,
-      bodyText: params.summary,
-      enableTracking: false,
-    });
+    let sent: boolean;
+    if (channel === "mailbox") {
+      const { sendEmail } = await import("@/lib/services/email/sender");
+      const result = await sendEmail({
+        userId: params.userId,
+        to,
+        subject: params.title,
+        bodyHtml: html,
+        bodyText: params.summary,
+        enableTracking: false,
+      });
+      sent = result.success;
+    } else {
+      const result = await sendPlatformEmail({
+        to,
+        subject: params.title,
+        html,
+        text: params.summary,
+      });
+      sent = result.sent;
+    }
 
-    await markEmailStatus(sp, params.notificationId, result.success ? "sent" : "failed");
+    await markEmailStatus(sp, params.notificationId, sent ? "sent" : "failed");
   } catch (err) {
     console.error("[data-room] owner notification email failed:", err);
   }

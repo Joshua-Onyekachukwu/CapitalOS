@@ -10,12 +10,13 @@ import { requireAdmin } from "@/lib/middleware/api-auth";
 import { signImportPreview } from "@/lib/admin/import-preview";
 
 const MAX_BYTES = 5 * 1024 * 1024;
+const TARGETS = new Set(["investors", "investors_import_staging"]);
 
 export async function POST(request: NextRequest) {
   const user = await requireAdmin(request);
   if (user instanceof NextResponse) return user;
 
-  let body: { csvContent?: unknown; source?: unknown };
+  let body: { csvContent?: unknown; source?: unknown; target?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -28,6 +29,11 @@ export async function POST(request: NextRequest) {
       ? body.source.trim().slice(0, 60)
       : "csv_import";
 
+  const target = typeof body.target === "string" ? body.target : "investors";
+  if (!TARGETS.has(target)) {
+    return NextResponse.json({ error: "Unknown import target" }, { status: 400 });
+  }
+
   if (!csvContent.trim()) {
     return NextResponse.json({ error: "csvContent is required" }, { status: 400 });
   }
@@ -39,10 +45,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const preview = await importCsvToSupabase(csvContent, source, { dryRun: true });
+    const preview = await importCsvToSupabase(csvContent, source, {
+      dryRun: true,
+      table: target === "investors" ? "investors" : "investors_import_staging",
+    });
     return NextResponse.json({
       ...preview,
       mode: "preview",
+      target,
       previewToken: signImportPreview(csvContent, source),
     });
   } catch (err) {

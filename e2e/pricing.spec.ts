@@ -39,7 +39,7 @@ test("each pricing icon renders inside its own card", async ({ page }) => {
   }
 });
 
-test("the two plans sit side by side on a wide screen", async ({ page }) => {
+test("the plans keep the stacked, full-width layout", async ({ page }) => {
   await page.goto("/#pricing");
 
   const starter = await page.locator('[data-pricing-card="starter"]').boundingBox();
@@ -48,7 +48,7 @@ test("the two plans sit side by side on a wide screen", async ({ page }) => {
   expect(starter).not.toBeNull();
   expect(professional).not.toBeNull();
 
-  // Same row: tops align. Different columns: the second starts to the right.
-  expect(Math.abs(starter!.y - professional!.y)).toBeLessThanOrEqual(2);
-  expect(professional!.x).toBeGreaterThan(starter!.x + starter!.width / 2);
+  // Stacked: same column, second card starts below the first.
+  expect(Math.abs(starter!.x - professional!.x)).toBeLessThanOrEqual(2);
+  expect(professional!.y).toBeGreaterThan(starter!.y + starter!.height / 2);
 });
