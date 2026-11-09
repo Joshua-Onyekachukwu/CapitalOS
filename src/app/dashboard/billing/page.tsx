@@ -43,8 +43,8 @@ export default async function BillingPage({
       {params.checkout === "success" && (
         <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-[12px] p-[16px] mb-[20px]">
           <p className="text-[13px] text-green-700 dark:text-green-400 !mb-0">
-            Checkout completed. Stripe confirms with the webhook, usually within a few seconds — reload
-            if your plan still looks unchanged.
+            Checkout completed. Stripe confirms with the webhook, usually within a few seconds —
+            reload if your plan still looks unchanged.
           </p>
         </div>
       )}
@@ -62,9 +62,10 @@ export default async function BillingPage({
             Billing is not configured
           </p>
           <p className="text-[12px] text-amber-700 dark:text-amber-400 !mb-0">
-            Checkout and the portal answer 503 until <span className="font-mono">STRIPE_SECRET_KEY</span> and{" "}
-            <span className="font-mono">STRIPE_WEBHOOK_SECRET</span> are set. No payment can be started or
-            charged in this state.
+            Checkout and the portal answer 503 until{" "}
+            <span className="font-mono">STRIPE_SECRET_KEY</span> and{" "}
+            <span className="font-mono">STRIPE_WEBHOOK_SECRET</span> are set. No payment can be
+            started or charged in this state.
           </p>
         </div>
       )}
@@ -80,7 +81,9 @@ export default async function BillingPage({
 
       {loadError && (
         <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30 rounded-[12px] p-[16px] mb-[20px]">
-          <p className="text-[13px] text-red-700 dark:text-red-400 !mb-0">Could not load plans: {loadError}</p>
+          <p className="text-[13px] text-red-700 dark:text-red-400 !mb-0">
+            Could not load plans: {loadError}
+          </p>
         </div>
       )}
 
@@ -94,7 +97,9 @@ export default async function BillingPage({
                     {plan.name}
                   </h3>
                   <p className="text-[13px] text-gray-500 dark:text-gray-400 !mb-0">
-                    {money(plan.monthlyPrice)} / month
+                    {plan.billingModel === "one_time"
+                      ? `${money(plan.monthlyPrice)} one-time · ${plan.windowMonths ?? 3}-month window`
+                      : `${money(plan.monthlyPrice)} / month`}
                   </p>
                 </div>
                 <Badge variant="default">{plan.includedCredits.toLocaleString()} credits</Badge>

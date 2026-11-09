@@ -3,6 +3,8 @@
 // =============================================
 // Manages plan definitions, lookups, and entitlement checks.
 // Uses CockroachDB for data.
+// Plan rows are seeded by migration 004_company_profiles_billing.sql
+// and the 3-pillar fundraising-lifecycle model docs (docs/07-pricing-billing.md).
 
 import { query } from "@/lib/db";
 
@@ -20,6 +22,14 @@ export interface BillingPlan {
   emailAccountsLimit: number;
   teamSeats: number;
   isActive: boolean;
+  // 3-pillar extensions
+  windowMonths?: number;
+  isPostRaiseRetention?: boolean;
+  b2bSeatCount?: number;
+  annualBillingDefault?: boolean;
+  // 'one_time' plans (the Sprints) are a single Stripe payment, not a
+  // subscription. monthlyPrice holds the upfront amount for those rows.
+  billingModel: "monthly" | "one_time";
 }
 
 export interface UserSubscription {
@@ -65,6 +75,11 @@ export async function getActivePlans(): Promise<BillingPlan[]> {
     emailAccountsLimit: p.email_accounts_limit,
     teamSeats: p.team_seats,
     isActive: p.is_active,
+    windowMonths: p.window_months ?? undefined,
+    isPostRaiseRetention: p.is_post_raise_retention ?? undefined,
+    b2bSeatCount: p.b2b_seat_count ?? undefined,
+    annualBillingDefault: p.annual_billing_default ?? undefined,
+    billingModel: (p.billing_model ?? "monthly") as "monthly" | "one_time",
   }));
 }
 
@@ -72,10 +87,7 @@ export async function getActivePlans(): Promise<BillingPlan[]> {
 // Get User Subscription
 // =============================================
 
-export async function getUserSubscription(
-  userId: string
-): Promise<UserSubscription | null> {
-  // Use a JOIN query since we don't have the view in CockroachDB
+export async function getUserSubscription(userId: string): Promise<UserSubscription | null> {
   const rows = await query<any>(
     `SELECT us.*, bp.name AS plan_name, bp.slug AS plan_slug,
             bp.monthly_price, bp.included_credits, bp.investor_db_limit,
@@ -116,9 +128,7 @@ export async function getUserSubscription(
 // Get Credit Cost for an Operation
 // =============================================
 
-export async function getCreditCost(
-  operation: string
-): Promise<number | null> {
+export async function getCreditCost(operation: string): Promise<number | null> {
   const rows = await query<{ credit_cost: number }>(
     `SELECT credit_cost FROM credit_costs WHERE operation = $1`,
     [operation]

@@ -10,12 +10,14 @@
 // a new one each time.
 
 import { NextRequest, NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { getActivePlans } from "@/lib/billing/plans";
 import { createClient } from "@supabase/supabase-js";
 import {
   getStripe,
   priceDataFor,
+  oneTimePriceDataFor,
   configuredPriceId,
   STRIPE_UNCONFIGURED,
 } from "@/lib/services/billing/stripe";
@@ -24,8 +26,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function appOrigin(request: NextRequest): string {
-  const configured =
-    process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
+  const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
   if (configured) return configured.replace(/\/$/, "");
   return request.nextUrl.origin;
 }
@@ -53,14 +54,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Unknown plan: ${planSlug}` }, { status: 400 });
   }
 
+  // Sprints are paid once for their window; Retention and B2B are subscriptions.
+  const oneTime = plan.billingModel === "one_time";
+
   const priceId = configuredPriceId(plan);
-  const priceData = priceId ? null : priceDataFor(plan, interval);
+  const priceData = priceId
+    ? null
+    : oneTime
+      ? oneTimePriceDataFor(plan)
+      : priceDataFor(plan, interval);
   if (!priceId && !priceData) {
     return NextResponse.json(
       { error: `Plan ${plan.slug} has no price configured` },
       { status: 400 }
     );
   }
+
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+    priceId
+      ? { price: priceId, quantity: 1 }
+      : {
+          price_data: priceData as Stripe.Checkout.SessionCreateParams.LineItem.PriceData,
+          quantity: 1,
+        },
+  ];
+
+  const metadata = {
+    user_id: user.id,
+    plan_id: plan.id,
+    plan_slug: plan.slug,
+    ...(oneTime ? { sprint_months: String(plan.windowMonths ?? 3) } : {}),
+  };
 
   // Reuse the customer if a previous subscription stored one. This uses the
   // Supabase client directly: lib/db's query() only understands a SQL subset.
@@ -84,20 +108,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+      mode: oneTime ? "payment" : "subscription",
       ...(customerId
         ? { customer: customerId }
         : { customer_email: (user as { email?: string }).email || undefined }),
-      line_items: [
-        priceId
-          ? { price: priceId, quantity: 1 }
-          : { price_data: priceData!, quantity: 1 },
-      ],
+      line_items: lineItems,
       client_reference_id: user.id,
-      metadata: { user_id: user.id, plan_id: plan.id, plan_slug: plan.slug },
-      subscription_data: {
-        metadata: { user_id: user.id, plan_id: plan.id, plan_slug: plan.slug },
-      },
+      metadata,
+      // A payment-mode session cannot carry subscription_data.
+      ...(oneTime ? {} : { subscription_data: { metadata } }),
       allow_promotion_codes: true,
       success_url: `${origin}/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/dashboard/billing?checkout=cancelled`,

@@ -54,8 +54,7 @@ function periodBounds(subscription: Stripe.Subscription): { start: Date | null; 
   // Stripe moved period fields onto subscription items in recent API versions;
   // read the item first and fall back to the legacy top-level fields.
   const item = subscription.items?.data?.[0] as unknown as
-    | { current_period_start?: number; current_period_end?: number }
-    | undefined;
+    { current_period_start?: number; current_period_end?: number } | undefined;
   const legacy = subscription as unknown as {
     current_period_start?: number;
     current_period_end?: number;
@@ -117,10 +116,7 @@ async function upsertLocalSubscription(params: {
     ] as const) {
       if (full[key] !== null) patch[key] = full[key];
     }
-    const { error } = await sp
-      .from("user_subscriptions")
-      .update(patch)
-      .eq("id", existing[0].id);
+    const { error } = await sp.from("user_subscriptions").update(patch).eq("id", existing[0].id);
     if (error) throw new Error(error.message);
     return;
   }
@@ -148,7 +144,7 @@ async function syncFromSubscription(subscription: Stripe.Subscription): Promise<
   const customerId =
     typeof subscription.customer === "string"
       ? subscription.customer
-      : subscription.customer?.id ?? null;
+      : (subscription.customer?.id ?? null);
 
   await upsertLocalSubscription({
     userId,
@@ -171,14 +167,14 @@ async function syncFromCheckout(session: Stripe.Checkout.Session, stripe: Stripe
   }
 
   const customerId =
-    typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
+    typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
 
   // A subscription id on the session is the authoritative link; retrieve it so
   // status and periods come from Stripe rather than being assumed "active".
   const subscriptionId =
     typeof session.subscription === "string"
       ? session.subscription
-      : session.subscription?.id ?? null;
+      : (session.subscription?.id ?? null);
 
   if (subscriptionId) {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -194,14 +190,30 @@ async function syncFromCheckout(session: Stripe.Checkout.Session, stripe: Stripe
     return;
   }
 
+  // One-time Sprint purchase: access runs for the plan's window from now. The
+  // window rides on the session metadata, with the plan row as a fallback.
+  let windowMonths = Number(session.metadata?.sprint_months || 0);
+  if (!windowMonths && planId) {
+    const { data } = await getSp()
+      .from("billing_plans")
+      .select("window_months")
+      .eq("id", planId)
+      .limit(1);
+    windowMonths = Number(data?.[0]?.window_months ?? 0);
+  }
+
+  const start = windowMonths > 0 ? new Date() : null;
+  const end = start ? new Date(start) : null;
+  if (end) end.setMonth(end.getMonth() + windowMonths);
+
   await upsertLocalSubscription({
     userId,
     planId,
     status: "active",
     customerId,
     subscriptionId: null,
-    periodStart: null,
-    periodEnd: null,
+    periodStart: start,
+    periodEnd: end,
     cancelAt: null,
   });
 }
@@ -256,7 +268,7 @@ export async function POST(request: NextRequest) {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId =
-          typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id ?? null;
+          typeof invoice.customer === "string" ? invoice.customer : (invoice.customer?.id ?? null);
         if (customerId) await markPastDueByCustomer(customerId);
         break;
       }

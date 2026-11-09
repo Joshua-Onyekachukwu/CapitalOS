@@ -51,7 +51,8 @@ export function priceDataFor(
     return null;
   }
 
-  const useAnnual = interval === "year" && typeof plan.annualPrice === "number" && plan.annualPrice > 0;
+  const useAnnual =
+    interval === "year" && typeof plan.annualPrice === "number" && plan.annualPrice > 0;
   const amount = useAnnual ? (plan.annualPrice as number) : plan.monthlyPrice;
   if (!amount || amount <= 0) return null;
 
@@ -67,11 +68,35 @@ export function priceDataFor(
   };
 }
 
+export interface StripeOneTimePriceData {
+  currency: string;
+  unit_amount: number;
+  product_data: { name: string; metadata: Record<string, string> };
+}
+
+/**
+ * Inline price for a Sprint: one payment, no recurring interval. `payment` mode
+ * sessions reject a price that carries `recurring`, so this is built separately
+ * rather than reusing priceDataFor.
+ */
+export function oneTimePriceDataFor(plan: BillingPlan): StripeOneTimePriceData | null {
+  if (configuredPriceId(plan)) return null;
+  if (!plan.monthlyPrice || plan.monthlyPrice <= 0) return null;
+
+  const months = plan.windowMonths ?? 3;
+  return {
+    currency: "usd",
+    unit_amount: Math.round(plan.monthlyPrice * 100),
+    product_data: {
+      name: `${plan.name} — ${months}-month sprint`,
+      metadata: { plan_slug: plan.slug, plan_id: plan.id },
+    },
+  };
+}
+
 /** Price id from env, when the project has real Stripe prices configured. */
 export function configuredPriceId(plan: BillingPlan): string | null {
-  return (
-    process.env[`STRIPE_PRICE_${plan.slug.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`] ?? null
-  );
+  return process.env[`STRIPE_PRICE_${plan.slug.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`] ?? null;
 }
 
 export const STRIPE_UNCONFIGURED = {
