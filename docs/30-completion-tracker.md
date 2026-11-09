@@ -51,7 +51,7 @@ migrations and the claim has not been re-measured since.
 | AI management | PARTIAL | **PARTIAL** | Stats surface only; no model/provider config or caps. |
 | Job management | REAL | **COMPLETE** | — |
 | Source management | REAL | **COMPLETE** | — |
-| Billing management | PARTIAL | **BLOCKED** | `STRIPE_SECRET_KEY` absent; 0 billing events. |
+| Billing management | PARTIAL | **PARTIAL** | Sprint / Retention / B2B catalog applied (`037_lifecycle_plans.sql`) and checkout issues one-time Sprint sessions (`billing_model = 'one_time'`). The charge itself is still blocked on `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`; 0 billing events. |
 | Analytics | PARTIAL | **PARTIAL** | PostHog wired, no key set. |
 | Support | PARTIAL | **PARTIAL** | `/support` page only. |
 | Security | REAL | **COMPLETE** | Cross-tenant suite 50/50 (`docs/25`). |

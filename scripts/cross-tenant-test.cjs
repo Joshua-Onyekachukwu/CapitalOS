@@ -363,12 +363,16 @@ async function main() {
     assert(invs && invs.length >= 2, "investors dataset too small for pipeline test");
     const pick = invs.find((i) => i.id !== SHARED_INVESTOR) || invs[0];
     const PIPE_INVESTOR = pick.id;
+    // Mirrors READINESS_TO_STAGE in src/lib/services/pipeline/stages.ts (21-stage set).
     const DEFAULT_STAGE_MAP = {
-      not_ready: "discovered", needs_verification: "qualified", ready: "outreach",
-      contacted: "contacted", do_not_contact: "passed",
+      not_ready: "discovered", needs_verification: "shortlisted", ready: "outreach_drafted",
+      contacted: "contacted", do_not_contact: "not_a_fit", low_priority: "discovered",
+      interested: "meeting_scheduled",
     };
     const defaultStage = DEFAULT_STAGE_MAP[pick.outreach_readiness] || "discovered";
-    const chosenStage = defaultStage === "term_sheet" ? "due_diligence" : "term_sheet";
+    // Both ids below only exist after migration 024, so this move also proves the
+    // API accepts stages the old 11-value constraint rejected.
+    const chosenStage = defaultStage === "partner_meeting" ? "first_meeting_completed" : "partner_meeting";
 
     let r = await api(A_COOKIE, "/api/investors/pipeline", {
       method: "POST",

@@ -111,6 +111,14 @@ credentials. No code path changes.
 **Plug-and-play:** replace with `sk_live_…` and the live price IDs; the webhook
 endpoint secret changes too. Nothing else.
 
+**Status, 2026-11-09:** catalog and purchase shape are done —
+`037_lifecycle_plans.sql` applied (Sprint $499/3-mo and $999/6-mo as
+`billing_model = 'one_time'`, Retention $29/mo, three B2B tiers), checkout
+switches to `mode: 'payment'` for Sprints, and the webhook grants the window
+from the session metadata. Nothing can be charged until `STRIPE_SECRET_KEY`
+and `STRIPE_WEBHOOK_SECRET` are set, so the flow is verified up to the
+honest 503 and no further.
+
 ### 3.3 PostHog — build now, key later
 
 - Client initialises only when `NEXT_PUBLIC_POSTHOG_KEY` is present; without it

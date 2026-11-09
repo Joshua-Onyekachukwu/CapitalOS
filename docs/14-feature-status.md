@@ -1,6 +1,6 @@
 # Capital OS — Feature Status
 
-*Last updated: August 28, 2026*
+*Last updated: 2026-10*
 
 ## Master Feature Matrix
 
@@ -15,7 +15,7 @@
 | Dashboard with real data | 1-6 | Stats, recent investors, pipeline, quick actions |
 | Onboarding (7 steps) | 1 | Company name, industry, stage, funding, traction, team, docs |
 | Company profiles | 1 | Full CRUD with readiness scoring |
-| Billing plans + credit system | 7 | Free/Workspace/Pro with credit ledger |
+| Billing plans + credit system | 7 | Free/Workspace/Pro with credit ledger; lifecycle model City of London office migration in progress |
 | Investor database (search + filters) | 4 | 46,093 investors, faceted search, pagination |
 | Investor detail page | 4 | Full profile with AI research, fit score, contact info |
 | Investor discovery | 4 | AI-powered search with fit scoring |
@@ -88,19 +88,18 @@
 | EDGAR XML parser | 2 | Extracts partner names from 13F-HR filings |
 | VC team page scraper | 2 | Scrapes /team pages for partner names |
 
-### 🟡 Partially Built / Needs Work
+### 🟡 In Progress / Needs Migration to Lifecycle Model
 
-| Feature | Status | What's Missing |
-|---------|--------|---------------|
-| Mobile nav toggle | ⚠️ | Toggle logic may be inverted on mobile |
-| WhyCapitalOS mobile layout | ⚠️ | Heading may be covered by image on mobile |
-| DashboardHeader search | ⚠️ | Navigates to investors page but could be more robust |
-| Email generation speed | ⚠️ | ~100s per email (Nemotron limitation) |
-| Testimonials | ⚠️ | Section exists but needs real customer data |
-| Campaign email generation | ⚠️ | Uses real API but slow |
-| Copilot conversation persistence | ⚠️ | Uses Supabase now but needs SQL table run |
-| Pipeline pagination | ⚠️ | Loads in batches but could be smoother |
-| Fit Analysis pagination | ⚠️ | Loads up to 2000 but no infinite scroll |
+| Feature | Status | What's Changing |
+|---------|--------|-----------------|
+| Pricing narrative | 🟡 In progress | Landing, docs, pitch, onboarding copy moving to Fundraising Lifecycle (Sprint / Post-Raise IR / B2B) |
+| Plan definitions | 🟡 Needs migration | `billing_plans` seeded as Free/Workspace/Pro; new Sprint + IR + B2B plan entries + migration pending |
+| Onboarding "are you raising" flow | 🟡 Needs alignment | Still collects raising intent, but purchasing/clarity should reflect Sprint-first path |
+| Post-raise upgrade prompts | 🔵 Not yet built | IR handoff prompt after sprint expiry or round close is planned, not implemented |
+| B2B multi-company UI | 🔵 Not yet built | Firm dashboard, shared pipeline, seat management planned |
+| IR update-drafter flow | 🔵 Not yet built | Monthly update generator, tracking, and data room retention planned |
+| Pricing/CTA buttons | 🟡 Needs update | Landing pricing cards and CTAs need to reflect new tiers |
+| Pitch deck traction section | 🔵 Placeholder | Will be updated with real send/bounce/open/reply data after first campaign batch |
 
 ### 🔵 Planned / Future
 
@@ -138,4 +137,4 @@
 
 ---
 
-*Last updated: August 28, 2026*
+*Last updated: 2026-10*

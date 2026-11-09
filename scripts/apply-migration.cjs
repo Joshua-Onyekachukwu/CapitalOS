@@ -19,6 +19,11 @@ const fs = require("fs");
 
 async function connectPooler(ref) {
   const regions = ["us-east-1", "us-east-2", "eu-west-1", "eu-west-2", "eu-central-1", "ap-southeast-1", "ap-south-1"];
+  // "tenant not found" from a pooler means *wrong region*, not wrong password.
+  // A reachable tenant answers 28P01 on a bad password, so keep looking for
+  // that distinct error instead of falling through to a generic failure.
+  const failures = [];
+  let authFailure = null;
   for (const region of [...regions.flatMap((r) => [`aws-1-${r}`, `aws-0-${r}`]), ...regions]) {
     const cand = new Client({
       host: `${region}.pooler.supabase.com`,
@@ -33,9 +38,25 @@ async function connectPooler(ref) {
       await cand.connect();
       console.log(`connected via ${region}.pooler.supabase.com`);
       return cand;
-    } catch {
+    } catch (err) {
       await cand.end().catch(() => {});
+      failures.push(`${region}: ${err.code || ""} ${err.message}`);
+      if (err.code === "28P01" || /password authentication failed/i.test(err.message)) {
+        authFailure = `${region}.pooler.supabase.com`;
+      }
     }
+  }
+
+  if (authFailure) {
+    console.error(
+      `Reached project ${ref} at ${authFailure} but authentication failed.\n` +
+        "SUPABASE_DB_PASSWORD in .env.local is stale or belongs to a different project.\n" +
+        "Reset it in Supabase Dashboard -> Project Settings -> Database -> Reset database password,\n" +
+        "update .env.local, then re-run this command."
+    );
+  } else {
+    console.error("No pooler region reached the project. Attempts:");
+    for (const f of failures.slice(0, 6)) console.error(`  ${f}`);
   }
   return null;
 }
