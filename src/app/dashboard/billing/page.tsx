@@ -12,7 +12,7 @@ const money = (value: number) =>
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; plan?: string }>;
 }) {
   const params = await searchParams;
 
@@ -32,6 +32,13 @@ export default async function BillingPage({
   }
 
   const paid = plans.filter((p) => p.monthlyPrice > 0);
+
+  // The landing cards link here with ?plan=<slug>. Highlight that plan and put
+  // it first, so "Start My Raise" ends on a screen with one obvious purchase.
+  const selectedPlan = params.plan ? (paid.find((p) => p.slug === params.plan) ?? null) : null;
+  const ordered = selectedPlan
+    ? [selectedPlan, ...paid.filter((p) => p.slug !== selectedPlan.slug)]
+    : paid;
 
   return (
     <div>
@@ -87,9 +94,53 @@ export default async function BillingPage({
         </div>
       )}
 
+      {selectedPlan && (
+        <Card className="mb-[20px] ring-2 ring-lime-400 dark:ring-lime-600">
+          <CardBody>
+            <div className="flex flex-wrap items-start justify-between gap-[16px]">
+              <div>
+                <Badge variant="info">Selected plan</Badge>
+                <h3 className="text-[20px] font-semibold text-[#06201b] dark:text-white !mt-[8px] !mb-[2px]">
+                  {selectedPlan.name}
+                </h3>
+                <p className="text-[14px] text-gray-600 dark:text-gray-300 !mb-[4px]">
+                  {money(selectedPlan.monthlyPrice)}
+                  {selectedPlan.billingModel === "one_time"
+                    ? `, paid once for a ${selectedPlan.windowMonths ?? 3}-month window`
+                    : " per month, cancel any time in the portal"}
+                </p>
+                <p className="text-[12px] text-gray-400 !mb-0">
+                  {mode === "unconfigured"
+                    ? "Checkout is not configured yet, so nothing can be charged. The button below reports exactly what is missing."
+                    : "Card details are entered on Stripe. Nothing is charged here."}
+                </p>
+              </div>
+              <CheckoutButton
+                planSlug={selectedPlan.slug}
+                interval="month"
+                label={`Continue — ${money(selectedPlan.monthlyPrice)}`}
+              />
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
+      {params.plan && !selectedPlan && (
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-[12px] p-[16px] mb-[20px]">
+          <p className="text-[13px] text-amber-800 dark:text-amber-300 !mb-0">
+            No active plan matches &quot;{params.plan}&quot;. Pick one below.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px] mb-[20px]">
-        {paid.map((plan) => (
-          <Card key={plan.id}>
+        {ordered.map((plan) => (
+          <Card
+            key={plan.id}
+            className={
+              plan.slug === selectedPlan?.slug ? "ring-2 ring-lime-400 dark:ring-lime-600" : ""
+            }
+          >
             <CardBody>
               <div className="flex items-start justify-between mb-[8px]">
                 <div>

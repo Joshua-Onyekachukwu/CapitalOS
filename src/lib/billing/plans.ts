@@ -125,6 +125,49 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
 }
 
 // =============================================
+// Sprint window
+// =============================================
+// A Sprint is a one-time purchase with an end date, so the dashboard can offer
+// the Retention tier when it runs out instead of silently leaving the founder
+// on an expired plan.
+
+export interface SprintStatus {
+  planSlug: string;
+  planName: string;
+  endsAt: string | null;
+  daysRemaining: number | null;
+  ended: boolean;
+  endingSoon: boolean;
+}
+
+export async function getSprintStatus(userId: string): Promise<SprintStatus | null> {
+  const rows = await query<any>(
+    `SELECT us.current_period_end, bp.slug AS plan_slug, bp.name AS plan_name
+     FROM user_subscriptions us
+     JOIN billing_plans bp ON us.plan_id = bp.id
+     WHERE us.user_id = $1 AND bp.billing_model = 'one_time'
+     LIMIT 1`,
+    [userId]
+  );
+  if (!rows.length) return null;
+
+  const row = rows[0];
+  const end = row.current_period_end ? new Date(row.current_period_end) : null;
+  const daysRemaining = end
+    ? Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  return {
+    planSlug: row.plan_slug,
+    planName: row.plan_name,
+    endsAt: end ? end.toISOString() : null,
+    daysRemaining,
+    ended: daysRemaining !== null && daysRemaining <= 0,
+    endingSoon: daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 14,
+  };
+}
+
+// =============================================
 // Get Credit Cost for an Operation
 // =============================================
 

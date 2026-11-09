@@ -26,6 +26,7 @@ const plans = [
       "3-month window",
     ],
     cta: "Start My Raise",
+    href: "/dashboard/billing?plan=sprint_3m",
   },
   {
     id: "professional",
@@ -39,6 +40,7 @@ const plans = [
       "6-month window",
     ],
     cta: "Start My Raise",
+    href: "/dashboard/billing?plan=sprint_6m",
   },
 ];
 
@@ -131,7 +133,7 @@ const Pricing: React.FC = () => {
                   ))}
                 </ul>
                 <Link
-                  href="/signup"
+                  href={starter.href}
                   className="inline-block relative font-medium text-[#FFC813] text-base md:text-[15px] lg:text-md -tracking-[0.16px] transition-all hover:underline md:-mt-[5px]"
                 >
                   {starter.cta} <i className="ri-arrow-right-long-line"></i>
@@ -188,7 +190,7 @@ const Pricing: React.FC = () => {
                   ))}
                 </ul>
                 <Link
-                  href="/signup"
+                  href={professional.href}
                   className="mt-auto self-start inline-block relative font-medium text-black text-base md:text-[15px] lg:text-md -tracking-[0.16px] transition-all hover:underline"
                 >
                   {professional.cta} <i className="ri-arrow-right-long-line"></i>
