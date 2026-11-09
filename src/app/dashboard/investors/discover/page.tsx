@@ -77,7 +77,9 @@ function getScoreBg(score: number) {
 function ScoreBar({ score, label }: { score: number; label?: string }) {
   return (
     <div className="flex items-center gap-[8px]">
-      {label && <span className="text-[11px] text-gray-400 w-[90px] flex-shrink-0 truncate">{label}</span>}
+      {label && (
+        <span className="text-[11px] text-gray-400 w-[90px] flex-shrink-0 truncate">{label}</span>
+      )}
       <div className="flex-1 h-[6px] bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
@@ -86,7 +88,9 @@ function ScoreBar({ score, label }: { score: number; label?: string }) {
           style={{ width: `${score}%` }}
         ></div>
       </div>
-      <span className={`text-[11px] font-bold w-[30px] text-right ${getScoreColor(score)}`}>{score}</span>
+      <span className={`text-[11px] font-bold w-[30px] text-right ${getScoreColor(score)}`}>
+        {score}
+      </span>
     </div>
   );
 }
@@ -122,7 +126,12 @@ export default function InvestorDiscoverPage() {
   const [batchAnalyzing, setBatchAnalyzing] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
-  const [parsedFilters, setParsedFilters] = useState<{ stages: string[]; sectors: string[]; countries: string[]; investor_types: string[] } | null>(null);
+  const [parsedFilters, setParsedFilters] = useState<{
+    stages: string[];
+    sectors: string[];
+    countries: string[];
+    investor_types: string[];
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -173,7 +182,20 @@ export default function InvestorDiscoverPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [query, sector, stage, geography, sortBy, filingRecency, secOnly, firm, minCheque, maxCheque, hasThesis, leadPreference]);
+  }, [
+    query,
+    sector,
+    stage,
+    geography,
+    sortBy,
+    filingRecency,
+    secOnly,
+    firm,
+    minCheque,
+    maxCheque,
+    hasThesis,
+    leadPreference,
+  ]);
 
   const handleUseMyProfile = async () => {
     try {
@@ -231,7 +253,15 @@ export default function InvestorDiscoverPage() {
         setResults((prev) =>
           prev.map((r) =>
             r.id === investor.id
-              ? { ...r, fit_score: data.fitScore, fit_score_breakdown: { factors: data.factors, confidence: data.confidence, dataQuality: data.dataQuality } }
+              ? {
+                  ...r,
+                  fit_score: data.fitScore,
+                  fit_score_breakdown: {
+                    factors: data.factors,
+                    confidence: data.confidence,
+                    dataQuality: data.dataQuality,
+                  },
+                }
               : r
           )
         );
@@ -313,7 +343,15 @@ export default function InvestorDiscoverPage() {
             setResults((prev) =>
               prev.map((r) =>
                 r.id === investor.id
-                  ? { ...r, fit_score: data.fitScore, fit_score_breakdown: { factors: data.factors, confidence: data.confidence, dataQuality: data.dataQuality } }
+                  ? {
+                      ...r,
+                      fit_score: data.fitScore,
+                      fit_score_breakdown: {
+                        factors: data.factors,
+                        confidence: data.confidence,
+                        dataQuality: data.dataQuality,
+                      },
+                    }
                   : r
               )
             );
@@ -394,7 +432,9 @@ export default function InvestorDiscoverPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-[16px]">
             <div>
-              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Sector</label>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+                Sector
+              </label>
               <input
                 value={sector}
                 onChange={(e) => setSector(e.target.value)}
@@ -418,7 +458,9 @@ export default function InvestorDiscoverPage() {
               </select>
             </div>
             <div>
-              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Geography</label>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+                Geography
+              </label>
               <input
                 value={geography}
                 onChange={(e) => setGeography(e.target.value)}
@@ -431,7 +473,9 @@ export default function InvestorDiscoverPage() {
           {/* Dormancy + evidence filters */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-[16px]">
             <div>
-              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">SEC Filing Activity</label>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+                SEC Filing Activity
+              </label>
               <select
                 value={filingRecency}
                 onChange={(e) => setFilingRecency(e.target.value)}
@@ -443,7 +487,9 @@ export default function InvestorDiscoverPage() {
               </select>
             </div>
             <div>
-              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Evidence</label>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+                Evidence
+              </label>
               <select
                 value={secOnly ? "sec" : ""}
                 onChange={(e) => setSecOnly(e.target.value === "sec")}
@@ -458,7 +504,9 @@ export default function InvestorDiscoverPage() {
           {/* Firm, cheque, thesis and lead/follow filters */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-[16px]">
             <div>
-              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Firm name</label>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+                Firm name
+              </label>
               <input
                 value={firm}
                 onChange={(e) => setFirm(e.target.value)}
@@ -467,7 +515,9 @@ export default function InvestorDiscoverPage() {
               />
             </div>
             <div>
-              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Cheque size (min)</label>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+                Cheque size (min)
+              </label>
               <select
                 value={minCheque}
                 onChange={(e) => setMinCheque(e.target.value)}
@@ -481,7 +531,9 @@ export default function InvestorDiscoverPage() {
               </select>
             </div>
             <div>
-              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Cheque size (max)</label>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+                Cheque size (max)
+              </label>
               <select
                 value={maxCheque}
                 onChange={(e) => setMaxCheque(e.target.value)}
@@ -498,7 +550,9 @@ export default function InvestorDiscoverPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px] mb-[16px]">
             <div>
-              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Thesis</label>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+                Thesis
+              </label>
               <select
                 value={hasThesis}
                 onChange={(e) => setHasThesis(e.target.value)}
@@ -509,7 +563,9 @@ export default function InvestorDiscoverPage() {
               </select>
             </div>
             <div>
-              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Lead / follow</label>
+              <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+                Lead / follow
+              </label>
               <select
                 value={leadPreference}
                 onChange={(e) => setLeadPreference(e.target.value)}
@@ -528,14 +584,16 @@ export default function InvestorDiscoverPage() {
               Cheque size is recorded for {facets.dataAvailability.cheque.toLocaleString()} of{" "}
               {facets.dataAvailability.total.toLocaleString()} firms · written thesis for{" "}
               {facets.dataAvailability.thesis.toLocaleString()} · lead/follow preference for{" "}
-              {facets.dataAvailability.leadPreference.toLocaleString()}. Filters on these fields return few results by
-              design — they never invent a value that is missing.
+              {facets.dataAvailability.leadPreference.toLocaleString()}. Filters on these fields
+              return few results by design — they never invent a value that is missing.
             </p>
           )}
 
           {/* Free text */}
           <div className="mb-[16px]">
-            <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">Describe what you need</label>
+            <label className="block text-[13px] font-medium text-gray-500 !mb-[6px]">
+              Describe what you need
+            </label>
             <textarea
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -549,7 +607,8 @@ export default function InvestorDiscoverPage() {
             <Button onClick={handleSearch} disabled={isSearching}>
               {isSearching ? (
                 <>
-                  <i className="ri-loader-4-line animate-spin text-[16px] mr-[6px]"></i> Searching...
+                  <i className="ri-loader-4-line animate-spin text-[16px] mr-[6px]"></i>{" "}
+                  Searching...
                 </>
               ) : (
                 <>
@@ -636,8 +695,12 @@ export default function InvestorDiscoverPage() {
           <CardBody className="py-[50px]">
             <div className="text-center">
               <div className="w-[48px] h-[48px] border-4 border-lime-500 border-t-transparent rounded-full animate-spin mx-auto mb-[16px]"></div>
-              <h3 className="!text-[16px] !font-semibold !mb-[6px]">Searching the investor database...</h3>
-              <p className="text-[14px] text-gray-500 !mb-0">Matching against your criteria and scoring fit.</p>
+              <h3 className="!text-[16px] !font-semibold !mb-[6px]">
+                Searching the investor database...
+              </h3>
+              <p className="text-[14px] text-gray-500 !mb-0">
+                Matching against your criteria and scoring fit.
+              </p>
             </div>
           </CardBody>
         </Card>
@@ -659,12 +722,23 @@ export default function InvestorDiscoverPage() {
               {results.length > 0 && (
                 <p className="text-[12px] text-gray-400 !mb-0 mt-[4px]">
                   {(() => {
-                    const c: Record<string, number> = { filing_1y: 0, filing_3y: 0, dormant_3y_plus: 0, no_evidence: 0 };
-                    results.forEach((r) => { const k = r.filing_recency || "no_evidence"; c[k] = (c[k] || 0) + 1; });
+                    const c: Record<string, number> = {
+                      filing_1y: 0,
+                      filing_3y: 0,
+                      dormant_3y_plus: 0,
+                      no_evidence: 0,
+                    };
+                    results.forEach((r) => {
+                      const k = r.filing_recency || "no_evidence";
+                      c[k] = (c[k] || 0) + 1;
+                    });
                     return (
                       <>
-                        {c.filing_1y} filed &lt;1y · {c.filing_3y} filed &lt;3y · {c.dormant_3y_plus} dormant &gt;3y · {c.no_evidence} no filing data
-                        {results.some((r) => r.sec_verified) && <> · {results.filter((r) => r.sec_verified).length} SEC-verified</>}
+                        {c.filing_1y} filed &lt;1y · {c.filing_3y} filed &lt;3y ·{" "}
+                        {c.dormant_3y_plus} dormant &gt;3y · {c.no_evidence} no filing data
+                        {results.some((r) => r.sec_verified) && (
+                          <> · {results.filter((r) => r.sec_verified).length} SEC-verified</>
+                        )}
                       </>
                     );
                   })()}
@@ -674,16 +748,36 @@ export default function InvestorDiscoverPage() {
                 <div className="flex items-center gap-[6px] flex-wrap mt-[6px]">
                   <span className="text-[12px] text-gray-400">Understood as:</span>
                   {parsedFilters.stages.map((s) => (
-                    <span key={`s-${s}`} className="text-[11px] px-[8px] py-[2px] rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">{s.replace(/_/g, " ")}</span>
+                    <span
+                      key={`s-${s}`}
+                      className="text-[11px] px-[8px] py-[2px] rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                    >
+                      {s.replace(/_/g, " ")}
+                    </span>
                   ))}
                   {parsedFilters.sectors.map((s) => (
-                    <span key={`sec-${s}`} className="text-[11px] px-[8px] py-[2px] rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">{s}</span>
+                    <span
+                      key={`sec-${s}`}
+                      className="text-[11px] px-[8px] py-[2px] rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
+                    >
+                      {s}
+                    </span>
                   ))}
                   {parsedFilters.countries.map((c) => (
-                    <span key={`c-${c}`} className="text-[11px] px-[8px] py-[2px] rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400">{c}</span>
+                    <span
+                      key={`c-${c}`}
+                      className="text-[11px] px-[8px] py-[2px] rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+                    >
+                      {c}
+                    </span>
                   ))}
                   {parsedFilters.investor_types.map((t) => (
-                    <span key={`t-${t}`} className="text-[11px] px-[8px] py-[2px] rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">{t.replace(/_/g, " ")}</span>
+                    <span
+                      key={`t-${t}`}
+                      className="text-[11px] px-[8px] py-[2px] rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400"
+                    >
+                      {t.replace(/_/g, " ")}
+                    </span>
                   ))}
                 </div>
               )}
@@ -693,7 +787,9 @@ export default function InvestorDiscoverPage() {
           {results.length === 0 ? (
             <Card>
               <CardBody className="text-center py-[40px]">
-                <p className="text-[14px] text-gray-400 !mb-[12px]">No investors match your criteria.</p>
+                <p className="text-[14px] text-gray-400 !mb-[12px]">
+                  No investors match your criteria.
+                </p>
                 <Button
                   variant="outline"
                   size="sm"
@@ -829,7 +925,8 @@ export default function InvestorDiscoverPage() {
                                     Fit Score: {analyzeResult.fitScore}%
                                   </p>
                                   <p className="text-[11px] text-gray-400 !mb-0">
-                                    Confidence: {analyzeResult.confidence}% · Data Quality: {analyzeResult.dataQuality}%
+                                    Confidence: {analyzeResult.confidence}% · Data Quality:{" "}
+                                    {analyzeResult.dataQuality}%
                                   </p>
                                 </div>
                                 <Badge
@@ -837,8 +934,8 @@ export default function InvestorDiscoverPage() {
                                     analyzeResult.outreachReadiness === "ready"
                                       ? "success"
                                       : analyzeResult.outreachReadiness === "needs_verification"
-                                      ? "warning"
-                                      : "default"
+                                        ? "warning"
+                                        : "default"
                                   }
                                   size="sm"
                                 >
@@ -914,11 +1011,7 @@ export default function InvestorDiscoverPage() {
                               </Button>
                             </>
                           ) : (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setExpandedId(null)}
-                            >
+                            <Button size="sm" variant="ghost" onClick={() => setExpandedId(null)}>
                               <i className="ri-arrow-up-s-line text-[14px]"></i>
                               Collapse
                             </Button>
@@ -931,7 +1024,10 @@ export default function InvestorDiscoverPage() {
                                 await fetch("/api/investors/pipeline", {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ investorId: investor.id, stage: "shortlisted" }),
+                                  body: JSON.stringify({
+                                    investorId: investor.id,
+                                    stage: "shortlisted",
+                                  }),
                                 });
                                 // Update local state to show it was added
                                 setResults((prev) =>
@@ -941,7 +1037,9 @@ export default function InvestorDiscoverPage() {
                                       : r
                                   )
                                 );
-                              } catch { /* silent */ }
+                              } catch {
+                                /* silent */
+                              }
                             }}
                           >
                             <i className="ri-add-circle-line text-[14px]"></i>
@@ -971,10 +1069,14 @@ export default function InvestorDiscoverPage() {
               <div className="w-[64px] h-[64px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center mx-auto mb-[16px]">
                 <i className="ri-radar-line text-lime-500 text-[28px]"></i>
               </div>
-              <h3 className="!text-[16px] !font-semibold !mb-[6px]">AI-Powered Investor Discovery</h3>
+              <h3 className="!text-[16px] !font-semibold !mb-[6px]">
+                AI-Powered Investor Discovery
+              </h3>
               <p className="text-[14px] text-gray-500 !mb-0 max-w-[400px] mx-auto">
-                Search across 1M+ investors. Set criteria or use your startup profile to find the best matches.
-                Then click <strong>Analyze Fit</strong> to run AI scoring on any investor.
+                Search the 18,995 US investor firms on file. Set criteria or use your startup
+                profile to find the best matches — cheque size, thesis and portfolio fields are only
+                searchable where the filing recorded them. Then click <strong>Analyze Fit</strong>{" "}
+                to run AI scoring on any investor.
               </p>
             </div>
           </CardBody>
