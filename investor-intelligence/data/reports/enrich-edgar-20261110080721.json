@@ -1,0 +1,26 @@
+{
+  "run_id": "20261110080721",
+  "started_at": "2026-11-10T08:07:22.634Z",
+  "attempted": 20,
+  "fetched": 20,
+  "failed": 0,
+  "parsed": 20,
+  "with_fund_type": 14,
+  "with_min_investment": 20,
+  "with_team": 20,
+  "with_offering_amount": 20,
+  "venture_funds": 9,
+  "private_equity_funds": 1,
+  "other_funds": 10,
+  "by_fund_type": {
+    "Venture Capital Fund": 9,
+    "Other Investment Fund": 1,
+    "Hedge Fund": 3,
+    "Private Equity Fund": 1
+  },
+  "out_file": "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\enriched\\edgar\\records-20261110080721.jsonl",
+  "error_file": "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\logs\\errors\\edgar-20261110080721.jsonl",
+  "finished_at": "2026-11-10T08:07:27.199Z",
+  "runtime_seconds": 5,
+  "records_per_hour": 14400
+}

@@ -6,9 +6,12 @@ classification and qualification live here; only reviewed, promoted records reac
 the app's `investors` table.
 
 **Status, 2026-11-10:** two acquisition batches complete — **21,949 new fund
-candidates** staged from SEC Form D (Q2 and Q3 2026), from 32,592 filings.
-All are **unverified candidates**, not qualified investors; none is promoted.
-See `research/reports/batch-001.md` and `batch-002.md`.
+candidates** staged from SEC Form D (Q2 and Q3 2026), from 32,592 filings — and
+an enrichment layer that has parsed **4,386** of them from their own EDGAR XML
+(fund type, team, minimum commitment, offering amounts, first sale). Enrichment
+is local-only: no candidate is promoted and nothing is written to the product
+database. See `research/reports/batch-001.md`, `batch-002.md` and
+`batch-003-enrichment.md`.
 
 ---
 
@@ -83,9 +86,16 @@ investor-intelligence/
 │   ├── methodology.md
 │   ├── qualification_framework.md
 │   └── reports/batch-001.md
-├── scripts/acquire/sec-formd-pooled.cjs
+├── scripts/
+│   ├── acquire/sec-formd-pooled.cjs      SEC EFTS → candidates
+│   ├── enrich/enrich-edgar.cjs           per-filing XML enrichment
+│   ├── enrich/enrich-edgar-bulk.cjs      quarterly bulk archive enrichment
+│   ├── enrich/enrich-web.cjs             website/stage/cheque evidence
+│   └── qualification/score-local.cjs     local evidence scoring
 ├── data/raw/                       source payloads (git-ignored)
 ├── data/processed/                 normalised candidates (git-ignored)
+├── data/enriched/                  EDGAR + website enrichment (git-ignored)
+├── data/qualified/                 scored records by tier (git-ignored)
 ├── data/checkpoints/               resumable run state (git-ignored)
 └── data/reports/                   run metrics (committed)
 ```
@@ -106,6 +116,31 @@ The acquirer splits the range into weekly windows (EFTS caps pagination at
 10,000 results), paginates 100 per request, sleeps 140 ms between requests
 (≈7 req/s, under the SEC's 10 req/s fair-access limit) and records completed
 windows in `data/checkpoints/` so an interrupted run resumes.
+
+## 4a. Enrichment (local only)
+
+```bash
+# per-filing XML (respects SEC fair access; pauses on 429)
+node investor-intelligence/scripts/enrich/enrich-edgar.cjs --all --concurrency 5
+
+# bulk: one download per quarter instead of one request per filing
+node investor-intelligence/scripts/enrich/enrich-edgar-bulk.cjs --quarter 2026q2
+
+# website evidence: explicit seed/pre-seed language, cheque ranges, sectors, contacts
+node investor-intelligence/scripts/enrich/enrich-web.cjs --all --venture
+
+# conservative local scoring by tier
+node investor-intelligence/scripts/qualification/score-local.cjs
+```
+
+Outputs stay under `data/enriched/` and `data/qualified/` and are git-ignored.
+No SQL is issued: the operation does not write to the product database.
+
+First results (4,386 records): 1,086 venture funds, 947 private equity, 981
+hedge funds disqualified, 100% with related persons and a minimum-investment
+figure, 40% with an offering amount. Local tiers: 0 A, 2 B, 17 C, 4,367 D —
+website, cheque and founder-policy evidence is what separates a fund identity
+from a qualified investor.
 
 ## 5. Source rules
 

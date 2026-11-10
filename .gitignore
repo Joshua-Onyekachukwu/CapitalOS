@@ -101,4 +101,7 @@ data/iapd/
 investor-intelligence/data/raw/
 investor-intelligence/data/processed/
 investor-intelligence/data/checkpoints/
+investor-intelligence/data/enriched/
+investor-intelligence/data/qualified/
+investor-intelligence/data/logs/
 .tmp/

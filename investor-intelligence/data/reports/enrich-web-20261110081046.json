@@ -1,0 +1,20 @@
+{
+  "run_id": "20261110081046",
+  "started_at": "2026-11-10T08:10:46.274Z",
+  "eligible": 372,
+  "attempted": 20,
+  "domains_tried": 72,
+  "sites_fetched": 5,
+  "accepted": 1,
+  "rejected": 4,
+  "no_domain_response": 66,
+  "with_stage": 1,
+  "with_cheque_text": 0,
+  "with_sectors": 1,
+  "with_email": 0,
+  "with_linkedin": 0,
+  "out_file": "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\enriched\\web\\records-20261110081046.jsonl",
+  "finished_at": "2026-11-10T08:12:10.312Z",
+  "runtime_seconds": 84,
+  "accept_rate": 0.05
+}
