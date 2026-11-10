@@ -40,7 +40,10 @@ migrations and the claim has not been re-measured since.
 | Fundraising reports | PARTIAL | **PARTIAL** | `/dashboard/reports`: pipeline, outreach and conversion sections, CSV export of pipeline and outreach, and a print view. No true PDF generation, and conversion sections read empty until sends exist. |
 | Collaboration | MISSING | **NOT STARTED** | No org/team model. Every table is single-owner. |
 | Deliverability console | PARTIAL | **PARTIAL** | The four email-health pages are merged into `/dashboard/deliverability` (Overview / Analytics / Domain / Warm-up) with redirects from the old paths. Health tables are empty because nothing has been sent. |
-| Investor comparison & bulk shortlist | MISSING | **COMPLETE (code)** | Select up to four investors for a side-by-side comparison and bulk-save a selection to the shortlist. Not exercised with a signed-in session. |
+| Investor comparison & bulk shortlist | MISSING | **COMPLETE (verified)** | Select up to four investors for a side-by-side comparison and bulk-save a selection to the shortlist. Exercised by `scripts/e2e-smoke.cjs`. |
+| Saved-search alerts | MISSING | **COMPLETE (code)** | Saved filters are evaluated against the corpus for rows created since the last check; matches appear in the header bell (`search_alerts`, migration 039). With no import running there will usually be nothing to report. |
+| Post-raise investor relations | MISSING | **PARTIAL** | `/dashboard/ir`: monthly update drafter from real profile and pipeline numbers (saves drafts only), read receipts, and data-room retention/expiry view. Sending and therefore real receipts stay blocked on the mailbox. |
+| Repeatable signed-in check | MISSING | **COMPLETE (code)** | `scripts/e2e-smoke.cjs` (Playwright) creates a disposable account, signs in, creates a CRM task, drags a pipeline card, compares two investors, opens the IR drafter and the alerts panel, then deletes the account. 6/6 passing locally. |
 | Sequences | MISSING | **PARTIAL** | `/dashboard/sequences` is a read-only hub over `campaign_sequences` and steps. No sequence editor. |
 
 ## Admin & infrastructure (Section 7)

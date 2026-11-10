@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { createClient } from "@supabase/supabase-js";
-import { parseAdvancedFilters, applyAdvancedFilters } from "@/lib/services/investors/filters";
+import { applyInvestorFilters, filtersFromRecord } from "@/lib/services/investors/query";
 
 export async function GET(request: NextRequest) {
   const user = await requireAuth(request);
@@ -36,35 +36,18 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Filters ──
-    const search = sp.get("search") || sp.get("query") || "";
-    const type = sp.get("type") || "";
-    const country = sp.get("country") || "";
-    const city = sp.get("city") || "";
-    const readiness = sp.get("readiness") || "";
-    const verified = sp.get("verified") || "";
-    const minScore = sp.get("minScore") || sp.get("minFitScore") || "";
-    const maxScore = sp.get("maxScore") || "";
-    const hasEmail = sp.get("hasEmail") || "";
-    const hasLinkedin = sp.get("hasLinkedin") || "";
-    const minQuality = sp.get("minQuality") || "";
-    const firmId = sp.get("firmId") || "";
-    const stage = sp.get("stage") || "";        // single stage value
-    const sector = sp.get("sector") || "";      // single sector value
-    // Evidence tier filter — matches the pipeline-stamped verification_status
-    // (verified/derived/ai_classified/unknown) that the qualification pass
-    // re-stamps daily and the UI badges display.
-    const evidence = sp.get("evidence") || "";
-    // Array params — "sectors" and "stages" can be comma-separated or multiple values
-    const sectorsParam = sp.get("sectors") || "";
-    const stagesParam = sp.get("stages") || "";
-    const sectors = sectorsParam ? sectorsParam.split(",").map((s) => s.trim()).filter(Boolean) : [];
-    const stages = stagesParam ? stagesParam.split(",").map((s) => s.trim()).filter(Boolean) : [];
-    // Cheque size, thesis, lead/follow and firm name. Shared with the Discover
-    // endpoint so the same input means the same thing in both places.
-    const advanced = parseAdvancedFilters(sp);
+    // Parsed into one shape and applied by the shared filter module, so this
+    // endpoint, Discover and the saved-search alert matcher cannot drift.
+    const filters = filtersFromRecord(Object.fromEntries(sp.entries()));
 
     // ── Sorting ──
-    const validSorts = ["created_at", "fit_score", "full_name", "data_quality_score", "portfolio_count"];
+    const validSorts = [
+      "created_at",
+      "fit_score",
+      "full_name",
+      "data_quality_score",
+      "portfolio_count",
+    ];
     const sortBy = validSorts.includes(sp.get("sortBy") || "") ? sp.get("sortBy")! : "created_at";
     const sortDir = sp.get("sortDir") === "asc" || sp.get("sortDirection") === "asc";
 
@@ -75,46 +58,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Helper to apply common filters
-    const applyFilters = (q: any) => {
-      // Merged/deactivated records (duplicate merges set is_active=false) must
-      // never surface to users — they exist only as merge-history evidence.
-      q = q.eq("is_active", true);
-      // NOTE: only columns that actually exist on `investors` — referencing a
-      // phantom column (e.g. firm_name) makes PostgREST reject the whole .or()
-      // with 42703, which surfaced as "0 results for every search". Firm search
-      // would need an embedded-resource query on investor_firms; this dataset
-      // has no firm names on investor rows (current_firm_id is null).
-      // Commas/parens are stripped: they would break the .or() list syntax.
-      if (search) {
-        const safe = search.replace(/[,()]/g, " ").trim();
-        if (safe) {
-          q = q.or(
-            `full_name.ilike.%${safe}%,email.ilike.%${safe}%,job_title.ilike.%${safe}%,bio.ilike.%${safe}%`
-          );
-        }
-      }
-      if (type) q = q.eq("investor_type", type);
-      if (country) q = q.ilike("country", `%${country}%`);
-      if (city) q = q.ilike("city", `%${city}%`);
-      if (readiness) q = q.eq("outreach_readiness", readiness);
-      if (verified === "true") q = q.eq("is_verified", true);
-      if (minScore) q = q.gte("fit_score", parseInt(minScore));
-      if (minQuality) q = q.gte("data_quality_score", parseInt(minQuality));
-      if (hasEmail === "true") q = q.not("email", "is", null).neq("email", "");
-      if (hasLinkedin === "true") q = q.not("linkedin_url", "is", null).neq("linkedin_url", "");
-      if (firmId) q = q.eq("current_firm_id", firmId);
-      // Single stage/sector values (from main investor list filters)
-      if (stage) q = q.contains("investment_stages", [stage]);
-      if (sector) q = q.contains("investment_sectors", [sector]);
-      if (["verified", "derived", "ai_classified", "unknown"].includes(evidence)) {
-        q = q.eq("verification_status", evidence);
-      }
-      // Array overlap — any of the specified values must be in the array columns
-      if (stages.length > 0) q = q.overlaps("investment_stages", stages);
-      if (sectors.length > 0) q = q.overlaps("investment_sectors", sectors);
-      q = applyAdvancedFilters(q, advanced);
-      return q;
-    };
+    const applyFilters = (q: any) => applyInvestorFilters(q, filters);
 
     // Run count and data queries in parallel. The count is skipped when the
     // caller passes skipCount=1, because an exact count over 500k filtered
@@ -122,9 +66,7 @@ export async function GET(request: NextRequest) {
     const [countResult, dataResult] = await Promise.all([
       skipCount
         ? Promise.resolve({ count: null as number | null, error: null })
-        : applyFilters(
-            supabase.from("investors").select("id", { count: "exact", head: true })
-          ),
+        : applyFilters(supabase.from("investors").select("id", { count: "exact", head: true })),
       (() => {
         let q: any = applyFilters(supabase.from("investors").select("*"))
           .order(sortBy, { ascending: sortDir, nullsFirst: false })
@@ -132,7 +74,22 @@ export async function GET(request: NextRequest) {
         if (cursor) {
           const op = sortDir ? "gt" : "lt";
           const v = encodeURIComponent(String(cursor.v));
-          q = q.or(sortBy + "." + op + "." + v + ",and(" + sortBy + ".eq." + v + ",id." + op + "." + cursor.id + ")");
+          q = q.or(
+            sortBy +
+              "." +
+              op +
+              "." +
+              v +
+              ",and(" +
+              sortBy +
+              ".eq." +
+              v +
+              ",id." +
+              op +
+              "." +
+              cursor.id +
+              ")"
+          );
         }
         return cursor ? q.limit(limit) : q.range(offset, offset + limit - 1);
       })(),
@@ -152,14 +109,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to load investors" }, { status: 500 });
     }
 
-    const lastRow = (investors && investors.length > 0 ? investors[investors.length - 1] : null) as
-      | Record<string, unknown>
-      | null;
+    const lastRow = (
+      investors && investors.length > 0 ? investors[investors.length - 1] : null
+    ) as Record<string, unknown> | null;
     const nextCursor = lastRow
-      ? Buffer.from(
-          JSON.stringify({ v: lastRow[sortBy], id: lastRow.id }),
-          "utf8"
-        ).toString("base64url")
+      ? Buffer.from(JSON.stringify({ v: lastRow[sortBy], id: lastRow.id }), "utf8").toString(
+          "base64url"
+        )
       : null;
 
     return NextResponse.json({

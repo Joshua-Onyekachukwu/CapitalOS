@@ -154,6 +154,7 @@ function InvestorCard({
         // The page owns the drag payload; dataTransfer is set as well so the
         // drop still works if state is lost between frames.
         e.dataTransfer.setData("text/plain", investor.id);
+        e.dataTransfer.setData("application/x-pipeline-stage", investor.pipeline_stage);
         e.dataTransfer.effectAllowed = "move";
         onDragStart(investor);
       }}
@@ -301,6 +302,11 @@ function InvestorCard({
 export default function PipelinePage() {
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [stageData, setStageData] = useState<Record<string, StageData>>({});
+  // Mirror of stageData for effects and guards. Keeping it in a ref lets the
+  // "load the expanded stage" effect depend only on expandedStage; depending on
+  // stageData made every setStageData re-run the effect, which re-fetched the
+  // stage and produced a state-update loop.
+  const stageDataRef = useRef<Record<string, StageData>>({});
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
@@ -341,6 +347,7 @@ export default function PipelinePage() {
 
   // Load investors for a specific stage (on demand)
   const loadStage = useCallback(async (stageId: string, page = 1) => {
+    if (stageDataRef.current[stageId]?.loading) return;
     setStageData((prev) => ({
       ...prev,
       [stageId]: { ...prev[stageId], loading: true },
@@ -369,15 +376,19 @@ export default function PipelinePage() {
   }, []);
 
   useEffect(() => {
+    stageDataRef.current = stageData;
+  }, [stageData]);
+
+  useEffect(() => {
     loadSummary();
   }, [loadSummary]);
 
-  // When a stage is expanded, load its investors
+  // When a stage is expanded, load its investors once.
   useEffect(() => {
-    if (expandedStage && !stageData[expandedStage]?.loaded) {
-      loadStage(expandedStage);
-    }
-  }, [expandedStage, stageData, loadStage]);
+    if (!expandedStage) return;
+    const current = stageDataRef.current[expandedStage];
+    if (!current?.loaded && !current?.loading) loadStage(expandedStage);
+  }, [expandedStage, loadStage]);
 
   const handleMove = async (
     investorId: string,
@@ -450,9 +461,14 @@ export default function PipelinePage() {
 
   // A drop onto a lost stage must capture why before it commits; every other
   // stage moves immediately, which is what a board should feel like.
-  const handleDrop = (stageId: string) => {
+  const handleDrop = (stageId: string, event?: React.DragEvent) => {
     setDragOver(null);
-    const payload = dragging;
+    // React state is the primary source, but dragend can fire before drop in
+    // synthetic/automated drags. dataTransfer is the same payload the card
+    // wrote on dragstart, so the move still works when state is already gone.
+    const transferId = event?.dataTransfer.getData("text/plain") || "";
+    const transferStage = event?.dataTransfer.getData("application/x-pipeline-stage") || "";
+    const payload = dragging ?? (transferId ? { id: transferId, stage: transferStage } : null);
     setDragging(null);
     if (!payload || payload.stage === stageId) return;
     if (LOST_STAGES.includes(stageId)) {
@@ -514,7 +530,7 @@ export default function PipelinePage() {
                 onDragLeave={() => setDragOver((cur) => (cur === stage.id ? null : cur))}
                 onDrop={(e) => {
                   e.preventDefault();
-                  handleDrop(stage.id);
+                  handleDrop(stage.id, e);
                 }}
                 className={`text-left p-[14px] rounded-[12px] border transition-all ${
                   dragOver === stage.id

@@ -20,7 +20,8 @@
     "db:status": "node scripts/migrate.cjs --status",
     "db:migrate": "node scripts/migrate.cjs",
     "db:query": "node scripts/db.cjs",
-    "db:rescore": "tsx scripts/rescore-fit.ts"
+    "db:rescore": "tsx scripts/rescore-fit.ts",
+    "e2e:smoke": "node scripts/e2e-smoke.cjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -16,86 +16,94 @@ interface NavSection {
   title?: string;
   items: NavItem[];
   adminOnly?: boolean;
-}  // Admin-only hrefs — hidden from non-admins in sidebar AND blocked by layout
-  const ADMIN_HREFS = ["/dashboard/data-health"];
+} // Admin-only hrefs — hidden from non-admins in sidebar AND blocked by layout
+const ADMIN_HREFS = ["/dashboard/data-health"];
 
-  function isAdminItem(href: string): boolean {
-    return ADMIN_HREFS.some((adminHref) => href === adminHref || href.startsWith(adminHref + "/"));
-  }
+function isAdminItem(href: string): boolean {
+  return ADMIN_HREFS.some((adminHref) => href === adminHref || href.startsWith(adminHref + "/"));
+}
 
-  const navSections: NavSection[] = [
-    {
-      items: [
-        { label: "Dashboard", href: "/dashboard", icon: "ri-dashboard-3-line" },
-        { label: "Fundraising Copilot", href: "/dashboard/copilot", icon: "ri-sparkling-2-line", badge: "AI" },
-      ],
-    },
-    {
-      title: "Startup",
-      items: [
-        { label: "My Startup", href: "/dashboard/startup", icon: "ri-rocket-2-line" },
-        { label: "Readiness", href: "/dashboard/readiness", icon: "ri-checkbox-circle-line" },
-        { label: "Edit Profile", href: "/dashboard/startup/edit", icon: "ri-edit-line" },
-        { label: "Onboarding", href: "/onboarding", icon: "ri-flask-line" },
-        { label: "Documents", href: "/dashboard/documents", icon: "ri-file-text-line" },
-        { label: "Pitch Decks", href: "/dashboard/decks", icon: "ri-file-ppt-2-line" },
-      ],
-    },
-    {
-      title: "Investors",
-      items: [
-        { label: "Discover", href: "/dashboard/investors/discover", icon: "ri-radar-line" },
-        { label: "Investor Database", href: "/dashboard/investors", icon: "ri-database-2-line" },
-        { label: "Saved Investors", href: "/dashboard/investors/saved", icon: "ri-bookmark-line" },
-        { label: "Matches", href: "/dashboard/investors/matches", icon: "ri-pie-chart-line" },
-      ],
-    },
-    {
-      title: "Pipeline",
-      items: [
-        { label: "Fundraising Pipeline", href: "/dashboard/pipeline", icon: "ri-kanban-view" },
-        { label: "CRM", href: "/dashboard/crm", icon: "ri-contacts-book-2-line" },
-        { label: "Lists", href: "/dashboard/lists", icon: "ri-list-unordered" },
-        { label: "Introductions", href: "/dashboard/introductions", icon: "ri-links-line" },
-        { label: "Campaigns", href: "/dashboard/campaigns", icon: "ri-megaphone-line" },
-        { label: "Sequences", href: "/dashboard/sequences", icon: "ri-flow-chart" },
-      ],
-    },
-    {
-      title: "Outreach",
-      items: [
-        { label: "Outreach", href: "/dashboard/outreach", icon: "ri-mail-send-line" },
-        { label: "Deliverability", href: "/dashboard/deliverability", icon: "ri-mail-check-line" },
-        { label: "Metrics", href: "/dashboard/outreach/metrics", icon: "ri-bar-chart-line" },
-        { label: "Meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" },
-      ],
-    },
-    {
-      title: "Insights",
-      items: [
-        { label: "Analytics", href: "/dashboard/analytics", icon: "ri-line-chart-line" },
-        { label: "Reports", href: "/dashboard/reports", icon: "ri-file-chart-line" },
-        { label: "Intelligence", href: "/dashboard/intelligence", icon: "ri-radar-line" },
-        { label: "Opportunities", href: "/dashboard/opportunities", icon: "ri-trophy-line" },
-        { label: "AI Activity", href: "/dashboard/ai-activity", icon: "ri-robot-2-line" },
-      ],
-    },
-    // Admin-only section — only rendered for admins
-    {
-      title: "Admin",
-      items: [
-        { label: "Data Health", href: "/dashboard/data-health", icon: "ri-heart-pulse-line" },
-        { label: "Email Monitor", href: "/dashboard/data-health/email-monitor", icon: "ri-mail-check-line" },
-        { label: "Waitlist", href: "/dashboard/data-health/waitlist", icon: "ri-user-star-line" },
-      ],
-      adminOnly: true,
-    },
-    {
-      items: [
-        { label: "Settings", href: "/dashboard/settings", icon: "ri-settings-3-line" },
-      ],
-    },
-  ];
+const navSections: NavSection[] = [
+  {
+    items: [
+      { label: "Dashboard", href: "/dashboard", icon: "ri-dashboard-3-line" },
+      {
+        label: "Fundraising Copilot",
+        href: "/dashboard/copilot",
+        icon: "ri-sparkling-2-line",
+        badge: "AI",
+      },
+    ],
+  },
+  {
+    title: "Startup",
+    items: [
+      { label: "My Startup", href: "/dashboard/startup", icon: "ri-rocket-2-line" },
+      { label: "Readiness", href: "/dashboard/readiness", icon: "ri-checkbox-circle-line" },
+      { label: "Edit Profile", href: "/dashboard/startup/edit", icon: "ri-edit-line" },
+      { label: "Onboarding", href: "/onboarding", icon: "ri-flask-line" },
+      { label: "Documents", href: "/dashboard/documents", icon: "ri-file-text-line" },
+      { label: "Pitch Decks", href: "/dashboard/decks", icon: "ri-file-ppt-2-line" },
+    ],
+  },
+  {
+    title: "Investors",
+    items: [
+      { label: "Discover", href: "/dashboard/investors/discover", icon: "ri-radar-line" },
+      { label: "Investor Database", href: "/dashboard/investors", icon: "ri-database-2-line" },
+      { label: "Saved Investors", href: "/dashboard/investors/saved", icon: "ri-bookmark-line" },
+      { label: "Matches", href: "/dashboard/investors/matches", icon: "ri-pie-chart-line" },
+    ],
+  },
+  {
+    title: "Pipeline",
+    items: [
+      { label: "Fundraising Pipeline", href: "/dashboard/pipeline", icon: "ri-kanban-view" },
+      { label: "CRM", href: "/dashboard/crm", icon: "ri-contacts-book-2-line" },
+      { label: "Lists", href: "/dashboard/lists", icon: "ri-list-unordered" },
+      { label: "Introductions", href: "/dashboard/introductions", icon: "ri-links-line" },
+      { label: "Campaigns", href: "/dashboard/campaigns", icon: "ri-megaphone-line" },
+      { label: "Sequences", href: "/dashboard/sequences", icon: "ri-flow-chart" },
+      { label: "Investor Relations", href: "/dashboard/ir", icon: "ri-file-chart-2-line" },
+    ],
+  },
+  {
+    title: "Outreach",
+    items: [
+      { label: "Outreach", href: "/dashboard/outreach", icon: "ri-mail-send-line" },
+      { label: "Deliverability", href: "/dashboard/deliverability", icon: "ri-mail-check-line" },
+      { label: "Metrics", href: "/dashboard/outreach/metrics", icon: "ri-bar-chart-line" },
+      { label: "Meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" },
+    ],
+  },
+  {
+    title: "Insights",
+    items: [
+      { label: "Analytics", href: "/dashboard/analytics", icon: "ri-line-chart-line" },
+      { label: "Reports", href: "/dashboard/reports", icon: "ri-file-chart-line" },
+      { label: "Intelligence", href: "/dashboard/intelligence", icon: "ri-radar-line" },
+      { label: "Opportunities", href: "/dashboard/opportunities", icon: "ri-trophy-line" },
+      { label: "AI Activity", href: "/dashboard/ai-activity", icon: "ri-robot-2-line" },
+    ],
+  },
+  // Admin-only section — only rendered for admins
+  {
+    title: "Admin",
+    items: [
+      { label: "Data Health", href: "/dashboard/data-health", icon: "ri-heart-pulse-line" },
+      {
+        label: "Email Monitor",
+        href: "/dashboard/data-health/email-monitor",
+        icon: "ri-mail-check-line",
+      },
+      { label: "Waitlist", href: "/dashboard/data-health/waitlist", icon: "ri-user-star-line" },
+    ],
+    adminOnly: true,
+  },
+  {
+    items: [{ label: "Settings", href: "/dashboard/settings", icon: "ri-settings-3-line" }],
+  },
+];
 
 interface SidebarProps {
   isOpen: boolean;
@@ -103,7 +111,15 @@ interface SidebarProps {
   isAdmin?: boolean;
 }
 
-function SidebarNavItem({ item, isActive, onClick }: { item: NavItem; isActive: boolean; onClick: () => void }) {
+function SidebarNavItem({
+  item,
+  isActive,
+  onClick,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  onClick: () => void;
+}) {
   return (
     <Link
       href={item.href}
@@ -173,7 +189,9 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-[10px] py-[12px]">            {navSections
+          <nav className="flex-1 overflow-y-auto px-[10px] py-[12px]">
+            {" "}
+            {navSections
               .filter((section) => {
                 // Hide admin-only sections entirely from non-admins
                 if (!isAdmin && section.adminOnly) return false;
@@ -188,7 +206,10 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
                 // Don't render section if all items are hidden
                 if (visibleItems.length === 0) return null;
                 return (
-                  <div key={sectionIndex} className={section.title ? "mt-[16px]" : sectionIndex > 0 ? "mt-[4px]" : ""}>
+                  <div
+                    key={sectionIndex}
+                    className={section.title ? "mt-[16px]" : sectionIndex > 0 ? "mt-[4px]" : ""}
+                  >
                     {section.title && (
                       <p className="px-[16px] mb-[6px] text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                         {section.title}
@@ -232,9 +253,7 @@ function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
             <div className="bg-[#06201b] rounded-[12px] p-[16px]">
               <div className="flex items-center gap-[8px] mb-[6px]">
                 <i className="ri-sparkling-2-line text-lime-500 text-[18px]"></i>
-                <h4 className="!text-[13px] !font-semibold !text-white !mb-0">
-                  AI Copilot
-                </h4>
+                <h4 className="!text-[13px] !font-semibold !text-white !mb-0">AI Copilot</h4>
               </div>
               <p className="text-[12px] text-gray-400 !mb-[12px] leading-relaxed">
                 Ask your AI fundraising assistant anything.
