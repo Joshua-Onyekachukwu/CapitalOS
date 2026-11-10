@@ -6,11 +6,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
-import {
-  ChequeEditor,
-  RoundSummary,
-  RoundTargetsForm,
-} from "@/components/Dashboard/PipelineRound";
+import { ChequeEditor, RoundSummary, RoundTargetsForm } from "@/components/Dashboard/PipelineRound";
 import type { RoundMetrics } from "@/lib/services/pipeline/metrics";
 import { toast } from "sonner";
 
@@ -21,7 +17,8 @@ interface PipelineStage {
   color: string;
   description: string;
   count: number;
-}interface DatasetStatus {
+}
+interface DatasetStatus {
   source: string;
   label: string;
   byStage: Record<string, number>;
@@ -45,7 +42,21 @@ interface PipelineInvestor {
   expected_amount: number | null;
   /** Explicit 0-100, or null to use the stage default. */
   probability: number | null;
+  /** Why the relationship ended; only set on a lost stage. */
+  lost_reason: string | null;
+  /** When this investor entered their current stage. */
+  stage_entered_at?: string | null;
 }
+
+interface StageEvent {
+  id: string;
+  fromStage: string | null;
+  toStage: string;
+  notes: string | null;
+  createdAt: string;
+}
+
+const LOST_STAGES = ["closed_lost", "not_a_fit"];
 
 interface StageData {
   investors: PipelineInvestor[];
@@ -57,17 +68,17 @@ interface StageData {
 
 // ── Constants ──
 const STAGE_BG: Record<string, string> = {
-  discovered:    "bg-gray-50 dark:bg-gray-800/30",
-  qualified:     "bg-blue-50/40 dark:bg-blue-900/10",
-  researching:   "bg-indigo-50/40 dark:bg-indigo-900/10",
-  outreach:      "bg-lime-50/40 dark:bg-lime-900/10",
-  contacted:     "bg-purple-50/40 dark:bg-purple-900/10",
-  meeting:       "bg-amber-50/40 dark:bg-amber-900/10",
-  follow_up:     "bg-orange-50/40 dark:bg-orange-900/10",
+  discovered: "bg-gray-50 dark:bg-gray-800/30",
+  qualified: "bg-blue-50/40 dark:bg-blue-900/10",
+  researching: "bg-indigo-50/40 dark:bg-indigo-900/10",
+  outreach: "bg-lime-50/40 dark:bg-lime-900/10",
+  contacted: "bg-purple-50/40 dark:bg-purple-900/10",
+  meeting: "bg-amber-50/40 dark:bg-amber-900/10",
+  follow_up: "bg-orange-50/40 dark:bg-orange-900/10",
   due_diligence: "bg-cyan-50/40 dark:bg-cyan-900/10",
-  term_sheet:    "bg-green-50/40 dark:bg-green-900/10",
-  closed:        "bg-emerald-50/40 dark:bg-emerald-900/10",
-  passed:        "bg-red-50/40 dark:bg-red-900/10",
+  term_sheet: "bg-green-50/40 dark:bg-green-900/10",
+  closed: "bg-emerald-50/40 dark:bg-emerald-900/10",
+  passed: "bg-red-50/40 dark:bg-red-900/10",
 };
 
 const SCORE_COLOR = (s: number) =>
@@ -91,16 +102,40 @@ function InvestorCard({
   onMove,
   moving,
   onSaved,
+  onDragStart,
+  onDragEnd,
 }: {
   investor: PipelineInvestor;
   stages: PipelineStage[];
-  onMove: (investorId: string, stage: string, fromStage?: string) => void;
+  onMove: (investorId: string, stage: string, fromStage?: string, lostReason?: string) => void;
   moving: boolean;
   onSaved: () => void;
+  onDragStart: (investor: PipelineInvestor) => void;
+  onDragEnd: () => void;
 }) {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<StageEvent[] | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const initials = investor.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2);
+  const initials = investor.full_name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2);
+
+  // Load on first open; a second open reuses what was already fetched.
+  const toggleHistory = async () => {
+    setShowHistory((v) => !v);
+    if (history !== null) return;
+    try {
+      const res = await fetch(`/api/investors/pipeline?history=${investor.id}`);
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setHistory(data.events || []);
+    } catch {
+      setHistory([]);
+    }
+  };
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -113,7 +148,19 @@ function InvestorCard({
   }, [showMoveMenu]);
 
   return (
-    <div className="bg-white dark:bg-[#1a1f2e] rounded-[12px] p-[14px] border border-gray-100 dark:border-gray-800 hover:border-lime-300 dark:hover:border-lime-700 hover:shadow-sm transition-all">
+    <div
+      draggable
+      onDragStart={(e) => {
+        // The page owns the drag payload; dataTransfer is set as well so the
+        // drop still works if state is lost between frames.
+        e.dataTransfer.setData("text/plain", investor.id);
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart(investor);
+      }}
+      onDragEnd={onDragEnd}
+      title="Drag onto a stage tile to move"
+      className="bg-white dark:bg-[#1a1f2e] rounded-[12px] p-[14px] border border-gray-100 dark:border-gray-800 hover:border-lime-300 dark:hover:border-lime-700 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-[8px] mb-[10px]">
         <div className="flex items-center gap-[8px] min-w-0">
@@ -150,9 +197,7 @@ function InvestorCard({
             Base: {investor.dataset_status.replace(/_/g, " ")}
           </span>
         )}
-        {investor.country && (
-          <span className="text-[10px] text-gray-400">{investor.country}</span>
-        )}
+        {investor.country && <span className="text-[10px] text-gray-400">{investor.country}</span>}
       </div>
 
       {/* Expected cheque - the input that turns stage counts into money */}
@@ -165,9 +210,56 @@ function InvestorCard({
         />
       </div>
 
+      {/* Lost reason — the only place the board says why a raise ended */}
+      {investor.lost_reason && (
+        <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-[6px] px-[7px] py-[4px] mb-[8px]">
+          <i className="ri-flag-line mr-[3px]"></i>
+          {investor.lost_reason}
+        </p>
+      )}
+
+      {/* Stage history */}
+      {showHistory && (
+        <div className="mb-[8px] rounded-[8px] bg-gray-50 dark:bg-white/5 px-[8px] py-[6px]">
+          {history === null ? (
+            <p className="text-[10px] text-gray-400 !mb-0">Loading history…</p>
+          ) : history.length === 0 ? (
+            <p className="text-[10px] text-gray-400 !mb-0">No stage changes recorded yet.</p>
+          ) : (
+            <ul className="space-y-[4px]">
+              {history.map((h) => (
+                <li key={h.id} className="text-[10px] text-gray-500 dark:text-gray-400">
+                  {h.fromStage ? `${h.fromStage.replace(/_/g, " ")} → ` : "Added → "}
+                  {h.toStage.replace(/_/g, " ")}
+                  <span className="text-gray-300 dark:text-gray-600">
+                    {" · "}
+                    {new Date(h.createdAt).toLocaleDateString()}
+                  </span>
+                  {h.notes && (
+                    <span className="block text-gray-400 italic truncate">{h.notes}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {/* Footer */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-gray-300 dark:text-gray-600">{timeAgo(investor.created_at)}</span>
+        <div className="flex items-center gap-[6px]">
+          <span className="text-[10px] text-gray-300 dark:text-gray-600">
+            {timeAgo(investor.created_at)}
+          </span>
+          <button
+            onClick={toggleHistory}
+            className="text-gray-300 hover:text-lime-600 dark:text-gray-600 p-[2px]"
+            title="Stage history"
+            aria-label="Stage history"
+          >
+            <i className="ri-history-line text-[12px]"></i>
+          </button>
+        </div>
 
         {/* Move button */}
         <div className="relative" ref={menuRef}>
@@ -216,6 +308,18 @@ export default function PipelinePage() {
   const [dataset, setDataset] = useState<DatasetStatus | null>(null);
   const [round, setRound] = useState<RoundMetrics | null>(null);
 
+  // Drag and drop. `dragging` holds what is being moved, `dragOver` which tile
+  // the pointer is over (so the target can highlight), and `lostDialog` the
+  // move that is waiting on a reason before it can be committed.
+  const [dragging, setDragging] = useState<{ id: string; stage: string } | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+  const [lostDialog, setLostDialog] = useState<{
+    id: string;
+    fromStage: string;
+    stage: string;
+  } | null>(null);
+  const [lostReason, setLostReason] = useState("");
+
   // Load the stage summary (counts only — fast). Background mode skips the
   // skeleton flash when reconciling after a move.
   const loadSummary = useCallback(async (background = false) => {
@@ -242,15 +346,14 @@ export default function PipelinePage() {
       [stageId]: { ...prev[stageId], loading: true },
     }));
     try {
-      const res = await fetch(
-        `/api/investors/pipeline?stage=${stageId}&page=${page}&limit=20`
-      );
+      const res = await fetch(`/api/investors/pipeline?stage=${stageId}&page=${page}&limit=20`);
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       setStageData((prev) => ({
         ...prev,
         [stageId]: {
-          investors: page === 1 ? data.investors : [...(prev[stageId]?.investors || []), ...data.investors],
+          investors:
+            page === 1 ? data.investors : [...(prev[stageId]?.investors || []), ...data.investors],
           total: data.total,
           loading: false,
           loaded: true,
@@ -279,14 +382,15 @@ export default function PipelinePage() {
   const handleMove = async (
     investorId: string,
     toStage: string,
-    fromStage?: string
+    fromStage?: string,
+    lostReasonText?: string
   ) => {
     setMovingId(investorId);
     try {
       const res = await fetch("/api/investors/pipeline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ investorId, stage: toStage }),
+        body: JSON.stringify({ investorId, stage: toStage, lostReason: lostReasonText }),
       });
       if (!res.ok) throw new Error("Failed to move investor");
 
@@ -344,6 +448,21 @@ export default function PipelinePage() {
     }
   };
 
+  // A drop onto a lost stage must capture why before it commits; every other
+  // stage moves immediately, which is what a board should feel like.
+  const handleDrop = (stageId: string) => {
+    setDragOver(null);
+    const payload = dragging;
+    setDragging(null);
+    if (!payload || payload.stage === stageId) return;
+    if (LOST_STAGES.includes(stageId)) {
+      setLostReason("");
+      setLostDialog({ id: payload.id, fromStage: payload.stage, stage: stageId });
+      return;
+    }
+    handleMove(payload.id, stageId, payload.stage);
+  };
+
   const totalInvestors = stages.reduce((sum, s) => sum + s.count, 0);
   const activeStages = stages.filter((s) => s.count > 0);
 
@@ -368,7 +487,10 @@ export default function PipelinePage() {
       {summaryLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-[12px] mb-[24px]">
           {Array.from({ length: 11 }).map((_, i) => (
-            <div key={i} className="animate-pulse h-[80px] bg-gray-100 dark:bg-gray-800 rounded-[12px]"></div>
+            <div
+              key={i}
+              className="animate-pulse h-[80px] bg-gray-100 dark:bg-gray-800 rounded-[12px]"
+            ></div>
           ))}
         </div>
       ) : (
@@ -382,10 +504,24 @@ export default function PipelinePage() {
               <button
                 key={stage.id}
                 onClick={() => setExpandedStage(expandedStage === stage.id ? null : stage.id)}
+                onDragOver={(e) => {
+                  // preventDefault is what tells the browser this is a legal
+                  // drop target; without it the drop event never fires.
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  setDragOver(stage.id);
+                }}
+                onDragLeave={() => setDragOver((cur) => (cur === stage.id ? null : cur))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDrop(stage.id);
+                }}
                 className={`text-left p-[14px] rounded-[12px] border transition-all ${
-                  expandedStage === stage.id
-                    ? "border-lime-400 bg-lime-50 dark:bg-lime-900/20 shadow-sm"
-                    : "border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1f2e] hover:border-lime-300 dark:hover:border-lime-700"
+                  dragOver === stage.id
+                    ? "border-lime-500 ring-2 ring-lime-300 bg-lime-50 dark:bg-lime-900/20"
+                    : expandedStage === stage.id
+                      ? "border-lime-400 bg-lime-50 dark:bg-lime-900/20 shadow-sm"
+                      : "border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1f2e] hover:border-lime-300 dark:hover:border-lime-700"
                 }`}
               >
                 <div className="flex items-center gap-[6px] mb-[8px]">
@@ -435,7 +571,9 @@ export default function PipelinePage() {
                     <div>
                       <div className="flex items-center justify-between mb-[16px]">
                         <div className="flex items-center gap-[10px]">
-                          <div className={`w-[10px] h-[10px] rounded-full ${stage?.color || "bg-gray-400"}`}></div>
+                          <div
+                            className={`w-[10px] h-[10px] rounded-full ${stage?.color || "bg-gray-400"}`}
+                          ></div>
                           <h3 className="!text-[16px] !font-semibold !mb-0">{stage?.label}</h3>
                           <span className="text-[13px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-[8px] py-[2px] rounded-full">
                             {stage?.count.toLocaleString()}
@@ -453,15 +591,22 @@ export default function PipelinePage() {
                       {sd?.loading && !sd.investors?.length ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[12px]">
                           {Array.from({ length: 8 }).map((_, i) => (
-                            <div key={i} className="animate-pulse h-[120px] bg-gray-100 dark:bg-gray-800 rounded-[12px]"></div>
+                            <div
+                              key={i}
+                              className="animate-pulse h-[120px] bg-gray-100 dark:bg-gray-800 rounded-[12px]"
+                            ></div>
                           ))}
                         </div>
                       ) : !sd?.investors?.length ? (
                         <div className="text-center py-[40px]">
                           <i className="ri-inbox-line text-[32px] text-gray-200 dark:text-gray-700 block mb-[12px]"></i>
-                          <p className="text-[14px] text-gray-400 !mb-[12px]">No investors in this stage yet.</p>
+                          <p className="text-[14px] text-gray-400 !mb-[12px]">
+                            No investors in this stage yet.
+                          </p>
                           <Link href="/dashboard/investors">
-                            <Button variant="outline" size="sm">Browse Investors</Button>
+                            <Button variant="outline" size="sm">
+                              Browse Investors
+                            </Button>
                           </Link>
                         </div>
                       ) : (
@@ -475,6 +620,13 @@ export default function PipelinePage() {
                                 onMove={handleMove}
                                 moving={movingId === inv.id}
                                 onSaved={() => loadSummary(true)}
+                                onDragStart={(card) =>
+                                  setDragging({ id: card.id, stage: card.pipeline_stage })
+                                }
+                                onDragEnd={() => {
+                                  setDragging(null);
+                                  setDragOver(null);
+                                }}
                               />
                             ))}
                           </div>
@@ -505,14 +657,64 @@ export default function PipelinePage() {
             <Card>
               <CardBody className="text-center py-[40px]">
                 <i className="ri-kanban-view text-[32px] text-gray-200 dark:text-gray-700 block mb-[12px]"></i>
-                <p className="text-[14px] text-gray-400 !mb-[4px]">Click a stage above to view its investors</p>
+                <p className="text-[14px] text-gray-400 !mb-[4px]">
+                  Click a stage above to view its investors
+                </p>
                 <p className="text-[13px] text-gray-300 dark:text-gray-600 !mb-0">
-                  Move investors between stages using the "Move" button on each card.
+                  Drag a card onto a stage tile to move it, or use the "Move" button on the card.
+                  Dropping onto Closed Lost or Not a Fit asks for a reason first.
                 </p>
               </CardBody>
             </Card>
           )}
         </>
+      )}
+
+      {/* Lost-reason capture. Dropping onto a lost stage opens this instead of
+          committing, so the reason is recorded with the move it explains. */}
+      {lostDialog && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-[16px]"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLostDialog(null)}
+        >
+          <div
+            className="w-full max-w-[440px] rounded-[14px] bg-white dark:bg-[#1a1f2e] p-[20px] shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="!text-[16px] !font-semibold !mb-[4px]">Why did this one end?</h3>
+            <p className="text-[12px] text-gray-400 !mb-[12px]">
+              Moving to {stages.find((s) => s.id === lostDialog.stage)?.label || "a lost stage"}.
+              The reason is saved with the move and shown on the card and its history.
+            </p>
+            <textarea
+              autoFocus
+              value={lostReason}
+              onChange={(e) => setLostReason(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="e.g. Ticket size too small, or thesis is consumer, not B2B"
+              className="w-full rounded-[8px] border border-gray-200 bg-white px-[12px] py-[9px] text-[14px] text-[#06201b] outline-none focus:border-lime-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white mb-[12px]"
+            />
+            <div className="flex items-center justify-end gap-[8px]">
+              <Button variant="outline" size="sm" onClick={() => setLostDialog(null)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={!lostReason.trim()}
+                onClick={() => {
+                  const dialog = lostDialog;
+                  setLostDialog(null);
+                  handleMove(dialog.id, dialog.stage, dialog.fromStage, lostReason.trim());
+                }}
+              >
+                Record reason
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

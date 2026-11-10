@@ -40,8 +40,10 @@ type EntryRow = {
   id: string;
   stage: PipelineStageId;
   created_at: string;
+  stage_entered_at: string | null;
   expected_amount: number | string | null;
   probability: number | null;
+  lost_reason: string | null;
   investor: {
     id: string;
     full_name: string;
@@ -59,10 +61,12 @@ type EntryRow = {
   } | null;
 };
 
-function flattenFirmName(inv: { investor_firms?: { name: string } | { name: string }[] | null }): string | null {
+function flattenFirmName(inv: {
+  investor_firms?: { name: string } | { name: string }[] | null;
+}): string | null {
   const f = inv.investor_firms;
   if (!f) return null;
-  return Array.isArray(f) ? f[0]?.name ?? null : f.name;
+  return Array.isArray(f) ? (f[0]?.name ?? null) : f.name;
 }
 
 function toUiInvestor(inv: Record<string, any>, stage: PipelineStageId) {
@@ -79,7 +83,13 @@ function toUiInvestor(inv: Record<string, any>, stage: PipelineStageId) {
 }
 
 // Readiness values that can appear on the investors table (DB enum)
-const DB_READINESS_VALUES = ["not_ready", "needs_verification", "ready", "contacted", "do_not_contact"];
+const DB_READINESS_VALUES = [
+  "not_ready",
+  "needs_verification",
+  "ready",
+  "contacted",
+  "do_not_contact",
+];
 
 // ── GET: stage summary + optional investors for one stage ──
 export async function GET(request: NextRequest) {
@@ -94,6 +104,29 @@ export async function GET(request: NextRequest) {
   const offset = (page - 1) * limit;
 
   try {
+    // Per-investor stage history: every move recorded for one relationship, so
+    // the board can answer "how did we get here?" without replaying the CRM.
+    const historyFor = url.searchParams.get("history");
+    if (historyFor) {
+      const { data: eventRows, error: historyError } = await sp
+        .from("pipeline_events")
+        .select("id, from_stage, to_stage, notes, created_at")
+        .eq("user_id", user.id)
+        .eq("investor_id", historyFor)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (historyError) throw historyError;
+      return NextResponse.json({
+        events: (eventRows ?? []).map((e: any) => ({
+          id: e.id as string,
+          fromStage: (e.from_stage as string | null) ?? null,
+          toStage: e.to_stage as string,
+          notes: (e.notes as string | null) ?? null,
+          createdAt: e.created_at as string,
+        })),
+      });
+    }
+
     // 1. All of this user's pipeline entries (small — one founder's tracking)
     const { data: entries, error: entriesError } = await sp
       .from("user_pipeline_entries")
@@ -182,25 +215,21 @@ export async function GET(request: NextRequest) {
         chequeMin: num(profileRow?.target_cheque_min),
         chequeMax: num(profileRow?.target_cheque_max),
       },
-      entries: userEntries.map(
-        (e): RoundEntry => ({
-          id: e.id,
-          investorId: e.investor_id,
-          stage: e.stage,
-          expectedAmount: num(e.expected_amount),
-          probability: num(e.probability),
-          lostReason: e.lost_reason,
-          stageEnteredAt: e.stage_entered_at,
-          createdAt: e.created_at,
-        })
-      ),
-      events: (eventRows || []).map(
-        (e): PipelineMoveEvent => ({
-          investorId: e.investor_id as string,
-          toStage: e.to_stage as string | null,
-          createdAt: e.created_at as string,
-        })
-      ),
+      entries: userEntries.map((e): RoundEntry => ({
+        id: e.id,
+        investorId: e.investor_id,
+        stage: e.stage,
+        expectedAmount: num(e.expected_amount),
+        probability: num(e.probability),
+        lostReason: e.lost_reason,
+        stageEnteredAt: e.stage_entered_at,
+        createdAt: e.created_at,
+      })),
+      events: (eventRows || []).map((e): PipelineMoveEvent => ({
+        investorId: e.investor_id as string,
+        toStage: e.to_stage as string | null,
+        createdAt: e.created_at as string,
+      })),
     });
 
     // ── Investors for a specific stage (if requested) ──
@@ -218,7 +247,7 @@ export async function GET(request: NextRequest) {
       const { data: entryRows, error: listError } = await sp
         .from("user_pipeline_entries")
         .select(
-          `id, stage, created_at, expected_amount, probability, investor:investors!inner(${INVESTOR_FIELDS}, investor_firms(name))`
+          `id, stage, created_at, stage_entered_at, expected_amount, probability, lost_reason, investor:investors!inner(${INVESTOR_FIELDS}, investor_firms(name))`
         )
         .eq("user_id", user.id)
         .eq("stage", stageId)
@@ -231,8 +260,10 @@ export async function GET(request: NextRequest) {
           {
             ...(row.investor as Record<string, any>),
             entry_created_at: row.created_at,
+            stage_entered_at: row.stage_entered_at,
             expected_amount: row.expected_amount === null ? null : Number(row.expected_amount),
             probability: row.probability === null ? null : Number(row.probability),
+            lost_reason: row.lost_reason,
           },
           stageId
         )
@@ -269,7 +300,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { investorId, stage, notes } = body;
+    const { investorId, stage, notes, lostReason } = body;
 
     if (!investorId || !stage) {
       return NextResponse.json({ error: "investorId and stage are required" }, { status: 400 });
@@ -303,11 +334,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, investorId, stage: stageId, unchanged: true });
     }
 
+    // A lost reason is only meaningful on a lost stage. Storing it on the entry
+    // (not only on the event) lets the board show why a relationship ended
+    // without replaying its history. Moving back out of a lost stage clears it:
+    // a live relationship has no loss reason.
+    const LOST_STAGES = ["closed_lost", "not_a_fit"];
+    const isLost = LOST_STAGES.includes(stageId);
+    const reason =
+      typeof lostReason === "string" && lostReason.trim() ? lostReason.trim().slice(0, 500) : null;
+
     const { error: upsertError } = await sp.from("user_pipeline_entries").upsert(
       {
         user_id: user.id,
         investor_id: investorId,
         stage: stageId,
+        stage_entered_at: new Date().toISOString(),
+        lost_reason: isLost ? reason : null,
         ...(notes !== undefined ? { notes } : {}),
       },
       { onConflict: "user_id,investor_id" }
@@ -322,12 +364,18 @@ export async function POST(request: NextRequest) {
       from_stage: existing?.stage ?? null,
       to_stage: stageId,
       ...(notes !== undefined ? { notes } : {}),
+      ...(isLost && reason ? { notes: reason } : {}),
     });
     if (eventResult.error && process.env.NODE_ENV !== "production") {
       console.warn("[pipeline] event log skipped:", eventResult.error.message);
     }
 
-    return NextResponse.json({ success: true, investorId, stage: stageId });
+    return NextResponse.json({
+      success: true,
+      investorId,
+      stage: stageId,
+      lostReason: isLost ? reason : null,
+    });
   } catch (err: any) {
     console.error("Pipeline move error:", err);
     const message =

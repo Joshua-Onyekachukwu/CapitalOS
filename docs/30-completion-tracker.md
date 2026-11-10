@@ -14,13 +14,13 @@ migrations and the claim has not been re-measured since.
 | # | Module | docs/20 verdict | Now | Evidence / what remains |
 |---|---|---|---|---|
 | 1 | Founder dashboard | PARTIAL | **PARTIAL** | Fabricated zeros removed (`docs/21` §16). No next-action engine; cards still depend on empty data. |
-| 2 | Investor discovery | PARTIAL | **PARTIAL** | Search/filters real. Cheque-size, thesis, portfolio, lead/follow filters remain non-functional because the columns are empty (population problem, not code). |
+| 2 | Investor discovery | PARTIAL | **PARTIAL** | Search/filters real. Firm-name, cheque-size and thesis filters now also sit on the main investor database list, sharing Discover's parser; the page states coverage (14 cheque, 26 thesis) so narrow results are explainable. Portfolio and lead/follow remain data-blocked (no portfolio rows). |
 | 3 | Investor intelligence profiles | PARTIAL | **PARTIAL** | Provenance + evidence tiers real. Thesis 26 rows, cheque 14 rows, no portfolio. Blocked on population. |
-| 4 | Fundraising CRM | PARTIAL | **PARTIAL** | Notes/pipeline real. `investor_lists` tables exist (023) with no UI; tasks and reminders unbuilt. |
+| 4 | Fundraising CRM | PARTIAL | **PARTIAL** | Tasks, reminders (due dates, overdue, snooze) and a merged timeline are built (`crm_tasks`, migration 038, applied live). Lists have a hub and membership UI. Per-investor activity (tasks, meetings, stage moves, saves, emails) is on each investor record. Still missing: bulk update and shared/team assignment (blocked on the org model). |
 | 5 | Intelligent matching | PARTIAL | **PARTIAL** | Engine real; inputs empty. `fit_feedback` table exists (023), feedback loop not wired. |
 | 6 | Investor outreach | PARTIAL | **BLOCKED** | `email_messages` = 0. Needs a mailbox + warmup. Sending path is unit-covered, not proven live. |
-| 7 | Warm introductions | MISSING | **NOT STARTED** | No table, no graph, no data source. Needs a decision (D3). |
-| 8 | Fundraising pipeline | PARTIAL | **PARTIAL** | 21 stages shipped (`docs/28`). Still missing target amount/valuation rollup, expected-vs-actual, conversion math. |
+| 7 | Warm introductions | MISSING | **PARTIAL** | Record-keeping is real: `introductions` (038) with route (direct/warm/cold), via contact, target and status. No warm graph and no data source — the graph still needs D3. |
+| 8 | Fundraising pipeline | PARTIAL | **PARTIAL** | 21 stages shipped (`docs/28`). Drag-and-drop between stages, lost-reason capture on drop (stored on the entry and the event) and per-investor stage history are now built. Still missing expected-vs-actual and conversion math. |
 | 9 | AI copilot | REAL | **PARTIAL** | Real context assembly; no registered tool/action layer or execution audit, so it cannot *do* work. |
 
 ## Additional modules
@@ -36,9 +36,12 @@ migrations and the claim has not been re-measured since.
 | Portfolio intelligence | MISSING | **NOT STARTED** | No portfolio table; `portfolio_count` = 0 everywhere. |
 | Competitor intelligence | MISSING | **NOT STARTED** | No source. Needs D3. |
 | Market intelligence | MISSING | **NOT STARTED** | No source. Needs D3. |
-| Grants / accelerators | MISSING | **NOT STARTED** | No taxonomy, no source. |
-| Fundraising reports | PARTIAL | **PARTIAL** | CSV export real. No PDF or pipeline report; no conversion metrics to report yet. |
+| Grants / accelerators | MISSING | **PARTIAL** | `/dashboard/opportunities` records grants, accelerators, events and challenges with the founder's own status. No source integration: nothing is discovered or refreshed. |
+| Fundraising reports | PARTIAL | **PARTIAL** | `/dashboard/reports`: pipeline, outreach and conversion sections, CSV export of pipeline and outreach, and a print view. No true PDF generation, and conversion sections read empty until sends exist. |
 | Collaboration | MISSING | **NOT STARTED** | No org/team model. Every table is single-owner. |
+| Deliverability console | PARTIAL | **PARTIAL** | The four email-health pages are merged into `/dashboard/deliverability` (Overview / Analytics / Domain / Warm-up) with redirects from the old paths. Health tables are empty because nothing has been sent. |
+| Investor comparison & bulk shortlist | MISSING | **COMPLETE (code)** | Select up to four investors for a side-by-side comparison and bulk-save a selection to the shortlist. Not exercised with a signed-in session. |
+| Sequences | MISSING | **PARTIAL** | `/dashboard/sequences` is a read-only hub over `campaign_sequences` and steps. No sequence editor. |
 
 ## Admin & infrastructure (Section 7)
 
@@ -59,6 +62,27 @@ migrations and the claim has not been re-measured since.
 | Migration drift | BROKEN | **COMPLETE** | 22 files, 22 applied, 0 pending; `db:status` green. |
 | Document upload | BROKEN | **PARTIAL** | Bucket exists and upload errors surface. `storage.objects` has **no RLS policies** — uploads depend on server-side path; needs policy work before sharing. |
 
+## Shipped since the last pass (2026-11-10)
+
+Commit `3c464b4` plus the pipeline/compare work after it. Every page below is a
+real surface reading real tables; none invents data. Empty states say so.
+
+- CRM (tasks, reminders, global and per-investor merged timeline), Lists
+  (hub + membership), Introductions, Opportunities, Reports (CSV + print),
+  Intelligence, Sequences — the eight pages listed as "not built at all".
+- Deliverability consolidation with tabs and redirects.
+- Investor database: firm-name, cheque-size and thesis filters, comparison
+  (≤ 4) and bulk shortlist.
+- Pipeline: drag-and-drop, lost-reason capture, per-investor stage history.
+- Intelligence page is built from `investor_facets` and states plainly which
+  streams (news, portfolio, competitor, grants) are not connected, rather than
+  simulating them.
+
+Verified: `npx tsc --noEmit` clean, `next build` clean, Vercel deployment READY,
+landing 200, every new route 307s to `/login` when signed out.
+**Not verified:** any signed-in interaction (no E2E credentials here), and
+nothing that depends on sent mail (0 emails) or firm data (0 firm links).
+
 ## Data targets from `docs/20` §7
 
 | Criterion | Target | Measured 2026-11-04 | Verdict |
@@ -72,7 +96,7 @@ migrations and the claim has not been re-measured since.
 | One real send + reply | yes | 0 sends | NOT MET |
 | Deck uploaded and openable | yes | 6 rows, all `file_url` null | NOT MET |
 | Fresh DB rebuildable | yes | 22/22 applied | MET |
-| `tsc --noEmit` | 0 errors | 0 | MET |
+| `tsc --noEmit` | 0 errors | 0 (2026-11-10) | MET |
 
 Every unmet data target has the same root cause: the corpus is 60% funds-of-funds
 and 35% wealth advisers (`docs/23` §4). No amount of code moves those numbers.

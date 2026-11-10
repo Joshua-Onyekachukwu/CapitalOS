@@ -268,13 +268,55 @@ export default function InvestorsPage() {
     total: number;
     cheque: number;
     thesis: number;
-  } | null>(null);
-
-  // Saved filters
+  } | null>(null); // Saved filters
   const [savedFilters, setSavedFilters] = useState<
     { id: string; name: string; filters: Record<string, string>; sortBy?: string }[]
   >([]);
   const [savingFilter, setSavingFilter] = useState(false);
+
+  // Selection for comparison (max 4, which is what the compare view renders)
+  // and bulk shortlisting.
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [selectionNote, setSelectionNote] = useState<string | null>(null);
+
+  const MAX_COMPARE = 4;
+
+  const toggleSelected = (id: string) => {
+    setSelectionNote(null);
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_COMPARE) {
+        setSelectionNote(`Comparison holds ${MAX_COMPARE} investors. Remove one to add another.`);
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const bulkSave = async () => {
+    setBulkSaving(true);
+    setSelectionNote(null);
+    let saved = 0;
+    let failed = 0;
+    for (const id of selected) {
+      try {
+        const res = await fetch("/api/investors/saved", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ investorId: id }),
+        });
+        if (res.ok) saved += 1;
+        else failed += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setBulkSaving(false);
+    setSelectionNote(
+      `${saved} saved to your shortlist${failed ? `, ${failed} could not be saved` : ""}.`
+    );
+  };
 
   // Abort controller for in-flight requests
   const abortRef = useRef<AbortController | null>(null);
@@ -557,6 +599,43 @@ export default function InvestorsPage() {
         saving={savingFilter}
       />
 
+      {selected.length > 0 && (
+        <div className="flex items-center justify-between gap-[10px] flex-wrap rounded-[10px] border border-lime-200 bg-lime-50 dark:border-lime-800 dark:bg-lime-900/20 px-[12px] py-[8px] mb-[12px]">
+          <p className="text-[12px] text-[#06201b] dark:text-white !mb-0">
+            <i className="ri-checkbox-multiple-line mr-[6px]"></i>
+            {selected.length} selected
+            {selectionNote && (
+              <span className="text-gray-500 dark:text-gray-300"> · {selectionNote}</span>
+            )}
+          </p>
+          <div className="flex items-center gap-[6px] flex-wrap">
+            <Link
+              href={`/dashboard/investors/compare?ids=${selected.join(",")}`}
+              aria-disabled={selected.length < 2}
+              className={selected.length < 2 ? "pointer-events-none opacity-50" : ""}
+            >
+              <Button variant="outline" size="sm" disabled={selected.length < 2}>
+                <i className="ri-layout-column-line text-[16px]"></i>
+                Compare {selected.length}
+              </Button>
+            </Link>
+            <Button size="sm" loading={bulkSaving} onClick={bulkSave}>
+              <i className="ri-bookmark-line text-[16px]"></i>
+              Save to shortlist
+            </Button>
+            <button
+              onClick={() => {
+                setSelected([]);
+                setSelectionNote(null);
+              }}
+              className="text-[12px] text-gray-500 hover:text-gray-700 px-[6px]"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
       {availability && (
         <p className="text-[11px] text-gray-400 !mb-[12px] -mt-[6px]">
           <i className="ri-information-line mr-[4px]"></i>
@@ -604,6 +683,24 @@ export default function InvestorsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-800">
+                      <th className="w-[40px] px-[12px] py-[10px]">
+                        <input
+                          type="checkbox"
+                          aria-label="Select investors to compare"
+                          checked={
+                            investors.length > 0 && investors.every((i) => selected.includes(i.id))
+                          }
+                          onChange={(e) => {
+                            setSelectionNote(null);
+                            setSelected(
+                              e.target.checked
+                                ? investors.slice(0, MAX_COMPARE).map((i) => i.id)
+                                : []
+                            );
+                          }}
+                          className="accent-lime-600"
+                        />
+                      </th>
                       <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-[16px] py-[10px]">
                         Investor
                       </th>
@@ -636,6 +733,17 @@ export default function InvestorsPage() {
                         key={inv.id}
                         className="border-b border-gray-50 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
                       >
+                        {/* Compare / bulk-select */}
+                        <td className="px-[12px] py-[12px] align-top">
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${inv.full_name}`}
+                            checked={selected.includes(inv.id)}
+                            onChange={() => toggleSelected(inv.id)}
+                            className="accent-lime-600"
+                          />
+                        </td>
+
                         {/* Name + email */}
                         <td className="px-[16px] py-[12px]">
                           <Link
