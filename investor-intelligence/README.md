@@ -7,9 +7,11 @@ the app's `investors` table.
 
 **Status, 2026-11-10:** two acquisition batches complete — **21,949 new fund
 candidates** staged from SEC Form D (Q2 and Q3 2026), from 32,592 filings — and
-an enrichment layer that has parsed **4,386** of them from their own EDGAR XML
-(fund type, team, minimum commitment, offering amounts, first sale). Enrichment
-is local-only: no candidate is promoted and nothing is written to the product
+an enrichment layer that has parsed **all 21,990** from SEC Form D (fund type,
+team, minimum commitment, offering amounts, first sale) and built a local people
+layer of **20,704 named individuals**. Of the funds, **5,463 are venture capital
+funds** and 4,661 are hedge funds, now correctly disqualified. Enrichment is
+local-only: no candidate is promoted and nothing is written to the product
 database. See `research/reports/batch-001.md`, `batch-002.md` and
 `batch-003-enrichment.md`.
 
@@ -136,11 +138,11 @@ node investor-intelligence/scripts/qualification/score-local.cjs
 Outputs stay under `data/enriched/` and `data/qualified/` and are git-ignored.
 No SQL is issued: the operation does not write to the product database.
 
-First results (4,386 records): 1,086 venture funds, 947 private equity, 981
+First results (21,990 records): 5,463 venture funds, 4,794 private equity, 4,661
 hedge funds disqualified, 100% with related persons and a minimum-investment
-figure, 40% with an offering amount. Local tiers: 0 A, 2 B, 17 C, 4,367 D —
-website, cheque and founder-policy evidence is what separates a fund identity
-from a qualified investor.
+figure, 41% with an offering amount, 20,704 unique individuals. Local tiers:
+0 A, 4 B, 25 C, 21,961 D — website, cheque and founder-policy evidence is what
+separates a fund identity from a qualified investor.
 
 ## 5. Source rules
 

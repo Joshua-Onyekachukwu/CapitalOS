@@ -1,0 +1,14 @@
+{
+  "quarter": "2026q3",
+  "candidates": 21990,
+  "skipped_done": 5904,
+  "matched": 11080,
+  "parsed": 11080,
+  "with_fund_type": 9788,
+  "with_min_investment": 11080,
+  "with_team": 11080,
+  "with_offering_amount": 4667,
+  "venture_funds": 2716,
+  "out_file": "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\enriched\\edgar\\records-bulk-2026q3.jsonl",
+  "finished_at": "2026-11-10T08:38:55.663Z"
+}

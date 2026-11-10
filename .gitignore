@@ -103,5 +103,6 @@ investor-intelligence/data/processed/
 investor-intelligence/data/checkpoints/
 investor-intelligence/data/enriched/
 investor-intelligence/data/qualified/
+investor-intelligence/data/people/
 investor-intelligence/data/logs/
 .tmp/

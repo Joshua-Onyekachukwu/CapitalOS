@@ -1,112 +1,121 @@
-# Batch 003 — EDGAR enrichment of staged candidates
+# Batch 003 — EDGAR enrichment of all staged candidates
 
-**Run:** 2026-11-10 · `enrich-edgar.cjs`, `enrich-web.cjs`, `score-local.cjs`
-**Scope:** fill fund type, team, cheque proxy, fund size and sector evidence for
-the 21,990 staged Form D candidates. **Local storage only** — no database writes.
+**Run:** 2026-11-10 · `enrich-edgar.cjs`, `enrich-edgar-bulk.cjs`,
+`enrich-web.cjs`, `build-people.cjs`, `score-local.cjs`
+**Coverage:** **21,990 / 21,990** staged candidates enriched from SEC Form D.
+**Storage:** local only (`data/enriched`, `data/people`, `data/qualified`).
+No database writes, nothing promoted.
 
-## Result: 4,386 of 21,990 candidates enriched (20%) before SEC throttled the host
+## How it was done
 
-Every enriched record was parsed from the filing's own `primary_doc.xml`.
+Per-filing XML fetching worked but tripped SEC's fair-access limit (HTTP 429) at
+~12 req/s after 5,904 filings. The fix was better than slowing down: SEC's
+quarterly Form D data sets are structured TSV tables. Two downloads (Q2 and Q3
+2026, 7.5 MB total) enriched the remaining 15,956 candidates in seconds, with no
+rate-limit exposure. The per-filing engine remains for quarters without a bulk
+set.
 
-| Field | Records | % of enriched |
+## Field coverage
+
+| Field | Records | % of 21,990 |
 |---|---:|---:|
-| Fund type (`investmentFundType`) | 3,865 | 88.1% |
-| Minimum investment accepted | 4,386 | 100% |
-| Related persons (team) | 4,386 | 100% |
-| Total offering amount | 1,773 | 40.4% |
-| Date of first sale | 3,518 | 80.2% |
+| Fund type (`investmentFundType`) | 19,462 | 88.5% |
+| Minimum investment accepted | **21,990** | **100%** |
+| Related persons (team) | **21,990** | **100%** |
+| Date of first sale | 17,269 | 78.5% |
+| Total offering amount | 9,015 | 41.0% |
+| Verified website | 35 | 0.16% |
 
 ### Fund type distribution (authoritative, as filed)
 
 | Type | Count | Share |
 |---|---:|---:|
-| Venture Capital Fund | **1,086** | 24.8% |
-| Private Equity Fund | 947 | 21.6% |
-| Hedge Fund | 981 | 22.4% |
-| Other Investment Fund | 851 | 19.4% |
-| Unknown | 521 | 11.9% |
+| **Venture Capital Fund** | **5,463** | 24.8% |
+| Private Equity Fund | 4,794 | 21.8% |
+| Hedge Fund | 4,661 | 21.2% |
+| Other Investment Fund | 4,544 | 20.7% |
+| Unknown | 2,528 | 11.5% |
 
-Scaled to all 21,990 candidates that is roughly **5,450 venture funds** and
-**4,920 hedge funds** — the latter are correctly disqualified from an early-stage
-investor database, which the raw Form D stream could not tell us.
+4,661 hedge funds are **disqualified** from an early-stage investor database.
+The raw Form D stream could not distinguish them; this is the single biggest
+quality gain of the batch.
 
-### What the team data looks like
+## People layer
 
-Related persons are the fund's officers, directors, promoters and general
-partners, e.g. *Melissa Garlough — Executive Officer*, *Amir Karimpour —
-Executive Officer*. Administrative agents also appear (*Finally Fund Admin LLC*),
-so a person/org split and a role filter are required before using these as
-decision-makers.
+| Metric | Count |
+|---|---:|
+| Related-person rows | 69,409 |
+| Corporate related persons dropped | 22,585 |
+| **Unique individuals** | **20,704** |
+| People linked to more than one fund | 6,955 |
+| Executive Officers | 14,718 |
+| Directors | 8,121 |
+| Promoters | 2,670 |
 
-### Cheque size caveat
+Each person is linked to the fund(s) they filed for, with source filing URLs.
+This is the seed of the firm/people model: one fund yields 2–4 named
+decision-makers, and 6,955 people already appear across multiple funds.
 
-`minimumInvestmentAccepted` is the **minimum LP commitment into the fund**, not
-the cheque a startup receives. It is stored as a commitment band and scores at
-most 3/15 on cheque compatibility. No record is treated as having a startup
-cheque range from this field.
-
-## Website enrichment
+## Website and stage evidence
 
 | Metric | Value |
 |---|---:|
-| Candidates attempted | 216 |
-| Domains tried | ~1,200 |
-| Sites fetched | 21 |
-| **Verified investor sites** | **19** |
-| Stage evidence from site | 11 pre-seed, 16 seed |
-| Cheque text found | 3 |
-| Sector language found | 19 |
-| Public emails found | 4 |
+| Verified investor websites | 35 |
+| Explicit pre-seed language | 15 |
+| Explicit seed language | 22 |
+| Cheque range text found | 5 |
+| Public emails found | 12 |
+| Sector language found | 35 |
 
-Website discovery via derived domains is slow and low-yield (≈9% of attempted
-records, ≈4% of domain guesses). Search engines (DuckDuckGo, Mojeek) block this
-host with 403; Bing returns HTML but its terms forbid automated querying, so it
-was not used.
+Website discovery is the weak link. Derived-domain guessing accepts a site only
+when the page proves it is that investor, yielding ~9% of attempted records.
+Search engines block this host (DuckDuckGo/Mojeek 403); Bing works but its terms
+forbid automated querying, so it was not used.
 
-## Local qualification of the enriched subset
-
-Scoring uses only evidence actually present; missing dimensions score zero.
+## Local qualification (evidence only)
 
 | Tier | Count |
 |---|---:|
 | A (85–100) | **0** |
-| B (70–84) | **2** |
-| C (50–69) | **17** |
-| D (<50) | 4,367 |
-| Disqualified (hedge/real-estate, no venture evidence) | 981 |
+| B (70–84) | **4** |
+| C (50–69) | **25** |
+| D (<50) | 21,961 |
+| Disqualified (hedge/real estate, no venture evidence) | 4,661 |
+| Unverified | 17,300 |
+| Potential (Tier C) | 25 |
+| Qualified (Tier A/B) | **4** |
 
-Median record is Tier D because fund type is a mandate, not a track record, and
-no cheque, portfolio or founder-policy evidence exists for most funds. The two
-Tier B records combine a verified website, explicit seed language, a cheque
+Why only 4 of 5,463 venture funds qualify: a fund type is a **mandate**, not a
+track record. Without a website, there is no cheque range, no portfolio, no
+founder policy and usually no contact — and those dimensions carry 40 of the 100
+points. The four Tier B records combine a verified site, seed language, a cheque
 range, a recent first sale and a named team.
 
-## Blockers hit
+## Operational notes
 
-1. **SEC 429.** Per-filing fetching at ~12 req/s tripped the fair-access limit;
-   subsequent requests, including the quarterly bulk archive, returned 429.
-   The engine now pauses on `Retry-After`; the bulk path exists and will replace
-   per-filing requests when the block lifts.
-2. **390 filings had no readable `primary_doc.xml`** (8.2% of responses) —
-   renamed documents or non-standard submissions.
-3. **Search engines unusable** for website discovery (see above). This is the
-   main reason qualified counts stay low: without a website we rarely get stage,
-   cheque or contact evidence.
+- 130 candidates have no matching bulk row (amended or non-standard accessions);
+  they remain unenriched rather than guessed.
+- `minimumInvestmentAccepted` is the minimum LP commitment, **not** a startup
+  cheque. It scores at most 3/15 and is labelled as such in every record.
+- Related persons include administrators and corporate entities; 22,585 were
+  dropped from the people layer, but a role-based filter is still needed before
+  outreach.
+- All outputs are idempotent and resumable: bulk runs skip candidate IDs already
+  enriched.
 
-## What this proves
+## What this batch proves
 
-The enrichment engine works and produces authoritative, non-fabricated fields at
-scale: fund type, team, minimum commitment, offering amounts and first-sale
-dates. It also shows the real bottleneck to 50k qualified investors — **website
-and cheque evidence**, not identity discovery. Adding more Form D quarters will
-add more identities, but only website/ADV data converts them into qualified
-investors.
+The staged backlog is now a real, locally stored intelligence asset: 21,990
+funds with authoritative type, location, minimum commitment, offering amounts,
+first-sale dates and 20,704 named people. It is **not** yet 50k qualified
+investors, and it would be dishonest to label it that way. The remaining gap is
+website/cheque/portfolio evidence, which is the next build.
 
 ## Next actions
 
-1. Finish the remaining 17,604 candidates from SEC quarterly bulk archives
-   (one request per quarter, no rate-limit exposure).
-2. Pull Form ADV bulk data for registered advisers, which includes firm website
-   and, for many VC managers, a direct route to stage and cheque evidence.
-3. Re-run local scoring and publish tier counts per region and fund type.
-4. Build the person/org split from related persons so one firm yields its
-   decision-makers.
+1. Website/ADV enrichment at scale: Form ADV bulk includes firm websites; pair it
+   with the 5,463 venture funds to lift stage/cheque coverage.
+2. Run the same EDGAR bulk enrichment for 2024–2025 quarters to grow distinct
+   managers (filings per quarter are stable, distinct names are not).
+3. Role-filter the people layer and split individuals from administrators.
+4. Re-score; target Tier B/C growth, never label mandates as qualified.

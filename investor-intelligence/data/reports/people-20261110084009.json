@@ -1,0 +1,30 @@
+{
+  "run_id": "20261110084009",
+  "generated_at": "2026-11-10T08:40:10.425Z",
+  "funds_scanned": 22716,
+  "person_rows": 71620,
+  "org_rows_dropped": 23306,
+  "unique_people": 20784,
+  "multi_fund_people": 7371,
+  "roles": {
+    "Executive Officer": 14767,
+    "Director": 8158,
+    "Promoter": 2679
+  },
+  "top_roles": [
+    [
+      "Executive Officer",
+      14767
+    ],
+    [
+      "Director",
+      8158
+    ],
+    [
+      "Promoter",
+      2679
+    ]
+  ],
+  "out_file": "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\people\\people-20261110084009.jsonl",
+  "note": "Derived from SEC Form D related persons. Individuals only; corporate related persons dropped. Local only."
+}

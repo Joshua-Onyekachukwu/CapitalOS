@@ -1,0 +1,42 @@
+{
+  "run_id": "20261110083917",
+  "generated_at": "2026-11-10T08:39:19.617Z",
+  "inputs": {
+    "edgar_records": 21990,
+    "web_records": 816
+  },
+  "summary": {
+    "scored": 21990,
+    "tiers": {
+      "A": 0,
+      "B": 4,
+      "C": 25,
+      "D": 21961
+    },
+    "categories": {
+      "qualified": 4,
+      "potential": 25,
+      "unverified": 17300,
+      "disqualified": 4661
+    },
+    "fund_types": {
+      "Venture Capital Fund": 5463,
+      "Hedge Fund": 4661,
+      "(unknown)": 2528,
+      "Other Investment Fund": 4544,
+      "Private Equity Fund": 4794
+    },
+    "with_website": 35,
+    "with_team": 21990,
+    "with_min_investment": 21990,
+    "with_offering_amount": 9015,
+    "with_first_sale": 17269,
+    "venture_funds": 5463,
+    "pre_seed_evidence": 15,
+    "seed_evidence": 22,
+    "cheque_text": 5,
+    "with_email": 12
+  },
+  "out_file": "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\qualified\\scored-20261110083917.jsonl",
+  "note": "Local evidence scoring only. No records promoted to the product database."
+}
