@@ -57,7 +57,7 @@ export async function getRecommendations(
         title: "Sending paused",
         description: account.pause_reason || "Sending has been paused due to health issues.",
         action: "Review account health",
-        actionUrl: "/dashboard/email-health",
+        actionUrl: "/dashboard/deliverability",
         priority: 1,
         category: "health",
       });
@@ -85,7 +85,7 @@ export async function getRecommendations(
         title: "High bounce rate",
         description: `Your bounce rate is ${account.bounce_rate_7d.toFixed(1)}% over the last 7 days. This can harm your sending reputation.`,
         action: "Review recipient list",
-        actionUrl: "/dashboard/email-health",
+        actionUrl: "/dashboard/deliverability",
         priority: 2,
         category: "sending",
       });
@@ -99,7 +99,7 @@ export async function getRecommendations(
         title: "Account health needs attention",
         description: `Your email health score is ${account.health_score}/100. Review the health dashboard to identify issues.`,
         action: "View health details",
-        actionUrl: "/dashboard/email-health",
+        actionUrl: "/dashboard/deliverability",
         priority: 2,
         category: "health",
       });
@@ -116,7 +116,7 @@ export async function getRecommendations(
         title: "Start warm-up",
         description: `Your ${account.email_address} account is new. Start a warm-up sequence to build a good sending reputation.`,
         action: "Start warm-up",
-        actionUrl: "/dashboard/email-health/warmup",
+        actionUrl: "/dashboard/deliverability/warmup",
         priority: 3,
         category: "warmup",
       });
@@ -139,7 +139,7 @@ export async function getRecommendations(
         title: "DNS records need configuration",
         description: `${missing.join(", ")} records are not configured for your domain. This affects email authentication and deliverability.`,
         action: "Check domain health",
-        actionUrl: "/dashboard/email-health/domain",
+        actionUrl: "/dashboard/deliverability/domain",
         priority: 3,
         category: "domain",
       });

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { DataHistory } from "@/components/Dashboard/DataHistory";
 import { CommunicationTimeline } from "@/components/Outreach/CommunicationTimeline";
+import InvestorActivity from "@/components/Dashboard/InvestorActivity";
 import { EmailComposeModal } from "@/components/Outreach/EmailComposeModal";
 import { QualificationBadge } from "@/components/Investor/QualificationBadge";
 import { toast as sonnerToast } from "sonner";
@@ -225,7 +226,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
     );
-}
+  }
 
   if (!investor) {
     return (
@@ -233,7 +234,9 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
         <PageHeader title="Investor Not Found" />
         <Card>
           <CardBody className="text-center py-[40px]">
-            <p className="text-[14px] text-gray-400 !mb-[16px]">This investor could not be found.</p>
+            <p className="text-[14px] text-gray-400 !mb-[16px]">
+              This investor could not be found.
+            </p>
             <Link href="/dashboard/investors">
               <Button variant="outline">Back to Database</Button>
             </Link>
@@ -250,11 +253,19 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
     investor.fund_size && `Fund size: $${(investor.fund_size / 1_000_000).toFixed(0)}M`,
     investor.investment_sectors?.length && `Sectors: ${investor.investment_sectors.join(", ")}`,
     investor.investment_stages?.length && `Stages: ${investor.investment_stages.join(", ")}`,
-    investor.investment_geographies?.length && `Geographies: ${investor.investment_geographies.join(", ")}`,
-    (investor.min_check_size || investor.max_check_size) && `Check size: $${investor.min_check_size || "?"} — $${investor.max_check_size || "?"}`,
-  ].filter(Boolean).join("; ");
+    investor.investment_geographies?.length &&
+      `Geographies: ${investor.investment_geographies.join(", ")}`,
+    (investor.min_check_size || investor.max_check_size) &&
+      `Check size: $${investor.min_check_size || "?"} — $${investor.max_check_size || "?"}`,
+  ]
+    .filter(Boolean)
+    .join("; ");
 
-  const initials = investor.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2);
+  const initials = investor.full_name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2);
 
   return (
     <div>
@@ -263,7 +274,9 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
         actions={
           <div className="flex items-center gap-[8px]">
             <Button variant="outline" onClick={handleToggleSave} loading={savingInvestor}>
-              <i className={`${isSaved ? "ri-bookmark-fill text-lime-500" : "ri-bookmark-line"} text-[16px]`}></i>
+              <i
+                className={`${isSaved ? "ri-bookmark-fill text-lime-500" : "ri-bookmark-line"} text-[16px]`}
+              ></i>
               {isSaved ? "Saved" : "Save"}
             </Button>
             <Button onClick={() => setShowOutreach(true)}>
@@ -284,18 +297,26 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                   <h3 className="!text-[14px] !font-semibold !mb-0">
                     Merge History
                     <span className="text-[12px] font-normal text-gray-400 ml-[8px]">
-                      {mergeHistory.length} duplicate{mergeHistory.length !== 1 ? "s" : ""} merged into this record · reversible by an admin
+                      {mergeHistory.length} duplicate{mergeHistory.length !== 1 ? "s" : ""} merged
+                      into this record · reversible by an admin
                     </span>
                   </h3>
                 </div>
                 <div className="space-y-[4px]">
                   {mergeHistory.map((m, i) => (
-                    <div key={m.merged_id || i} className="flex items-center justify-between text-[12px] py-[4px] border-b border-gray-50 dark:border-gray-800 last:border-0">
+                    <div
+                      key={m.merged_id || i}
+                      className="flex items-center justify-between text-[12px] py-[4px] border-b border-gray-50 dark:border-gray-800 last:border-0"
+                    >
                       <span className="text-gray-500">
                         {m.merged_name || "Duplicate record"}
                         {m.merged_at && (
                           <span className="text-gray-300 ml-[8px]">
-                            {new Date(m.merged_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            {new Date(m.merged_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
                           </span>
                         )}
                       </span>
@@ -333,13 +354,20 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                   <p className="text-[14px] text-gray-500 !mb-[8px]">
                     {investor.job_title || "Investor"}
                     {investor.firm_name && (
-                      <> at <span className="font-medium text-gray-700 dark:text-gray-300">{investor.firm_name}</span></>
+                      <>
+                        {" "}
+                        at{" "}
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                          {investor.firm_name}
+                        </span>
+                      </>
                     )}
                   </p>
                   <div className="flex items-center gap-[12px] text-[13px] text-gray-400 flex-wrap">
                     {(investor.city || investor.country) && (
                       <span className="flex items-center gap-[4px]">
-                        <i className="ri-map-pin-line"></i> {[investor.city, investor.country].filter(Boolean).join(", ")}
+                        <i className="ri-map-pin-line"></i>{" "}
+                        {[investor.city, investor.country].filter(Boolean).join(", ")}
                       </span>
                     )}
                     {investor.email && (
@@ -348,7 +376,12 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                       </span>
                     )}
                     {investor.linkedin_url && (
-                      <a href={investor.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-[4px] text-lime-600 hover:text-lime-700">
+                      <a
+                        href={investor.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-[4px] text-lime-600 hover:text-lime-700"
+                      >
                         <i className="ri-linkedin-box-line"></i> LinkedIn
                       </a>
                     )}
@@ -358,7 +391,9 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
 
               {investor.bio && (
                 <div className="mt-[16px] pt-[16px] border-t border-gray-100 dark:border-gray-800">
-                  <p className="text-[14px] text-gray-600 dark:text-gray-400 !mb-0">{investor.bio}</p>
+                  <p className="text-[14px] text-gray-600 dark:text-gray-400 !mb-0">
+                    {investor.bio}
+                  </p>
                 </div>
               )}
             </CardBody>
@@ -383,38 +418,59 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
               {researchLoading ? (
                 <div className="text-center py-[20px]">
                   <div className="flex gap-[4px] justify-center mb-[12px]">
-                    <div className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                    <div className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                    <div className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                    <div
+                      className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    ></div>
+                    <div
+                      className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    ></div>
+                    <div
+                      className="w-[6px] h-[6px] rounded-full bg-lime-400 animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    ></div>
                   </div>
                   <p className="text-[13px] text-gray-400 !mb-0">Generating research summary...</p>
                 </div>
               ) : researchError ? (
                 <div className="text-center py-[20px]">
                   <p className="text-[13px] text-red-500 !mb-[12px]">{researchError}</p>
-                  <Button size="sm" variant="outline" onClick={handleGenerateResearch}>Retry</Button>
+                  <Button size="sm" variant="outline" onClick={handleGenerateResearch}>
+                    Retry
+                  </Button>
                 </div>
               ) : research ? (
                 <div className="space-y-[16px]">
                   <div className="bg-lime-50/50 dark:bg-lime-900/10 rounded-[12px] p-[16px] border border-lime-100 dark:border-lime-800/30">
-                    <p className="text-[14px] text-gray-700 dark:text-gray-300 leading-[1.7] !mb-0">{research.summary}</p>
+                    <p className="text-[14px] text-gray-700 dark:text-gray-300 leading-[1.7] !mb-0">
+                      {research.summary}
+                    </p>
                   </div>
 
                   {research.investmentThesis && (
                     <div>
-                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Investment Thesis</h4>
-                      <p className="text-[14px] text-gray-600 dark:text-gray-400 !mb-0">{research.investmentThesis}</p>
+                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">
+                        Investment Thesis
+                      </h4>
+                      <p className="text-[14px] text-gray-600 dark:text-gray-400 !mb-0">
+                        {research.investmentThesis}
+                      </p>
                     </div>
                   )}
 
                   {research.keyStrengths.length > 0 && (
                     <div>
-                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Key Strengths</h4>
+                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">
+                        Key Strengths
+                      </h4>
                       <div className="space-y-[6px]">
                         {research.keyStrengths.map((s, i) => (
                           <div key={i} className="flex items-start gap-[8px]">
                             <i className="ri-check-line text-green-500 text-[14px] mt-[2px]"></i>
-                            <span className="text-[14px] text-gray-600 dark:text-gray-400">{s}</span>
+                            <span className="text-[14px] text-gray-600 dark:text-gray-400">
+                              {s}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -423,12 +479,16 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
 
                   {research.potentialConcerns.length > 0 && (
                     <div>
-                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Potential Concerns</h4>
+                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">
+                        Potential Concerns
+                      </h4>
                       <div className="space-y-[6px]">
                         {research.potentialConcerns.map((c, i) => (
                           <div key={i} className="flex items-start gap-[8px]">
                             <i className="ri-alert-line text-amber-500 text-[14px] mt-[2px]"></i>
-                            <span className="text-[14px] text-gray-600 dark:text-gray-400">{c}</span>
+                            <span className="text-[14px] text-gray-600 dark:text-gray-400">
+                              {c}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -437,19 +497,29 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
 
                   {research.recommendedApproach && (
                     <div>
-                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Recommended Approach</h4>
-                      <p className="text-[14px] text-gray-600 dark:text-gray-400 !mb-0">{research.recommendedApproach}</p>
+                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">
+                        Recommended Approach
+                      </h4>
+                      <p className="text-[14px] text-gray-600 dark:text-gray-400 !mb-0">
+                        {research.recommendedApproach}
+                      </p>
                     </div>
                   )}
 
                   {research.talkingPoints.length > 0 && (
                     <div>
-                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">Talking Points</h4>
+                      <h4 className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide !mb-[6px]">
+                        Talking Points
+                      </h4>
                       <div className="space-y-[6px]">
                         {research.talkingPoints.map((t, i) => (
                           <div key={i} className="flex items-start gap-[8px]">
-                            <span className="text-[12px] font-bold text-lime-600 mt-[2px]">{i + 1}.</span>
-                            <span className="text-[14px] text-gray-600 dark:text-gray-400">{t}</span>
+                            <span className="text-[12px] font-bold text-lime-600 mt-[2px]">
+                              {i + 1}.
+                            </span>
+                            <span className="text-[14px] text-gray-600 dark:text-gray-400">
+                              {t}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -486,38 +556,63 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
             <CardBody className="pt-0">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px]">
                 <div>
-                  <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Stages</span>
+                  <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">
+                    Stages
+                  </span>
                   <div className="flex flex-wrap gap-[8px]">
-                    {(investor.investment_stages || []).length > 0
-                      ? investor.investment_stages.map((s) => <Badge key={s} variant="info" size="sm">{s.replace(/_/g, " ")}</Badge>)
-                      : <span className="text-[13px] text-gray-400">Not specified</span>
-                    }
+                    {(investor.investment_stages || []).length > 0 ? (
+                      investor.investment_stages.map((s) => (
+                        <Badge key={s} variant="info" size="sm">
+                          {s.replace(/_/g, " ")}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-[13px] text-gray-400">Not specified</span>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Sectors</span>
+                  <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">
+                    Sectors
+                  </span>
                   <div className="flex flex-wrap gap-[8px]">
-                    {(investor.investment_sectors || []).length > 0
-                      ? investor.investment_sectors.map((s) => <Badge key={s} variant="primary" size="sm">{s.replace(/_/g, " ")}</Badge>)
-                      : <span className="text-[13px] text-gray-400">Not specified</span>
-                    }
+                    {(investor.investment_sectors || []).length > 0 ? (
+                      investor.investment_sectors.map((s) => (
+                        <Badge key={s} variant="primary" size="sm">
+                          {s.replace(/_/g, " ")}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-[13px] text-gray-400">Not specified</span>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Geographies</span>
+                  <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">
+                    Geographies
+                  </span>
                   <div className="flex flex-wrap gap-[8px]">
-                    {(investor.investment_geographies || []).length > 0
-                      ? investor.investment_geographies.map((g) => <Badge key={g} variant="default" size="sm">{g}</Badge>)
-                      : <span className="text-[13px] text-gray-400">Not specified</span>
-                    }
+                    {(investor.investment_geographies || []).length > 0 ? (
+                      investor.investment_geographies.map((g) => (
+                        <Badge key={g} variant="default" size="sm">
+                          {g}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-[13px] text-gray-400">Not specified</span>
+                    )}
                   </div>
                 </div>
               </div>
               {(investor.min_check_size || investor.max_check_size) && (
                 <div className="mt-[16px]">
-                  <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">Check Size</span>
+                  <span className="text-[12px] text-gray-400 uppercase tracking-wide block mb-[6px]">
+                    Check Size
+                  </span>
                   <span className="text-[14px] font-medium text-gray-700 dark:text-gray-300">
-                    {investor.min_check_size ? `$${investor.min_check_size.toLocaleString()}` : "?"} — {investor.max_check_size ? `$${investor.max_check_size.toLocaleString()}` : "?"}
+                    {investor.min_check_size ? `$${investor.min_check_size.toLocaleString()}` : "?"}{" "}
+                    —{" "}
+                    {investor.max_check_size ? `$${investor.max_check_size.toLocaleString()}` : "?"}
                   </span>
                 </div>
               )}
@@ -535,6 +630,12 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
 
           <Card>
             <CardBody>
+              <InvestorActivity investorId={investorId} />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody>
               <CommunicationTimeline investorId={investorId} />
             </CardBody>
           </Card>
@@ -544,11 +645,17 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           <Card>
             <CardBody className="p-[20px] text-center">
               <div className="w-[80px] h-[80px] rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center mx-auto mb-[12px]">
-                <span className="text-[28px] font-bold text-lime-700 dark:text-lime-400">{investor.fit_score}%</span>
+                <span className="text-[28px] font-bold text-lime-700 dark:text-lime-400">
+                  {investor.fit_score}%
+                </span>
               </div>
               <h3 className="!text-[16px] !font-semibold !mb-[4px]">Fit Score</h3>
               <p className="text-[13px] text-gray-400 !mb-0">
-                {investor.fit_score >= 85 ? "Excellent match for your startup" : investor.fit_score >= 70 ? "Good match — worth exploring" : "Partial match — review details"}
+                {investor.fit_score >= 85
+                  ? "Excellent match for your startup"
+                  : investor.fit_score >= 70
+                    ? "Good match — worth exploring"
+                    : "Partial match — review details"}
               </p>
             </CardBody>
           </Card>
@@ -557,39 +664,54 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
             <CardBody className="p-[16px] space-y-[12px]">
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-gray-400">Type</span>
-                <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300 capitalize">{investor.investor_type?.replace(/_/g, " ") || "Unknown"}</span>
+                <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300 capitalize">
+                  {investor.investor_type?.replace(/_/g, " ") || "Unknown"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-gray-400">Data Quality</span>
-                <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">{investor.data_quality_score}%</span>
+                <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
+                  {investor.data_quality_score}%
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-gray-400">Status</span>
-                <Badge variant={readinessColors[investor.outreach_readiness] || "default"} size="sm">
+                <Badge
+                  variant={readinessColors[investor.outreach_readiness] || "default"}
+                  size="sm"
+                >
                   {investor.outreach_readiness?.replace(/_/g, " ") || "Unknown"}
                 </Badge>
               </div>
               {investor.firm_name && (
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] text-gray-400">Firm</span>
-                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">{investor.firm_name}</span>
+                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
+                    {investor.firm_name}
+                  </span>
                 </div>
               )}
               {investor.fund_size && (
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] text-gray-400">Fund Size</span>
-                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">${(investor.fund_size / 1_000_000).toFixed(0)}M</span>
+                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
+                    ${(investor.fund_size / 1_000_000).toFixed(0)}M
+                  </span>
                 </div>
               )}
               {investor.portfolio_count && (
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] text-gray-400">Portfolio</span>
-                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">{investor.portfolio_count} companies</span>
+                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
+                    {investor.portfolio_count} companies
+                  </span>
                 </div>
               )}
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-gray-400">Source</span>
-                <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300 capitalize">{investor.source || "Unknown"}</span>
+                <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300 capitalize">
+                  {investor.source || "Unknown"}
+                </span>
               </div>
             </CardBody>
           </Card>
@@ -597,11 +719,18 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
           <Card>
             <CardBody className="p-[20px] space-y-[10px]">
               <Button fullWidth onClick={() => setShowOutreach(true)}>
-                <i className="ri-mail-send-line text-[16px]"/>
+                <i className="ri-mail-send-line text-[16px]" />
                 Start Personalized Outreach
               </Button>
-              <Button fullWidth variant="outline" onClick={handleToggleSave} loading={savingInvestor}>
-                <i className={`${isSaved ? "ri-bookmark-fill text-lime-500" : "ri-bookmark-line"} text-[16px]`}></i>
+              <Button
+                fullWidth
+                variant="outline"
+                onClick={handleToggleSave}
+                loading={savingInvestor}
+              >
+                <i
+                  className={`${isSaved ? "ri-bookmark-fill text-lime-500" : "ri-bookmark-line"} text-[16px]`}
+                ></i>
                 {isSaved ? "Saved to List" : "Save to List"}
               </Button>
               <Link href="/dashboard/investors">

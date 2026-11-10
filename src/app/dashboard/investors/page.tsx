@@ -211,6 +211,35 @@ const FILTER_CONFIGS: FilterConfig[] = [
     placeholder: "Paste firm UUID",
     icon: "ri-building-line",
   },
+  // Philosophy: these three match Discover's filters. They are honest about
+  // sparsity — the coverage line under the bar states how many firms actually
+  // carry a cheque size or a thesis, so a narrow result set is explainable.
+  {
+    key: "firm",
+    label: "Firm Name",
+    type: "search",
+    placeholder: "e.g. Sequoia, Andreessen",
+    icon: "ri-building-2-line",
+  },
+  {
+    key: "minCheque",
+    label: "Cheque Size",
+    type: "select",
+    options: [
+      { label: "Writes ≥ $25k", value: "25000" },
+      { label: "Writes ≥ $50k", value: "50000" },
+      { label: "Writes ≥ $100k", value: "100000" },
+      { label: "Writes ≥ $250k", value: "250000" },
+      { label: "Writes ≥ $500k", value: "500000" },
+      { label: "Writes ≥ $1M", value: "1000000" },
+      { label: "Writes ≥ $5M", value: "5000000" },
+    ],
+  },
+  {
+    key: "hasThesis",
+    label: "Investment Thesis",
+    type: "toggle",
+  },
 ];
 
 const readinessColors: Record<string, "success" | "warning" | "info" | "danger" | "default"> = {
@@ -235,9 +264,16 @@ export default function InvestorsPage() {
 
   // Facets data
   const [facets, setFacets] = useState<Record<string, Record<string, number>>>({});
+  const [availability, setAvailability] = useState<{
+    total: number;
+    cheque: number;
+    thesis: number;
+  } | null>(null);
 
   // Saved filters
-  const [savedFilters, setSavedFilters] = useState<{ id: string; name: string; filters: Record<string, string>; sortBy?: string }[]>([]);
+  const [savedFilters, setSavedFilters] = useState<
+    { id: string; name: string; filters: Record<string, string>; sortBy?: string }[]
+  >([]);
   const [savingFilter, setSavingFilter] = useState(false);
 
   // Abort controller for in-flight requests
@@ -271,6 +307,10 @@ export default function InvestorsPage() {
       if (filters.hasEmail) params.set("hasEmail", filters.hasEmail);
       if (filters.hasLinkedin) params.set("hasLinkedin", filters.hasLinkedin);
       if (filters.firmId) params.set("firmId", filters.firmId);
+      // Advanced filters — same parser the Discover endpoint uses.
+      if (filters.firm) params.set("firm", filters.firm);
+      if (filters.minCheque) params.set("minCheque", filters.minCheque);
+      if (filters.hasThesis) params.set("hasThesis", filters.hasThesis);
 
       const response = await fetch(`/api/investors?${params.toString()}`, {
         signal: controller.signal,
@@ -310,6 +350,8 @@ export default function InvestorsPage() {
 
       const res = await fetch(`/api/investors/facets?${params.toString()}`);
       const data = await res.json();
+
+      setAvailability(data.dataAvailability || null);
 
       setFacets({
         type: Object.fromEntries(data.types?.map((t: any) => [t.value, t.count]) || []),
@@ -432,16 +474,49 @@ export default function InvestorsPage() {
       {/* Stats row — from facets (full database, not just current page) */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-[12px] mb-[16px]">
         {[
-          { label: "Total Investors", value: total.toLocaleString(), icon: "ri-team-line", color: "text-blue-600" },
-          { label: "Ready to Outreach", value: readyCount.toLocaleString(), icon: "ri-check-double-line", color: "text-lime-600", sub: needsVerificationCount > 0 ? `${needsVerificationCount.toLocaleString()} need verification` : undefined },
-          { label: "Verified", value: verifiedCount.toLocaleString(), icon: "ri-shield-check-line", color: "text-purple-600", sub: `${unverifiedCount.toLocaleString()} unverified` },
-          { label: "Has Email", value: withEmailCount.toLocaleString(), icon: "ri-mail-line", color: "text-emerald-600", sub: `${withoutEmailCount.toLocaleString()} missing` },
-          { label: "Has LinkedIn", value: withLinkedinCount.toLocaleString(), icon: "ri-linkedin-box-line", color: "text-sky-600" },
+          {
+            label: "Total Investors",
+            value: total.toLocaleString(),
+            icon: "ri-team-line",
+            color: "text-blue-600",
+          },
+          {
+            label: "Ready to Outreach",
+            value: readyCount.toLocaleString(),
+            icon: "ri-check-double-line",
+            color: "text-lime-600",
+            sub:
+              needsVerificationCount > 0
+                ? `${needsVerificationCount.toLocaleString()} need verification`
+                : undefined,
+          },
+          {
+            label: "Verified",
+            value: verifiedCount.toLocaleString(),
+            icon: "ri-shield-check-line",
+            color: "text-purple-600",
+            sub: `${unverifiedCount.toLocaleString()} unverified`,
+          },
+          {
+            label: "Has Email",
+            value: withEmailCount.toLocaleString(),
+            icon: "ri-mail-line",
+            color: "text-emerald-600",
+            sub: `${withoutEmailCount.toLocaleString()} missing`,
+          },
+          {
+            label: "Has LinkedIn",
+            value: withLinkedinCount.toLocaleString(),
+            icon: "ri-linkedin-box-line",
+            color: "text-sky-600",
+          },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardBody className="p-[16px]">
               <div className="flex items-center gap-[8px]">
-                <div className={`w-[36px] h-[36px] rounded-[12px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center flex-none`}>
+                <div
+                  className={`w-[36px] h-[36px] rounded-[12px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center flex-none`}
+                >
                   <i className={`${stat.icon} ${stat.color} text-[18px]`}></i>
                 </div>
                 <div className="min-w-0">
@@ -482,6 +557,16 @@ export default function InvestorsPage() {
         saving={savingFilter}
       />
 
+      {availability && (
+        <p className="text-[11px] text-gray-400 !mb-[12px] -mt-[6px]">
+          <i className="ri-information-line mr-[4px]"></i>
+          Cheque size is recorded for {availability.cheque.toLocaleString()} of{" "}
+          {availability.total.toLocaleString()} firms; investment thesis text for{" "}
+          {availability.thesis.toLocaleString()}. Filters on unrecorded fields return fewer results
+          — that is missing evidence, not a bad match.
+        </p>
+      )}
+
       {/* Results Table */}
       <Card>
         <CardBody className="p-0">
@@ -503,7 +588,9 @@ export default function InvestorsPage() {
               <div className="w-[56px] h-[56px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-[16px]">
                 <i className="ri-search-line text-gray-300 text-[24px]"></i>
               </div>
-              <p className="text-[14px] font-semibold text-gray-500 !mb-[4px]">No investors found</p>
+              <p className="text-[14px] font-semibold text-gray-500 !mb-[4px]">
+                No investors found
+              </p>
               <p className="text-[13px] text-gray-400 !mb-[16px]">
                 Try adjusting your filters or search terms.
               </p>
@@ -573,9 +660,7 @@ export default function InvestorsPage() {
 
                         {/* Firm */}
                         <td className="px-[16px] py-[12px] hidden md:table-cell">
-                          <span className="text-[12px] text-gray-500">
-                            {inv.firm_name || "—"}
-                          </span>
+                          <span className="text-[12px] text-gray-500">{inv.firm_name || "—"}</span>
                         </td>
 
                         {/* Location */}
@@ -592,8 +677,8 @@ export default function InvestorsPage() {
                               inv.fit_score >= 80
                                 ? "text-green-600"
                                 : inv.fit_score >= 60
-                                ? "text-amber-600"
-                                : "text-gray-400"
+                                  ? "text-amber-600"
+                                  : "text-gray-400"
                             }`}
                           >
                             {inv.fit_score}%
@@ -609,8 +694,8 @@ export default function InvestorsPage() {
                                   inv.data_quality_score >= 80
                                     ? "bg-green-500"
                                     : inv.data_quality_score >= 60
-                                    ? "bg-amber-500"
-                                    : "bg-gray-300"
+                                      ? "bg-amber-500"
+                                      : "bg-gray-300"
                                 }`}
                                 style={{ width: `${inv.data_quality_score}%` }}
                               ></div>
@@ -636,7 +721,10 @@ export default function InvestorsPage() {
 
                         {/* Outreach status */}
                         <td className="px-[16px] py-[12px]">
-                          <Badge variant={readinessColors[inv.outreach_readiness] || "default"} size="sm">
+                          <Badge
+                            variant={readinessColors[inv.outreach_readiness] || "default"}
+                            size="sm"
+                          >
                             {inv.outreach_readiness.replace(/_/g, " ")}
                           </Badge>
                         </td>

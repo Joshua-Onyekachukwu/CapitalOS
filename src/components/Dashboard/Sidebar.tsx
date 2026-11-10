@@ -54,14 +54,18 @@ interface NavSection {
       title: "Pipeline",
       items: [
         { label: "Fundraising Pipeline", href: "/dashboard/pipeline", icon: "ri-kanban-view" },
+        { label: "CRM", href: "/dashboard/crm", icon: "ri-contacts-book-2-line" },
+        { label: "Lists", href: "/dashboard/lists", icon: "ri-list-unordered" },
+        { label: "Introductions", href: "/dashboard/introductions", icon: "ri-links-line" },
         { label: "Campaigns", href: "/dashboard/campaigns", icon: "ri-megaphone-line" },
+        { label: "Sequences", href: "/dashboard/sequences", icon: "ri-flow-chart" },
       ],
     },
     {
       title: "Outreach",
       items: [
         { label: "Outreach", href: "/dashboard/outreach", icon: "ri-mail-send-line" },
-        { label: "Email Health", href: "/dashboard/email-health", icon: "ri-heart-pulse-line", badge: "New" },
+        { label: "Deliverability", href: "/dashboard/deliverability", icon: "ri-mail-check-line" },
         { label: "Metrics", href: "/dashboard/outreach/metrics", icon: "ri-bar-chart-line" },
         { label: "Meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" },
       ],
@@ -70,6 +74,9 @@ interface NavSection {
       title: "Insights",
       items: [
         { label: "Analytics", href: "/dashboard/analytics", icon: "ri-line-chart-line" },
+        { label: "Reports", href: "/dashboard/reports", icon: "ri-file-chart-line" },
+        { label: "Intelligence", href: "/dashboard/intelligence", icon: "ri-radar-line" },
+        { label: "Opportunities", href: "/dashboard/opportunities", icon: "ri-trophy-line" },
         { label: "AI Activity", href: "/dashboard/ai-activity", icon: "ri-robot-2-line" },
       ],
     },

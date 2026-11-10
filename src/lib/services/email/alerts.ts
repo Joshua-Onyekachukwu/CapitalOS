@@ -68,7 +68,7 @@ export async function getActiveAlerts(
         message: account.pause_reason || "Sending has been paused due to health issues.",
         accountId: account.id,
         category: "health",
-        actionUrl: "/dashboard/email-health",
+        actionUrl: "/dashboard/deliverability",
         acknowledged: false,
         createdAt: new Date().toISOString(),
       });
@@ -83,7 +83,7 @@ export async function getActiveAlerts(
         message: `Your bounce rate increased to ${account.bounce_rate_7d.toFixed(1)}% over 7 days. Review your recipient list before continuing.`,
         accountId: account.id,
         category: "deliverability",
-        actionUrl: "/dashboard/email-health",
+        actionUrl: "/dashboard/deliverability",
         acknowledged: false,
         createdAt: new Date().toISOString(),
       });
@@ -98,7 +98,7 @@ export async function getActiveAlerts(
         message: `Health score is ${account.health_score}/100. Check the health dashboard for specific recommendations.`,
         accountId: account.id,
         category: "health",
-        actionUrl: "/dashboard/email-health",
+        actionUrl: "/dashboard/deliverability",
         acknowledged: false,
         createdAt: new Date().toISOString(),
       });
@@ -115,7 +115,7 @@ export async function getActiveAlerts(
           message: `Day ${account.warmup_day} complete. Your sending reputation is building.`,
           accountId: account.id,
           category: "warmup",
-          actionUrl: "/dashboard/email-health/warmup",
+          actionUrl: "/dashboard/deliverability/warmup",
           acknowledged: false,
           createdAt: new Date().toISOString(),
         });
@@ -150,7 +150,7 @@ export async function getActiveAlerts(
         message: `${missingDns.join(", ")} records are not configured. This affects email authentication.`,
         accountId: account.id,
         category: "domain",
-        actionUrl: "/dashboard/email-health/domain",
+        actionUrl: "/dashboard/deliverability/domain",
         acknowledged: false,
         createdAt: new Date().toISOString(),
       });
