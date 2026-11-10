@@ -49,7 +49,11 @@ name set is loaded before staging. Deduplication order remains: corpus first
 - 21,949 is **staged candidates**, not investors. Every row scores 16/100 and is
   Tier D (unverified); none is promoted.
 - 5,688 (25.9%) are series/SPV-style vehicles that must be collapsed under
-  master entities before any "number of investors" claim.
+  master entities before any "number of investors" claim. Measured: stripping
+  the series suffix maps those 5,688 rows to **4,657 distinct base names**, and
+  aggressive suffix stripping across all rows gives 19,396 base names. Both are
+  upper bounds on distinct entities, not a dedupe result — most series names are
+  already unique, so SPV inflation is smaller than the row count suggests.
 - 8,315 carry a fund name but no manager, website, thesis or cheque size.
 - The corpus is unchanged at 18,995; the landing-page claims stay accurate.
 - Quarterly filing volume is steady (≈16k filings per quarter, ≈11k fund
