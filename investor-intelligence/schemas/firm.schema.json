@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://capital-os.local/schemas/firm.schema.json",
+  "title": "Firm",
+  "description": "An investment organization. People belong to firms; funds are raised by firms. A fund vehicle is not a firm, and neither is automatically an investor.",
+  "type": "object",
+  "required": ["id", "name", "source"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "legal_name": { "type": ["string", "null"] },
+    "normalized_name": { "type": "string" },
+    "website": { "type": ["string", "null"] },
+    "domain": { "type": ["string", "null"], "description": "Primary dedupe key when present." },
+    "linkedin_url": { "type": ["string", "null"] },
+    "country": { "type": ["string", "null"] },
+    "city": { "type": ["string", "null"] },
+    "founded_year": { "type": ["integer", "null"] },
+    "description": { "type": ["string", "null"] },
+    "thesis": { "type": ["string", "null"] },
+    "stages": { "type": "array", "items": { "type": "string" } },
+    "sectors": { "type": "array", "items": { "type": "string" } },
+    "geo_focus": { "type": "array", "items": { "type": "string" } },
+    "team": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "person_id": { "type": "string" },
+          "role": { "type": "string" },
+          "is_decision_maker": { "type": ["boolean", "null"] }
+        }
+      }
+    },
+    "funds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "size_usd": { "type": ["number", "null"] },
+          "vintage": { "type": ["integer", "null"] },
+          "status": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "portfolio_count": { "type": ["integer", "null"] },
+    "source": { "$ref": "https://capital-os.local/schemas/investor.schema.json#/properties/source" }
+  }
+}

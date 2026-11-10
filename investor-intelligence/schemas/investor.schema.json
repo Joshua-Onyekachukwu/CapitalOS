@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://capital-os.local/schemas/investor.schema.json",
+  "title": "Investor",
+  "description": "A promoted investor record. A candidate only becomes an investor after evidence for its type and investment activity exists, and every material field carries provenance.",
+  "type": "object",
+  "required": ["id", "name", "entity_kind", "source"],
+  "properties": {
+    "id": { "type": "string", "description": "Stable UUID." },
+    "name": { "type": "string" },
+    "normalized_name": { "type": "string" },
+    "entity_kind": {
+      "enum": ["individual", "fund_vehicle", "firm", "angel_network", "accelerator", "family_office", "government_program", "university_fund", "unknown"]
+    },
+    "investor_types": {
+      "type": "array",
+      "items": {
+        "enum": ["angel", "angel_syndicate", "vc", "micro_vc", "pre_seed_fund", "seed_fund", "family_office", "corporate_vc", "accelerator", "incubator", "university_fund", "government_program", "unknown"]
+      }
+    },
+    "country": { "type": ["string", "null"], "description": "ISO 3166-1 alpha-2 where known." },
+    "city": { "type": ["string", "null"] },
+    "regions_served": { "type": "array", "items": { "type": "string" } },
+    "website": { "type": ["string", "null"], "format": "uri" },
+    "linkedin_url": { "type": ["string", "null"], "format": "uri" },
+    "stages": {
+      "type": "array",
+      "items": { "enum": ["pre_seed", "seed", "series_a", "series_b_plus", "growth", "unknown"] }
+    },
+    "sectors": { "type": "array", "items": { "type": "string" } },
+    "cheque": {
+      "type": "object",
+      "properties": {
+        "min": { "type": ["number", "null"] },
+        "max": { "type": ["number", "null"] },
+        "typical": { "type": ["number", "null"] },
+        "currency": { "type": ["string", "null"] },
+        "usd_equivalent": { "type": ["number", "null"] },
+        "basis": {
+          "enum": ["stated", "derived_from_deals", "fund_size_inferred", "unknown"],
+          "description": "Never present an inferred cheque as a stated one."
+        }
+      }
+    },
+    "leads_rounds": { "type": ["boolean", "null"] },
+    "invests_internationally": { "type": ["boolean", "null"] },
+    "first_time_founders": { "type": ["boolean", "null"] },
+    "solo_founders": { "type": ["boolean", "null"] },
+    "qualification": {
+      "type": "object",
+      "properties": {
+        "score": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+        "tier": { "enum": ["A", "B", "C", "D", "unverified", null] },
+        "breakdown": { "type": "object" },
+        "missing_dimensions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "status": { "enum": ["qualified", "potential", "unverified", "disqualified", "inactive", "historical"] },
+    "source": {
+      "type": "object",
+      "required": ["provider", "source_id", "url", "fetched_at"],
+      "properties": {
+        "provider": { "type": "string" },
+        "source_id": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "published_at": { "type": ["string", "null"], "format": "date" },
+        "fetched_at": { "type": "string", "format": "date-time" },
+        "evidence_level": { "enum": ["verified", "corroborated", "estimated", "unverified", "unknown"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "field_evidence": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "value": {},
+          "source_url": { "type": "string" },
+          "evidence_level": { "enum": ["verified", "corroborated", "estimated", "unverified", "unknown"] },
+          "accessed_at": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "raw_ref": { "type": "string", "description": "Path to the raw source payload." }
+  }
+}

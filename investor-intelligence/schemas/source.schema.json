@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://capital-os.local/schemas/source.schema.json",
+  "title": "Source",
+  "description": "A registered acquisition source. Licensing and access method are recorded before any collection begins.",
+  "type": "object",
+  "required": ["source_id", "name", "url", "category", "access_method", "license_status"],
+  "properties": {
+    "source_id": { "type": "string" },
+    "name": { "type": "string" },
+    "url": { "type": "string", "format": "uri" },
+    "category": {
+      "enum": ["directory", "dataset", "association", "government", "accelerator", "angel_network", "firm_website", "publication", "platform", "university", "regulator"]
+    },
+    "regions": { "type": "array", "items": { "type": "string" } },
+    "investor_types": { "type": "array", "items": { "type": "string" } },
+    "access_method": {
+      "enum": ["api", "bulk_download", "html", "search_endpoint", "partner_export", "manual", "review_required"]
+    },
+    "api_available": { "type": "boolean" },
+    "license_status": {
+      "enum": ["public_domain", "open_license", "public_data_terms", "requires_account", "commercial_only", "prohibited", "unknown"]
+    },
+    "terms_url": { "type": ["string", "null"] },
+    "est_records": { "type": ["integer", "null"] },
+    "quality": { "enum": ["high", "medium", "low", "unknown"] },
+    "priority": { "type": "integer", "minimum": 1, "maximum": 5 },
+    "status": { "enum": ["planned", "ready", "active", "blocked", "retired"] },
+    "last_verified_at": { "type": ["string", "null"], "format": "date" },
+    "notes": { "type": "string" }
+  }
+}

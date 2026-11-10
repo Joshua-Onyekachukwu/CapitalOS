@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://capital-os.local/schemas/person.schema.json",
+  "title": "Person",
+  "description": "An individual investment decision-maker or angel. Public professional information only; no sensitive personal data.",
+  "type": "object",
+  "required": ["id", "full_name"],
+  "properties": {
+    "id": { "type": "string" },
+    "full_name": { "type": "string" },
+    "normalized_name": { "type": "string" },
+    "roles": { "type": "array", "items": { "type": "string" } },
+    "affiliations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "firm_id": { "type": ["string", "null"] },
+          "firm_name": { "type": "string" },
+          "role": { "type": "string" },
+          "started_year": { "type": ["integer", "null"] },
+          "ended_year": { "type": ["integer", "null"] },
+          "current": { "type": "boolean" }
+        }
+      }
+    },
+    "linkedin_url": { "type": ["string", "null"] },
+    "x_url": { "type": ["string", "null"] },
+    "public_email": {
+      "type": ["string", "null"],
+      "description": "Only a published professional address. Never a guessed pattern."
+    },
+    "website": { "type": ["string", "null"] },
+    "country": { "type": ["string", "null"] },
+    "city": { "type": ["string", "null"] },
+    "investment_focus": { "type": "array", "items": { "type": "string" } },
+    "evidence_of_investing": {
+      "type": "string",
+      "description": "Why this person is classified as an investor (deals, mandate, fund role). A bio alone is not evidence."
+    },
+    "source": { "$ref": "https://capital-os.local/schemas/investor.schema.json#/properties/source" }
+  }
+}

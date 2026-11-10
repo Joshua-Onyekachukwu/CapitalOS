@@ -96,3 +96,9 @@ data/iapd/
 
 # transient checkout used by scripts/check-tracked-imports.cjs
 .import-check/
+
+# Investor intelligence — raw payloads stay local; reports are committed
+investor-intelligence/data/raw/
+investor-intelligence/data/processed/
+investor-intelligence/data/checkpoints/
+.tmp/

@@ -21,7 +21,8 @@
     "db:migrate": "node scripts/migrate.cjs",
     "db:query": "node scripts/db.cjs",
     "db:rescore": "tsx scripts/rescore-fit.ts",
-    "e2e:smoke": "node scripts/e2e-smoke.cjs"
+    "e2e:smoke": "node scripts/e2e-smoke.cjs",
+    "intel:formd": "node investor-intelligence/scripts/acquire/sec-formd-pooled.cjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

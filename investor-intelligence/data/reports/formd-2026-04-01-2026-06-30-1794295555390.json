@@ -1,0 +1,51 @@
+{
+  "runId": "formd-2026-04-01-2026-06-30-1794295555390",
+  "source": "SEC EDGAR full-text search (EFTS), Form D",
+  "window": {
+    "start": "2026-04-01",
+    "end": "2026-06-30"
+  },
+  "filingsScanned": 16640,
+  "fundCandidates": 10910,
+  "pooledFundFilings": 10656,
+  "nameOnlyCandidates": 1608,
+  "duplicatesInCorpus": 15,
+  "alreadyStagedFromEarlierRuns": 537,
+  "newCandidates": 10895,
+  "inserted": 10895,
+  "dryRun": false,
+  "topStates": {
+    "NY": 1911,
+    "CA": 1296,
+    "DE": 1198,
+    "WA": 811,
+    "TX": 680,
+    "FL": 577,
+    "E9": 480,
+    "MA": 415,
+    "CT": 320,
+    "IL": 305,
+    "NJ": 164,
+    "GA": 156,
+    "CO": 142,
+    "PA": 138,
+    "UT": 125
+  },
+  "candidateFile": "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\processed\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\candidates.jsonl",
+  "rawParts": [
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-04-01_2026-04-07.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-04-08_2026-04-14.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-04-15_2026-04-21.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-04-22_2026-04-28.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-04-29_2026-05-05.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-05-06_2026-05-12.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-05-13_2026-05-19.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-05-20_2026-05-26.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-05-27_2026-06-02.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-06-03_2026-06-09.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-06-10_2026-06-16.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-06-17_2026-06-23.jsonl",
+    "C:\\Users\\Administrator\\Webstrom\\capital os\\investor-intelligence\\data\\raw\\sec-formd\\formd-2026-04-01-2026-06-30-1794295555390\\part-2026-06-24_2026-06-30.jsonl"
+  ],
+  "generatedAt": "2026-11-10T07:28:18.833Z"
+}

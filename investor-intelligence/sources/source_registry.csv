@@ -1,0 +1,124 @@
+source_id,name,url,category,regions,access_method,api_available,license_status,priority,status,last_verified,est_records,notes
+sec-efts,SEC EDGAR full-text search,https://efts.sec.gov/LATEST/search-index,regulator,United States,search_endpoint,yes,public_data_terms,1,active,2026-11-10,,Public filings with a fair-access User-Agent and <=10 req/s. Form D Item 3C = pooled fund.
+sec-edgar-formd,EDGAR Form D filings,https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&type=D,regulator,United States,html,yes,public_data_terms,1,ready,2026-11-10,,Issuer filings. Fund vehicles only when Item 3C or fund evidence.
+sec-form-adv,Form ADV / IAPD,https://adviserinfo.sec.gov/,regulator,United States,bulk_download,yes,public_data_terms,1,active,2026-11-10,,Adviser registrations; already partially imported (6,792 IAPD records).
+sec-13f,SEC 13F filings,https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&type=13F,regulator,United States,html,yes,public_data_terms,2,active,2026-11-10,,Institutional managers >$100M AUM; mostly later-stage.
+companies-house-uk,UK Companies House,https://api.company-information.service.gov.uk/,regulator,United Kingdom,api,yes,open_license,1,blocked,2026-11-10,,Free API key required. SIC 64301/66300 filter for venture/fund entities.
+openvc,OpenVC,https://www.openvc.app/,directory,Global,review_required,no,unknown,1,planned,2026-11-10,,Large free VC directory. Check terms before automated collection.
+crunchbase,Crunchbase,https://www.crunchbase.com/,dataset,Global,api,yes,commercial_only,1,blocked,2026-11-10,,Paid API. Highest-quality global firm/people/round data.
+pitchbook,PitchBook,https://pitchbook.com/,dataset,Global,api,yes,commercial_only,1,blocked,2026-11-10,,Paid. Deep deal-level data and cheque sizes.
+dealroom,Dealroom,https://dealroom.co/,dataset,Global,api,yes,commercial_only,1,blocked,2026-11-10,,Paid/partner. Strong European coverage.
+cbinsights,CB Insights,https://www.cbinsights.com/,dataset,Global,api,yes,commercial_only,2,blocked,2026-11-10,,Paid.
+angellist,AngelList,https://www.angellist.com/,platform,Global,review_required,no,unknown,2,planned,2026-11-10,,Syndicates and angel profiles; API access is partner-only.
+wellfound,Wellfound,https://wellfound.com/,directory,Global,review_required,no,unknown,3,planned,2026-11-10,,Formerly AngelList Talent; investor profiles.
+f6s,F6S,https://www.f6s.com/,directory,Global,review_required,no,unknown,3,planned,2026-11-10,,Accelerators and investors.
+tracxn,Tracxn,https://tracxn.com/,dataset,Global,api,yes,commercial_only,2,blocked,2026-11-10,,Paid; strong emerging-market coverage.
+visible-connect,Visible Connect,https://visible.vc/,directory,Global,review_required,no,unknown,3,planned,2026-11-10,,Public VC list; verify terms.
+gust,Gust,https://gust.com/,platform,Global,review_required,no,unknown,3,planned,2026-11-10,,Angel groups and early-stage investors.
+seedinvest,SeedInvest,https://www.seedinvest.com/,platform,United States,review_required,no,unknown,3,planned,2026-11-10,,Regulated crowdfunding platform.
+republic,Republic,https://republic.com/,platform,Global,review_required,no,unknown,3,planned,2026-11-10,,Crowdfunding; investor data limited.
+signal-nfx,NFX Signal,https://signal.nfx.com/,directory,Global,review_required,no,unknown,3,planned,2026-11-10,,Investor lists with thesis notes.
+startupblink,StartupBlink,https://www.startupblink.com/,directory,Global,review_required,no,unknown,4,planned,2026-11-10,,Ecosystem maps rather than investor records.
+startupgenome,Startup Genome,https://startupgenome.com/,dataset,Global,review_required,no,commercial_only,4,planned,2026-11-10,,Ecosystem reports.
+beauhurst,Beauhurst,https://www.beauhurst.com/,dataset,United Kingdom,api,yes,commercial_only,2,blocked,2026-11-10,,UK equity investment data.
+briter-bridges,Briter Bridges,https://briterbridges.com/,dataset,Africa,review_required,no,commercial_only,2,planned,2026-11-10,,African funding data.
+magnitt,MAGNiTT,https://magnitt.com/,dataset,Middle East,review_required,no,commercial_only,2,planned,2026-11-10,,MENA startup and investor data.
+nvca,National Venture Capital Association,https://nvca.org/,association,United States,manual,no,unknown,2,planned,2026-11-10,,Member directory; US VC firms.
+bvca,British Private Equity & Venture Capital Association,https://www.bvca.co.uk/,association,United Kingdom,manual,no,unknown,2,planned,2026-11-10,,UK member firms.
+invest-europe,Invest Europe,https://www.investeurope.eu/,association,Europe,manual,no,unknown,2,planned,2026-11-10,,European private capital members.
+avca,African Private Capital Association,https://www.avca.org/,association,Africa,manual,no,unknown,2,planned,2026-11-10,,African fund managers.
+svca,Singapore Venture & Private Capital Association,https://www.svca.org.sg/,association,Singapore,manual,no,unknown,3,planned,2026-11-10,,SEA funds.
+ivca,Indian Venture and Alternate Capital Association,https://www.ivca.in/,association,India,manual,no,unknown,3,planned,2026-11-10,,Indian funds.
+avcal,Australian Investment Council,https://www.aic.co/,association,Australia,manual,no,unknown,3,planned,2026-11-10,,Australasian private capital.
+cvca,Canadian Venture Capital & Private Equity Association,https://www.cvca.ca/,association,Canada,manual,no,unknown,3,planned,2026-11-10,,Canadian funds.
+lavca,Latin American Venture Capital Association,https://www.lavca.org/,association,Latin America,manual,no,unknown,3,planned,2026-11-10,,LatAm funds.
+eban,European Business Angels Network,https://www.eban.org/,association,Europe,manual,no,unknown,3,planned,2026-11-10,,National angel networks.
+angelcapitalassociation,Angel Capital Association,https://www.angelcapitalassociation.org/,association,United States,manual,no,unknown,2,planned,2026-11-10,,US angel groups.
+ukbusinessangels,UK Business Angels Association,https://www.ukbusinessangels.com/,association,United Kingdom,manual,no,unknown,2,planned,2026-11-10,,UK angel networks.
+aban,African Business Angel Network,https://www.aban.org/,association,Africa,manual,no,unknown,3,planned,2026-11-10,,African angel groups.
+angel-investment-network,Angel Investment Network,https://www.angelinvestmentnetwork.co.uk/,angel_network,Global,review_required,no,unknown,4,planned,2026-11-10,,Introducer platform.
+golden-seeds,Golden Seeds,https://www.golden-seeds.com/,angel_network,United States,manual,no,unknown,4,planned,2026-11-10,,Women-led angel group.
+portfolia,Portfolia,https://www.portfolia.com/,angel_network,United States,manual,no,unknown,4,planned,2026-11-10,,Themed angel funds.
+gaingels,Gaingels,https://gaingels.com/,angel_network,Global,manual,no,unknown,4,planned,2026-11-10,,LGBTQ+ angel syndicate.
+iangels,iAngels,https://www.iangels.com/,angel_network,Israel,manual,no,unknown,4,planned,2026-11-10,,Israeli angel platform.
+ourcrowd,OurCrowd,https://www.ourcrowd.com/,platform,Global,review_required,no,unknown,4,planned,2026-11-10,,Crowdfunding and venture platform.
+wefunder,Wefunder,https://wefunder.com/,platform,United States,review_required,no,unknown,4,planned,2026-11-10,,Regulated crowdfunding.
+crowdcube,Crowdcube,https://www.crowdcube.com/,platform,United Kingdom,review_required,no,unknown,4,planned,2026-11-10,,Equity crowdfunding.
+innovate-uk,Innovate UK,https://www.ukri.org/councils/innovate-uk/,government,United Kingdom,manual,no,public_data_terms,2,planned,2026-11-10,,Grant programmes; not equity in most cases.
+british-business-bank,British Business Bank,https://www.british-business-bank.co.uk/,government,United Kingdom,manual,no,public_data_terms,3,planned,2026-11-10,,Fund-of-funds and programmes.
+bpifrance,Bpifrance,https://www.bpifrance.fr/,government,France,manual,no,public_data_terms,2,planned,2026-11-10,,French public investment bank.
+kfw,KfW,https://www.kfw.de/,government,Germany,manual,no,public_data_terms,3,planned,2026-11-10,,German development bank.
+enterprise-singapore,Enterprise Singapore,https://www.enterprise.gov.sg/,government,Singapore,manual,no,public_data_terms,3,planned,2026-11-10,,Startup programmes.
+startup-india,Startup India,https://www.startupindia.gov.in/,government,India,manual,no,public_data_terms,3,planned,2026-11-10,,Government startup scheme.
+jetro,JETRO,https://www.jetro.go.jp/,government,Japan,manual,no,public_data_terms,4,planned,2026-11-10,,Trade and investment support.
+kotra,KOTRA,https://www.kotra.or.kr/,government,South Korea,manual,no,public_data_terms,4,planned,2026-11-10,,Investment support agency.
+invest-saudi,Invest Saudi,https://investsaudi.sa/,government,Saudi Arabia,manual,no,public_data_terms,3,planned,2026-11-10,,Investment promotion.
+mubadala,Mubadala,https://www.mubadala.com/,government,United Arab Emirates,manual,no,public_data_terms,4,planned,2026-11-10,,Sovereign investor.
+qdb,Qatar Development Bank,https://www.qdb.qa/,government,Qatar,manual,no,public_data_terms,4,planned,2026-11-10,,SME and startup finance.
+devbank-ng,Development Bank of Nigeria,https://www.devbankng.com/,government,Nigeria,manual,no,public_data_terms,3,planned,2026-11-10,,SME finance.
+boi-ng,Bank of Industry,https://www.boi.ng/,government,Nigeria,manual,no,public_data_terms,3,planned,2026-11-10,,Industrial and SME finance.
+innovation-norway,Innovation Norway,https://www.innovasjonnorge.no/,government,Norway,manual,no,public_data_terms,4,planned,2026-11-10,,Startup grants.
+business-finland,Business Finland,https://www.businessfinland.fi/,government,Finland,manual,no,public_data_terms,4,planned,2026-11-10,,Startup funding.
+vinnova,Vinnova,https://www.vinnova.se/,government,Sweden,manual,no,public_data_terms,4,planned,2026-11-10,,Innovation agency.
+enterprise-ireland,Enterprise Ireland,https://www.enterprise-ireland.com/,government,Ireland,manual,no,public_data_terms,4,planned,2026-11-10,,State startup support.
+innovationsfonden,Innovation Fund Denmark,https://innovationsfonden.dk/,government,Denmark,manual,no,public_data_terms,4,planned,2026-11-10,,Innovation funding.
+startup-portugal,Startup Portugal,https://startupportugal.com/,government,Portugal,manual,no,public_data_terms,4,planned,2026-11-10,,National startup programme.
+enisa,ENISA,https://www.enisa.es/,government,Spain,manual,no,public_data_terms,4,planned,2026-11-10,,Spanish public venture financing.
+innovation-israel,Israel Innovation Authority,https://innovationisrael.org.il/,government,Israel,manual,no,public_data_terms,3,planned,2026-11-10,,Government innovation funding.
+sbir,SBIR.gov,https://www.sbir.gov/,government,United States,api,yes,public_data_terms,3,planned,2026-11-10,,Federal R&D grants; not equity investors.
+grants-gov,Grants.gov,https://www.grants.gov/,government,United States,api,yes,public_data_terms,4,planned,2026-11-10,,Federal grants.
+ycombinator,Y Combinator,https://www.ycombinator.com/,accelerator,Global,review_required,no,unknown,2,planned,2026-11-10,,Accelerator; invests directly.
+techstars,Techstars,https://www.techstars.com/,accelerator,Global,review_required,no,unknown,2,planned,2026-11-10,,Accelerator with direct investment.
+500-global,500 Global,https://500.co/,accelerator,Global,review_required,no,unknown,2,planned,2026-11-10,,Early-stage fund and accelerator.
+antler,Antler,https://www.antler.co/,accelerator,Global,review_required,no,unknown,2,planned,2026-11-10,,Pre-seed fund and residency.
+entrepreneur-first,Entrepreneur First,https://www.joinef.com/,accelerator,Europe/Asia,review_required,no,unknown,2,planned,2026-11-10,,Pre-seed talent investor.
+plug-and-play,Plug and Play,https://www.plugandplaytechcenter.com/,accelerator,Global,review_required,no,unknown,2,planned,2026-11-10,,Corporate innovation and VC arm.
+sosv,SOSV,https://sosv.com/,accelerator,Global,review_required,no,unknown,2,planned,2026-11-10,,Deep-tech accelerators.
+startupbootcamp,Startupbootcamp,https://www.startupbootcamp.org/,accelerator,Europe,review_required,no,unknown,3,planned,2026-11-10,,Programme network.
+alchemist,Alchemist Accelerator,https://www.alchemistaccelerator.com/,accelerator,United States,review_required,no,unknown,3,planned,2026-11-10,,Enterprise-focused.
+masschallenge,MassChallenge,https://masschallenge.org/,accelerator,Global,review_required,no,unknown,3,planned,2026-11-10,,Non-dilutive and equity options.
+gener8tor,gener8tor,https://www.gener8tor.com/,accelerator,United States,review_required,no,unknown,3,planned,2026-11-10,,Regional accelerators and funds.
+betaworks,Betaworks,https://www.betaworks.com/,accelerator,United States,review_required,no,unknown,3,planned,2026-11-10,,Company studio and fund.
+boost-vc,Boost VC,https://www.boost.vc/,accelerator,United States,review_required,no,unknown,4,planned,2026-11-10,,Deep tech and sci-fi fund.
+mest-africa,MEST Africa,https://mestafrica.com/,accelerator,Africa,review_required,no,unknown,3,planned,2026-11-10,,Ghana/Nigeria programme and fund.
+cchub,Co-Creation Hub,https://cchub.africa/,accelerator,Nigeria,review_required,no,unknown,3,planned,2026-11-10,,Lagos innovation hub.
+flat6labs,Flat6Labs,https://www.flat6labs.com/,accelerator,Middle East/Africa,review_required,no,unknown,3,planned,2026-11-10,,MENA accelerators.
+village-capital,Village Capital,https://villagecapital.com/,accelerator,Global,review_required,no,unknown,3,planned,2026-11-10,,Early-stage programme.
+techcrunch,TechCrunch,https://techcrunch.com/,publication,Global,html,no,requires_account,3,planned,2026-11-10,,Funding round announcements.
+strictlyvc,StrictlyVC,https://www.strictlyvc.com/,publication,Global,html,no,unknown,4,planned,2026-11-10,,VC newsletter.
+sifted,Sifted,https://sifted.eu/,publication,Europe,html,no,unknown,3,planned,2026-11-10,,European startup reporting.
+axios-pro-rata,Axios Pro Rata,https://www.axios.com/newsletters/axios-pro-rata,publication,Global,html,no,unknown,4,planned,2026-11-10,,Deal newsletter.
+the-information,The Information,https://www.theinformation.com/,publication,Global,html,no,commercial_only,4,planned,2026-11-10,,Paywalled.
+afridigest,AfriDigest,https://afridigest.com/,publication,Africa,html,no,unknown,4,planned,2026-11-10,,African tech newsletter.
+disrupt-africa,Disrupt Africa,https://disrupt-africa.com/,publication,Africa,html,no,unknown,4,planned,2026-11-10,,African funding reporting.
+techcabal,TechCabal,https://techcabal.com/,publication,Africa,html,no,unknown,4,planned,2026-11-10,,African tech news.
+inc42,Inc42,https://inc42.com/,publication,India,html,no,unknown,4,planned,2026-11-10,,Indian startup funding.
+yourstory,YourStory,https://yourstory.com/,publication,India,html,no,unknown,4,planned,2026-11-10,,Indian startup funding.
+eu-startups,EU-Startups,https://www.eu-startups.com/,publication,Europe,html,no,unknown,4,planned,2026-11-10,,European funding news.
+sequoia,Sequoia Capital,https://www.sequoia.com/,firm_website,Global,html,no,unknown,4,planned,2026-11-10,,Thesis and portfolio pages.
+a16z,Andreessen Horowitz,https://a16z.com/,firm_website,Global,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+accel,Accel,https://www.accel.com/,firm_website,Global,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+index-ventures,Index Ventures,https://www.indexventures.com/,firm_website,Global,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+balderton,Balderton Capital,https://www.balderton.com/,firm_website,Europe,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+atomico,Atomico,https://atomico.com/,firm_website,Europe,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+northzone,Northzone,https://northzone.com/,firm_website,Europe,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+point-nine,Point Nine,https://www.pointnine.com/,firm_website,Europe,html,no,unknown,4,planned,2026-11-10,,Portfolio and thesis.
+seedcamp,Seedcamp,https://seedcamp.com/,firm_website,Europe,html,no,unknown,4,planned,2026-11-10,,Pre-seed fund.
+first-round,First Round Capital,https://firstround.com/,firm_website,United States,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+usv,Union Square Ventures,https://www.usv.com/,firm_website,United States,html,no,unknown,4,planned,2026-11-10,,Thesis and portfolio.
+foundry-group,Foundry Group,https://foundrygroup.com/,firm_website,United States,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+felicis,Felicis,https://www.felicis.com/,firm_website,Global,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+eqt-ventures,EQT Ventures,https://eqtventures.com/,firm_website,Europe,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+lakestar,Lakestar,https://www.lakestar.com/,firm_website,Europe,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+cherry-ventures,Cherry Ventures,https://www.cherry.vc/,firm_website,Europe,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+localglobe,LocalGlobe,https://www.localglobe.vc/,firm_website,Europe,html,no,unknown,4,planned,2026-11-10,,Portfolio and team.
+osage-university-partners,Osage University Partners,https://www.osagepartners.com/,university,United States,html,no,unknown,4,planned,2026-11-10,,University spin-out investor.
+mit-engine,The Engine,https://engine.xyz/,university,United States,html,no,unknown,4,planned,2026-11-10,,MIT tough-tech fund.
+startx,StartX,https://startx.com/,university,United States,html,no,unknown,4,planned,2026-11-10,,Stanford founder community.
+cambridge-enterprise,Cambridge Enterprise,https://www.enterprise.cam.ac.uk/,university,United Kingdom,html,no,unknown,4,planned,2026-11-10,,University commercialisation.
+oxford-innovation,Oxford University Innovation,https://innovation.ox.ac.uk/,university,United Kingdom,html,no,unknown,4,planned,2026-11-10,,University commercialisation.
+imperial-enterprise,Imperial Enterprise Lab,https://www.imperial.ac.uk/enterprise/,university,United Kingdom,html,no,unknown,4,planned,2026-11-10,,University entrepreneurship.
+family-office-exchange,Family Office Exchange,https://www.familyofficeexchange.com/,association,Global,manual,no,commercial_only,4,planned,2026-11-10,,Membership organization.
+campden-wealth,Campden Wealth,https://www.campdenwealth.com/,publication,Global,manual,no,commercial_only,4,planned,2026-11-10,,Family office research.
+tiger-21,Tiger 21,https://tiger21.com/,association,Global,manual,no,unknown,5,planned,2026-11-10,,Peer network; members not published.
+family-office-association,Family Office Association,https://familyofficeassociation.com/,association,Global,manual,no,unknown,5,planned,2026-11-10,,Membership organization.
