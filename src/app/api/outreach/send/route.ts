@@ -141,6 +141,43 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Close the loop: the pipeline reflects what actually happened. A
+      // delivered message moves the investor to Contacted; an outbox entry is
+      // only a draft, so it may advance no further than Outreach Drafted.
+      const nextStage = queued ? "outreach_drafted" : "contacted";
+      const { data: existingEntry } = await sp
+        .from("user_pipeline_entries")
+        .select("id, stage")
+        .eq("user_id", userId)
+        .eq("investor_id", investorId)
+        .maybeSingle();
+
+      if (!existingEntry) {
+        await sp.from("user_pipeline_entries").insert({
+          user_id: userId,
+          investor_id: investorId,
+          stage: nextStage,
+          stage_entered_at: new Date().toISOString(),
+        });
+      } else {
+        const early = new Set(["discovered", "researching", "shortlisted", "outreach_drafted"]);
+        if (early.has(existingEntry.stage) && existingEntry.stage !== nextStage) {
+          await sp
+            .from("user_pipeline_entries")
+            .update({ stage: nextStage, stage_entered_at: new Date().toISOString() })
+            .eq("id", existingEntry.id);
+          await sp.from("pipeline_events").insert({
+            user_id: userId,
+            investor_id: investorId,
+            entry_id: existingEntry.id,
+            from_stage: existingEntry.stage,
+            to_stage: nextStage,
+            notes: queued ? "Outbox entry created" : "Email sent",
+          });
+        }
+      }
+      cache.invalidate(userCacheKey(userId, "cockpit"));
+
       return NextResponse.json({
         success: true,
         messageId: result.messageId,

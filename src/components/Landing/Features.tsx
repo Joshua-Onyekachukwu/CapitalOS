@@ -9,7 +9,7 @@ const features = [
     icon: "ri-radar-line",
     title: "Investor Intelligence Database",
     description:
-      "18,995 investor firms compiled from SEC 13F, Form D and IAPD filings, 4,921 of them with a contact email on file. Filter by stage, sector and geography; cheque size, thesis and portfolio fields appear only where the source recorded them.",
+      "24,379 investor records: 18,995 firm records plus 5,461 SEC Form D venture funds, 4,933 with a contact email on file. None of the emails is verified. Filter by stage, sector and geography; cheque size, thesis and portfolio fields appear only where the source recorded them.",
   },
   {
     icon: "ri-brain-line",

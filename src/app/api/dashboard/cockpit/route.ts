@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware/api-auth";
 import { cache, userCacheKey, CACHE_TTL } from "@/lib/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { computeRoundMetrics } from "@/lib/services/pipeline/metrics";
 import type { PipelineStageId } from "@/lib/services/pipeline/stages";
 
@@ -45,6 +46,42 @@ function isMissingTable(error: { code?: string; message?: string } | null): bool
  */
 async function computeCockpit(userId: string) {
   const sp = await createClient();
+
+  // ── Global corpus size ──
+  // Not user data: this is the shared database every founder searches. It is
+  // labelled as the corpus so it can never be mistaken for the founder's own
+  // pipeline or saved list.
+  const service = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const countOf = async (table: string, build?: (q: any) => any) => {
+    let q: any = service.from(table).select("id", { count: "exact", head: true });
+    if (build) q = build(q);
+    const { count, error } = await q;
+    return error ? null : (count ?? 0);
+  };
+  const [corpusInvestors, corpusVentureFunds, corpusPeople, corpusEmails, corpusWebsites] =
+    await Promise.all([
+      countOf("investors", (q) => q.eq("is_active", true)),
+      countOf("investors", (q) =>
+        q.eq("is_active", true).eq("investor_type", "venture_capital")
+      ),
+      countOf("investor_people"),
+      countOf("investors", (q) =>
+        q.eq("is_active", true).not("email", "is", null).neq("email", "")
+      ),
+      countOf("investors", (q) =>
+        q.eq("is_active", true).not("website_url", "is", null).neq("website_url", "")
+      ),
+    ]);
+  const corpus = {
+    investors: corpusInvestors,
+    ventureFunds: corpusVentureFunds,
+    people: corpusPeople,
+    withEmail: corpusEmails,
+    withWebsite: corpusWebsites,
+  };
 
   // ── Company profile ──
   const { data: profile } = await sp
@@ -439,6 +476,7 @@ async function computeCockpit(userId: string) {
       meetings: meetingsAvailable,
       pipeline: pipelineAvailable,
     },
+    corpus,
     recentInvestors,
     pipeline,
     pipelineInvestors: pipelineCount,

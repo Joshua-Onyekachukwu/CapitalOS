@@ -7,7 +7,7 @@ const whyItems = [
   {
     title: "Real Investor Data, Not Just Names",
     description:
-      "18,995 investor firms compiled from SEC 13F, Form D and IAPD filings, 4,921 with a contact email on file. Sector, stage and location are recorded per firm; cheque size and thesis text are present only where the filing disclosed them.",
+      "24,379 investor records — 18,995 firm records plus 5,461 SEC Form D venture funds — 4,933 with a contact email on file, none verified. Sector, stage and location are recorded per record; cheque size and thesis text appear only where the filing disclosed them.",
   },
   {
     title: "AI That Scores, Not Just Searches",

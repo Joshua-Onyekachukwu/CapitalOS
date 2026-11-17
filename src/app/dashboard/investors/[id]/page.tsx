@@ -45,11 +45,33 @@ interface InvestorData {
   last_verified_at?: string | null;
   source_provider?: string | null;
   source_id?: string | null;
+  investment_thesis?: string | null;
+  provenance?: {
+    source?: string;
+    provider?: string;
+    source_url?: string;
+    tier?: string | null;
+    evidence_score?: number | null;
+    first_sale_date?: string | null;
+    min_commitment_usd?: number | null;
+  } | null;
   qualification_notes?: string | null;
   fit_score_breakdown?: Record<string, unknown> | null;
   firm_name: string | null;
   firm_type: string | null;
   fund_size: number | null;
+}
+
+interface Person {
+  id: string;
+  full_name: string;
+  title: string | null;
+  email: string | null;
+  linkedin_url: string | null;
+  location: string | null;
+  is_primary: boolean;
+  source: string | null;
+  source_url: string | null;
 }
 
 interface MergeHistoryEntry {
@@ -91,6 +113,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
   const [investor, setInvestor] = useState<InvestorData | null>(null);
   const [research, setResearch] = useState<ResearchSummary | null>(null);
   const [mergeHistory, setMergeHistory] = useState<MergeHistoryEntry[]>([]);
+  const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchError, setResearchError] = useState("");
@@ -112,6 +135,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
         fund_size: data.firm?.fund_size || null,
       });
       setMergeHistory(Array.isArray(data.mergeHistory) ? data.mergeHistory : []);
+      setPeople(Array.isArray(data.people) ? data.people : []);
 
       if (data.profile?.ai_reasoning) {
         try {
@@ -401,6 +425,156 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
 
           <Card>
             <CardHeader>
+              <div className="flex items-center gap-[8px]">
+                <i className="ri-building-2-line text-lime-500 text-[18px]"></i>
+                <h3 className="!text-[16px] !font-semibold !mb-0">Fund facts</h3>
+              </div>
+            </CardHeader>
+            <CardBody className="pt-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-[24px] gap-y-[14px]">
+                <div>
+                  <span className="text-[11px] uppercase tracking-wide text-gray-400 block mb-[3px]">
+                    Fund type
+                  </span>
+                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300 capitalize">
+                    {(investor.firm_type || investor.investor_type || "Unknown").replace(/_/g, " ")}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wide text-gray-400 block mb-[3px]">
+                    Website
+                  </span>
+                  {investor.website_url ? (
+                    <a
+                      href={investor.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] font-medium text-lime-600 hover:underline break-all"
+                    >
+                      {investor.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                    </a>
+                  ) : (
+                    <span className="text-[13px] text-gray-400">Not on record</span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wide text-gray-400 block mb-[3px]">
+                    Minimum LP commitment
+                  </span>
+                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
+                    {typeof investor.provenance?.min_commitment_usd === "number"
+                      ? `$${investor.provenance.min_commitment_usd.toLocaleString()}`
+                      : "Not disclosed"}
+                    <span className="block text-[11px] font-normal text-gray-400">
+                      Fund commitment, not a startup cheque
+                    </span>
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wide text-gray-400 block mb-[3px]">
+                    First sale
+                  </span>
+                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
+                    {investor.provenance?.first_sale_date || "Not disclosed"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wide text-gray-400 block mb-[3px]">
+                    Evidence
+                  </span>
+                  <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
+                    {investor.provenance?.tier ? `Tier ${investor.provenance.tier}` : "Unrated"}
+                    {typeof investor.provenance?.evidence_score === "number"
+                      ? ` · ${investor.provenance.evidence_score}/100`
+                      : ""}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wide text-gray-400 block mb-[3px]">
+                    Source
+                  </span>
+                  {investor.provenance?.source_url ? (
+                    <a
+                      href={investor.provenance.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] font-medium text-lime-600 hover:underline"
+                    >
+                      {investor.provenance.provider || "Public filing"} ↗
+                    </a>
+                  ) : (
+                    <span className="text-[13px] text-gray-400">Not recorded</span>
+                  )}
+                </div>
+              </div>
+
+              {investor.investment_thesis && (
+                <div className="mt-[16px] pt-[16px] border-t border-gray-100 dark:border-gray-800">
+                  <span className="text-[11px] uppercase tracking-wide text-gray-400 block mb-[4px]">
+                    Mandate and evidence
+                  </span>
+                  <p className="text-[13px] text-gray-600 dark:text-gray-400 leading-[1.7] !mb-0">
+                    {investor.investment_thesis}
+                  </p>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-[8px]">
+                  <i className="ri-team-line text-lime-500 text-[18px]"></i>
+                  <h3 className="!text-[16px] !font-semibold !mb-0">Team</h3>
+                </div>
+                <span className="text-[12px] text-gray-400">
+                  {people.length} named {people.length === 1 ? "person" : "people"}
+                </span>
+              </div>
+            </CardHeader>
+            <CardBody className="pt-0">
+              {people.length === 0 ? (
+                <p className="text-[13px] text-gray-400 !mb-0">
+                  No named people on record for this fund. SEC Form D lists related persons on
+                  the filing; this one has none parsed.
+                </p>
+              ) : (
+                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {people.map((person) => (
+                    <div key={person.id} className="flex items-start justify-between gap-[12px] py-[10px]">
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium text-gray-800 dark:text-gray-200 !mb-0">
+                          {person.full_name}
+                          {person.is_primary && (
+                            <span className="ml-[6px] text-[10px] uppercase tracking-wide text-lime-600">
+                              primary
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-[12px] text-gray-400 !mb-0">
+                          {[person.title, person.location].filter(Boolean).join(" · ") || "Role not stated"}
+                        </p>
+                      </div>
+                      {person.source_url && (
+                        <a
+                          href={person.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-lime-600 hover:underline flex-none"
+                        >
+                          filing ↗
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-[8px]">
                   <i className="ri-sparkling-2-line text-lime-500 text-[18px]"></i>
@@ -651,11 +825,13 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
               </div>
               <h3 className="!text-[16px] !font-semibold !mb-[4px]">Fit Score</h3>
               <p className="text-[13px] text-gray-400 !mb-0">
-                {investor.fit_score >= 85
-                  ? "Excellent match for your startup"
-                  : investor.fit_score >= 70
-                    ? "Good match — worth exploring"
-                    : "Partial match — review details"}
+                {investor.fit_score > 0
+                  ? investor.fit_score >= 80
+                    ? "Strong match for your company"
+                    : investor.fit_score >= 50
+                      ? "Possible match — review the factors"
+                      : "Weak match on the evidence available"
+                  : "Not scored yet — open Matches to score this fund against your company."}
               </p>
             </CardBody>
           </Card>

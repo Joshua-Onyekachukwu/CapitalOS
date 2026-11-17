@@ -131,3 +131,31 @@ investor records**. Consequences for this tracker:
    competitor, market, grants — each needs a named source before any code.
 4. **Population:** modules 2, 3, 4, 5 and the data targets only move when the
    investor corpus is replaced with real venture funds.
+
+## Corpus import — 2026-11-17
+
+Measured after importing SEC Form D venture funds (`scripts/import-sec-funds.cjs`):
+
+| Metric | Value |
+|---|---:|
+| Active investor records | **24,379** |
+| — legacy firm records | 18,918 |
+| — imported Form D venture funds | 5,461 |
+| Investor firms created | 5,461 |
+| Person rows from Form D related persons | 12,102 |
+| Distinct named people | 4,205 |
+| Records with an email | 4,933 (none verified) |
+| Records with a website | 5,531 |
+
+Fund types other than **Venture Capital Fund** were excluded: 4,661 hedge funds,
+4,794 PE funds and 4,544 other funds remain outside the product corpus.
+
+Import is idempotent and reversible:
+
+```sql
+delete from investors where source = 'sec_formd_bulk';
+delete from investor_firms where source = 'sec_formd_bulk';
+```
+
+`investor_people` rows cascade with their investor. Landing copy, `AGENTS.md` and
+`docs/23` were updated in the same commit as the import.

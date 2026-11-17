@@ -4,6 +4,14 @@
 **Scope:** Wave 1 of the approved plan — populate firms, backfill cheque sizes and theses, re-run qualification.
 **Status:** Measurement complete. Two of the three planned objectives turned out to be **impossible as specified**, for reasons documented below.
 
+> **Update 2026-11-17 — corpus changed after this report.** The 18,995-figure
+> analysis below describes the pre-import corpus and is kept as the historical
+> measurement. A SEC Form D import added **5,461 venture funds** (all other fund
+> types excluded), bringing the live corpus to **24,379 active records**, with
+> **4,933** emails (none verified) and **4,205 distinct named people** across
+> **12,102 person rows**. Landing copy and `AGENTS.md` carry the new counts.
+> Cheque-size and thesis coverage did not materially change: 14 and 26 records.
+
 ---
 
 ## 1. The direct answer to your question

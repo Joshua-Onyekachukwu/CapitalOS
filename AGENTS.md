@@ -18,9 +18,12 @@
 there must match a measured value in `docs/23-wave1-investor-data-findings.md`
 and `docs/30-completion-tracker.md`:
 
-- The corpus is 18,995 **firms** from SEC 13F / Form D and IAPD filings, US only.
-- 4,921 have an email address; none is email-verified, so never write "verified
+- The corpus is **24,379 active records**: 18,995 firm records from SEC 13F / Form D
+  and IAPD filings plus **5,461 SEC Form D venture funds** imported 2026-11-17, US only.
+- **4,933** have an email address; none is email-verified, so never write "verified
   contactable emails".
+- **12,102 person rows / 4,205 distinct named people** come from Form D related
+  persons; they are not background-checked or contact-verified.
 - Cheque size exists on 14 records, thesis text on 26, portfolio companies on 0.
   Never claim those fields are complete, and never claim UK/EU coverage.
 

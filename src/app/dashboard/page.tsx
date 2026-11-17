@@ -79,8 +79,17 @@ interface NextAction {
   href: string;
 }
 
+interface CorpusStats {
+  investors: number | null;
+  ventureFunds: number | null;
+  people: number | null;
+  withEmail: number | null;
+  withWebsite: number | null;
+}
+
 interface CockpitData {
   stats: DashboardStats;
+  corpus?: CorpusStats;
   availability?: Availability;
   recentInvestors: RecentInvestor[];
   pipeline: PipelineStage[];
@@ -227,6 +236,46 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Shared corpus — the database every founder searches, clearly not the
+          founder's own list */}
+      {data?.corpus && (
+        <Card className="mb-[25px] md:mb-[30px]">
+          <CardBody>
+            <div className="flex items-center justify-between mb-[14px]">
+              <div>
+                <h3 className="!text-[16px] !font-semibold !mb-[2px]">Investor database</h3>
+                <p className="text-[12px] text-gray-400 !mb-0">
+                  Shared corpus, not your pipeline. Emails are on file, none are verified.
+                </p>
+              </div>
+              <Link
+                href="/dashboard/investors/discover"
+                className="text-[13px] font-medium text-lime-600 hover:text-lime-700 flex-none"
+              >
+                Search →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-[12px]">
+              {[
+                { label: "Investor records", value: data.corpus.investors },
+                { label: "Venture funds", value: data.corpus.ventureFunds },
+                { label: "Named people", value: data.corpus.people },
+                { label: "With an email", value: data.corpus.withEmail },
+              ].map((item) => (
+                <div key={item.label} className="rounded-[10px] border border-gray-100 dark:border-gray-800 p-[12px]">
+                  <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">
+                    {item.value === null || item.value === undefined
+                      ? "—"
+                      : item.value.toLocaleString()}
+                  </p>
+                  <p className="text-[11px] text-gray-400 !mb-0">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Round money — computed server-side, never estimated here */}
       {data?.round && (

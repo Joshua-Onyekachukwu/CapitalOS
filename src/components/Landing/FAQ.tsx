@@ -17,7 +17,7 @@ const faqData = [
   {
     question: "How does the AI investor matching work?",
     answer:
-      "We match you against 18,995 investor firms registered in the US, drawn from SEC and IAPD filings, using your industry, stage and location. A field the filing never disclosed is treated as unknown rather than as a mismatch, and every match shows the score breakdown it came from.",
+      "We match you against 24,379 investor records — 18,995 firm records plus 5,461 SEC Form D venture funds — drawn from SEC and IAPD filings, using your industry, stage and location. A field the filing never disclosed is treated as unknown rather than as a mismatch, and every match shows the score breakdown it came from.",
   },
   {
     question: "What's included in the 6-Month Pro Sprint?",
@@ -82,7 +82,7 @@ const FAQ: React.FC = () => {
               />
               <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 px-[20px]">
                 <h3 className="!mb-[8px] italic !leading-none !text-[30px] md:!text-4xl -tracking-[1.08px] !text-black">
-                  18,995
+                  24,379
                 </h3>
                 <span className="block uppercase font-bold tracking-[1.95px] text-xs md:text-sm text-[#8F3E13]">
                   Investors

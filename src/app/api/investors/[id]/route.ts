@@ -22,12 +22,21 @@ export async function GET(
     );
 
     // Fire all queries in parallel for maximum speed
-    const [investorResult] = await Promise.all([
+    const [investorResult, peopleResult] = await Promise.all([
       // 1. Main investor record
       supabase.from("investors").select("*").eq("id", id).single(),
+      // 2. Named people at this fund (SEC Form D related persons)
+      supabase
+        .from("investor_people")
+        .select("id, full_name, title, email, linkedin_url, location, is_primary, source, source_url")
+        .eq("firm_id", id)
+        .order("is_primary", { ascending: false })
+        .order("full_name", { ascending: true })
+        .limit(50),
     ]);
 
     const { data: investor, error } = investorResult;
+    const people = peopleResult.data ?? [];
 
     if (error || !investor) {
       return NextResponse.json({ error: "Investor not found" }, { status: 404 });
@@ -90,6 +99,7 @@ export async function GET(
     return NextResponse.json({
       investor,
       firm,
+      people,
       profile,
       similar,
       mergeHistory,
