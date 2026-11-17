@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { SearchFilterBar, FilterConfig } from "@/components/Dashboard/SearchFilterBar";
 import { QualificationBadge } from "@/components/Investor/QualificationBadge";
+import { Alert } from "@/components/ui/Alert";
+import { toast } from "sonner";
 
 // ── Types ──
 interface Investor {
@@ -255,6 +257,8 @@ export default function InvestorsPage() {
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  /** Distinct from empty: a failed fetch never renders as "no investors found". */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const limit = 25;
 
@@ -328,6 +332,7 @@ export default function InvestorsPage() {
     abortRef.current = controller;
 
     setLoading(true);
+    setLoadError(null);
     try {
       const params = new URLSearchParams();
       params.set("page", String(page));
@@ -357,6 +362,16 @@ export default function InvestorsPage() {
       const response = await fetch(`/api/investors?${params.toString()}`, {
         signal: controller.signal,
       });
+      if (!response.ok) {
+        let message = "Could not load investors.";
+        try {
+          const body = await response.json();
+          if (typeof body?.error === "string" && body.error.length <= 200) message = body.error;
+        } catch {
+          /* response body is optional */
+        }
+        throw new Error(message);
+      }
       const data = await response.json();
 
       if (!controller.signal.aborted) {
@@ -366,6 +381,11 @@ export default function InvestorsPage() {
     } catch (err: any) {
       if (err?.name !== "AbortError") {
         console.error("Failed to fetch investors:", err);
+        setLoadError(
+          err instanceof Error && err.message !== "Failed to fetch"
+            ? err.message
+            : "Could not load investors. Check your connection and try again."
+        );
       }
     } finally {
       if (!controller.signal.aborted) setLoading(false);
@@ -407,7 +427,8 @@ export default function InvestorsPage() {
         verified: data.verifiedStats || { yes: 0, no: 0 },
       });
     } catch {
-      // Non-critical
+      // Non-critical: the table renders without filter counts.
+      toast.warning("Some filter counts could not be loaded.");
     }
   }, [filters]);
 
@@ -418,7 +439,8 @@ export default function InvestorsPage() {
       const data = await res.json();
       setSavedFilters(data.savedFilters || []);
     } catch {
-      // Non-critical
+      // Non-critical: the table renders without saved filters.
+      toast.warning("Saved filters could not be loaded.");
     }
   }, []);
 
@@ -502,7 +524,11 @@ export default function InvestorsPage() {
     <div>
       <PageHeader
         title="Investor Database"
-        description={`${total.toLocaleString()} investors across your database.`}
+        description={
+          loadError
+            ? "Your investor database could not be loaded."
+            : `${total.toLocaleString()} investors across your database.`
+        }
         actions={
           <Link href="/dashboard/investors/discover">
             <Button>
@@ -567,7 +593,7 @@ export default function InvestorsPage() {
                   </p>
                   <p className="text-[11px] text-gray-400 !mb-0 truncate">{stat.label}</p>
                   {stat.sub && (
-                    <p className="text-[10px] text-gray-300 !mb-0 truncate">{stat.sub}</p>
+                    <p className="text-[10px] text-gray-500 !mb-0 truncate">{stat.sub}</p>
                   )}
                 </div>
               </div>
@@ -649,7 +675,17 @@ export default function InvestorsPage() {
       {/* Results Table */}
       <Card>
         <CardBody className="p-0">
-          {loading ? (
+          {loadError ? (
+            <div className="p-[20px]">
+              <Alert variant="danger" title="Your investors could not be loaded">
+                <p>{loadError}</p>
+                <Button size="sm" className="mt-[10px]" onClick={() => fetchInvestors()}>
+                  <i className="ri-refresh-line text-[14px] mr-[4px]"></i>
+                  Try again
+                </Button>
+              </Alert>
+            </div>
+          ) : loading ? (
             <div className="p-[20px] space-y-[10px]">
               {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                 <div key={i} className="animate-pulse flex items-center gap-[12px] p-[16px]">

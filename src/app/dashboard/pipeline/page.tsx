@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 import { ChequeEditor, RoundSummary, RoundTargetsForm } from "@/components/Dashboard/PipelineRound";
 import type { RoundMetrics } from "@/lib/services/pipeline/metrics";
+import { PIPELINE_STAGES } from "@/lib/services/pipeline/stages";
 import { toast } from "sonner";
 
 // ── Types ──
@@ -67,19 +68,10 @@ interface StageData {
 }
 
 // ── Constants ──
-const STAGE_BG: Record<string, string> = {
-  discovered: "bg-gray-50 dark:bg-gray-800/30",
-  qualified: "bg-blue-50/40 dark:bg-blue-900/10",
-  researching: "bg-indigo-50/40 dark:bg-indigo-900/10",
-  outreach: "bg-lime-50/40 dark:bg-lime-900/10",
-  contacted: "bg-purple-50/40 dark:bg-purple-900/10",
-  meeting: "bg-amber-50/40 dark:bg-amber-900/10",
-  follow_up: "bg-orange-50/40 dark:bg-orange-900/10",
-  due_diligence: "bg-cyan-50/40 dark:bg-cyan-900/10",
-  term_sheet: "bg-green-50/40 dark:bg-green-900/10",
-  closed: "bg-emerald-50/40 dark:bg-emerald-900/10",
-  passed: "bg-red-50/40 dark:bg-red-900/10",
-};
+// Stage ids, labels and dot colors come from PIPELINE_STAGES (single source of
+// truth) via the API response — the stale 11-entry STAGE_BG map that drifted
+// from the real 21 stages was removed.
+const STAGE_COUNT = PIPELINE_STAGES.length;
 
 const SCORE_COLOR = (s: number) =>
   s >= 80 ? "text-green-600" : s >= 60 ? "text-amber-600" : "text-gray-400";
@@ -502,7 +494,7 @@ export default function PipelinePage() {
 
       {summaryLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-[12px] mb-[24px]">
-          {Array.from({ length: 11 }).map((_, i) => (
+          {Array.from({ length: STAGE_COUNT }).map((_, i) => (
             <div
               key={i}
               className="animate-pulse h-[80px] bg-gray-100 dark:bg-gray-800 rounded-[12px]"
@@ -676,7 +668,7 @@ export default function PipelinePage() {
                 <p className="text-[14px] text-gray-400 !mb-[4px]">
                   Click a stage above to view its investors
                 </p>
-                <p className="text-[13px] text-gray-300 dark:text-gray-600 !mb-0">
+                <p className="text-[13px] text-gray-500 dark:text-gray-600 !mb-0">
                   Drag a card onto a stage tile to move it, or use the "Move" button on the card.
                   Dropping onto Closed Lost or Not a Fit asks for a reason first.
                 </p>

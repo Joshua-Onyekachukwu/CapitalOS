@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -33,6 +34,7 @@ interface SecuritySummary {
 }
 
 export default function AdminSystemPage() {
+  const router = useRouter();
   const [status, setStatus] = useState<SystemStatus>({
     database: "healthy",
     auth: "healthy",
@@ -248,11 +250,13 @@ export default function AdminSystemPage() {
       <Card>
         <CardBody>
           <h3 className="!text-[16px] !font-semibold !mb-[16px]">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-[12px]">
+          {/* Quick Actions — every action here is real. "Clear Cache" was
+              removed: there is no cache-clear endpoint, and fake controls are
+              banned (DESIGN.md §7.5). "View Logs" opens the audit log. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
             {[
-              { label: "Clear Cache", icon: "ri-delete-bin-line", desc: "Reset application cache", action: () => {} },
               { label: "Run Health Check", icon: "ri-heart-pulse-line", desc: "Test all service connections", action: checkSystem },
-              { label: "View Logs", icon: "ri-file-list-3-line", desc: "Check system logs", action: () => {} },
+              { label: "View Logs", icon: "ri-file-list-3-line", desc: "Open the admin audit log", action: () => router.push("/admin/audit-logs") },
             ].map((action) => (
               <button
                 key={action.label}

@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/Dashboard/PageHeader";
 import Link from "next/link";
 
@@ -127,38 +129,62 @@ function formatCurrency(amount: number): string {
 export default function DashboardPage() {
   const [data, setData] = useState<CockpitData | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Distinct from empty: a failed cockpit fetch never renders as a fresh account. */
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Fetch loop. All state writes happen after an await, so the mount effect
+  // never sets state synchronously (no cascading render).
+  const fetchCockpit = useCallback(async (retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch("/api/dashboard/cockpit");
+        if (res.status === 401 && i < retries - 1) {
+          // Auth not ready yet, wait and retry
+          await new Promise((r) => setTimeout(r, delay * (i + 1)));
+          continue;
+        }
+        if (!res.ok) {
+          // A real failure — surface it instead of rendering the empty state.
+          let message = "Could not load your dashboard.";
+          try {
+            const body = await res.json();
+            if (typeof body?.error === "string" && body.error.length <= 200) {
+              message = body.error;
+            }
+          } catch {
+            /* response body is optional */
+          }
+          setLoadError(message);
+          setLoading(false);
+          return;
+        }
+        const d = await res.json();
+        setData(d);
+        setLoading(false);
+        return;
+      } catch {
+        if (i < retries - 1) {
+          await new Promise((r) => setTimeout(r, delay * (i + 1)));
+          continue;
+        }
+        setLoadError(
+          "Could not reach the server after several tries. Check your connection and try again."
+        );
+        setLoading(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    fetchCockpit();
+  }, [fetchCockpit]);
 
-    const fetchWithRetry = async (retries = 3, delay = 1000) => {
-      for (let i = 0; i < retries; i++) {
-        try {
-          const res = await fetch("/api/dashboard/cockpit");
-          if (res.status === 401 && i < retries - 1) {
-            // Auth not ready yet, wait and retry
-            await new Promise((r) => setTimeout(r, delay * (i + 1)));
-            continue;
-          }
-          const d = await res.json();
-          if (!cancelled) {
-            setData(d);
-            setLoading(false);
-          }
-          return;
-        } catch {
-          if (i < retries - 1) {
-            await new Promise((r) => setTimeout(r, delay * (i + 1)));
-            continue;
-          }
-          if (!cancelled) setLoading(false);
-        }
-      }
-    };
-
-    fetchWithRetry();
-    return () => { cancelled = true; };
-  }, []);
+  // Retry from the error banner: reset to the loading skeleton, then refetch.
+  const retryCockpit = () => {
+    setLoading(true);
+    setLoadError(null);
+    fetchCockpit();
+  };
 
   const stats = data?.stats;
   const availability = data?.availability;
@@ -178,7 +204,7 @@ export default function DashboardPage() {
       nextSteps.push({ label: "Complete your company profile", href: "/onboarding", icon: "ri-building-line" });
     }
     if (availability?.meetings === false) {
-      nextSteps.push({ label: "Apply migration 020 to enable meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" });
+      nextSteps.push({ label: "Track your investor meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" });
     }
   }
   if (nextSteps.length === 0) {
@@ -204,6 +230,21 @@ export default function DashboardPage() {
             </Card>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div>
+        <PageHeader title="Dashboard" description="Here is an overview of your fundraising progress." />
+        <Alert variant="danger" title="Your dashboard could not be loaded">
+          <p>{loadError}</p>
+          <Button size="sm" className="mt-[10px]" onClick={retryCockpit}>
+            <i className="ri-refresh-line text-[14px] mr-[4px]"></i>
+            Try again
+          </Button>
+        </Alert>
       </div>
     );
   }
@@ -346,7 +387,7 @@ export default function DashboardPage() {
       {/* Email & Campaign Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-[16px] mb-[25px] md:mb-[30px]">
         {[
-          { label: "Emails Sent", value: stats?.emailsSent && availability?.outreach === false ? "—" : statValue(stats?.emailsSent), icon: "ri-mail-send-line", color: "text-blue-600" },
+          { label: "Emails Sent", value: stats?.emailsSent != null && availability?.outreach === false ? "—" : statValue(stats?.emailsSent), icon: "ri-mail-send-line", color: "text-blue-600" },
           { label: "Replies Received", value: statValue(stats?.emailsReplied), icon: "ri-reply-line", color: "text-green-600" },
           { label: "Active Campaigns", value: statValue(stats?.activeCampaigns), icon: "ri-megaphone-line", color: "text-purple-600" },
           { label: "Credits Used", value: stats?.totalCreditsUsed === null ? "—" : statValue(stats?.totalCreditsUsed), icon: "ri-vip-diamond-line", color: "text-amber-600" },
