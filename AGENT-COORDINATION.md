@@ -161,7 +161,45 @@ doesn't have (M1) once the backend fix lands.
 **Shared decision needed from owner:** which Stripe stack is canonical
 (`billing/*` vs `founding-member/*`) — affects my billing/settings UI in T11.
 
-## 8. Frontend worklog (append-only, newest first)
+## 9. Backend agent's ranked MVP follow-up list (received 2026-11-17)
+
+The backend agent sent a 10-item ranked list. My alignment:
+
+| Their item | My role | My response |
+|---|---|---|
+| 1. Prove the signed-in loop E2E (Discover → profile → match → shortlist → draft → outbox → pipeline) | "frontend agent verifies UI states" | **My top active task.** I will run the loop in a real browser against the LOCAL dev server with a disposable account (`scripts/e2e-seed-user.cjs` + `E2E_BASE_URL=http://localhost:3456`), screenshot every surface, verify loading/empty/error/mutation states per DESIGN.md §7, and file every breakage. I will run this only after their DB/API work on the loop lands — they should note in the worklog when item 1's backend side is ready. |
+| 2. Cross-tenant holes (A-C1, H1, H3) | Review UI implications | Will re-check any UI surface that renders job/sequence state after their fix |
+| 3. Manager-level entity resolution | Update counts/labels | **My task:** once they collapse vehicles → managers, I update every count-bearing label (discovery page, landing numbers, comparison) to distinct-manager counts with honest wording. Blocked on their collapse + measured ratio. |
+| 4. Contact discovery + verification | Display verified vs unverified | When verified emails exist, discovery/contact UI gets an explicit verified-vs-on-file badge (never "verified" landing copy) |
+| 5. Migration reproducibility + Convex/PII cleanup | Their lane; no frontend action | — |
+| 6. Match calibration | Display precision | When they publish measured precision@10, I surface it honestly in the match UI |
+| 7. Email safety bundle | Error copy | I own human-readable error copy once typed error codes land (F12 helper) |
+| 8. Evidence brief / share link | T9 UI | Ready to build the moment their share-token contract lands |
+| 9. Weekly Form D delta | "New this week" surface | I'll build the surface once ingestion lands |
+| 10. Frontend hotfix bundle | Already in flight | Running now in my hotfix track |
+
+**My adjusted priority order:** (a) finish the three running tracks
+(hotfixes / UI-kit / landing truth), (b) signed-in loop UI verification
+(their item 1), (c) T4 cockpit next-action engine, (d) T5 discovery UI for
+the growing corpus, (e) T9 evidence-brief UI when CR lands. T8 parked.
+
+## 10. Frontend worklog (append-only, newest first)
+
+- **2026-11-17** — **T3 landing truth pass COMPLETE** (subagent + my
+  independent grep verification): all corpus claims updated to measured
+  values (24,379 active records / 18,995 firms + 5,461 Form D funds / 4,933
+  emails "on file" / "US only" added), "SEC Sourced" → "SEC & IAPD
+  sourced", unsupported "7 branded templates" → honest sequences copy,
+  unmeasured "10+ dimensions"/"under 10 minutes" → "7 factors"/"in
+  minutes", portfolio removed from copy (0 rows), alts fixed, decorative
+  frames alt="". Typecheck 0 errors. Not yet committed — commits happen
+  after the other two tracks land and the full build gate passes.
+  **Flagged for owner:** the hero image binary itself depicts mockup
+  numbers ("94% fit", "$680K raised", "18 active conversations") —
+  fabricated-metric territory per the no-fake-data rule; recommend
+  regenerating hero art with real corpus numbers post-demo-prep, owner
+  call. Also noted: git CRLF warnings on every touched file confirm F10
+  (`.gitattributes` missing) — backend agent's hygiene batch.
 
 - **2026-11-17** — Read all audit docs + tracker; wrote this coordination file.
   Started T1 (PRODUCT.md + DESIGN.md). Security/quality/architecture/UI audit
