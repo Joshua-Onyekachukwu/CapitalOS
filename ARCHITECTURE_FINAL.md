@@ -1,5 +1,11 @@
 # Capital OS — Final Architecture
 
+> **SUPERSEDED (2026-11-17).** This document describes a Supabase + Convex +
+> Python-workers architecture that was never built. Convex was removed from the
+> repository on 2026-11-17 (`convex.json`, `env-convex.json`, Convex scripts and
+> env vars deleted); nothing imports it. The operating architecture is
+> `ARCHITECTURE.md`. Kept only as a historical record.
+
 ## The Rule
 
 > **One source of truth per data type. No duplication. No guessing.**

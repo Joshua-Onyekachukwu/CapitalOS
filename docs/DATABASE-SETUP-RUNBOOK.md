@@ -94,7 +94,7 @@ only, absent in this CSV).
    `SUPABASE_SERVICE_ROLE_KEY`, plus `SUPABASE_DB_PASSWORD` if scripts need it.
 2. Vercel: update the same vars in Project → Settings → Environment Variables
    (Production + Preview) → **Redeploy** (env changes require a new deployment).
-3. Convex env unchanged (project is alive).
+3. Convex was removed on 2026-11-17; no Convex env or deploy step is needed.
 
 ## Phase F — End-to-end verification (must all pass before "onboarding works" is claimed)
 

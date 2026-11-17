@@ -471,7 +471,7 @@ async function main() {
   console.log("💡 Next steps:");
   console.log("   1. Run AI enrichment to add more data: node scripts/enrich-ai.js");
   console.log("   2. Upload to Supabase: node scripts/scrape-fishtank-v2.js --upload");
-  console.log("   3. Or keep in Convex for bulk storage\n");
+  console.log("   3. Or write to an archive file for later import\n");
 }
 
 main().catch((err) => {

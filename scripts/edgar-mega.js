@@ -3,7 +3,7 @@
  * Capital OS — Mega EDGAR Scraper (100K+ Investors)
  * ===================================================
  * Scrapes ALL SEC EDGAR filing types across 15+ years, deduplicates,
- * cleans/qualifies data, then routes to Supabase (hot) + Convex (archive).
+ * cleans/qualifies data, then routes to Supabase (hot) + an archive file.
  *
  * Strategy: SEC EFTS caps at 10K results per query. We split by year × form
  * type to bypass this and collect 100K+ unique investors.
@@ -17,7 +17,7 @@
  *   node scripts/edgar-mega.js --years 5               # Last 5 years only
  *   node scripts/edgar-mega.js --stats                 # Show database stats
  *   node scripts/edgar-mega.js --clean                 # Clean + dedup existing data
- *   node scripts/edgar-mega.js --route                 # Route data to Supabase/Convex
+ *   node scripts/edgar-mega.js --route                 # Route data to Supabase/archive
  */
 
 require("dotenv").config({ path: require("path").resolve(__dirname, "../.env.local") });
@@ -752,10 +752,10 @@ function deduplicate(allInvestors) {
   return unique;
 }
 
-// ─── Route to Supabase / Convex ──────────────────────────────────────────────
+// ─── Route to Supabase / archive ─────────────────────────────────────────────
 async function routeData(investors) {
   console.log("\n═══════════════════════════════════════════════");
-  console.log("  Smart Routing: Supabase (Hot) vs Convex (Archive)");
+  console.log("  Smart Routing: Supabase (hot) vs archive file");
   console.log("═══════════════════════════════════════════════\n");
 
   // Check current Supabase count
@@ -796,10 +796,10 @@ async function routeData(investors) {
   });
 
   const supabaseBatch = sorted.slice(0, Math.max(0, availableSlots));
-  const convexBatch = sorted.slice(supabaseBatch.length);
+  const archiveBatch = sorted.slice(supabaseBatch.length);
 
   console.log(`  📦 Routing to Supabase (hot): ${supabaseBatch.length}`);
-  console.log(`  📦 Routing to Convex (archive): ${convexBatch.length}\n`);
+  console.log(`  📦 Routing to an archive file: ${archiveBatch.length}\n`);
 
   // Insert to Supabase
   if (supabaseBatch.length > 0) {
@@ -808,18 +808,18 @@ async function routeData(investors) {
     console.log(`\n  ✅ Supabase: ${result.inserted} inserted, ${result.failed} failed\n`);
   }
 
-  // Save Convex batch to file for later import
-  if (convexBatch.length > 0) {
+  // Rows beyond the Supabase slot budget are written to an archive file.
+  if (archiveBatch.length > 0) {
     ensureBackupDir();
     const ts = new Date().toISOString().slice(0, 10);
-    const convexPath = path.join(BACKUP_DIR, `convex-archive-${ts}.json`);
-    fs.writeFileSync(convexPath, JSON.stringify(convexBatch, null, 2));
-    console.log(`  💾 Convex archive saved: ${convexPath} (${convexBatch.length} investors)\n`);
+    const archivePath = path.join(BACKUP_DIR, `archive-${ts}.json`);
+    fs.writeFileSync(archivePath, JSON.stringify(archiveBatch, null, 2));
+    console.log(`  💾 Archive saved: ${archivePath} (${archiveBatch.length} investors)\n`);
   }
 
   return {
     supabase: supabaseBatch.length,
-    convex: convexBatch.length,
+    archive: archiveBatch.length,
     total: investors.length,
   };
 }
@@ -905,7 +905,7 @@ async function main() {
   console.log(`  Sources: ${sources.join(", ")}`);
   console.log(`  Years: ${years} (back to ${new Date().getFullYear() - years})`);
   console.log(`  Target: 100,000+ unique investors`);
-  console.log(`  Routing: Supabase (hot) → Convex (archive)\n`);
+  console.log(`  Routing: Supabase (hot) → archive file\n`);
 
   let allInvestors = [];
 
@@ -928,7 +928,7 @@ async function main() {
   // Save full backup
   saveBackup(unique, "mega-all-investors");
 
-  // Route to Supabase / Convex
+  // Route to Supabase / archive
   const routing = await routeData(unique);
 
   await showStats();
@@ -937,7 +937,7 @@ async function main() {
   console.log("═══════════════════════════════════════════════");
   console.log(`✅ DONE — ${routing?.total || 0} investors in ${elapsed} minutes`);
   console.log(`   Supabase: ${routing?.supabase || 0}`);
-  console.log(`   Convex archive: ${routing?.convex || 0}`);
+  console.log(`   Archive file: ${routing?.archive || 0}`);
   console.log("═══════════════════════════════════════════════\n");
 }
 
