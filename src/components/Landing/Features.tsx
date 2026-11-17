@@ -9,19 +9,19 @@ const features = [
     icon: "ri-radar-line",
     title: "Investor Intelligence Database",
     description:
-      "24,379 investor records: 18,995 firm records plus 5,461 SEC Form D venture funds, 4,933 with a contact email on file. None of the emails is verified. Filter by stage, sector and geography; cheque size, thesis and portfolio fields appear only where the source recorded them.",
+      "24,379 active investor records: 18,995 firms from SEC 13F, Form D and IAPD filings plus 5,461 Form D venture funds, US only. 4,933 records have a contact email on file; none are verified. Filter by stage, sector and geography; cheque size and thesis text appear only where the filing disclosed them.",
   },
   {
     icon: "ri-brain-line",
     title: "AI-Powered Fit Scoring",
     description:
-      "We score every investor across 10+ dimensions using AI: stage match, sector alignment, geography, check size, and investment recency. Every score comes with a clear explanation.",
+      "We score every investor across 7 factors using AI: stage match, sector alignment, geography, check size, and investment recency. Every score comes with a clear explanation.",
   },
   {
     icon: "ri-mail-star-line",
     title: "AI-Personalized Outreach",
     description:
-      "We use AI to generate personalized emails that reference each investor's thesis, portfolio, and recent activity. You review, edit, and approve before anything is sent.",
+      "We use AI to generate personalized emails that reference each investor's thesis and recent activity. You review, edit, and approve before anything is sent.",
   },
   {
     icon: "ri-dashboard-3-line",

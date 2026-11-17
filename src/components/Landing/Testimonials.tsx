@@ -43,7 +43,7 @@ const Testimonials: React.FC = () => {
               </h3>
               <p className="text-[14px] md:text-[16px] text-gray-500 dark:text-gray-400 !mb-0">
                 We use AI to draft personalized emails that reference each investor&apos;s
-                thesis and portfolio. You review and approve before anything goes
+                thesis and recent activity. You review and approve before anything goes
                 out.
               </p>
             </div>

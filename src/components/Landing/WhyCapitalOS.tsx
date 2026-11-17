@@ -7,17 +7,17 @@ const whyItems = [
   {
     title: "Real Investor Data, Not Just Names",
     description:
-      "24,379 investor records — 18,995 firm records plus 5,461 SEC Form D venture funds — 4,933 with a contact email on file, none verified. Sector, stage and location are recorded per record; cheque size and thesis text appear only where the filing disclosed them.",
+      "24,379 active investor records: 18,995 firms from SEC 13F, Form D and IAPD filings plus 5,461 Form D venture funds, US only. 4,933 have a contact email on file, none verified. Sector, stage and location are recorded per record; cheque size and thesis text appear only where the filing disclosed them.",
   },
   {
     title: "AI That Scores, Not Just Searches",
     description:
-      "We use AI to score every investor across 10+ dimensions: stage match, sector alignment, geography, check size, investment recency, and more. Every score comes with a clear explanation of why.",
+      "We use AI to score every investor across 7 factors: stage match, sector alignment, geography, check size, investment recency, and more. Every score comes with a clear explanation of why.",
   },
   {
     title: "Outreach That Actually Gets Replies",
     description:
-      "We use AI to draft emails that reference each investor's thesis, portfolio, and recent activity. Not generic templates, personalized messages that show you've done your homework.",
+      "We use AI to draft emails that reference each investor's thesis and recent activity. Not generic templates, personalized messages that show you've done your homework.",
   },
   {
     title: "One Platform, Not Five Tools",

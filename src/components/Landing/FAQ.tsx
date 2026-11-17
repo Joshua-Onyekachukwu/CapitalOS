@@ -17,7 +17,7 @@ const faqData = [
   {
     question: "How does the AI investor matching work?",
     answer:
-      "We match you against 24,379 investor records — 18,995 firm records plus 5,461 SEC Form D venture funds — drawn from SEC and IAPD filings, using your industry, stage and location. A field the filing never disclosed is treated as unknown rather than as a mismatch, and every match shows the score breakdown it came from.",
+      "We match you against 24,379 active investor records — 18,995 firms from SEC 13F, Form D and IAPD filings plus 5,461 Form D venture funds, US only — using your industry, stage and location. A field the filing never disclosed is treated as unknown rather than as a mismatch, and every match shows the score breakdown it came from.",
   },
   {
     question: "What's included in the 6-Month Pro Sprint?",
@@ -54,7 +54,7 @@ const FAQ: React.FC = () => {
                   <Image
                     src="/images/real-estate-agent/faq-custom-1.jpg"
                     className="object-cover w-full h-full"
-                    alt="faq-image"
+                    alt="Two founders reviewing their fundraising plan together on a laptop"
                     fill
                     sizes="(max-width: 639px) 100vw, 50vw"
                   />
@@ -65,7 +65,7 @@ const FAQ: React.FC = () => {
                   <Image
                     src="/images/real-estate-agent/faq-custom-2.jpg"
                     className="object-cover w-full h-full"
-                    alt="faq-image"
+                    alt="Founder checking investor replies over coffee at a laptop"
                     fill
                     sizes="(max-width: 639px) 100vw, 50vw"
                   />
@@ -76,7 +76,7 @@ const FAQ: React.FC = () => {
               <Image
                 src="/images/real-estate-agent/union2.png"
                 className="inline-block"
-                alt="union"
+                alt=""
                 width={203}
                 height={100}
               />
@@ -85,7 +85,7 @@ const FAQ: React.FC = () => {
                   24,379
                 </h3>
                 <span className="block uppercase font-bold tracking-[1.95px] text-xs md:text-sm text-[#8F3E13]">
-                  Investors
+                  Active records
                 </span>
               </div>
             </div>
@@ -93,13 +93,13 @@ const FAQ: React.FC = () => {
               <Image
                 src="/images/real-estate-agent/union1.png"
                 className="inline-block"
-                alt="union"
+                alt=""
                 width={203}
                 height={100}
               />
               <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 px-[20px]">
-                <h3 className="!mb-[8px] italic !leading-none !text-[30px] md:!text-4xl -tracking-[1.08px] !text-white">
-                  SEC
+                <h3 className="whitespace-nowrap !mb-[8px] italic !leading-none !text-[24px] md:!text-[30px] -tracking-[1.08px] !text-white">
+                  SEC &amp; IAPD
                 </h3>
                 <span className="block uppercase font-bold tracking-[1.95px] text-xs md:text-sm text-white">
                   Sourced

@@ -18,7 +18,7 @@ const plans = [
       "Everything for an actively raising founder",
       "AI investor discovery, matching & fit scoring",
       "Personalized AI email drafts, reviewed before send",
-      "7 branded templates with open/click tracking & CAN-SPAM",
+      "Ready-made outreach sequences with open/click tracking & CAN-SPAM compliance",
       "Drip sequences with stop-on-reply & business-hours sending",
       "21-stage pipeline Kanban + email health dashboard",
       "Pitch deck generator (PPTX + PDF)",

@@ -122,13 +122,13 @@ const DataVizChart: React.FC = () => {
           24,379 investor records
         </text>
         <text
-          x="130"
+          x="116"
           y="252"
           fill="rgba(255,255,255,0.4)"
           fontSize="8"
           fontFamily="system-ui, sans-serif"
         >
-          SEC-sourced
+          SEC &amp; IAPD sourced
         </text>
       </svg>
     </div>

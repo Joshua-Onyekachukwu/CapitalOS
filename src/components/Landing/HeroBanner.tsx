@@ -44,7 +44,7 @@ const HeroBanner: React.FC = () => {
               </span>
               <span className="flex items-center gap-[8px]">
                 <i className="ri-time-fill text-lime-500"></i>
-                Setup in under 10 minutes
+                Set up in minutes
               </span>
               <span className="flex items-center gap-[8px]">
                 <i className="ri-lock-fill text-lime-500"></i>
@@ -58,7 +58,7 @@ const HeroBanner: React.FC = () => {
             <div className="absolute inset-0 flex items-end justify-end">
               <Image
                 src="/images/real-estate-agent/hero-main.png"
-                alt="Capital OS Dashboard"
+                alt="Founder surrounded by Capital OS cards showing an investor match, fundraising pipeline and AI insight"
                 width={1000}
                 height={660}
                 className="block max-w-none object-bottom"
@@ -78,7 +78,7 @@ const HeroBanner: React.FC = () => {
           <div className="lg:hidden absolute bottom-0 left-0 right-0 px-[20px] pb-0">
             <Image
               src="/images/real-estate-agent/hero-main.png"
-              alt="Capital OS Dashboard"
+              alt="Founder surrounded by Capital OS cards showing an investor match, fundraising pipeline and AI insight"
               width={750}
               height={480}
               className="w-full h-auto block"
