@@ -100,6 +100,21 @@ const readinessColors: Record<string, "success" | "warning" | "info" | "danger" 
   do_not_contact: "danger",
 };
 
+/**
+ * Internal ingestion labels (e.g. `edgar_restore_2026_09`) are pipeline
+ * metadata, not provenance a founder can read. Map them to the filing source
+ * they actually came from; anything unrecognised falls back to the raw label so
+ * we never invent a source.
+ */
+function formatSource(source: string | null | undefined): string {
+  if (!source) return "Not recorded";
+  const key = source.toLowerCase();
+  if (key.startsWith("edgar")) return "SEC EDGAR";
+  if (key.startsWith("iapd")) return "SEC IAPD";
+  if (key.startsWith("form_d") || key.startsWith("formd")) return "SEC Form D";
+  return source.replace(/_/g, " ");
+}
+
 export default function InvestorDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // Extract investor ID from URL path to avoid React.use() suspense issues
   const [investorId, setInvestorId] = useState<string>("");
@@ -867,7 +882,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                   </span>
                 </div>
               )}
-              {investor.fund_size && (
+              {typeof investor.fund_size === "number" && investor.fund_size > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] text-gray-400">Fund Size</span>
                   <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
@@ -875,7 +890,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
                   </span>
                 </div>
               )}
-              {investor.portfolio_count && (
+              {typeof investor.portfolio_count === "number" && investor.portfolio_count > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] text-gray-400">Portfolio</span>
                   <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
@@ -885,8 +900,8 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ id: s
               )}
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-gray-400">Source</span>
-                <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300 capitalize">
-                  {investor.source || "Unknown"}
+                <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">
+                  {formatSource(investor.source)}
                 </span>
               </div>
             </CardBody>

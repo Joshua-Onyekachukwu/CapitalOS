@@ -10,9 +10,11 @@ import { PageHeader } from "@/components/Dashboard/PageHeader";
 
 interface InvestorRecord {
   id: string;
-  first_name: string;
-  last_name: string;
-  firm_name: string;
+  /** Firm/entity display name. Corpus rows have no person fields, so this is the only name. */
+  full_name?: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  firm_name: string | null;
   investor_type: string;
   fit_score: number;
   email: string | null;
@@ -36,7 +38,7 @@ interface EmailDraft {
   text?: string;
   status: "draft" | "approved" | "sent" | "replied" | "queued_dev";
   createdAt: string;
-  fitScore: number;
+  fitScore: number | null;
   aiAnalysis?: string;
   tone: string;
 }
@@ -138,24 +140,38 @@ export default function OutreachPage() {
       if (data.investors && data.investors.length > 0) {
         const mappedDrafts: EmailDraft[] = data.investors
           .filter((inv: InvestorRecord) => inv.email)
-          .map((inv: InvestorRecord) => ({
-            id: `draft-${inv.id}`,
-            investorId: inv.id,
-            investorName: `${inv.first_name || ""} ${inv.last_name || ""}`.trim() || "Unknown Investor",
-            investorFirm: inv.firm_name || "Unknown",
-            investorType: inv.investor_type || "investor",
-            subject: "",
-            body: "",
-            status: "draft" as const,
-            createdAt: "Ready to draft",
-            fitScore: inv.fit_score || 75,
-            aiAnalysis: "",
-            tone: "warm",
-            investorSectors: inv.investment_sectors,
-            investorStages: inv.investment_stages,
-            checkSize: (inv.min_check_size || inv.max_check_size) ? "$" + (inv.min_check_size || "?") + " - $" + (inv.max_check_size || "?") : undefined,
-            fundSize: inv.fund_size ? "$" + Math.round(inv.fund_size / 1000000) + "M" : undefined,
-          }));
+          .map((inv: InvestorRecord) => {
+            // Corpus rows are firms: full_name is the only name, and there is no
+            // person to attribute the email to. Never render "Unknown Investor".
+            const personName = [inv.first_name, inv.last_name]
+              .filter(Boolean)
+              .join(" ")
+              .trim();
+            const entityName = inv.firm_name || inv.full_name || "";
+            const displayName = personName || entityName || "Unnamed investor";
+            const firmLine = personName
+              ? inv.firm_name || entityName || "Independent"
+              : entityName || "Investor firm";
+
+            return {
+              id: `draft-${inv.id}`,
+              investorId: inv.id,
+              investorName: displayName,
+              investorFirm: firmLine,
+              investorType: inv.investor_type || "investor",
+              subject: "",
+              body: "",
+              status: "draft" as const,
+              createdAt: "Ready to draft",
+              fitScore: inv.fit_score ?? null,
+              aiAnalysis: "",
+              tone: "warm",
+              investorSectors: inv.investment_sectors,
+              investorStages: inv.investment_stages,
+              checkSize: (inv.min_check_size || inv.max_check_size) ? "$" + (inv.min_check_size || "?") + " - $" + (inv.max_check_size || "?") : undefined,
+              fundSize: inv.fund_size ? "$" + Math.round(inv.fund_size / 1000000) + "M" : undefined,
+            };
+          });
 
         setDrafts(mappedDrafts);
         if (mappedDrafts.length > 0) {
@@ -386,12 +402,18 @@ export default function OutreachPage() {
       if (response.ok && result.success) {
         const queued = result.status === "queued_dev" || result.queued === true;
         const nextStatus = queued ? ("queued_dev" as const) : ("sent" as const);
-        setDrafts((prev) =>
-          prev.map((d) => (d.id === draft.id ? { ...d, status: nextStatus } : d))
+        // Persist the status change: this list lives in localStorage, so a
+        // reload without this write reverts a queued email back to "approved".
+        const updated = drafts.map((d) =>
+          d.id === draft.id ? { ...d, status: nextStatus } : d
         );
+        setDrafts(updated);
+        saveDraftsToStorage(updated);
         setSelectedDraft((prev) =>
           prev?.id === draft.id ? { ...prev, status: nextStatus } : prev
         );
+        // Show the destination so the queued email is visibly accounted for.
+        setActiveTab(queued ? "outbox" : "sent");
         setSendResult({
           type: "success",
           text: queued
@@ -617,11 +639,13 @@ export default function OutreachPage() {
                           </p>
                         )}
                         <div className="flex items-center gap-[8px] mt-[6px]">
-                          <span className={`text-[11px] font-bold ${
-                            draft.fitScore >= 90 ? "text-green-600" : draft.fitScore >= 70 ? "text-amber-600" : "text-gray-400"
-                          }`}>
-                            {draft.fitScore}% fit
-                          </span>
+                          {draft.fitScore !== null && (
+                            <span className={`text-[11px] font-bold ${
+                              draft.fitScore >= 90 ? "text-green-600" : draft.fitScore >= 70 ? "text-amber-600" : "text-gray-400"
+                            }`}>
+                              {draft.fitScore}% fit
+                            </span>
+                          )}
                           {draft.body && (
                             <span className="text-[11px] text-gray-300 dark:text-gray-600">
                               {draft.createdAt}
@@ -649,7 +673,9 @@ export default function OutreachPage() {
                       {selectedDraft.investorName}
                     </h3>
                     <p className="text-[13px] text-gray-400 !mb-0">
-                      {selectedDraft.investorFirm} • {selectedDraft.fitScore}% fit • {selectedDraft.investorType.replace(/_/g, " ")}
+                      {selectedDraft.investorFirm}
+                      {selectedDraft.fitScore !== null && ` • ${selectedDraft.fitScore}% fit`}
+                      {` • ${selectedDraft.investorType.replace(/_/g, " ")}`}
                     </p>
                   </div>
                   <Badge variant={statusConfig[selectedDraft.status].variant}>

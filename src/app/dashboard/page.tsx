@@ -293,7 +293,7 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px] md:gap-[20px] mb-[25px] md:mb-[30px]">
         {[
-          { label: "Saved Investors", value: statValue(stats?.totalInvestors), icon: "ri-database-2-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
+          { label: "Tracked investors", value: statValue(stats?.totalInvestors), icon: "ri-database-2-line", color: "bg-lime-100 dark:bg-lime-900/20", iconColor: "text-lime-600" },
           { label: "High-Fit Investors", value: statValue(stats?.highFitInvestors), icon: "ri-star-line", color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600" },
           { label: "Avg Fit Score", value: stats?.avgFitScore === null || stats?.avgFitScore === undefined ? "—" : `${stats.avgFitScore}%`, icon: "ri-percent-line", color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600" },
           { label: "Ready for Outreach", value: statValue(stats?.readyInvestors), icon: "ri-send-plane-line", color: "bg-green-50 dark:bg-green-900/20", iconColor: "text-green-600" },

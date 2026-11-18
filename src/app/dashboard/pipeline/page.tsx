@@ -473,12 +473,18 @@ export default function PipelinePage() {
 
   const totalInvestors = stages.reduce((sum, s) => sum + s.count, 0);
   const activeStages = stages.filter((s) => s.count > 0);
+  // Never state "0 investors across 0 active stages" while the summary is still
+  // loading — on a slow API that reads as a fact and contradicts the cockpit.
+  const pipelineSummary =
+    summaryLoading && stages.length === 0
+      ? "Loading your pipeline…"
+      : `${totalInvestors.toLocaleString()} investor${totalInvestors !== 1 ? "s" : ""} in your pipeline across ${activeStages.length} active stage${activeStages.length !== 1 ? "s" : ""}.`;
 
   return (
     <div>
       <PageHeader
         title="Fundraising Pipeline"
-        description={`${totalInvestors.toLocaleString()} investor${totalInvestors !== 1 ? "s" : ""} in your pipeline across ${activeStages.length} active stage${activeStages.length !== 1 ? "s" : ""}.`}
+        description={pipelineSummary}
         actions={
           <Link href="/dashboard/investors/discover">
             <Button size="sm">

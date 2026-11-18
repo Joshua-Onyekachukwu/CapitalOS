@@ -67,6 +67,31 @@ against confirmed contracts.
 | CR-5 | Copilot registered action layer (tool registry + execution audit) | Copilot can propose→confirm→execute actions in UI | Not started |
 | CR-6 | Feature flags table + evaluation helper | Admin feature-flags page | Not started |
 
+### 4b. Bugs found during the signed-in loop walk (2026-11-18, browser, seeded e2e user)
+
+Frontend fixes are already committed from my side. Items below are in the
+backend lane (their files/tables) — they have exact repro so they can be
+verified without re-walking the flow.
+
+| ID | Severity | Where | Repro / evidence | Owner |
+|---|---|---|---|---|
+| B-1 | P0 | Dashboard layout / subscription lookup | Every authenticated page logs `[db] Query error: "failed to parse select parameter (us.current_period_end,bp.slug,bp.name)" (line 1, column 4)` twice per load. PostgREST can't parse the aliased select; subscription state is therefore always unresolved. | backend |
+| B-2 | P0 | `POST /api/outreach/draft` | With a founder that has no company profile, the generated email invented the founder's traction and read history: subject `40% YoY growth — Series A round`, body `"I'm launching a SaaS platform that just hit $1.2M ARR with 40% YoY growth"` and `"Your Q3 2023 asset allocation report on private credit caught my attention"`. A founder would send fabricated numbers. Needs: when founder context has no metrics, explicitly forbid stating any metric; forbid claims about the investor's publications. | backend |
+| B-3 | P1 | `GET /api/investors/pipeline` → `round.conversion` | One investor in `first_meeting_completed` reports `Discovered → Researching: 100% (1/1)` … through all 10 stages. Counts are cumulative ("at or beyond") but labelled as from→to conversion. | backend |
+| B-4 | P1 | `GET /api/investors?limit=50&minScore=50` | Returns alphabetically (`ATOAH, L.P.`, `BANK OF TOKYO - MITSUBISHI UFJ`), while the Outreach page calls this to build "top-fit investors" drafts. Order by `fit_score desc` (tie-break stable) so the label is true. | backend |
+| B-5 | P2 | Matches vs Cockpit | Matches shows `—` for every scored bucket; Cockpit reports `Avg Fit Score 58%` from the same user's pipeline row. Two different scoring sources/thresholds. | backend |
+| B-6 | P2 | Corpus counts | Discover says `18,918 firms`; landing/dashboard say `18,995 firms` and `5,607 venture funds` vs landing `5,461 Form D funds`. Pick one measured snapshot and reuse it everywhere (AGENTS.md truth rule). | backend |
+| B-7 | P2 | Latency | Local dev: `/api/dashboard/cockpit` 8.7s, `/api/investors/{id}` 4.4s, `/{id}/activity` 7.2s. Demo will feel broken on a cold load. | backend |
+| B-8 | P2 | Pipeline `dataset.byStage` | Database batch qualification reports only `discovered 13,928` + `shortlisted 10,451` (20,379 of 24,379). No `researching` row. Confirm the remaining ~4k are intentionally unstaged. | backend |
+
+Frontend fixes landed in this pass (details in §10): outreach no longer prints
+"Unknown Investor" for firm records, fit score no longer fabricates `75` when
+missing, investor profile no longer renders a stray `0` or raw
+`edgar_restore_2026_09` as its source, the pipeline header no longer asserts
+"0 investors across 0 active stages" while loading, and the cockpit stat that
+counts pipeline rows is labelled "Tracked investors" instead of
+"Saved Investors".
+
 ## 5. Landing-page claims rule (shared, per AGENTS.md)
 
 - Every number in `src/components/Landing/*` must match a measured value in
@@ -184,6 +209,54 @@ The backend agent sent a 10-item ranked list. My alignment:
 the growing corpus, (e) T9 evidence-brief UI when CR lands. T8 parked.
 
 ## 10. Frontend worklog (append-only, newest first)
+
+- **2026-11-18 — signed-in loop walked end-to-end in a real browser** (seeded
+  e2e user, dev server on :3000). Verified: login → cockpit → discover (search
+  returns 24,379) → investor profile → Save → Saved Investors → Outreach draft
+  → approve → "Queue to outbox" → Outbox shows `queued_dev`, nothing sent.
+  Fixes landed from the walk:
+  - Outreach printed **"Unknown Investor"** for corpus firms (it mapped person
+    name fields only). Now resolves person → firm → `full_name`; fit score is
+    `number | null` and hidden when unknown instead of defaulting to 75.
+  - Investor profile rendered a stray **`0`** (`{investor.fund_size && …}` with
+    0) and leaked **`edgar_restore_2026_09`** as its Source. Now guards on
+    `> 0` and maps ingestion labels → "SEC EDGAR" (unrecognised labels stay raw).
+  - Pipeline header asserted **"0 investors across 0 active stages"** while
+    the summary was still loading; now says "Loading your pipeline…".
+  - Cockpit stat labelled **"Saved Investors"** was counting pipeline rows
+    (`stats.totalInvestors`); renamed to **"Tracked investors"**.
+  - **"Queue to outbox" did not persist**: the draft list lives in
+    localStorage and the send handler updated React state only, so a reload
+    reverted a queued email to "Approved". Now persists and switches to the
+    Outbox tab so the destination is visible.
+- **2026-11-18 — P0 honesty fix in `src/app/api/outreach/draft/route.ts`
+  (backend file, deliberately NOT staged).** With an empty company profile the
+  model invented founder traction and investor facts (`"$120k ARR … 42
+  enterprise subscribers … 14-month payback"`, `"Your Q3 2023 asset allocation
+  report…"`, an invented first name). Two changes: (1) the prompt now forbids
+  numbers not present in founder context, forbids inventing investor
+  publications, and forbids a person's first name when only a firm is known;
+  (2) the route returns **400 `missing_founder_context`** with
+  `href: /dashboard/startup/edit` instead of drafting from nothing. This is
+  their file — they should review/keep and commit it.
+
+- **2026-11-17/18** — **T2 COMPLETE** (subagent died on usage limit at ~90%;
+  I finished the remainder and verified): deps removed (`@tanstack/react-query`,
+  `material-symbols`, `swiper`), versions aligned (`eslint-config-next`
+  16.3.7, `playwright` ^1.65), Instrument Serif wired as `--font-display`,
+  brand tokens added (`--color-brand-dark/-soft/-lime-strong`), unused
+  purple/blue ramps deleted, bare-element base styles removed from
+  globals.css, both dead token sheets deleted, Button variants tokenized +
+  press feedback, Modal focus trap/return/useId, **jsx-a11y fully wired**
+  (I fixed the double-plugin-registration crash the subagent left), kit a11y
+  errors fixed (Skeleton type, FilePreview/Modal targeted disables with
+  justifications), eslint flat-config globalIgnores added (F10).
+  **Gates:** `tsc --noEmit` 0 errors; `next build` green (all routes);
+  `npx eslint src/components/ui` 0 errors / 6 pre-existing warnings.
+- **2026-11-18** — Committed batches (author = repo owner, no AI attribution):
+  `bd3aa25` landing truth pass · `dc27e7f` frontend hotfix bundle ·
+  `d51f8c7` product/design docs + audit reports · `19db484` UI-kit
+  consolidation. Backend agent's 12 in-flight files untouched and uncommitted.
 
 - **2026-11-17** — **T3 landing truth pass COMPLETE** (subagent + my
   independent grep verification): all corpus claims updated to measured
