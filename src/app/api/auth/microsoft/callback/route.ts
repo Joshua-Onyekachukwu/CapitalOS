@@ -15,8 +15,18 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+  const state = searchParams.get("state");
+  const expectedState = request.cookies.get("oauth_state")?.value;
 
   const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/settings`;
+
+  if (!state || !expectedState || state !== expectedState) {
+    return NextResponse.redirect(
+      `${dashboardUrl}?email_error=${encodeURIComponent(
+        "OAuth state check failed. Start the connection again from Settings; do not open a callback link sent by someone else."
+      )}`
+    );
+  }
 
   if (error) {
     return NextResponse.redirect(

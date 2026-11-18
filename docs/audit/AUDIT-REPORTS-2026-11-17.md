@@ -341,7 +341,7 @@ builds their half. The owner decides if we disagree.
 | B4 | Manager-level entity resolution: collapse 5,461 fund vehicles to managers/families | Distinct-manager count measured; discovery does not show the same manager as 9 investors | **MEASURED — 3,398–4,327 distinct managers; collapse not applied (see `MANAGER-COLLAPSE-2026-11-18.md`)** |
 | B5 | Contact discovery + verification from verified fund sites | Verified vs unverified contact counts; suppression respected; robots/ToS honoured | QUEUED |
 | B6 | Match calibration: hand-label ~50 funds, measure precision@10 | Published precision figure; weights tuned only against it | QUEUED |
-| B7 | Email safety bundle: H4 header injection, H5 OAuth state, H6 fail-closed key, M1 unsubscribe token, M2 click redirect | Security checks pass; no header from user text | QUEUED |
+| B7 | Email safety bundle: H4 header injection, H5 OAuth state, H6 fail-closed key, M1 unsubscribe token, M2 click redirect | Security checks pass; no header from user text | **PARTIAL — H4/H5/H6 done with 5 regression tests; M1/M2 need schema work** |
 | B8 | Weekly Form D delta ingestion with idempotent upsert | New filings appear without duplicates; change log exists | QUEUED |
 
 ### 6.4 Review protocol

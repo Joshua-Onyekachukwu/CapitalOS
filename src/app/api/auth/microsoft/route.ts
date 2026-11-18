@@ -4,6 +4,7 @@
 // Redirects user to Microsoft's consent screen for Outlook/Mail access.
 
 import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 
 const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID || "";
 const MICROSOFT_REDIRECT_URI = process.env.MICROSOFT_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/microsoft/callback`;
@@ -25,14 +26,25 @@ export async function GET() {
     "email",
   ];
 
+  const state = randomBytes(24).toString("base64url");
+
   const params = new URLSearchParams({
     client_id: MICROSOFT_CLIENT_ID,
     redirect_uri: MICROSOFT_REDIRECT_URI,
     response_type: "code",
     scope: scopes.join(" "),
+    state,
   });
 
-  return NextResponse.redirect(
+  const response = NextResponse.redirect(
     `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`
   );
+  response.cookies.set("oauth_state", state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 600,
+  });
+  return response;
 }

@@ -60,11 +60,18 @@ interface SendResult {
   outbox?: boolean;
 }
 
+// Never let user text start a new MIME header. The Zod boundary strips CRLF,
+// but this function is also called from services, so sanitise again here.
+const headerSafe = (value: string) => String(value).replace(/[\r\n]+/g, " ").trim();
+
 async function sendViaGmail(
   accessToken: string,
   params: SendEmailParams
 ): Promise<SendResult> {
   const textPart = params.bodyText || params.bodyHtml.replace(/<[^>]*>/g, "");
+  const safeTo = headerSafe(params.to);
+  const safeCc = (params.cc || []).map(headerSafe);
+  const safeSubject = headerSafe(params.subject);
   let mimeMessage = "";
 
   if (params.attachments?.length) {
@@ -72,11 +79,11 @@ async function sendViaGmail(
     const outerBoundary = `mixed_${Date.now()}`;
     const innerBoundary = `alt_${Date.now()}`;
 
-    mimeMessage += `To: ${params.to}\r\n`;
-    if (params.cc?.length) {
-      mimeMessage += `Cc: ${params.cc.join(", ")}\r\n`;
+    mimeMessage += `To: ${safeTo}\r\n`;
+    if (safeCc.length) {
+      mimeMessage += `Cc: ${safeCc.join(", ")}\r\n`;
     }
-    mimeMessage += `Subject: ${params.subject}\r\n`;
+    mimeMessage += `Subject: ${safeSubject}\r\n`;
     mimeMessage += `MIME-Version: 1.0\r\n`;
     mimeMessage += `Content-Type: multipart/mixed; boundary="${outerBoundary}"\r\n\r\n`;
 
@@ -97,9 +104,10 @@ async function sendViaGmail(
       // RFC 2045: base64 lines must be <= 76 chars
       const wrapped = att.content.replace(/(.{76})/g, "$1\r\n");
       mimeMessage += `--${outerBoundary}\r\n`;
-      mimeMessage += `Content-Type: ${att.mimeType || "application/octet-stream"}; name="${att.filename}"\r\n`;
+      const safeName = headerSafe(att.filename).replace(/["\\]/g, "");
+      mimeMessage += `Content-Type: ${att.mimeType || "application/octet-stream"}; name="${safeName}"\r\n`;
       mimeMessage += `Content-Transfer-Encoding: base64\r\n`;
-      mimeMessage += `Content-Disposition: attachment; filename="${att.filename}"\r\n\r\n`;
+      mimeMessage += `Content-Disposition: attachment; filename="${safeName}"\r\n\r\n`;
       mimeMessage += `${wrapped}\r\n`;
     }
 
@@ -107,11 +115,11 @@ async function sendViaGmail(
   } else {
     const boundary = `boundary_${Date.now()}`;
 
-    mimeMessage += `To: ${params.to}\r\n`;
-    if (params.cc?.length) {
-      mimeMessage += `Cc: ${params.cc.join(", ")}\r\n`;
+    mimeMessage += `To: ${safeTo}\r\n`;
+    if (safeCc.length) {
+      mimeMessage += `Cc: ${safeCc.join(", ")}\r\n`;
     }
-    mimeMessage += `Subject: ${params.subject}\r\n`;
+    mimeMessage += `Subject: ${safeSubject}\r\n`;
     mimeMessage += `MIME-Version: 1.0\r\n`;
     mimeMessage += `Content-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n`;
 

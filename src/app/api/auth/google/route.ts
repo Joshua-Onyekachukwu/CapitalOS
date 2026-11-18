@@ -4,6 +4,7 @@
 // Redirects user to Google's consent screen for Gmail access.
 
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 
@@ -31,6 +32,11 @@ export async function GET(request: NextRequest) {
     "openid",
   ];
 
+  // CSRF binding: the callback must present the same state value. Without
+  // this an attacker can hand a signed-in victim a callback URL that links the
+  // attacker's mailbox to the victim's account.
+  const state = randomBytes(24).toString("base64url");
+
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -38,9 +44,18 @@ export async function GET(request: NextRequest) {
     scope: scopes.join(" "),
     access_type: "offline",
     prompt: "consent",
+    state,
   });
 
-  return NextResponse.redirect(
+  const response = NextResponse.redirect(
     `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   );
+  response.cookies.set("oauth_state", state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 600,
+  });
+  return response;
 }

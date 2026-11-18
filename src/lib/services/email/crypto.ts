@@ -12,11 +12,12 @@ const TAG_LENGTH = 16;
 
 function getEncryptionKey(): Buffer {
   const key = process.env.EMAIL_TOKEN_ENCRYPTION_KEY;
-  if (!key) {
-    // Derive a key from Supabase URL as fallback (not ideal but functional)
-    const fallback = process.env.NEXT_PUBLIC_SUPABASE_URL || "capital-os-default-key";
-    // Hash to 32 bytes
-    return createHash("sha256").update(fallback).digest();
+  // Fail closed. A key derived from a public value (the Supabase URL) protects
+  // nothing: anyone who can read the env can decrypt every mailbox token.
+  if (!key || key.trim().length < 16) {
+    throw new Error(
+      "EMAIL_TOKEN_ENCRYPTION_KEY is not set. Refusing to encrypt or decrypt mailbox tokens without a real secret."
+    );
   }
   return Buffer.from(key, "hex").length === 32
     ? Buffer.from(key, "hex")

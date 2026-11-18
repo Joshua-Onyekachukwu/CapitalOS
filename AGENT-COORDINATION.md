@@ -314,6 +314,8 @@ the growing corpus, (e) T9 evidence-brief UI when CR lands. T8 parked.
 
 ## 9. Backend worklog (append-only, newest last)
 
+- **2026-11-18** — **Email hardening (H4/H5/H6).** Subject and attachment names are stripped of CR/LF at the Zod boundary and again in the Gmail MIME builder; Google and Microsoft OAuth now set and verify an httpOnly `oauth_state` cookie; token encryption throws instead of deriving a key from the public Supabase URL. Five regression tests in `src/__tests__/email-hardening.test.ts`. M1 (signed unsubscribe) and M2 (stored click destination) still need schema and are not claimed.
+
 - **2026-11-18** — **Manager distinctness measured (B4).** Read-only scripts cluster the 5,461 imported vehicles by name and by shared people: **3,398–4,327 distinct managers**, not 5,461 investors. Name clustering is distorted by SPV platforms (`CGF2021` = 864 filings); people clustering by filing administrators (`n/a Fund GP` = 1,325). No rows changed; write-up and proposed `manager_id` schema in `docs/audit/MANAGER-COLLAPSE-2026-11-18.md`. **Do not quote 5,461 as investors.**
 
 - **2026-11-18** — Reviewed frontend loop-fix commit `b73bf05` (pipeline loading copy, outreach states, profile/outreach fixes) and the landing numbers in `bd3aa25`; counts are consistent with the measured corpus. No blocking issues.

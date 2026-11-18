@@ -66,15 +66,20 @@ export const campaignFiltersSchema = z.object({
 
 // ── Email Schemas ──
 
+// A subject or filename is copied into raw MIME headers, so CR/LF there is
+// header injection (extra Bcc:, spoofed headers). Strip at the boundary.
+const headerText = (max: number) =>
+  z.string().max(max).transform((s) => s.replace(/[\r\n]+/g, " ").trim());
+
 export const sendEmailSchema = z.object({
   investorId: idSchema,
-  subject: z.string().min(1).max(200),
+  subject: headerText(200).refine((s) => s.length > 0, "Subject is required"),
   bodyHtml: z.string().min(1).max(50000),
   bodyText: z.string().max(50000).optional(),
   attachments: z.array(z.object({
-    name: z.string(),
+    name: headerText(255).transform((s) => s.replace(/["\\]/g, "")),
     content: z.string(), // base64
-    mimeType: z.string(),
+    mimeType: z.string().max(120),
   })).max(5).optional(),
   // Audit-trail refs (task 2.3): written into email_messages alongside the send.
   campaignId: idSchema.optional(),

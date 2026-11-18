@@ -30,6 +30,16 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+  const state = searchParams.get("state");
+  const expectedState = request.cookies.get("oauth_state")?.value;
+
+  if (!state || !expectedState || state !== expectedState) {
+    return NextResponse.redirect(
+      `${settingsUrl()}?email_error=${encodeURIComponent(
+        "OAuth state check failed. Start the connection again from Settings; do not open a callback link sent by someone else."
+      )}`
+    );
+  }
 
   if (error) {
     return NextResponse.redirect(`${settingsUrl()}?email_error=${encodeURIComponent(error)}`);
