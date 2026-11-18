@@ -338,7 +338,7 @@ builds their half. The owner decides if we disagree.
 | B1 | Signed-in loop proof: discover → profile → match → shortlist → draft → outbox → pipeline | Disposable account completes the loop; every step reads real rows; failures fixed | **DONE (frontend, `b73bf05`)** — reviewed; defects fixed |
 | B2 | Tenant isolation: H1 jobs IDOR, H3 domain-check identity, A-C1 global pending sends | Two accounts cannot read, send as, or execute for each other; regression test | **DONE (query-scoped + 6 regression tests)** — live two-account probe open |
 | B3 | Migration reproducibility: 8 untracked migrations, duplicate 004/014 | Fresh clone + `db:migrate` reaches current schema; `db:status` clean | QUEUED |
-| B4 | Manager-level entity resolution: collapse 5,461 fund vehicles to managers/families | Distinct-manager count measured; discovery does not show the same manager as 9 investors | QUEUED |
+| B4 | Manager-level entity resolution: collapse 5,461 fund vehicles to managers/families | Distinct-manager count measured; discovery does not show the same manager as 9 investors | **MEASURED — 3,398–4,327 distinct managers; collapse not applied (see `MANAGER-COLLAPSE-2026-11-18.md`)** |
 | B5 | Contact discovery + verification from verified fund sites | Verified vs unverified contact counts; suppression respected; robots/ToS honoured | QUEUED |
 | B6 | Match calibration: hand-label ~50 funds, measure precision@10 | Published precision figure; weights tuned only against it | QUEUED |
 | B7 | Email safety bundle: H4 header injection, H5 OAuth state, H6 fail-closed key, M1 unsubscribe token, M2 click redirect | Security checks pass; no header from user text | QUEUED |

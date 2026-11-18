@@ -159,3 +159,9 @@ delete from investor_firms where source = 'sec_formd_bulk';
 
 `investor_people` rows cascade with their investor. Landing copy, `AGENTS.md` and
 `docs/23` were updated in the same commit as the import.
+
+**Manager distinctness (2026-11-18):** the 5,461 rows are fund **vehicles**, not
+managers. Two read-only methods measure **3,398–4,327 distinct managers**
+(shared-people graph vs name clustering). See
+`docs/audit/MANAGER-COLLAPSE-2026-11-18.md`. No rows were collapsed and 5,461
+must not be quoted as investors.

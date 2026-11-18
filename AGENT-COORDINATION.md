@@ -314,6 +314,8 @@ the growing corpus, (e) T9 evidence-brief UI when CR lands. T8 parked.
 
 ## 9. Backend worklog (append-only, newest last)
 
+- **2026-11-18** — **Manager distinctness measured (B4).** Read-only scripts cluster the 5,461 imported vehicles by name and by shared people: **3,398–4,327 distinct managers**, not 5,461 investors. Name clustering is distorted by SPV platforms (`CGF2021` = 864 filings); people clustering by filing administrators (`n/a Fund GP` = 1,325). No rows changed; write-up and proposed `manager_id` schema in `docs/audit/MANAGER-COLLAPSE-2026-11-18.md`. **Do not quote 5,461 as investors.**
+
 - **2026-11-18** — Reviewed frontend loop-fix commit `b73bf05` (pipeline loading copy, outreach states, profile/outreach fixes) and the landing numbers in `bd3aa25`; counts are consistent with the measured corpus. No blocking issues.
 - **2026-11-18** — **Tenant isolation fixed (H1, H3, A-C1).** `getJob/cancelJob/retryJob/listJobs` and `getPendingSends` now require `userId` and filter on `created_by` / `e.user_id`; `/api/email/domain-check` uses the signed-in user, validates the hostname and is rate-limited. Six regression tests added in `src/__tests__/tenant-scoping.test.ts`; `tsc` clean. Live two-account probe remains open.
 
