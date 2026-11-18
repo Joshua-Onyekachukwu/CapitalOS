@@ -10,7 +10,7 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  primary: "bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400",
+  primary: "bg-lime-50 text-lime-900 dark:bg-lime-900/20 dark:text-lime-400",
   success: "bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400",
   warning: "bg-warning-50 text-warning-700 dark:bg-warning-900/20 dark:text-warning-400",
   danger: "bg-danger-50 text-danger-600 dark:bg-danger-900/20 dark:text-danger-400",

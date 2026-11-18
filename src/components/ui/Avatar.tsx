@@ -36,8 +36,8 @@ function getInitials(name?: string): string {
 function getColorFromName(name?: string): string {
   if (!name) return "bg-gray-300";
   const colors = [
-    "bg-primary-500",
-    "bg-secondary-500",
+    "bg-brand-dark",
+    "bg-gray-700",
     "bg-success-500",
     "bg-warning-500",
     "bg-danger-500",

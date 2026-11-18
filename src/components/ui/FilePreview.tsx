@@ -37,8 +37,9 @@ export function FilePreview({ isOpen, onClose, fileName, fileUrl, fileType }: Fi
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      {/* Backdrop: click-to-close convenience; the header close button is the keyboard path */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
       <div className="relative bg-white dark:bg-[#1a1f2e] rounded-[16px] shadow-2xl max-w-[90vw] max-h-[90vh] w-full flex flex-col overflow-hidden">
@@ -75,6 +76,8 @@ export function FilePreview({ isOpen, onClose, fileName, fileUrl, fileType }: Fi
             <iframe src={fileUrl} className="w-full h-full min-h-[600px] border-0" title={fileName} />
           ) : isVideo ? (
             <div className="flex items-center justify-center p-[20px]">
+              {/* User-uploaded media cannot carry caption tracks — preview only */}
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <video src={fileUrl} controls className="max-w-full max-h-[70vh] rounded-[8px]">
                 Your browser does not support video preview.
               </video>

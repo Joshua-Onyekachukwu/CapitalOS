@@ -1,17 +1,21 @@
-import "material-symbols";
 import "remixicon/fonts/remixicon.css";
-import "swiper/css";
-import "swiper/css/bundle";
 
 import "./globals.css";
 
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Instrument_Serif } from "next/font/google";
 import { Toaster } from "sonner";
 import PosthogProvider from "@/components/Providers/PosthogProvider";
 
 const inter = Inter({
   variable: "--font-body",
+  subsets: ["latin"],
+});
+
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-display",
+  weight: "400",
+  style: ["normal", "italic"],
   subsets: ["latin"],
 });
 
@@ -28,7 +32,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} antialiased !bg-white dark:!bg-dark`}>
+      <body
+        className={`${inter.variable} ${instrumentSerif.variable} antialiased !bg-white dark:!bg-dark`}
+      >
         <PosthogProvider>{children}</PosthogProvider>
         <Toaster position="top-right" richColors closeButton toastOptions={{ duration: 3000 }} />
       </body>

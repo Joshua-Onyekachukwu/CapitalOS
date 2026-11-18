@@ -4,6 +4,7 @@
 
 @theme {
   --font-body: "Inter", serif;
+  --font-display: "Instrument Serif", serif;
   --text-xs: 12px;
   --text-sm: 13px;
   --text-base: 14px;
@@ -17,26 +18,10 @@
   --color-white: #ffffff;
   --color-black: #23272e;
   --color-dark: #000000;
-  --color-primary-50: #ecf0ff;
-  --color-primary-100: #dde4ff;
-  --color-primary-200: #c2cdff;
-  --color-primary-300: #9caaff;
-  --color-primary-400: #757dff;
-  --color-primary-500: #605dff;
-  --color-primary-600: #4936f5;
-  --color-primary-700: #3e2ad8;
-  --color-primary-800: #3225ae;
-  --color-primary-900: #2d2689;
-  --color-secondary-50: #eef6ff;
-  --color-secondary-100: #daebff;
-  --color-secondary-200: #bddcff;
-  --color-secondary-300: #90c7ff;
-  --color-secondary-400: #5da8ff;
-  --color-secondary-500: #3584fc;
-  --color-secondary-600: #1f64f1;
-  --color-secondary-700: #174ede;
-  --color-secondary-800: #1940b4;
-  --color-secondary-900: #1a3a8e;
+  /* Brand tokens (DESIGN.md §2) */
+  --color-brand-dark: #06201b;
+  --color-brand-dark-soft: #0a2e26;
+  --color-brand-lime-strong: #65a30d;
   --color-success-50: #eeffe5;
   --color-success-100: #d8ffc8;
   --color-success-200: #b2ff97;
@@ -108,67 +93,6 @@
 /** Body */
 body {
   @apply font-body text-sm md:text-base text-gray-500 bg-gray-50 leading-normal dark:bg-[#0a0e19] dark:text-gray-400;
-}
-
-/** Paragraph */
-p {
-  @apply mb-[15px] leading-[1.8];
-
-  &:last-child {
-    @apply mb-0;
-  }
-}
-
-/** Heading */
-h6,
-.h6,
-h5,
-.h5,
-h4,
-.h4,
-h3,
-.h3,
-h2,
-.h2,
-h1,
-.h1,
-.display-6,
-.display-5,
-.display-4,
-.display-3,
-.display-2,
-.display-1 {
-  @apply text-black font-bold leading-tight mb-[10px] dark:text-white;
-}
-.h6,
-h6,
-.display-6 {
-  @apply text-base;
-}
-.h5,
-h5,
-.display-5 {
-  @apply text-md md:text-lg;
-}
-.h4,
-h4,
-.display-4 {
-  @apply text-xl;
-}
-.h3,
-h3,
-.display-3 {
-  @apply text-2xl;
-}
-.h2,
-h2,
-.display-2 {
-  @apply text-3xl;
-}
-.h1,
-h1,
-.display-1 {
-  @apply text-4xl;
 }
 
 /** Button */

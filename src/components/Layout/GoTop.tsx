@@ -30,7 +30,7 @@ const GoTop: React.FC = () => {
       <button
         id="backToTopBtn"
         onClick={scrollToTop}
-        className={`fixed bottom-[20px] right-[20px] lg:bottom-[30px] lg:right-[30px] xl:bottom-[40px] xl:right-[40px] z-[9] flex items-center justify-center w-[40px] h-[40px] bg-primary-600 hover:bg-primary-700 text-white rounded-full transition-all text-[20px] opacity-0 ${
+        className={`fixed bottom-[20px] right-[20px] lg:bottom-[30px] lg:right-[30px] xl:bottom-[40px] xl:right-[40px] z-[9] flex items-center justify-center w-[40px] h-[40px] bg-brand-dark hover:bg-brand-dark-soft text-white rounded-full transition-all text-[20px] opacity-0 ${
           isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
         } transition-opacity duration-300`}
         aria-label="Go to top"

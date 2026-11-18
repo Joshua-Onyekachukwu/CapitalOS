@@ -17,11 +17,11 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary:
     "bg-lime-500 text-black hover:bg-lime-600 active:bg-lime-700",
   secondary:
-    "bg-[#06201b] text-white hover:bg-[#0a3d2e] active:bg-[#0d4f3a] dark:bg-white dark:text-[#06201b] dark:hover:bg-gray-100",
+    "bg-brand-dark text-white hover:bg-brand-dark-soft dark:bg-white dark:text-brand-dark dark:hover:bg-gray-100",
   outline:
-    "border border-[#06201b] text-[#06201b] hover:bg-[#06201b] hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-[#06201b]",
+    "border border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-brand-dark",
   ghost:
-    "text-[#06201b] hover:bg-[#ebebe0] dark:text-white dark:hover:bg-gray-800",
+    "text-brand-dark hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800",
   danger:
     "bg-danger-500 text-white hover:bg-danger-600 active:bg-danger-700",
 };
@@ -52,7 +52,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-[8px] font-medium transition-all",
+          "inline-flex items-center justify-center gap-[8px] font-medium",
+          "transition-all duration-[160ms] ease-out",
+          "active:scale-[0.97]",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           variantStyles[variant],
           sizeStyles[size],
