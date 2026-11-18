@@ -176,6 +176,10 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    // fetchCockpit is await-first: no state is written synchronously on the
+    // mount path, so this does not cascade renders. The rule cannot see
+    // through the async call.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCockpit();
   }, [fetchCockpit]);
 
@@ -191,25 +195,8 @@ export default function DashboardPage() {
   const recentInvestors = data?.recentInvestors || [];
   const pipeline = data?.pipeline || [];
 
-  // Determine next steps based on what's missing
-  const nextSteps: Array<{ label: string; href: string; icon: string }> = [];
-  if (stats) {
-    if (stats.totalInvestors === 0) {
-      nextSteps.push({ label: "Discover your first investors", href: "/dashboard/investors/discover", icon: "ri-radar-line" });
-    }
-    if (stats.avgFitScore === null && stats.totalInvestors > 0) {
-      nextSteps.push({ label: "Run fit analysis on your investors", href: "/dashboard/investors/matches", icon: "ri-star-line" });
-    }
-    if (stats.totalInvestors > 0 && stats.readyInvestors === 0) {
-      nextSteps.push({ label: "Complete your company profile", href: "/onboarding", icon: "ri-building-line" });
-    }
-    if (availability?.meetings === false) {
-      nextSteps.push({ label: "Track your investor meetings", href: "/dashboard/meetings", icon: "ri-calendar-check-line" });
-    }
-  }
-  if (nextSteps.length === 0) {
-    nextSteps.push({ label: "Start an outreach campaign", href: "/dashboard/campaigns", icon: "ri-megaphone-line" });
-  }
+  // Next actions come from the API only (single engine, each action carries the
+  // state that triggered it). The page no longer keeps a second heuristic list.
 
   if (loading) {
     return (
@@ -256,6 +243,53 @@ export default function DashboardPage() {
         description="Here is an overview of your fundraising progress."
       />
 
+      {/* Next actions — the single action engine. Each row names the state that
+          triggered it, and the list is empty only when nothing needs attention. */}
+      <Card className="mb-[25px] md:mb-[30px]">
+        <CardBody>
+          <div className="flex items-center justify-between mb-[12px] gap-[10px] flex-wrap">
+            <div>
+              <h3 className="!text-[16px] !font-semibold !mb-[2px]">Next best actions</h3>
+              <p className="text-[12px] text-gray-500 !mb-0">
+                Ordered by what unblocks the next step of your round.
+              </p>
+            </div>
+          </div>
+          {data?.nextActions && data.nextActions.length > 0 ? (
+            <div className="space-y-[8px]">
+              {data.nextActions.map((a) => (
+                <Link
+                  key={a.id}
+                  href={a.href}
+                  className="group flex items-start gap-[10px] p-[10px] rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-lime-300 dark:hover:border-lime-700 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-colors"
+                >
+                  <i className="ri-arrow-right-circle-line text-[16px] text-lime-600 mt-[1px] flex-none"></i>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-semibold text-brand-dark dark:text-white">
+                      {a.label}
+                    </span>
+                    <span className="block text-[12px] text-gray-500">{a.reason}</span>
+                  </span>
+                  <i className="ri-arrow-right-line text-gray-300 group-hover:text-lime-600 text-[16px] mt-[1px] flex-none"></i>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-[10px] p-[12px] rounded-[10px] bg-lime-50 dark:bg-lime-900/10">
+              <i className="ri-checkbox-circle-line text-[18px] text-lime-600 flex-none"></i>
+              <div>
+                <p className="text-[13px] font-medium text-brand-dark dark:text-white !mb-0">
+                  You&apos;re all caught up
+                </p>
+                <p className="text-[12px] text-gray-500 !mb-0">
+                  Nothing needs attention right now. Review your pipeline or check new investor matches.
+                </p>
+              </div>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px] md:gap-[20px] mb-[25px] md:mb-[30px]">
         {[
@@ -271,7 +305,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-[12px] md:text-[13px] text-gray-400 !mb-[2px]">{stat.label}</p>
-                <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+                <p className="text-[18px] md:text-[24px] font-bold text-brand-dark dark:text-white !mb-0">{stat.value}</p>
               </div>
             </CardBody>
           </Card>
@@ -305,7 +339,7 @@ export default function DashboardPage() {
                 { label: "With an email", value: data.corpus.withEmail },
               ].map((item) => (
                 <div key={item.label} className="rounded-[10px] border border-gray-100 dark:border-gray-800 p-[12px]">
-                  <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">
+                  <p className="text-[18px] font-bold text-brand-dark dark:text-white !mb-0">
                     {item.value === null || item.value === undefined
                       ? "—"
                       : item.value.toLocaleString()}
@@ -324,7 +358,7 @@ export default function DashboardPage() {
           <Card>
             <CardBody>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Committed</p>
-              <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">
+              <p className="text-[18px] md:text-[24px] font-bold text-brand-dark dark:text-white !mb-0">
                 {formatCurrency(data.round.committed)}
               </p>
             </CardBody>
@@ -332,7 +366,7 @@ export default function DashboardPage() {
           <Card>
             <CardBody>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Projected total</p>
-              <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">
+              <p className="text-[18px] md:text-[24px] font-bold text-brand-dark dark:text-white !mb-0">
                 {formatCurrency(data.round.projected)}
               </p>
             </CardBody>
@@ -340,7 +374,7 @@ export default function DashboardPage() {
           <Card>
             <CardBody>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Of target</p>
-              <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">
+              <p className="text-[18px] md:text-[24px] font-bold text-brand-dark dark:text-white !mb-0">
                 {data.round.percentOfTarget === null
                   ? "—"
                   : Math.round(data.round.percentOfTarget * 100) + "%"}
@@ -350,7 +384,7 @@ export default function DashboardPage() {
           <Card>
             <CardBody>
               <p className="text-[12px] text-gray-400 !mb-[2px]">Still to raise</p>
-              <p className="text-[18px] md:text-[24px] font-bold text-[#06201b] dark:text-white !mb-0">
+              <p className="text-[18px] md:text-[24px] font-bold text-brand-dark dark:text-white !mb-0">
                 {data.round.remaining === null ? "—" : formatCurrency(data.round.remaining)}
               </p>
             </CardBody>
@@ -358,31 +392,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Next actions — each one names the state that triggered it */}
-      {data?.nextActions && data.nextActions.length > 0 && (
-        <Card className="mb-[25px] md:mb-[30px]">
-          <CardBody>
-            <h3 className="!text-[16px] !font-semibold !mb-[12px]">Next actions</h3>
-            <div className="space-y-[8px]">
-              {data.nextActions.map((a) => (
-                <Link
-                  key={a.id}
-                  href={a.href}
-                  className="flex items-start gap-[10px] p-[10px] rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-lime-300 dark:hover:border-lime-700"
-                >
-                  <i className="ri-arrow-right-circle-line text-[16px] text-lime-600 mt-[1px]"></i>
-                  <span>
-                    <span className="block text-[13px] font-semibold text-[#06201b] dark:text-white">
-                      {a.label}
-                    </span>
-                    <span className="block text-[11px] text-gray-400">{a.reason}</span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-      )}
+      {/* Next actions moved to the top of the cockpit (single engine). */}
 
       {/* Email & Campaign Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-[16px] mb-[25px] md:mb-[30px]">
@@ -396,7 +406,7 @@ export default function DashboardPage() {
             <CardBody className="flex items-center gap-[12px]">
               <i className={`${stat.icon} ${stat.color} text-[18px]`}></i>
               <div>
-                <p className="text-[18px] font-bold text-[#06201b] dark:text-white !mb-0">{stat.value}</p>
+                <p className="text-[18px] font-bold text-brand-dark dark:text-white !mb-0">{stat.value}</p>
                 <p className="text-[11px] text-gray-400 !mb-0">{stat.label}</p>
               </div>
             </CardBody>
@@ -419,19 +429,19 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-[16px]">
               <div>
                 <p className="text-[11px] text-gray-400 !mb-[2px]">Company</p>
-                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
+                <p className="text-[14px] font-semibold text-brand-dark dark:text-white !mb-0 truncate">
                   {data.companyProfile.companyName}
                 </p>
               </div>
               <div>
                 <p className="text-[11px] text-gray-400 !mb-[2px]">Stage</p>
-                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0">
+                <p className="text-[14px] font-semibold text-brand-dark dark:text-white !mb-0">
                   {data.companyProfile.companyStage || "—"}
                 </p>
               </div>
               <div>
                 <p className="text-[11px] text-gray-400 !mb-[2px]">Industry</p>
-                <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0 truncate">
+                <p className="text-[14px] font-semibold text-brand-dark dark:text-white !mb-0 truncate">
                   {data.companyProfile.industry || "—"}
                 </p>
               </div>
@@ -445,7 +455,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-[11px] text-gray-400 !mb-[2px]">Round</p>
-                    <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0">
+                    <p className="text-[14px] font-semibold text-brand-dark dark:text-white !mb-0">
                       {data.companyProfile.roundType || "—"}
                     </p>
                   </div>
@@ -454,7 +464,7 @@ export default function DashboardPage() {
               {data.companyProfile.mrr && data.companyProfile.mrr > 0 && (
                 <div>
                   <p className="text-[11px] text-gray-400 !mb-[2px]">MRR</p>
-                  <p className="text-[14px] font-semibold text-[#06201b] dark:text-white !mb-0">
+                  <p className="text-[14px] font-semibold text-brand-dark dark:text-white !mb-0">
                     {formatCurrency(data.companyProfile.mrr)}
                   </p>
                 </div>
@@ -469,32 +479,8 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Quick Actions + Pipeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[16px] md:gap-[20px] mb-[25px] md:mb-[30px]">
-        {/* Next Steps */}
-        <Card>
-          <CardBody>
-            <h3 className="!text-[16px] md:!text-lg !font-semibold !mb-[16px]">
-              Next Steps
-            </h3>
-            <div className="space-y-[10px]">
-              {nextSteps.map((step, i) => (
-                <Link key={i} href={step.href}>
-                  <div className="flex items-center gap-[12px] p-[16px] rounded-[12px] border border-gray-200 dark:border-gray-700 hover:border-lime-500 dark:hover:border-lime-500 hover:bg-lime-50/50 dark:hover:bg-lime-900/10 transition-all cursor-pointer group">
-                    <div className="w-[36px] h-[36px] rounded-[8px] bg-lime-100 dark:bg-lime-900/20 flex items-center justify-center text-lime-600 text-[18px] flex-none">
-                      <i className={step.icon}></i>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-[13px] font-medium text-[#06201b] dark:text-white !mb-0">{step.label}</p>
-                    </div>
-                    <i className="ri-arrow-right-line text-gray-300 group-hover:text-lime-500 text-[16px]"></i>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-
+      {/* Pipeline */}
+      <div className="mb-[25px] md:mb-[30px]">
         {/* Pipeline Summary */}
         <Card>
           <CardBody>
@@ -522,7 +508,7 @@ export default function DashboardPage() {
                   <div key={stage.stage} className="flex items-center gap-[12px]">
                     <div className={`w-[8px] h-[8px] rounded-full flex-none ${stageColors[stage.stage] || "bg-gray-400"}`}></div>
                     <span className="text-[13px] text-gray-500 flex-1 capitalize">{stage.stage.replace(/_/g, " ")}</span>
-                    <span className="text-[14px] font-bold text-[#06201b] dark:text-white">{stage.count.toLocaleString()}</span>
+                    <span className="text-[14px] font-bold text-brand-dark dark:text-white">{stage.count.toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -568,7 +554,7 @@ export default function DashboardPage() {
                   {recentInvestors.map((investor) => (
                     <tr key={investor.id} className="border-b border-gray-50 dark:border-gray-800/50 last:border-0">
                       <td className="py-[12px]">
-                        <Link href={`/dashboard/investors/${investor.id}`} className="text-[14px] font-medium text-[#06201b] dark:text-white hover:text-lime-600 transition-colors">
+                        <Link href={`/dashboard/investors/${investor.id}`} className="text-[14px] font-medium text-brand-dark dark:text-white hover:text-lime-600 transition-colors">
                           {investor.full_name}
                         </Link>
                       </td>

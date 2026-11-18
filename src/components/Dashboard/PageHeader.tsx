@@ -17,7 +17,7 @@ function PageHeader({ title, description, actions, className }: PageHeaderProps)
       )}
     >
       <div>
-        <h1 className="!text-xl md:!text-2xl !font-semibold !mb-[4px]">
+        <h1 className="font-display !text-2xl md:!text-3xl !font-normal !mb-[4px]">
           {title}
         </h1>
         {description && (
