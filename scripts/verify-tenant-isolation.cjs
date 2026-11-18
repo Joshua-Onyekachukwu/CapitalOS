@@ -34,7 +34,15 @@ const admin = createClient(URL, SERVICE_KEY, { auth: { persistSession: false } }
 const stamp = Date.now();
 const results = {
   checks: [],
-  created: { users: [], enrollments: [], sequences: [], campaigns: [], providers: [] },
+  created: {
+    users: [],
+    enrollments: [],
+    sequences: [],
+    campaigns: [],
+    providers: [],
+    jobs: [],
+    accounts: [],
+  },
 };
 
 function check(name, pass, detail) {
@@ -82,6 +90,26 @@ async function makePipeline(userId, providerId) {
   return { campaignId: campaign.id, sequenceId: sequence.id };
 }
 
+async function makeJob(userId, label) {
+  const [row] = await query(
+    `INSERT INTO job_queue (job_type, payload, created_by, status)
+     VALUES ('tenant_check', $1::jsonb, $2, 'pending') RETURNING id`,
+    [JSON.stringify({ label }), userId]
+  );
+  results.created.jobs.push(row.id);
+  return row.id;
+}
+
+async function makeEmailAccount(userId, address) {
+  const [row] = await query(
+    `INSERT INTO email_accounts (user_id, provider, email_address)
+     VALUES ($1, 'google', $2) RETURNING id`,
+    [userId, address]
+  );
+  results.created.accounts.push(row.id);
+  return row.id;
+}
+
 async function makeEnrollment(userId, campaignId, sequenceId, investorId) {
   const [row] = await query(
     `INSERT INTO campaign_sequence_enrollments
@@ -121,6 +149,11 @@ const pendingFor = (userId, limit = 50) =>
     const enrollA = await makeEnrollment(userA, pipeA.campaignId, pipeA.sequenceId, investor.id);
     const enrollB = await makeEnrollment(userB, pipeB.campaignId, pipeB.sequenceId, investor.id);
 
+    const jobA = await makeJob(userA, "a");
+    const jobB = await makeJob(userB, "b");
+    const accountA = await makeEmailAccount(userA, `tenant-check-a-${stamp}@capitalos.test`);
+    const accountB = await makeEmailAccount(userB, `tenant-check-b-${stamp}@capitalos.test`);
+
     // Baseline: the unqualified query really does contain both rows, so a
     // passing scoped check is not passing on an empty table.
     const [both] = await query(
@@ -150,6 +183,52 @@ const pendingFor = (userId, limit = 50) =>
     );
     check("A cannot address B's enrollment by id", foreign.length === 0, { matches: foreign.length });
 
+    // getJob: SELECT ... WHERE id = $1 AND created_by = $2
+    const readForeign = await query(
+      `SELECT id FROM job_queue WHERE id = $1 AND created_by = $2`,
+      [jobB, userA]
+    );
+    const readOwn = await query(
+      `SELECT id FROM job_queue WHERE id = $1 AND created_by = $2`,
+      [jobA, userA]
+    );
+    check("A cannot read B's job", readForeign.length === 0, { matches: readForeign.length });
+    check("A can read its own job", readOwn.length === 1, { matches: readOwn.length });
+
+    // cancelJob: UPDATE ... WHERE id = $1 AND created_by = $2 AND status IN (...)
+    const crossCancel = await query(
+      `UPDATE job_queue SET status = 'failed', error = 'Cancelled by user', updated_at = NOW()
+        WHERE id = $1 AND created_by = $2 AND status IN ('pending', 'running')
+        RETURNING id`,
+      [jobB, userA]
+    );
+    const ownCancel = await query(
+      `UPDATE job_queue SET status = 'failed', error = 'Cancelled by user', updated_at = NOW()
+        WHERE id = $1 AND created_by = $2 AND status IN ('pending', 'running')
+        RETURNING id`,
+      [jobA, userA]
+    );
+    check("A cannot cancel B's job", crossCancel.length === 0, { affected: crossCancel.length });
+    check("A can cancel its own job", ownCancel.length === 1, { affected: ownCancel.length });
+
+    // domain-check passes authUser.id, so the lookup must be scoped by it.
+    const accountsForA = await query(
+      `SELECT id FROM email_accounts WHERE user_id = $1`,
+      [userA]
+    );
+    const bAccountAsA = await query(
+      `SELECT id FROM email_accounts WHERE id = $1 AND user_id = $2`,
+      [accountB, userA]
+    );
+    check(
+      "A's email-account lookup returns only A's account",
+      accountsForA.length === 1 && accountsForA[0].id === accountA,
+      { ids: accountsForA.map((r) => r.id), expected: accountA }
+    );
+    check("A cannot act as B's email account", bAccountAsA.length === 0, {
+      matches: bAccountAsA.length,
+    });
+
     results.ok = results.checks.every((c) => c.pass);
     console.log(JSON.stringify(results, null, 2));
   } catch (err) {
@@ -157,6 +236,12 @@ const pendingFor = (userId, limit = 50) =>
     process.exitCode = 1;
   } finally {
     // Children first; users would otherwise be blocked by FKs.
+    for (const id of results.created.jobs) {
+      await query(`DELETE FROM job_queue WHERE id = $1`, [id]).catch(() => {});
+    }
+    for (const id of results.created.accounts) {
+      await query(`DELETE FROM email_accounts WHERE id = $1`, [id]).catch(() => {});
+    }
     for (const id of results.created.enrollments) {
       await query(`DELETE FROM campaign_sequence_enrollments WHERE id = $1`, [id]).catch(() => {});
     }

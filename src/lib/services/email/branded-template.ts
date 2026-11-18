@@ -14,6 +14,8 @@
 //   ├── Signature
 //   └── Footer (CAN-SPAM)
 
+import { buildUnsubscribeUrl } from "@/lib/email/unsubscribe-token";
+
 export interface UserBranding {
   brandName?: string | null;
   tagline?: string;
@@ -174,9 +176,12 @@ function brandHeader(
   return `
     <div style="padding:${compact ? "28px 32px 24px" : "40px 32px 32px"};text-align:center;">
       ${b.logoUrl ? `<img src="${b.logoUrl}" alt="${brandName}" style="height:${compact ? 24 : 32}px;margin-bottom:10px;" />` : `
-        <div style="display:inline-flex;align-items:center;justify-content:center;width:${iconSize}px;height:${iconSize}px;background:linear-gradient(135deg,${accent} 0%,${accentDark} 100%);border-radius:10px;margin-bottom:12px;">
-          <span style="color:#ffffff;font-size:${iconFontSize}px;font-weight:700;letter-spacing:-0.5px;">${initials}</span>
-        </div>
+        <!-- Table badge: Gmail mobile strips flexbox, so centering must not rely on it -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 12px;border-collapse:collapse;">
+          <tr><td align="center" valign="middle" style="width:${iconSize}px;height:${iconSize}px;min-width:${iconSize}px;background:linear-gradient(135deg,${accent} 0%,${accentDark} 100%);background-color:${accent};border-radius:10px;text-align:center;line-height:${iconSize}px;">
+            <span style="color:#ffffff;font-size:${iconFontSize}px;font-weight:700;letter-spacing:-0.5px;vertical-align:middle;">${initials}</span>
+          </td></tr>
+        </table>
       `}
       <h1 style="color:#0f172a;margin:0 0 2px;font-size:${compact ? 16 : 20}px;font-weight:600;letter-spacing:-0.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
         ${brandName}
@@ -263,7 +268,7 @@ export function brandedOutreachEmail({
   const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#1a1a1a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
-  const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
+  const unsubUrl = buildUnsubscribeUrl(UNSUBSCRIBE_BASE, unsubscribeEmail || "");
 
   const { opening, closing } = splitBody(emailBody);
 
@@ -341,7 +346,7 @@ export function brandedFollowUpEmail({
   const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#1a1a1a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
-  const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
+  const unsubUrl = buildUnsubscribeUrl(UNSUBSCRIBE_BASE, unsubscribeEmail || "");
 
   const { opening, closing } = splitBody(emailBody);
 
@@ -414,7 +419,7 @@ export function brandedColdIntroEmail({
   const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#1a1a1a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
-  const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
+  const unsubUrl = buildUnsubscribeUrl(UNSUBSCRIBE_BASE, unsubscribeEmail || "");
 
   const { opening, closing } = splitBody(emailBody);
 
@@ -499,7 +504,7 @@ export function brandedInvestorIntroEmail({
   const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#0f172a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
-  const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
+  const unsubUrl = buildUnsubscribeUrl(UNSUBSCRIBE_BASE, unsubscribeEmail || "");
   const formattedBody = formatBodyParagraphs(emailBody);
 
   const html = `${EMAIL_HEAD}
@@ -547,7 +552,7 @@ export function brandedPartnershipEmail({
   const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#0f172a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
-  const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
+  const unsubUrl = buildUnsubscribeUrl(UNSUBSCRIBE_BASE, unsubscribeEmail || "");
   const formattedBody = formatBodyParagraphs(emailBody);
 
   const html = `${EMAIL_HEAD}
@@ -599,7 +604,7 @@ export function brandedEventInviteEmail({
   const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#0f172a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
-  const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
+  const unsubUrl = buildUnsubscribeUrl(UNSUBSCRIBE_BASE, unsubscribeEmail || "");
   const formattedBody = formatBodyParagraphs(emailBody);
 
   const pills = [];
@@ -651,7 +656,7 @@ export function brandedNewsletterEmail({
   const accentDark = darken(accent, 0.2);
   const textColor = isLight(accent) ? "#0f172a" : "#ffffff";
   const brandName = b.brandName || DEFAULT_BRANDING.brandName!;
-  const unsubUrl = `${UNSUBSCRIBE_BASE}/unsubscribe?email=${encodeURIComponent(unsubscribeEmail || "")}`;
+  const unsubUrl = buildUnsubscribeUrl(UNSUBSCRIBE_BASE, unsubscribeEmail || "");
 
   const cards = articles.map((a, i) => `<div style="${i < articles.length - 1 ? "margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #f1f5f9;" : ""}"><h3 style="color:#0f172a;margin:0 0 6px;font-size:15px;font-weight:600;">${a.title}</h3><p style="color:#64748b;margin:0 0 ${a.url ? 8 : 0}px;font-size:14px;line-height:1.6;">${a.summary}</p>${a.url ? `<a href="${a.url}" style="color:${accent};font-size:13px;font-weight:600;text-decoration:none;">Read more &rarr;</a>` : ""}</div>`).join("");
 

@@ -164,4 +164,7 @@ delete from investor_firms where source = 'sec_formd_bulk';
 managers. Two read-only methods measure **3,398–4,327 distinct managers**
 (shared-people graph vs name clustering). See
 `docs/audit/MANAGER-COLLAPSE-2026-11-18.md`. No rows were collapsed and 5,461
-must not be quoted as investors.
+must not be quoted as investors. Migration `042` adds `investor_managers` and
+`investors.manager_id`; the mapping is intentionally empty because reviewed
+top clusters turned out to be SPV platforms, so there is still **no applied
+distinct-manager count**.

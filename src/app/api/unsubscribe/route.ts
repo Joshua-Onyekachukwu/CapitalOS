@@ -18,6 +18,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { normalizeUnsubscribeEmail, verifyUnsubscribeToken } from "@/lib/email/unsubscribe-token";
 
 function getSp() {
   return createClient(
@@ -87,21 +88,34 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// GET /api/unsubscribe?email=... — suppress and redirect to confirmation page
+// GET /api/unsubscribe?email=...&token=... — suppress and redirect
+// GET /api/unsubscribe?email=...            — legacy links already delivered
 export async function GET(request: NextRequest) {
-  const email = request.nextUrl.searchParams.get("email");
+  const params = request.nextUrl.searchParams;
+  const email = params.get("email");
+  const token = params.get("token");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capital-os-nine.vercel.app";
 
-  if (email) {
-    const normalized = email.toLowerCase().trim();
-    if (isValidEmail(normalized)) {
-      const sp = getSp();
-      const { error } = await suppressEverywhere(sp, normalized);
-      if (error) console.error("[api/unsubscribe] GET suppression failed:", error);
+  let normalized = email ? normalizeUnsubscribeEmail(email) : "";
+
+  // A token was presented: it must verify and must be for this address. Never
+  // fall back to suppressing on an invalid token.
+  if (token) {
+    const payload = verifyUnsubscribeToken(token);
+    if (!payload || !normalized || payload.email !== normalized) {
+      return NextResponse.redirect(`${appUrl}/unsubscribe?status=invalid`);
     }
+    normalized = payload.email;
   }
 
-  // Redirect to the unsubscribe confirmation page
+  // No token at all: links in already-sent mail predate signing. They keep
+  // working (see unsubscribe-token.ts); the address is all they can affect.
+  if (normalized && isValidEmail(normalized)) {
+    const sp = getSp();
+    const { error } = await suppressEverywhere(sp, normalized);
+    if (error) console.error("[api/unsubscribe] GET suppression failed:", error);
+  }
+
   return NextResponse.redirect(`${appUrl}/unsubscribe`);
 }
 
