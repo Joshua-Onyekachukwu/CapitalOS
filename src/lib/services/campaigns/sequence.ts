@@ -275,18 +275,22 @@ export async function enrollInvestors(
 // Get Pending Sends
 // =============================================
 
-export async function getPendingSends(limit = 50): Promise<
-  Array<Enrollment & { investor_email: string; investor_name: string; step: SequenceStep }>
-> {
+export async function getPendingSends(
+  userId: string,
+  limit = 50
+): Promise<Array<Enrollment & { investor_email: string; investor_name: string; step: SequenceStep }>> {
+  // Scoped to the caller: without this filter one founder's scheduled
+  // enrollment would be sent from another founder's mailbox and charged to
+  // another founder's credits.
   const enrollments = await query<any>(
     `SELECT e.*, i.email AS investor_email, i.full_name AS investor_name, i.first_name, i.last_name,
             cs.stop_on_reply
      FROM campaign_sequence_enrollments e
      INNER JOIN investors i ON e.investor_id = i.id
      INNER JOIN campaign_sequences cs ON e.sequence_id = cs.id
-     WHERE e.status = 'scheduled' AND e.next_send_at <= NOW()
+     WHERE e.status = 'scheduled' AND e.next_send_at <= NOW() AND e.user_id = $2
      LIMIT $1`,
-    [limit]
+    [limit, userId]
   );
 
   if (!enrollments.length) return [];
@@ -599,11 +603,11 @@ export const DEFAULT_SEQUENCE_TEMPLATES: Array<{
       {
         step_number: 1,
         step_type: "initial",
-        subject_template: "Introduction — {{company_name}}",
-        body_template: "Hi {{investor_name}},\n\nI'm reaching out because I believe {{company_name}} would be a great fit for your investment thesis.\n\n{{personal_note}}\n\nI'd love to share more about what we're building. Would you be open to a brief conversation?\n\nBest,\n{{sender_name}}",
+        subject_template: "{{company_name}} — {{one_liner}}",
+        body_template: "Hi {{investor_name}},\n\n{{one_liner}}\n\n{{personal_note}}\n\nWorth a 15-minute call?\n\n{{sender_name}}",
         delay_days: 0,
         delay_hours: 0,
-        tone: "professional",
+        tone: "direct",
         is_active: true,
       },
       {

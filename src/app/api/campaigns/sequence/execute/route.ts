@@ -9,6 +9,9 @@ import { requireAuth } from "@/lib/middleware/api-auth";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/middleware/rate-limit";
 import { createClient } from "@supabase/supabase-js";
 
+// N sends with an AI draft each; the default serverless budget is too short.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const user = await requireAuth(request);
   if (user instanceof NextResponse) return user;
@@ -25,7 +28,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Get pending sends
-    const pending = await getPendingSends(20);
+    const pending = await getPendingSends(userId, 20);
 
     if (pending.length === 0) {
       return NextResponse.json({

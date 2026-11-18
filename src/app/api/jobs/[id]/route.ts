@@ -25,7 +25,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const job = await getJob(id);
+    const job = await getJob(id, user.id);
 
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -52,7 +52,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const cancelled = await cancelJob(id);
+    const cancelled = await cancelJob(id, user.id);
 
     if (!cancelled) {
       return NextResponse.json(
@@ -82,7 +82,7 @@ export async function POST(
 
   try {
     const { id } = await params;
-    const retried = await retryJob(id);
+    const retried = await retryJob(id, user.id);
 
     if (!retried) {
       return NextResponse.json(

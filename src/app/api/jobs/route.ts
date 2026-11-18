@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const type = sp.get("type") || undefined;
     const limit = Math.min(100, Math.max(1, parseInt(sp.get("limit") || "20")));
 
-    const jobs = await listJobs(type, limit);
+    const jobs = await listJobs(type, limit, user.id);
 
     return NextResponse.json({ jobs });
   } catch (err) {

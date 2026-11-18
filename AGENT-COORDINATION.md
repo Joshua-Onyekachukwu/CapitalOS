@@ -314,6 +314,9 @@ the growing corpus, (e) T9 evidence-brief UI when CR lands. T8 parked.
 
 ## 9. Backend worklog (append-only, newest last)
 
+- **2026-11-18** — Reviewed frontend loop-fix commit `b73bf05` (pipeline loading copy, outreach states, profile/outreach fixes) and the landing numbers in `bd3aa25`; counts are consistent with the measured corpus. No blocking issues.
+- **2026-11-18** — **Tenant isolation fixed (H1, H3, A-C1).** `getJob/cancelJob/retryJob/listJobs` and `getPendingSends` now require `userId` and filter on `created_by` / `e.user_id`; `/api/email/domain-check` uses the signed-in user, validates the hostname and is rate-limited. Six regression tests added in `src/__tests__/tenant-scoping.test.ts`; `tsc` clean. Live two-account probe remains open.
+
 - **2026-11-17** — Read audit report + coordination board; wrote audit §6
   (backend queue B1–B8, authorities, review protocol, owner decisions).
 - **2026-11-17** — **Convex removed.** Deleted `convex.json`, `env-convex.json`,

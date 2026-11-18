@@ -281,10 +281,10 @@ export async function createJob(
 /**
  * Get job status by ID.
  */
-export async function getJob(id: string): Promise<JobRecord | null> {
+export async function getJob(id: string, userId: string): Promise<JobRecord | null> {
   const result = await query<JobRecord>(
-    `SELECT * FROM job_queue WHERE id = $1`,
-    [id]
+    `SELECT * FROM job_queue WHERE id = $1 AND created_by = $2`,
+    [id, userId]
   );
   return result[0] || null;
 }
@@ -293,35 +293,37 @@ export async function getJob(id: string): Promise<JobRecord | null> {
  * Get recent jobs, optionally filtered by type.
  */
 export async function listJobs(
-  type?: string,
-  limit = 20
+  type: string | undefined,
+  limit: number,
+  userId: string
 ): Promise<JobRecord[]> {
   if (type) {
     return query<JobRecord>(
       `SELECT * FROM job_queue
-       WHERE job_type = $1
+       WHERE job_type = $1 AND created_by = $3
        ORDER BY created_at DESC
        LIMIT $2`,
-      [type, limit]
+      [type, limit, userId]
     );
   }
   return query<JobRecord>(
     `SELECT * FROM job_queue
+     WHERE created_by = $2
      ORDER BY created_at DESC
      LIMIT $1`,
-    [limit]
+    [limit, userId]
   );
 }
 
 /**
  * Cancel a pending or running job.
  */
-export async function cancelJob(id: string): Promise<boolean> {
+export async function cancelJob(id: string, userId: string): Promise<boolean> {
   const result = await query(
     `UPDATE job_queue
      SET status = 'failed', error = 'Cancelled by user', updated_at = NOW()
-     WHERE id = $1 AND status IN ('pending', 'running')`,
-    [id]
+     WHERE id = $1 AND created_by = $2 AND status IN ('pending', 'running')`,
+    [id, userId]
   );
   return (result as any).rowCount > 0;
 }
@@ -329,12 +331,12 @@ export async function cancelJob(id: string): Promise<boolean> {
 /**
  * Retry a failed or dead job.
  */
-export async function retryJob(id: string): Promise<boolean> {
+export async function retryJob(id: string, userId: string): Promise<boolean> {
   const result = await query(
     `UPDATE job_queue
      SET status = 'pending', error = NULL, retry_count = 0, updated_at = NOW()
-     WHERE id = $1 AND status IN ('failed', 'dead')`,
-    [id]
+     WHERE id = $1 AND created_by = $2 AND status IN ('failed', 'dead')`,
+    [id, userId]
   );
   return (result as any).rowCount > 0;
 }

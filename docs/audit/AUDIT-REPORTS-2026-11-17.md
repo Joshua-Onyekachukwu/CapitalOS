@@ -335,8 +335,8 @@ builds their half. The owner decides if we disagree.
 
 | # | Task | Acceptance | Status |
 |---|---|---|---|
-| B1 | Signed-in loop proof: discover → profile → match → shortlist → draft → outbox → pipeline | Disposable account completes the loop; every step reads real rows; failures fixed | NEXT |
-| B2 | Tenant isolation: H1 jobs IDOR, H3 domain-check identity, A-C1 global pending sends | Two accounts cannot read, send as, or execute for each other; regression test | NEXT |
+| B1 | Signed-in loop proof: discover → profile → match → shortlist → draft → outbox → pipeline | Disposable account completes the loop; every step reads real rows; failures fixed | **DONE (frontend, `b73bf05`)** — reviewed; defects fixed |
+| B2 | Tenant isolation: H1 jobs IDOR, H3 domain-check identity, A-C1 global pending sends | Two accounts cannot read, send as, or execute for each other; regression test | **DONE (query-scoped + 6 regression tests)** — live two-account probe open |
 | B3 | Migration reproducibility: 8 untracked migrations, duplicate 004/014 | Fresh clone + `db:migrate` reaches current schema; `db:status` clean | QUEUED |
 | B4 | Manager-level entity resolution: collapse 5,461 fund vehicles to managers/families | Distinct-manager count measured; discovery does not show the same manager as 9 investors | QUEUED |
 | B5 | Contact discovery + verification from verified fund sites | Verified vs unverified contact counts; suppression respected; robots/ToS honoured | QUEUED |
