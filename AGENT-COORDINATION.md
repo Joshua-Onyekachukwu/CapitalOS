@@ -83,14 +83,29 @@ verified without re-walking the flow.
 | B-6 | P2 | Corpus counts | Discover says `18,918 firms`; landing/dashboard say `18,995 firms` and `5,607 venture funds` vs landing `5,461 Form D funds`. Pick one measured snapshot and reuse it everywhere (AGENTS.md truth rule). | backend |
 | B-7 | P2 | Latency | Local dev: `/api/dashboard/cockpit` 8.7s, `/api/investors/{id}` 4.4s, `/{id}/activity` 7.2s. Demo will feel broken on a cold load. | backend |
 | B-8 | P2 | Pipeline `dataset.byStage` | Database batch qualification reports only `discovered 13,928` + `shortlisted 10,451` (20,379 of 24,379). No `researching` row. Confirm the remaining ~4k are intentionally unstaged. | backend |
+| B-9 | **P0 for demo** | `POST /api/outreach/send` credit gate | The route 402s before queueing when the user has no active subscription (`hasCredits` returns balance 0 / cost 0 → "No active subscription"). A brand-new founder therefore cannot queue the honest outbox email, and the outbox path sends nothing, so charging a credit for it is wrong. Either exempt `queued_dev` from the credit gate or grant signup credits. | backend |
+| B-10 | **P0 for demo** | Billing / Stripe | `.env.local` has no `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`, so `/dashboard/billing` intentionally answers 503 for checkout ("founders sign up and pay" cannot be demoed). Needs test keys + seeded `billing_plans` + `NEXT_PUBLIC_APP_URL`. | ops + backend |
+| B-11 | P1 | `/api/investors/facets` | Dev log: `Facet rollup refresh failed: DELETE requires a WHERE clause` on every discover load; facet counts are then served from a stale rollup. | backend |
+| B-12 | P2 | Dead client probes | Outreach calls `GET /api/outreach/investors` and `GET /api/outreach/drafts`; both 404. Remove or implement. | backend or frontend follow-up |
+
+Full SQL for B-1 (from the dev log):
+
+```
+SELECT us.current_period_end, bp.slug AS plan_slug, bp.name AS plan_name
+FROM user_subscriptions us JOIN billing_plans bp ON us.plan_id = bp.id WHERE …
+```
+
+PostgREST rejects the `us.`/`bp.` alias syntax, so subscription state never resolves — which also explains B-9/B-10 symptoms.
 
 Frontend fixes landed in this pass (details in §10): outreach no longer prints
 "Unknown Investor" for firm records, fit score no longer fabricates `75` when
 missing, investor profile no longer renders a stray `0` or raw
 `edgar_restore_2026_09` as its source, the pipeline header no longer asserts
-"0 investors across 0 active stages" while loading, and the cockpit stat that
+"0 investors across 0 active stages" while loading, the cockpit stat that
 counts pipeline rows is labelled "Tracked investors" instead of
-"Saved Investors".
+"Saved Investors", bulk generation no longer claims "Generated N emails!" when
+every call failed, and the missing-profile error links straight to the profile
+editor.
 
 ## 5. Landing-page claims rule (shared, per AGENTS.md)
 
@@ -229,6 +244,11 @@ the growing corpus, (e) T9 evidence-brief UI when CR lands. T8 parked.
     localStorage and the send handler updated React state only, so a reload
     reverted a queued email to "Approved". Now persists and switches to the
     Outbox tab so the destination is visible.
+  - **Bulk generate lied**: it always ended with "Generated N emails!" even
+    when every request failed. Now counts real successes, reports
+    "Generated X of N", and surfaces the first failure.
+  - Missing-profile errors now render a **"Complete your profile →"** link
+    (the API returns `code: missing_founder_context` + `href`).
 - **2026-11-18 — P0 honesty fix in `src/app/api/outreach/draft/route.ts`
   (backend file, deliberately NOT staged).** With an empty company profile the
   model invented founder traction and investor facts (`"$120k ARR … 42

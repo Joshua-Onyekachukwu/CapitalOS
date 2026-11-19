@@ -85,7 +85,7 @@ export default function OutreachPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [sendResult, setSendResult] = useState<{ type: "success" | "error"; text: string; href?: string } | null>(null);
   const [selectedTone, setSelectedTone] = useState("warm");
   const [customInstructions, setCustomInstructions] = useState("");
   const [showTonePicker, setShowTonePicker] = useState(false);
@@ -261,7 +261,15 @@ export default function OutreachPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setSendResult({ type: "error", text: data.error || "Draft generation failed" });
+        setSendResult({
+          type: "error",
+          text: data.error || "Draft generation failed",
+          // The API refuses to draft without founder facts; point straight at the fix.
+          href:
+            data.code === "missing_founder_context"
+              ? data.href || "/dashboard/startup/edit"
+              : undefined,
+        });
         return;
       }
 
@@ -318,6 +326,10 @@ export default function OutreachPage() {
     setBulkGenerating(true);
     setBulkProgress({ current: 0, total: undrafted.length });
 
+    let generated = 0;
+    let failureText: string | null = null;
+    let failureHref: string | undefined;
+
     for (let i = 0; i < undrafted.length; i++) {
       const draft = undrafted[i];
       try {
@@ -334,6 +346,7 @@ export default function OutreachPage() {
         });
 
         if (response.ok) {
+          generated++;
           const data = await response.json();
           setDrafts((prev) =>
             prev.map((d) =>
@@ -350,9 +363,18 @@ export default function OutreachPage() {
                 : d
             )
           );
+        } else {
+          const data = await response.json().catch(() => ({}));
+          if (!failureText) {
+            failureText = data.error || "Draft generation failed";
+            failureHref =
+              data.code === "missing_founder_context"
+                ? data.href || "/dashboard/startup/edit"
+                : undefined;
+          }
         }
       } catch {
-        // Continue with next draft
+        if (!failureText) failureText = "Could not reach the drafting service.";
       }
 
       setBulkProgress({ current: i + 1, total: undrafted.length });
@@ -360,7 +382,22 @@ export default function OutreachPage() {
     }
 
     setBulkGenerating(false);
-    setSendResult({ type: "success", text: `Generated ${undrafted.length} emails!` });
+    // Report what actually happened — never claim N drafts when N failed.
+    if (generated === 0) {
+      setSendResult({
+        type: "error",
+        text: failureText || "No drafts were generated.",
+        href: failureHref,
+      });
+    } else if (generated < undrafted.length) {
+      setSendResult({
+        type: "success",
+        text: `Generated ${generated} of ${undrafted.length} emails. ${failureText || ""}`.trim(),
+        href: failureHref,
+      });
+    } else {
+      setSendResult({ type: "success", text: `Generated ${generated} emails.` });
+    }
   };
 
   const handleApprove = (draftId: string) => {
@@ -572,10 +609,19 @@ export default function OutreachPage() {
             ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800/30"
             : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30"
         }`}>
-          <i className={`${sendResult.type === "success" ? "ri-check-line" : "ri-error-warning-line"} text-[16px]`}></i>
-          {sendResult.text}
+          <i className={`${sendResult.type === "success" ? "ri-check-line" : "ri-error-warning-line"} text-[16px] flex-none`}></i>
+          <span className="min-w-0">{sendResult.text}</span>
+          {sendResult.href && (
+            <a
+              href={sendResult.href}
+              className="underline font-semibold whitespace-nowrap hover:no-underline"
+            >
+              Complete your profile →
+            </a>
+          )}
           <button
             onClick={() => setSendResult(null)}
+            aria-label="Dismiss message"
             className="ml-auto text-current opacity-50 hover:opacity-100"
           >
             <i className="ri-close-line text-[16px]"></i>
