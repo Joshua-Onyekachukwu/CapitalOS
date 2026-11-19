@@ -29,11 +29,16 @@ export async function GET(request: NextRequest) {
   const page = parseInt(request.nextUrl.searchParams.get("page") || "0");
   const limit = parseInt(request.nextUrl.searchParams.get("limit") || "50");
   const search = request.nextUrl.searchParams.get("search") || "";
+  // Demo rows are hidden by default so nobody mistakes them for real signups.
+  const includeSynthetic =
+    request.nextUrl.searchParams.get("includeSynthetic") === "true";
 
   let query = sp
     .from("waitlist")
     .select("*", { count: "exact" })
     .order("position", { ascending: true });
+
+  if (!includeSynthetic) query = query.eq("is_synthetic", false);
 
   if (search) {
     query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
@@ -49,9 +54,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const { count: syntheticCount } = await sp2
+    .from("waitlist")
+    .select("id", { count: "exact", head: true })
+    .eq("is_synthetic", true);
+
   return NextResponse.json({
     entries: data || [],
     total: count || 0,
+    syntheticExcluded: includeSynthetic ? 0 : syntheticCount || 0,
     page,
     limit,
   });

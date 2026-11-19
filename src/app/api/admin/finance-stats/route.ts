@@ -22,9 +22,11 @@ export async function GET(request: NextRequest) {
       .from("founding_members")
       .select("*", { count: "exact", head: true });
 
+    // Organic signups only. Synthetic demo rows are not revenue traction.
     const { count: waitlistSignups } = await sp
       .from("waitlist")
-      .select("*", { count: "exact", head: true });
+      .select("*", { count: "exact", head: true })
+      .eq("is_synthetic", false);
 
     return NextResponse.json({
       totalRevenue: (foundingMembers || 0) * 9.99,

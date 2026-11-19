@@ -61,11 +61,13 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
     const sp = getSupabase();
 
-    // Check if already signed up
+    // Check if already signed up. Synthetic demo rows must never block a real
+    // person from joining, so the lookup is limited to organic entries.
     const { data: existing } = await sp
       .from("waitlist")
       .select("id, status")
       .eq("email", normalizedEmail)
+      .eq("is_synthetic", false)
       .limit(1);
 
     if (existing && existing.length > 0) {
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
       source: "landing_page",
       referral_code: referral,
       referred_by: referralCode || null,
+      is_synthetic: false,
       metadata: {
         userAgent: request.headers.get("user-agent") || "",
         timestamp: new Date().toISOString(),
@@ -98,10 +101,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get position in line
+    // Get position in line. Only organic signups count; demo rows are not people.
     const { count: position } = await sp
       .from("waitlist")
-      .select("id", { count: "exact", head: true });
+      .select("id", { count: "exact", head: true })
+      .eq("is_synthetic", false);
 
     return NextResponse.json({
       success: true,
@@ -119,13 +123,15 @@ export async function POST(request: NextRequest) {
 }
 
 // GET — Get waitlist stats (public, for social proof)
+// Synthetic demo rows are excluded: a generated row is never social proof.
 export async function GET() {
   try {
     const sp = getSupabase();
 
     const { count: total } = await sp
       .from("waitlist")
-      .select("id", { count: "exact", head: true });
+      .select("id", { count: "exact", head: true })
+      .eq("is_synthetic", false);
 
     return NextResponse.json({
       totalSignups: total || 0,

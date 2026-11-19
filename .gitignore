@@ -106,3 +106,6 @@ investor-intelligence/data/qualified/
 investor-intelligence/data/people/
 investor-intelligence/data/logs/
 .tmp/
+
+# demo-data run logs (generated output, not data)
+scripts/demo-data/*.log
