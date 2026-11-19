@@ -36,6 +36,11 @@ Committing changes to this file is part of every work session, same as code.
   decides.
 - `docs/30-completion-tracker.md` is the authoritative feature-status board.
   Each agent updates only their own rows.
+- **New sequencing authority (2026-11-19):** `docs/35-master-blueprint-execution-plan.md`.
+  It maps the full product blueprint to measured status and orders the work into
+  Phases 0–9 with exit criteria. The frontend task list in §6 now maps onto those
+  phases (T5 → Phase 3, T7 → Phase 8, T9 → Phase 6, T10 → Phase 5, T11 → Phase 7).
+  Phase 0 is the money path and is shared work.
 
 ## 3. Git rules (both agents)
 
