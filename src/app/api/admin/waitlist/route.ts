@@ -33,10 +33,12 @@ export async function GET(request: NextRequest) {
   const includeSynthetic =
     request.nextUrl.searchParams.get("includeSynthetic") === "true";
 
+  // The waitlist table has no `position` column; queue position is signup order.
+  // Ordering by a column that does not exist made this endpoint return 500.
   let query = sp
     .from("waitlist")
     .select("*", { count: "exact" })
-    .order("position", { ascending: true });
+    .order("created_at", { ascending: true, nullsFirst: false });
 
   if (!includeSynthetic) query = query.eq("is_synthetic", false);
 
@@ -60,7 +62,7 @@ export async function GET(request: NextRequest) {
     .eq("is_synthetic", true);
 
   return NextResponse.json({
-    entries: data || [],
+    entries: (data || []).map((row, i) => ({ ...row, position: from + i + 1 })),
     total: count || 0,
     syntheticExcluded: includeSynthetic ? 0 : syntheticCount || 0,
     page,

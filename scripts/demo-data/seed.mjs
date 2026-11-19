@@ -551,7 +551,9 @@ function makeInvestor(i, firms) {
 
   const qualityBase = 55 + (email ? 10 : 0) + (thesis ? 8 : 0) + (recent ? 8 : 0) + int(0, 12);
   const dataQuality = Math.min(98, qualityBase);
-  const verified = chance(0.22);
+  // A synthetic address can never be verified: the domain does not exist. Marking
+  // these rows verified would let the demo claim "verified contactable emails".
+  const verified = false;
   const readiness = email && thesis && chance(0.62)
     ? "ready"
     : chance(0.65)
@@ -900,7 +902,7 @@ async function main() {
       for (;;) {
         const res = await run(
           `delete from public.${table}
-           where id in (select id from public.${table} where demo_batch = $1 limit 2000)`,
+           where id in (select id from public.${table} where demo_batch = $1 limit 5000)`,
           [BATCH]
         );
         total += res.rowCount;
