@@ -1,0 +1,351 @@
+{
+  "reviewed_at": "2026-11-19",
+  "reviewer": "repository owner",
+  "method": "Top 60 explicit 'a series of X' clusters exported by `node scripts/build-manager-map.cjs --export-review --top 60`. Each cluster was read on its vehicle names and classified by hand. Approve only when the filings identify one manager: the vehicles repeat the manager's own name or code and no unrelated third-party brand appears. Reject SPV platforms, filing administrators, generic master-series entities, and clusters whose vehicle names carry no manager identity (the Exitfund failure mode) — those need Form ADV/CRD evidence, not a name merge.",
+  "source": "docs/audit/MANAGER-COLLAPSE-2026-11-18.md",
+  "decisions": [
+    {
+      "key": "cgf2021",
+      "decision": "reject",
+      "reason": "SPV platform: 847 unrelated offerings (Arkero, TCP Starcloud, RRS Investors, Socrates Angel Fund) filed through CGF2021 LLC, not one manager."
+    },
+    {
+      "key": "roll up vehicles",
+      "decision": "reject",
+      "reason": "SPV platform: 337 vehicles from unrelated managers, all filed through Roll Up Vehicles, LP."
+    },
+    {
+      "key": "platform fund",
+      "decision": "reject",
+      "reason": "SPV platform: Platform Funds 2026, LP is an administrator, not a manager."
+    },
+    {
+      "key": "mv funds",
+      "decision": "reject",
+      "reason": "SPV platform: MV Funds, LP files for unrelated sponsors (FO-, SA-, NA- coded deals)."
+    },
+    {
+      "key": "a master",
+      "decision": "reject",
+      "reason": "Generic master-series vehicle ('A Master Series, LLC'); the name carries no manager identity."
+    },
+    {
+      "key": "exitfund venture",
+      "decision": "reject",
+      "reason": "Coded-only series of Exitfund Venture, LP; hand-check in the 2026-11-18 audit found a multi-manager SPV platform. Identity needs Form ADV/CRD evidence."
+    },
+    {
+      "key": "slrte i",
+      "decision": "reject",
+      "reason": "SPV series administrator: vehicles are third-party brands (Small World Capital, Vitalism, fsdov, FSSSB) filed as series of SLRTE I LLC."
+    },
+    {
+      "key": "v360",
+      "decision": "reject",
+      "reason": "SPV platform: V360 Holdings LLC files for unrelated managers (Kaizen, Duke Capital Partners, Space Opportunities)."
+    },
+    {
+      "key": "sajid rahman angel funds",
+      "decision": "reject",
+      "reason": "Coded-only series (LA-0616, LE-1211) of a person-named filing vehicle; indistinguishable from an administrator. Needs external identity evidence."
+    },
+    {
+      "key": "fog ventures fund",
+      "decision": "reject",
+      "reason": "Vehicles are generic thematic names (TECH Fund, GENAI FUND AK, Aerospace Fund II) with no FOG identity; same shape as the Exitfund platform case. Needs external evidence."
+    },
+    {
+      "key": "clutch capital",
+      "decision": "reject",
+      "reason": "SPV platform: vehicles belong to unrelated issuers ('X by Play Money', 'X by IIH')."
+    },
+    {
+      "key": "jmwtx investments",
+      "decision": "reject",
+      "reason": "Coded-only administrator series (CY-0413, PR-0513, BH-0528); no manager identity in the filing names."
+    },
+    {
+      "key": "decile start fund",
+      "decision": "reject",
+      "reason": "SPV platform: vehicles are unrelated managers (Genki Ventures, STRUC Ventures, Red Tape Ventures)."
+    },
+    {
+      "key": "zachary ginsburg funds",
+      "decision": "reject",
+      "reason": "Filing administrator: vehicles include Gaingels funds and other unrelated sponsors filed as a series of a person-named LP."
+    },
+    {
+      "key": "umami capital",
+      "decision": "reject",
+      "reason": "Coded series mixed with third-party branding (OGBC Premier PM Fund II); one manager is not established."
+    },
+    {
+      "key": "vuvp fund",
+      "decision": "reject",
+      "reason": "SPV platform: unrelated companies (Vertical Ocean, Alkemio, Stealth Bodies, Wand AI) filed as series of VUVP Fund LLC."
+    },
+    {
+      "key": "ventioneers funds",
+      "decision": "reject",
+      "reason": "Coded-only series (OR-0314, HT-0602) with no manager identity; needs external evidence."
+    },
+    {
+      "key": "ax rn funds",
+      "decision": "reject",
+      "reason": "Initial-code program name and coded-only vehicles; no identifiable manager."
+    },
+    {
+      "key": "datapower capital partners",
+      "decision": "approve",
+      "name": "DataPower Capital Partners",
+      "confidence": "high",
+      "reason": "Every vehicle is DataPower's own DPV SPV (DPV Mach I, DPV Cerebras I, DPV SPX VII) filed as a series of DataPower Capital Partners LLC."
+    },
+    {
+      "key": "jolt vc",
+      "decision": "reject",
+      "reason": "Coded-only series (SA-0528, TY-1014); the filing names do not identify the manager. Needs external evidence."
+    },
+    {
+      "key": "multimodal ventures",
+      "decision": "reject",
+      "reason": "Coded-only series (IS-0806, AP-0609); no manager identity in the filing names."
+    },
+    {
+      "key": "mvp ii invest",
+      "decision": "approve",
+      "name": "MVP II Co-Invest",
+      "confidence": "high",
+      "reason": "Every vehicle is an MVP-prefixed series of MVP II Co-Invest LLC (MVPEXOB26, MVPLUMC26, MVPHELI26)."
+    },
+    {
+      "key": "angellist fund",
+      "decision": "reject",
+      "reason": "AngelList is an SPV platform: 13 vehicles from unrelated sponsors filed as series of AngelList Funds 2025, LP."
+    },
+    {
+      "key": "decile",
+      "decision": "reject",
+      "reason": "SPV platform: Decile SPV, LLC files for unrelated managers (Granada Kardium, Levee Ventures, Blockchain Builders)."
+    },
+    {
+      "key": "hustle fund angel squad",
+      "decision": "approve",
+      "name": "Hustle Fund Angel Squad",
+      "confidence": "medium",
+      "reason": "Single syndicate program of Hustle Fund; vehicles are its own coded fund series under Hustle Fund Angel Squad, LP."
+    },
+    {
+      "key": "hustle fund angel squad verticals",
+      "decision": "approve",
+      "name": "Hustle Fund Angel Squad",
+      "group": "hustle fund angel squad",
+      "confidence": "medium",
+      "reason": "The verticals program of the same Hustle Fund Angel Squad manager; grouped with the main program so it is not counted twice."
+    },
+    {
+      "key": "climate collective",
+      "decision": "reject",
+      "reason": "Coded-only series (BU-0721, VO-0409); no manager identity in the filing names."
+    },
+    {
+      "key": "infinitas capital master",
+      "decision": "approve",
+      "name": "Infinitas Capital",
+      "confidence": "high",
+      "reason": "Every vehicle is an Infinitas Capital SPV (SPV XXIX, SPV XXXXI, SPV XXXIV) filed as a series of Infinitas Capital Master LLC."
+    },
+    {
+      "key": "unpopular vc",
+      "decision": "reject",
+      "reason": "Coded-only series (VO-0518, JO-0908); no manager identity in the filing names."
+    },
+    {
+      "key": "gold dragon ventures",
+      "decision": "reject",
+      "reason": "Coded-only series (SO-0407, SY-0402); no manager identity in the filing names."
+    },
+    {
+      "key": "ineffable ventures",
+      "decision": "approve",
+      "name": "Ineffable Ventures",
+      "confidence": "high",
+      "reason": "Every vehicle is an IV Series (IV Series 32A, 30A, 27A) filed as a series of Ineffable Ventures Series, LLC."
+    },
+    {
+      "key": "pari passu master ii",
+      "decision": "approve",
+      "name": "Pari Passu",
+      "confidence": "high",
+      "reason": "Every vehicle carries the Pari Passu / PPVP prefix (Pari Passu XIII, PPVP Growth XIV) under Pari Passu Master II LLC."
+    },
+    {
+      "key": "riverside ventures",
+      "decision": "reject",
+      "reason": "Coded-only series (ME-0210, FE-0407); no manager identity in the filing names."
+    },
+    {
+      "key": "silent capital",
+      "decision": "approve",
+      "name": "Silent Capital",
+      "confidence": "high",
+      "reason": "Every vehicle is a numbered Silent Capital series (Silent Capital XXXV, XXIX, XXXIV) of Silent Capital Holdings, LP."
+    },
+    {
+      "key": "what if ventures master",
+      "decision": "approve",
+      "name": "What If Ventures",
+      "confidence": "medium",
+      "reason": "Single manager's master series; vehicles use its own program codes (WIVC SU 2026, RSS Seed 2026) under What If Ventures Master LLC."
+    },
+    {
+      "key": "agc ai nexus fund",
+      "decision": "approve",
+      "name": "AGC",
+      "group": "agc",
+      "confidence": "high",
+      "reason": "Every vehicle is AGC-prefixed (AGC Tensordyne I, AGC Infinity I, AGC Skild I) under AGC AI Nexus Fund LLC."
+    },
+    {
+      "key": "astro fund",
+      "decision": "approve",
+      "name": "Astro Funds",
+      "confidence": "high",
+      "reason": "Every vehicle is Astro-branded (Astro A, Astro Investment IX, Astro Miso II) under Astro Funds LLC."
+    },
+    {
+      "key": "bloom opportunities fund",
+      "decision": "approve",
+      "name": "Bloom Opportunities Fund",
+      "confidence": "medium",
+      "reason": "Vehicles are Bloom's own BVP series (BVP IV, BVP VII, BVP XIII) under Bloom Opportunities Fund I/II LLC."
+    },
+    {
+      "key": "denver ventures i",
+      "decision": "approve",
+      "name": "Denver Ventures",
+      "confidence": "high",
+      "reason": "Every vehicle is a DV-coded series (DV 30F2, DV 23F3, DV 26F1) of Denver Ventures I LLC, with no third-party brand."
+    },
+    {
+      "key": "dvc",
+      "decision": "reject",
+      "reason": "Mixed sponsors: contains 'OP-0311 Gaingels Fund II' alongside coded vehicles, a platform/administrator signature."
+    },
+    {
+      "key": "heron rock nest al access",
+      "decision": "approve",
+      "name": "Heron Rock",
+      "confidence": "high",
+      "reason": "Every vehicle is a numbered Heron Rock Nest AI Access series (XVII, XV, XI) under Heron Rock Nest Al Access, LP."
+    },
+    {
+      "key": "karman ventures",
+      "decision": "reject",
+      "reason": "Vehicles include 'Fund II Blocked' and coded names with no Karman identity; needs external evidence."
+    },
+    {
+      "key": "embedding opportunity fund",
+      "decision": "reject",
+      "reason": "Vehicles are generic fund names (Generation I, Mammoth Mountain Fund I) with no manager identity in the filing names."
+    },
+    {
+      "key": "spacestation investments",
+      "decision": "approve",
+      "name": "Spacestation Investments",
+      "confidence": "high",
+      "reason": "Every vehicle is an SPVC series (SPVC 05-13) of Spacestation Investments LP."
+    },
+    {
+      "key": "8090 industries master",
+      "decision": "reject",
+      "reason": "Vehicles are portfolio-company names (NScale, Zenith, Subatomic) with no 8090 identity; needs external evidence."
+    },
+    {
+      "key": "republic deal room master fund",
+      "decision": "reject",
+      "reason": "Republic runs deal-room SPVs for unrelated issuers (Hyroad, Wellius, CocoCult); platform, not one manager."
+    },
+    {
+      "key": "1528 invest",
+      "decision": "reject",
+      "reason": "Vehicles carry the Bulletpitch brand rather than 1528 Invest; the relationship between the filer and the vehicles is unproven."
+    },
+    {
+      "key": "agc parallax fund",
+      "decision": "approve",
+      "name": "AGC",
+      "group": "agc",
+      "confidence": "high",
+      "reason": "Every vehicle is AGC-prefixed (AGC MSCHF I, AGC Lightmatter I) under AGC Parallax Fund I LLC; grouped with AGC AI Nexus as one manager."
+    },
+    {
+      "key": "ccl funds",
+      "decision": "reject",
+      "reason": "Coded-only series (RI-0718, PA-0417); no manager identity in the filing names."
+    },
+    {
+      "key": "get access master partnership",
+      "decision": "reject",
+      "reason": "Access platform with coded vehicles (WHI01, AAO6, CRU5); no single manager."
+    },
+    {
+      "key": "saxecap",
+      "decision": "reject",
+      "reason": "Coded-only series (TR-0627, KA-0309); no manager identity in the filing names."
+    },
+    {
+      "key": "armenian founders",
+      "decision": "reject",
+      "reason": "Coded-only series (DI-0706, SI-0420); no manager identity in the filing names."
+    },
+    {
+      "key": "bbgv",
+      "decision": "reject",
+      "reason": "Coded-only series (PE-1020, VE-0603) of a bare acronym program; no identifiable manager."
+    },
+    {
+      "key": "companyon sidecar",
+      "decision": "reject",
+      "reason": "Coded-only series (UN-0731, NO-0813); no manager identity in the filing names."
+    },
+    {
+      "key": "eqp master i",
+      "decision": "approve",
+      "name": "EQP",
+      "confidence": "high",
+      "reason": "Every vehicle is an EQP AI series (EQP AI DEFENSE, EQP AI DRIVE, EQP AI CODE) under EQP Master I LLC."
+    },
+    {
+      "key": "hb win",
+      "decision": "approve",
+      "name": "HB-WIN",
+      "confidence": "high",
+      "reason": "Every vehicle is an HB-WIN program series (HB-WIN 2026 Skillmaker, HB-WIN 2026 VQ Biomedical) under HB-WIN LLC."
+    },
+    {
+      "key": "jibe partnership",
+      "decision": "approve",
+      "name": "Jibe Partnership",
+      "confidence": "high",
+      "reason": "Every vehicle is a Jibe/partner code (Jibe-GC-2026, Jibe-OR-2026, Jibe-PS-2026) under Jibe Partnership Holdings, LP."
+    },
+    {
+      "key": "jj fliegelman funds",
+      "decision": "reject",
+      "reason": "Person-named filing vehicle with coded-only series (AN-1104, W26, VO-0813); administrator signature, needs external evidence."
+    },
+    {
+      "key": "marathon life fund",
+      "decision": "approve",
+      "name": "Marathon Life Fund",
+      "confidence": "medium",
+      "reason": "Every vehicle is a numbered Marathon Fund I series (CE-11, BS-14, SF-10) under Marathon Life Fund LLC."
+    },
+    {
+      "key": "master fund",
+      "decision": "reject",
+      "reason": "Generic master fund (Master Fund I LLC) with unrelated syndicate names (MIC Syndicate, GT3 Anduril, Harbinger Alto); no single manager."
+    }
+  ]
+}

@@ -63,6 +63,43 @@ A manager key derived from an identity field, not a string:
    `docs/30`, per the repo rule, and only after the frontend agent lands the
    current copy pass.
 
+## Applied 2026-11-19 — review-gated, no heuristic merges
+
+The top 60 explicit "a series of X" clusters were exported and classified by
+hand in `scripts/manager-review-decisions.json` (each entry carries a decision
+and a reason). `scripts/build-manager-map.cjs` applies **only** keys marked
+`approve`; it refuses to infer a manager from a name.
+
+| Result | Value |
+|---|---:|
+| Clusters reviewed | 60 |
+| Approved clusters | 20 (grouped into 18 managers; AGC's two funds and Hustle Fund's program + verticals share one manager each) |
+| Applied distinct managers | **18** |
+| Vehicles mapped | **179** (3.28% of 5,461) |
+| Rejected clusters recorded | 40 (`review_status = 'rejected'`, 0 vehicles mapped) |
+| Remaining clusters | unmapped (`manager_id` NULL) |
+
+Approval required textual identity: the vehicles repeat the manager's own name
+or code (DataPower's `DPV …`, Infinitas `SPV …`, AGC-prefixed, `EQP AI …`) and
+no third-party brand appears. Rejections cover SPV platforms and
+administrators (CGF2021, Roll Up Vehicles, Platform Funds, MV Funds, V360,
+SLRTE, Clutch, Decile, AngelList, Republic) and — importantly — clusters whose
+vehicles are coded-only or carry unrelated brands (`Exitfund`, `VUVP`,
+`Umami`, `Fog`, `JMWTX`, `Sajid Rahman`, `JJ Fliegelman`). Those are **not**
+proven single managers; they stay unmapped until the Form ADV/CRD join exists.
+
+Reproduce:
+
+```bash
+node scripts/build-manager-map.cjs --export-review --top 60   # candidates
+node scripts/build-manager-map.cjs                           # dry run
+node scripts/build-manager-map.cjs --apply                    # approved only
+```
+
+Every vehicle row is kept; nothing is deleted or deactivated. Corpus counts
+(24,379 active records / 5,461 vehicles) are unchanged, so landing copy needs
+no edit.
+
 ## Recommendation
 
 Do **not** deactivate vehicles yet. The measured range is enough to stop
